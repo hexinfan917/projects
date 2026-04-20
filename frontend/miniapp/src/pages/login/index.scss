@@ -1,0 +1,81 @@
+.login-page {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #22C55E 0%, #16A34A 100%);
+  padding: 120rpx 40rpx 40rpx;
+  box-sizing: border-box;
+}
+
+.login-header {
+  text-align: center;
+  margin-bottom: 80rpx;
+  color: #fff;
+}
+
+.app-name {
+  display: block;
+  font-size: 56rpx;
+  font-weight: bold;
+  margin-bottom: 16rpx;
+}
+
+.app-slogan {
+  display: block;
+  font-size: 28rpx;
+  opacity: 0.9;
+}
+
+.login-card {
+  background: #fff;
+  border-radius: 24rpx;
+  padding: 60rpx 40rpx;
+  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.1);
+}
+
+.login-title {
+  display: block;
+  font-size: 40rpx;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 16rpx;
+  text-align: center;
+}
+
+.login-tip {
+  display: block;
+  font-size: 26rpx;
+  color: #999;
+  margin-bottom: 60rpx;
+  text-align: center;
+}
+
+.wx-login-btn {
+  background: #07C160;
+  color: #fff;
+  font-size: 32rpx;
+  border-radius: 44rpx;
+  margin-bottom: 24rpx;
+}
+
+.default-login-btn {
+  background: #F3F4F6;
+  color: #374151;
+  font-size: 28rpx;
+  border-radius: 44rpx;
+  margin-bottom: 40rpx;
+}
+
+.agreement-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.agreement-text {
+  font-size: 24rpx;
+  color: #666;
+  margin-left: 12rpx;
+}
+
+.link {
+  color: #22C55E;
+}

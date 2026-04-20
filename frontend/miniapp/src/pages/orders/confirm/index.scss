@@ -1,0 +1,390 @@
+.order-confirm {
+  min-height: 100vh;
+  background: #f7f8fa;
+  padding-bottom: 160px;
+}
+
+/* 橙色头部栏 */
+.order-header {
+  background: linear-gradient(135deg, #ff9900 0%, #ff7700 100%);
+  padding: 36px 28px;
+  color: #fff;
+  .header-title {
+    display: block;
+    font-size: 40px;
+    font-weight: 600;
+    margin-bottom: 14px;
+  }
+  .header-sub {
+    display: block;
+    font-size: 30px;
+    opacity: 0.95;
+  }
+}
+
+/* 内容块 */
+.section-block {
+  background: #fff;
+  margin: 24px 28px;
+  border-radius: 18px;
+  padding: 28px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+
+.section-label {
+  display: block;
+  font-size: 32px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 22px;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 22px;
+  .section-label {
+    margin-bottom: 0;
+  }
+}
+
+.section-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.section-header-action {
+  font-size: 28px;
+  color: #666;
+  padding: 6px 12px;
+  &.primary {
+    color: #ff7700;
+  }
+}
+
+.default-tag {
+  display: inline-block;
+  background: #22C55E;
+  color: #fff;
+  font-size: 20px;
+  padding: 2px 10px;
+  border-radius: 10px;
+  margin-left: 10px;
+  vertical-align: middle;
+}
+
+/* 信息卡片 */
+.info-card {
+  display: flex;
+  align-items: center;
+  background: #fafbfc;
+  border: 2px solid #e5e6eb;
+  border-radius: 14px;
+  padding: 22px;
+  margin-bottom: 18px;
+  transition: all 0.2s;
+  &.active {
+    border-color: #52c41a;
+    background: #f6ffed;
+  }
+}
+
+.pet-avatar-small {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  margin-right: 18px;
+  background: #eee;
+  flex-shrink: 0;
+}
+
+.info-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.info-name {
+  display: block;
+  font-size: 32px;
+  color: #222;
+  font-weight: 500;
+  margin-bottom: 10px;
+}
+
+.info-detail {
+  display: block;
+  font-size: 28px;
+  color: #666;
+}
+
+.card-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-left: 14px;
+}
+
+.card-actions-inline {
+  display: flex;
+  align-items: center;
+  margin-top: 10px;
+}
+
+.action-text {
+  font-size: 28px;
+  color: #ff7700;
+  padding: 4px 10px;
+  &.delete {
+    color: #ff4d4f;
+  }
+}
+
+.card-right {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-left: 14px;
+}
+
+.check-circle {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 2px solid #ccc;
+  position: relative;
+  flex-shrink: 0;
+  &.checked {
+    border-color: #52c41a;
+    background: #52c41a;
+    &::after {
+      content: '';
+      position: absolute;
+      left: 12px;
+      top: 6px;
+      width: 10px;
+      height: 18px;
+      border: solid #fff;
+      border-width: 0 3px 3px 0;
+      transform: rotate(45deg);
+    }
+  }
+}
+
+.section-add-btn {
+  display: block;
+  text-align: center;
+  font-size: 30px;
+  color: #ff7700;
+  padding: 22px 0;
+  border: 2px dashed #ffcc80;
+  border-radius: 14px;
+  background: #fff7e6;
+}
+
+.empty-tip {
+  display: block;
+  text-align: center;
+  font-size: 28px;
+  color: #999;
+  padding: 26px 0;
+}
+
+/* 保险 */
+.insurance-row {
+  display: flex;
+  align-items: center;
+  padding: 18px 0;
+  border-bottom: 1px solid #f0f0f0;
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.insurance-dot {
+  font-size: 22px;
+  color: #ff7700;
+  margin-right: 14px;
+}
+
+.insurance-text {
+  flex: 1;
+  font-size: 28px;
+  color: #444;
+  line-height: 1.45;
+}
+
+.insurance-tip {
+  display: block;
+  font-size: 24px;
+  color: #999;
+  margin-top: 14px;
+}
+
+/* 底部固定栏 */
+.bottom-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 128px;
+  background: #fff;
+  border-top: 1px solid #e5e5e5;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 28px;
+  z-index: 100;
+  pointer-events: auto;
+  transform: translateZ(0);
+}
+
+.bottom-price {
+  font-size: 36px;
+  color: #ff4d4f;
+  font-weight: 600;
+}
+
+.bottom-submit {
+  width: 260px;
+  height: 88px;
+  line-height: 88px;
+  border-radius: 44px;
+  font-size: 32px;
+  color: #fff;
+  text-align: center;
+  border: none;
+  position: relative;
+  z-index: 101;
+  pointer-events: auto;
+  &.active {
+    background: linear-gradient(135deg, #ff9900 0%, #ff7700 100%);
+  }
+  &.disabled {
+    background: #ccc;
+  }
+}
+
+/* 出行人弹窗 */
+.traveler-modal-wrap {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.modal-mask {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.traveler-modal {
+  position: relative;
+  background: #fff;
+  border-radius: 24px 24px 0 0;
+  padding: 28px 24px 40px;
+  z-index: 1001;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.modal-title {
+  font-size: 34px;
+  font-weight: bold;
+  color: #333;
+}
+
+.modal-close {
+  font-size: 36px;
+  color: #999;
+  padding: 10px;
+}
+
+.modal-body {
+  flex: 1;
+  overflow-y: auto;
+  max-height: 60vh;
+}
+
+.modal-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #fafbfc;
+  border: 2px solid #e5e6eb;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 16px;
+}
+
+.modal-item-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.modal-item-name {
+  display: block;
+  font-size: 30px;
+  color: #222;
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+
+.modal-item-phone {
+  font-size: 26px;
+  color: #666;
+}
+
+.modal-item-sub {
+  display: block;
+  font-size: 26px;
+  color: #888;
+}
+
+.modal-empty {
+  padding: 40px 0;
+}
+
+.modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.modal-add-text {
+  font-size: 28px;
+  color: #ff7700;
+  padding: 10px 16px;
+}
+
+.modal-confirm {
+  width: 180px;
+  height: 72px;
+  line-height: 72px;
+  text-align: center;
+  background: linear-gradient(135deg, #ff9900 0%, #ff7700 100%);
+  color: #fff;
+  font-size: 28px;
+  border-radius: 36px;
+}

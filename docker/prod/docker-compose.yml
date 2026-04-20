@@ -1,0 +1,88 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: quandouxing-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: quandouxing
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4
+    restart: always
+    networks:
+      - quandouxing-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: quandouxing-redis
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
+    restart: always
+    networks:
+      - quandouxing-network
+
+  user-service:
+    image: quandouxing/user-service:latest
+    container_name: quandouxing-user-service
+    environment:
+      - DB_HOST=mysql
+      - DB_PASSWORD=${DB_PASSWORD}
+      - REDIS_HOST=redis
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - JWT_SECRET=${JWT_SECRET}
+    restart: always
+    networks:
+      - quandouxing-network
+
+  route-service:
+    image: quandouxing/route-service:latest
+    container_name: quandouxing-route-service
+    environment:
+      - DB_HOST=mysql
+      - DB_PASSWORD=${DB_PASSWORD}
+      - REDIS_HOST=redis
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+    restart: always
+    networks:
+      - quandouxing-network
+
+  order-service:
+    image: quandouxing/order-service:latest
+    container_name: quandouxing-order-service
+    environment:
+      - DB_HOST=mysql
+      - DB_PASSWORD=${DB_PASSWORD}
+      - REDIS_HOST=redis
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+    restart: always
+    networks:
+      - quandouxing-network
+
+  gateway:
+    image: quandouxing/gateway:latest
+    container_name: quandouxing-gateway
+    ports:
+      - "80:8000"
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+    depends_on:
+      - user-service
+      - route-service
+      - order-service
+    restart: always
+    networks:
+      - quandouxing-network
+
+volumes:
+  mysql_data:
+  redis_data:
+
+networks:
+  quandouxing-network:
+    driver: bridge

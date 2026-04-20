@@ -1,0 +1,32 @@
+# Python微服务基础镜像
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# 安装系统依赖
+RUN apt-get update && apt-get install -y \
+    gcc \
+    default-libmysqlclient-dev \
+    pkg-config \
+    && rm -rf /var/lib/apt/lists/*
+
+# 复制requirements
+COPY backend/common/requirements.txt ./common-requirements.txt
+COPY backend/${SERVICE_NAME}/requirements.txt ./service-requirements.txt
+
+# 安装Python依赖
+RUN pip install --no-cache-dir -r common-requirements.txt \
+    && pip install --no-cache-dir -r service-requirements.txt
+
+# 复制代码
+COPY backend/common ./common
+COPY backend/${SERVICE_NAME} ./service
+
+# 设置Python路径
+ENV PYTHONPATH=/app
+
+# 暴露端口
+EXPOSE 8000
+
+# 启动命令
+CMD ["python", "-m", "uvicorn", "service.main:app", "--host", "0.0.0.0", "--port", "8000"]

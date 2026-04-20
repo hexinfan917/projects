@@ -1,0 +1,134 @@
+.order-list {
+  min-height: 100vh;
+  background: #f5f5f5;
+}
+
+.tabs {
+  display: flex;
+  background: #fff;
+  padding: 0 20rpx;
+  border-bottom: 1rpx solid #eee;
+}
+
+.tab-item {
+  flex: 1;
+  text-align: center;
+  padding: 24rpx 0;
+  font-size: 28rpx;
+  color: #666;
+  position: relative;
+}
+
+.tab-item.active {
+  color: #22C55E;
+  font-weight: bold;
+}
+
+.tab-item.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 48rpx;
+  height: 4rpx;
+  background: #22C55E;
+  border-radius: 2rpx;
+}
+
+.list-scroll {
+  height: calc(100vh - 90rpx);
+  padding: 20rpx;
+}
+
+.order-card {
+  background: #fff;
+  border-radius: 16rpx;
+  padding: 24rpx;
+  margin-bottom: 20rpx;
+}
+
+.order-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16rpx;
+}
+
+.order-no {
+  font-size: 24rpx;
+  color: #999;
+}
+
+.order-status {
+  font-size: 26rpx;
+  color: #FF8C42;
+}
+
+.order-body {
+  margin-bottom: 16rpx;
+}
+
+.route-name {
+  display: block;
+  font-size: 30rpx;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 8rpx;
+}
+
+.order-info {
+  font-size: 26rpx;
+  color: #999;
+}
+
+.order-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+
+.order-price {
+  font-size: 32rpx;
+  color: #FF4D4F;
+  font-weight: bold;
+}
+
+.countdown-text {
+  display: block;
+  font-size: 28rpx;
+  color: #FF4D4F;
+  font-weight: bold;
+  margin-top: 8rpx;
+}
+
+.action-btns {
+  display: flex;
+  gap: 16rpx;
+  align-items: center;
+}
+
+.mini-btn {
+  font-size: 24rpx;
+  padding: 8rpx 20rpx;
+  border-radius: 20rpx;
+}
+
+.mini-btn.primary {
+  background: #FF8C42;
+  color: #fff;
+}
+
+.mini-btn.default {
+  background: #fff;
+  color: #666;
+  border: 1rpx solid #ddd;
+}
+
+.empty-tip {
+  display: block;
+  text-align: center;
+  padding: 60rpx 0;
+  color: #999;
+  font-size: 28rpx;
+}

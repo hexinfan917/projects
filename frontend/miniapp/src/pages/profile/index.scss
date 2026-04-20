@@ -1,0 +1,279 @@
+.profile-page {
+  min-height: 100vh;
+  background: #f5f5f5;
+  padding-bottom: 180rpx;
+}
+
+.user-header {
+  background: linear-gradient(135deg, #22C55E, #16A34A);
+  padding: 60rpx 30rpx 40rpx;
+  color: #fff;
+}
+
+.user-top {
+  display: flex;
+  align-items: center;
+  margin-bottom: 30rpx;
+}
+
+.avatar {
+  width: 120rpx;
+  height: 120rpx;
+  border-radius: 50%;
+  border: 4rpx solid rgba(255, 255, 255, 0.4);
+  margin-right: 24rpx;
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.user-info {
+  flex: 1;
+}
+
+.nickname {
+  display: block;
+  font-size: 36rpx;
+  font-weight: bold;
+  margin-bottom: 10rpx;
+}
+
+.level {
+  display: block;
+  font-size: 24rpx;
+  opacity: 0.9;
+}
+
+.login-wrap {
+  display: inline-flex;
+}
+
+.login-text {
+  font-size: 32rpx;
+  font-weight: bold;
+}
+
+.user-actions {
+  display: flex;
+  gap: 20rpx;
+}
+
+.action-btn {
+  display: inline-flex;
+  background: rgba(255, 255, 255, 0.2);
+  padding: 10rpx 24rpx;
+  border-radius: 24rpx;
+  position: relative;
+}
+
+.action-btn-text {
+  font-size: 24rpx;
+  color: #fff;
+}
+
+.card {
+  background: #fff;
+  border-radius: 16rpx;
+  margin: 20rpx;
+  padding: 24rpx;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20rpx;
+}
+
+.card-title {
+  font-size: 30rpx;
+  font-weight: bold;
+  color: #333;
+}
+
+.card-title-only {
+  display: block;
+  font-size: 30rpx;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 20rpx;
+}
+
+.card-more {
+  display: inline-flex;
+}
+
+.card-more-text {
+  font-size: 26rpx;
+  color: #999;
+}
+
+.order-entries {
+  display: flex;
+  justify-content: space-around;
+}
+
+.entry {
+  text-align: center;
+  position: relative;
+}
+
+.entry-icon {
+  display: block;
+  font-size: 40rpx;
+  margin-bottom: 8rpx;
+}
+
+.entry-label {
+  display: block;
+  font-size: 24rpx;
+  color: #666;
+}
+
+.service-grid {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.service-item {
+  width: 25%;
+  text-align: center;
+  padding: 20rpx 0;
+  position: relative;
+  z-index: 1;
+}
+
+.service-icon {
+  display: block;
+  font-size: 40rpx;
+  margin-bottom: 8rpx;
+}
+
+.service-label {
+  display: block;
+  font-size: 24rpx;
+  color: #666;
+}
+
+.service-badge {
+  position: absolute;
+  top: 10rpx;
+  right: 20rpx;
+  background: #FF4D4F;
+  color: #fff;
+  font-size: 20rpx;
+  padding: 2rpx 10rpx;
+  border-radius: 12rpx;
+}
+
+.more-list {
+  padding: 0 10rpx;
+}
+
+.more-item {
+  display: flex;
+  align-items: center;
+  padding: 24rpx 0;
+  border-bottom: 1rpx solid #f5f5f5;
+  position: relative;
+  z-index: 1;
+}
+
+.more-icon {
+  font-size: 32rpx;
+  margin-right: 16rpx;
+}
+
+.more-label {
+  flex: 1;
+  font-size: 28rpx;
+  color: #333;
+}
+
+.more-arrow {
+  font-size: 26rpx;
+  color: #ccc;
+}
+
+/* 客服弹窗 */
+.service-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.service-mask {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.service-content {
+  position: relative;
+  width: 560rpx;
+  background: #fff;
+  border-radius: 24rpx;
+  padding: 40rpx 0 0;
+  text-align: center;
+  z-index: 2001;
+}
+
+.service-title {
+  display: block;
+  font-size: 34rpx;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 24rpx;
+}
+
+.service-body {
+  display: block;
+  font-size: 30rpx;
+  color: #666;
+  line-height: 1.6;
+  margin-bottom: 32rpx;
+  padding: 0 40rpx;
+  white-space: pre-wrap;
+}
+
+.service-btns {
+  display: flex;
+  border-top: 1rpx solid #e5e5e5;
+}
+
+.service-btn {
+  flex: 1;
+  font-size: 30rpx;
+  padding: 24rpx 0;
+  text-align: center;
+  &.cancel {
+    color: #333;
+    border-right: 1rpx solid #e5e5e5;
+  }
+  &.confirm {
+    color: #576b95;
+  }
+}
+
+.logout-section {
+  margin: 40rpx 20rpx 100rpx;
+}
+
+.logout-btn {
+  background: #fff;
+  border-radius: 16rpx;
+  padding: 28rpx 0;
+  text-align: center;
+}
+
+.logout-text {
+  font-size: 30rpx;
+  color: #FF4D4F;
+}

@@ -1,0 +1,18 @@
+'Log files:
+D:\projects\frontend\miniapp\.npm-cache\_logs\2026-04-15T02_19_01_758Z-debug-0.log
+
+# npm resolution error report
+
+While resolving: quandouxing-miniapp@1.0.0
+Found: webpack@5.76.0
+node_modules/webpack
+  dev webpack@"5.76.0" from the root project
+
+Could not resolve dependency:
+peer webpack@"^5.78.0" from @tarojs/webpack5-runner@3.6.25
+node_modules/@tarojs/webpack5-runner
+  dev @tarojs/webpack5-runner@"3.6.25" from the root project
+
+Fix the upstream dependency conflict, or retry
+this command with --force or --legacy-peer-deps
+to accept an incorrect (and potentially broken) dependency resolution.

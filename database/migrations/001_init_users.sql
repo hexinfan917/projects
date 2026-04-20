@@ -1,0 +1,42 @@
+-- 用户模块初始化脚本
+-- 创建用户表
+CREATE TABLE IF NOT EXISTS users (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  openid VARCHAR(64) NOT NULL COMMENT '微信openid',
+  unionid VARCHAR(64) DEFAULT NULL COMMENT '微信unionid',
+  nickname VARCHAR(50) DEFAULT NULL COMMENT '昵称',
+  avatar VARCHAR(500) DEFAULT NULL COMMENT '头像URL',
+  phone VARCHAR(20) DEFAULT NULL COMMENT '手机号',
+  gender TINYINT DEFAULT 0 COMMENT '0未知 1男 2女',
+  birthday DATE DEFAULT NULL,
+  city VARCHAR(50) DEFAULT NULL,
+  member_level TINYINT DEFAULT 0 COMMENT '0新手上路 1爱好者 2资深 3大使',
+  member_points INT DEFAULT 0 COMMENT '积分',
+  status TINYINT DEFAULT 1 COMMENT '0禁用 1正常',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uk_openid (openid),
+  KEY idx_unionid (unionid),
+  KEY idx_member_level (member_level)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户表';
+
+-- 创建宠物档案表
+CREATE TABLE IF NOT EXISTS pet_profiles (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  user_id BIGINT UNSIGNED NOT NULL COMMENT '主人ID',
+  name VARCHAR(50) NOT NULL COMMENT '宠物名',
+  breed VARCHAR(50) NOT NULL COMMENT '品种',
+  breed_type TINYINT COMMENT '体型: 1小型 2中型 3大型 4巨型',
+  birth_date DATE COMMENT '出生日期',
+  gender TINYINT COMMENT '0母 1公',
+  weight DECIMAL(4,1) COMMENT '体重kg',
+  avatar VARCHAR(500) COMMENT '头像URL',
+  tags JSON COMMENT '性格标签',
+  health_notes TEXT COMMENT '健康备注',
+  is_default TINYINT DEFAULT 0 COMMENT '是否默认宠物',
+  status TINYINT DEFAULT 1 COMMENT '0删除 1正常',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  KEY idx_user_id (user_id),
+  KEY idx_breed (breed)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='宠物档案表';

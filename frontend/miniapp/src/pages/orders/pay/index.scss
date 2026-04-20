@@ -1,0 +1,76 @@
+.order-pay {
+  min-height: 100vh;
+  background: #f5f5f5;
+  padding: 40rpx;
+}
+
+.pay-card {
+  background: #fff;
+  border-radius: 20rpx;
+  padding: 60rpx 40rpx;
+  text-align: center;
+  margin-bottom: 30rpx;
+}
+
+.pay-title {
+  display: block;
+  font-size: 32rpx;
+  color: #666;
+  margin-bottom: 20rpx;
+}
+
+.pay-amount {
+  display: block;
+  font-size: 72rpx;
+  font-weight: bold;
+  color: #FF4D4F;
+  margin-bottom: 20rpx;
+}
+
+.pay-order-no {
+  display: block;
+  font-size: 26rpx;
+  color: #999;
+}
+
+.pay-method {
+  background: #fff;
+  border-radius: 20rpx;
+  padding: 30rpx;
+  margin-bottom: 40rpx;
+}
+
+.method-title {
+  display: block;
+  font-size: 30rpx;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 20rpx;
+}
+
+.method-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24rpx 0;
+  border: 2rpx solid #eee;
+  border-radius: 12rpx;
+  padding: 24rpx;
+  font-size: 30rpx;
+}
+
+.method-item.active {
+  border-color: #22C55E;
+}
+
+.check-icon {
+  color: #22C55E;
+  font-weight: bold;
+}
+
+.pay-btn {
+  background: #22C55E;
+  color: #fff;
+  font-size: 34rpx;
+  border-radius: 44rpx;
+}

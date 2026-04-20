@@ -1,0 +1,2 @@
+# route-service依赖
+# 公共依赖在common/requirements.txt中

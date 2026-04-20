@@ -1,0 +1,159 @@
+.pet-edit-page {
+  min-height: 100vh;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 24px;
+}
+
+.pet-edit-modal {
+  width: 100%;
+  background: #fff;
+  border-radius: 20px;
+  padding: 32px 28px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+.modal-title {
+  display: block;
+  text-align: center;
+  font-size: 34px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 32px;
+}
+
+.form-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.form-label {
+  width: 160px;
+  font-size: 28px;
+  color: #444;
+  flex-shrink: 0;
+  .required {
+    color: #ff4d4f;
+    margin-left: 4px;
+  }
+}
+
+.form-input {
+  flex: 1;
+  height: 72px;
+  background: #f5f6f7;
+  border-radius: 10px;
+  padding: 0 20px;
+  font-size: 28px;
+  color: #333;
+}
+
+.picker-value {
+  flex: 1;
+  height: 72px;
+  line-height: 72px;
+  background: #f5f6f7;
+  border-radius: 10px;
+  padding: 0 20px;
+  font-size: 28px;
+  color: #333;
+  &.placeholder {
+    color: #999;
+  }
+}
+
+.avatar-upload {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: #f5f6f7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  .avatar-img {
+    width: 100%;
+    height: 100%;
+  }
+  .avatar-placeholder {
+    font-size: 48px;
+    color: #bbb;
+  }
+}
+
+.gender-group {
+  display: flex;
+  gap: 20px;
+}
+
+.gender-tag {
+  width: 100px;
+  height: 60px;
+  line-height: 60px;
+  text-align: center;
+  border-radius: 8px;
+  font-size: 26px;
+  color: #666;
+  background: #f5f6f7;
+  border: 2px solid transparent;
+  &.active {
+    color: #ff7700;
+    background: #fff7e6;
+    border-color: #ffcc80;
+  }
+}
+
+.checkbox-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 32px;
+}
+
+.check-box {
+  width: 32px;
+  height: 32px;
+  border: 2px solid #ccc;
+  border-radius: 6px;
+  margin-right: 12px;
+  position: relative;
+  &.checked {
+    border-color: #ff7700;
+    background: #ff7700;
+    &::after {
+      content: '';
+      position: absolute;
+      left: 8px;
+      top: 2px;
+      width: 10px;
+      height: 18px;
+      border: solid #fff;
+      border-width: 0 3px 3px 0;
+      transform: rotate(45deg);
+    }
+  }
+}
+
+.checkbox-label {
+  font-size: 26px;
+  color: #555;
+}
+
+.modal-save-btn {
+  width: 100%;
+  height: 84px;
+  line-height: 84px;
+  border-radius: 12px;
+  font-size: 30px;
+  color: #fff;
+  text-align: center;
+  border: none;
+  &.active {
+    background: linear-gradient(135deg, #ff9900 0%, #ff7700 100%);
+  }
+  &.disabled {
+    background: #ccc;
+  }
+}

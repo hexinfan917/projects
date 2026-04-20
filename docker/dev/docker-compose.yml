@@ -1,0 +1,135 @@
+version: '3.8'
+
+services:
+  # MySQL数据库
+  mysql:
+    image: mysql:8.0
+    container_name: quandouxing-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root123
+      MYSQL_DATABASE: quandouxing
+      MYSQL_USER: quandouxing
+      MYSQL_PASSWORD: quandouxing123
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ../database/migrations:/docker-entrypoint-initdb.d
+    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  # Redis缓存
+  redis:
+    image: redis:7-alpine
+    container_name: quandouxing-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+
+  # 用户服务
+  user-service:
+    build:
+      context: ../..
+      dockerfile: docker/Dockerfile.service
+      args:
+        SERVICE_NAME: user-service
+    container_name: quandouxing-user-service
+    environment:
+      - SERVICE_NAME=user-service
+      - DB_HOST=mysql
+      - DB_PASSWORD=quandouxing123
+      - REDIS_HOST=redis
+    ports:
+      - "8001:8000"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    volumes:
+      - ../../backend/common:/app/common
+      - ../../backend/user-service:/app/service
+    command: python -m uvicorn service.main:app --host 0.0.0.0 --port 8000 --reload
+
+  # 路线服务
+  route-service:
+    build:
+      context: ../..
+      dockerfile: docker/Dockerfile.service
+      args:
+        SERVICE_NAME: route-service
+    container_name: quandouxing-route-service
+    environment:
+      - SERVICE_NAME=route-service
+      - DB_HOST=mysql
+      - DB_PASSWORD=quandouxing123
+      - REDIS_HOST=redis
+    ports:
+      - "8002:8000"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    volumes:
+      - ../../backend/common:/app/common
+      - ../../backend/route-service:/app/service
+    command: python -m uvicorn service.main:app --host 0.0.0.0 --port 8000 --reload
+
+  # 订单服务
+  order-service:
+    build:
+      context: ../..
+      dockerfile: docker/Dockerfile.service
+      args:
+        SERVICE_NAME: order-service
+    container_name: quandouxing-order-service
+    environment:
+      - SERVICE_NAME=order-service
+      - DB_HOST=mysql
+      - DB_PASSWORD=quandouxing123
+      - REDIS_HOST=redis
+    ports:
+      - "8003:8000"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    volumes:
+      - ../../backend/common:/app/common
+      - ../../backend/order-service:/app/service
+    command: python -m uvicorn service.main:app --host 0.0.0.0 --port 8000 --reload
+
+  # API网关
+  gateway:
+    build:
+      context: ../..
+      dockerfile: docker/Dockerfile.service
+      args:
+        SERVICE_NAME: gateway
+    container_name: quandouxing-gateway
+    environment:
+      - SERVICE_NAME=gateway
+      - DB_HOST=mysql
+      - DB_PASSWORD=quandouxing123
+      - REDIS_HOST=redis
+    ports:
+      - "8000:8000"
+    depends_on:
+      - user-service
+      - route-service
+      - order-service
+    volumes:
+      - ../../backend/common:/app/common
+      - ../../backend/gateway:/app/service
+    command: python -m uvicorn service.main:app --host 0.0.0.0 --port 8000 --reload
+
+volumes:
+  mysql_data:
+  redis_data:
