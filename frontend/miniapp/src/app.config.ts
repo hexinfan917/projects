@@ -24,31 +24,37 @@ export default defineAppConfig({
     'pages/orders/detail/index',
     'pages/orders/list/index',
     'pages/orders/evaluate/index',
-    'pages/search/index'
+    'pages/search/index',
+    'pages/notifications/list/index',
+    'pages/reviews/list/index',
+    'pages/reviews/detail/index',
+    'pages/charities/list/index',
+    'pages/charities/detail/index'
   ],
   window: {
     backgroundTextStyle: 'light',
-    navigationBarBackgroundColor: '#fff',
-    navigationBarTitleText: '尾巴旅行PetWay',
+    navigationStyle: 'custom',
+    navigationBarBackgroundColor: '#f5f7f5',
+    navigationBarTitleText: '尾巴旅行',
     navigationBarTextStyle: 'black'
   },
   tabBar: {
-    color: '#22C55E',
-    selectedColor: '#166534',
+    color: '#9CA3AF',
+    selectedColor: '#22C55E',
     backgroundColor: '#ffffff',
     borderStyle: 'white',
     list: [
       {
         pagePath: 'pages/index/index',
         text: '首页',
-        iconPath: 'assets/icons/tab-home-active.png',
+        iconPath: 'assets/icons/tab-home.png',
         selectedIconPath: 'assets/icons/tab-home-active.png'
       },
       {
         pagePath: 'pages/routes/index',
         text: '线路',
         iconPath: 'assets/icons/tab-route.png',
-        selectedIconPath: 'assets/icons/tab-route.png'
+        selectedIconPath: 'assets/icons/tab-route-active.png'
       },
       {
         pagePath: 'pages/profile/pets/index',
@@ -60,7 +66,7 @@ export default defineAppConfig({
         pagePath: 'pages/profile/index',
         text: '我的',
         iconPath: 'assets/icons/tab-profile.png',
-        selectedIconPath: 'assets/icons/tab-profile.png'
+        selectedIconPath: 'assets/icons/tab-profile-active.png'
       }
     ]
   }

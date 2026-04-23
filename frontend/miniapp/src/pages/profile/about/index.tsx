@@ -19,7 +19,11 @@ const copyWechat = () => {
 
 export default function About() {
   return (
-    <View className='about-page'>
+    <View className='about-page' style={{ paddingTop: '140rpx' }}>
+
+        <View className='page-back' onClick={() => Taro.navigateBack()}>
+          <Text className='page-back-icon'>←</Text>
+        </View>
       <View className='brand-section'>
         <View className='logo'>🐾</View>
         <Text className='app-name'>尾巴旅行 PetWay</Text>

@@ -16,16 +16,22 @@ class Article(Base):
     title: Mapped[str] = mapped_column(String(200), nullable=False, comment="文章标题")
     subtitle: Mapped[Optional[str]] = mapped_column(String(500), nullable=True, comment="副标题")
     cover_image: Mapped[Optional[str]] = mapped_column(String(500), nullable=True, comment="封面图")
+    images: Mapped[Optional[str]] = mapped_column(Text, nullable=True, comment="图集，JSON 数组存储图片 URL 列表")
     summary: Mapped[Optional[str]] = mapped_column(String(1000), nullable=True, comment="摘要")
     content: Mapped[str] = mapped_column(Text, nullable=False, comment="文章内容")
     
     # 分类和标签
-    category: Mapped[str] = mapped_column(String(50), default="travel", comment="分类: travel旅行 guide攻略 story故事")
+    category: Mapped[str] = mapped_column(String(50), default="travel", comment="分类: travel旅行 guide攻略 story故事 review回顾")
     tags: Mapped[Optional[str]] = mapped_column(String(500), nullable=True, comment="标签,逗号分隔")
     
     # 作者信息
     author_id: Mapped[int] = mapped_column(Integer, default=0, comment="作者ID")
     author_name: Mapped[Optional[str]] = mapped_column(String(50), nullable=True, comment="作者名")
+    
+    # 回顾/活动专属字段
+    location: Mapped[Optional[str]] = mapped_column(String(200), nullable=True, comment="活动地点")
+    event_date: Mapped[Optional[str]] = mapped_column(String(50), nullable=True, comment="活动日期")
+    participants: Mapped[int] = mapped_column(Integer, default=0, comment="参与数量")
     
     # 统计
     view_count: Mapped[int] = mapped_column(Integer, default=0, comment="浏览量")

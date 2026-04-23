@@ -360,6 +360,35 @@ async def pay_notify(data: dict, background_tasks: BackgroundTasks):
     return {"code": "SUCCESS", "message": "OK"}
 
 
+async def notify_order_service(order_no: str, transaction_id: str, pay_channel: str = "wechat") -> bool:
+    """
+    通知 order-service 更新订单支付状态
+    """
+    order_service_url = os.getenv("ORDER_SERVICE_URL", "http://localhost:8003")
+    callback_url = f"{order_service_url}/api/v1/orders/pay/callback"
+    
+    payload = {
+        "order_no": order_no,
+        "transaction_id": transaction_id,
+        "pay_channel": pay_channel,
+    }
+    
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.post(callback_url, json=payload)
+            result = response.json()
+            
+            if result.get("code") == "SUCCESS":
+                logger.info(f"Notified order-service success: {order_no}")
+                return True
+            else:
+                logger.error(f"Notified order-service failed: {order_no}, response={result}")
+                return False
+    except Exception as e:
+        logger.error(f"Failed to notify order-service: {e}")
+        return False
+
+
 async def update_order_paid(pay_order_no: str, notify_data: dict):
     """
     异步更新订单支付状态
@@ -371,9 +400,16 @@ async def update_order_paid(pay_order_no: str, notify_data: dict):
             pay_info = json.loads(pay_data)
             order_no = pay_info.get("order_no")
             
-            # TODO: 调用 order-service 更新订单状态
-            # 这里可以通过 HTTP 请求或消息队列通知 order-service
-            logger.info(f"Updating order {order_no} status to paid")
+            # 调用 order-service 更新订单状态
+            notified = await notify_order_service(
+                order_no=order_no,
+                transaction_id=notify_data.get("transaction_id", pay_order_no),
+                pay_channel=pay_info.get("method", "wechat")
+            )
+            
+            if not notified:
+                # TODO: 通知失败时加入重试队列（如 RabbitMQ / 延迟任务）
+                logger.warning(f"Order service notification failed for {order_no}, will retry")
             
             # 更新支付订单状态
             pay_info["status"] = "paid"
@@ -430,8 +466,34 @@ async def create_refund(
     
     refund_no = f"REF{datetime.now().strftime('%Y%m%d%H%M%S')}{random.randint(1000, 9999)}"
     
-    # TODO: 调用微信退款 API
-    # 需要证书
+    config = WECHAT_PAY_CONFIG
+    
+    # 检查是否配置了微信支付
+    if config["appid"] and config["mchid"] and config["apikey"]:
+        # TODO: 调用微信退款 API (V2 或 V3)
+        # V2: https://api.mch.weixin.qq.com/secapi/pay/refund （需要客户端证书）
+        # V3: https://api.mch.weixin.qq.com/v3/refund/domestic/refunds （需要商户私钥+证书）
+        logger.info(f"Calling WeChat refund API for order: {order_no}")
+        # 真实退款逻辑待接入商户证书后实现
+        refund_status = "processing"
+    else:
+        # Mock 退款（开发测试环境）
+        logger.warning(f"WeChat pay not configured, using mock refund for order: {order_no}")
+        refund_status = "processing"
+    
+    # 保存退款记录到 Redis
+    refund_data = {
+        "refund_no": refund_no,
+        "order_no": order_no,
+        "refund_amount": float(refund_amount),
+        "reason": reason,
+        "status": refund_status,
+        "created_at": datetime.now().isoformat()
+    }
+    try:
+        await redis_client.set(f"pay:refund:{refund_no}", json.dumps(refund_data), expire=86400)
+    except:
+        logger.warning("Failed to save refund record to redis")
     
     logger.info(f"Refund created: {refund_no} for order: {order_no}, amount: {refund_amount}")
     
@@ -440,7 +502,7 @@ async def create_refund(
         "order_no": order_no,
         "refund_amount": refund_amount,
         "reason": reason,
-        "status": "processing"
+        "status": refund_status
     })
 
 

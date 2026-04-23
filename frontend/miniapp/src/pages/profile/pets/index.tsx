@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import Taro, { useDidShow } from '@tarojs/taro'
 import { View, Text, Image, Button } from '@tarojs/components'
+const logoIcon = '/assets/toplogo.png'
 import { getPets, deletePet, setActiveTab } from '../../../utils/api'
 import './index.scss'
 
@@ -68,8 +69,26 @@ export default function Pets() {
     })
   }
 
+  const handleAddPet = () => {
+    const token = Taro.getStorageSync('access_token')
+    if (!token) {
+      Taro.navigateTo({ url: '/pages/login/index' })
+      return
+    }
+    Taro.navigateTo({ url: '/pages/profile/pet-edit/index' })
+  }
+
   return (
     <View className='pets-page'>
+      <View className='custom-navbar'>
+        <View className='navbar-bg' />
+        <View className='navbar-content'>
+          <View className='navbar-left'>
+            <Image className='navbar-icon' src={logoIcon} mode='aspectFit' />
+            <Text className='navbar-title'>尾巴旅行</Text>
+          </View>
+        </View>
+      </View>
       {pets.map(pet => (
         <View key={pet.id} className='pet-card'>
           <Image className='pet-avatar' src={pet.avatar || 'https://via.placeholder.com/120'} mode='aspectFill' />
@@ -79,7 +98,7 @@ export default function Pets() {
               {pet.is_default ? <Text className='default-tag'>默认</Text> : null}
             </View>
             <Text className='pet-meta'>
-              {calcAge(pet.birth_date) || '-'}岁 · {GENDER_MAP[pet.gender] || '-'} · {pet.weight || '-'}kg
+              {calcAge(pet.birth_date) || '-'}岁 · {GENDER_MAP[pet.gender] || '-'} · {pet.breed || '-'} · {pet.weight || '-'}kg
             </Text>
           </View>
           <View className='pet-actions'>
@@ -92,14 +111,31 @@ export default function Pets() {
         </View>
       ))}
 
-      {pets.length === 0 && <Text className='empty-tip'>暂无宠物档案</Text>}
+      {pets.length === 0 && (
+        <View className='empty-state'>
+          <View className='empty-icon-wrap'>
+            <Image className='empty-icon' src='/assets/see-throughlogo.png' mode='aspectFit' />
+          </View>
+          <Text className='empty-title'>还没有宠物资料</Text>
+          <Text className='empty-desc'>添加您的宠物信息，开始规划您的下一次旅程。</Text>
+          <View
+            className='pets-add-btn'
+            onClick={handleAddPet}
+          >
+            <Text className='add-btn-icon'>+</Text>
+            <Text>添加宠物</Text>
+          </View>
+        </View>
+      )}
 
-      <View
-        className='pets-add-btn'
-        onClick={() => Taro.navigateTo({ url: '/pages/profile/pet-edit/index' })}
-      >
-        + 添加宠物
-      </View>
+      {pets.length > 0 && (
+        <View
+          className='pets-add-btn'
+          onClick={handleAddPet}
+        >
+          + 添加宠物
+        </View>
+      )}
     </View>
   )
 }

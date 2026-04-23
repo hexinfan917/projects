@@ -46,6 +46,14 @@ class ScheduleItem(BaseModel):
     detail: str
 
 
+class ContentModule(BaseModel):
+    """动态内容模块"""
+    label: str
+    icon: Optional[str] = None
+    content: str
+    sort_order: int = 0
+
+
 class RouteDetailResponse(BaseModel):
     """路线详情响应"""
     id: int
@@ -59,6 +67,7 @@ class RouteDetailResponse(BaseModel):
     gallery: Optional[List[str]]
     description: Optional[str]
     highlights: Optional[List[str]]
+    content_modules: Optional[List[ContentModule]]
     duration: Optional[str]
     difficulty: int
     difficulty_name: str

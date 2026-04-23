@@ -3,6 +3,7 @@
 """
 import os
 from typing import Optional
+from pathlib import Path
 from pydantic_settings import BaseSettings
 from functools import lru_cache
 
@@ -69,7 +70,7 @@ class Settings(BaseSettings):
     oss: OSSConfig = OSSConfig()
     
     class Config:
-        env_file = ".env"
+        env_file = str(Path(__file__).parent.parent / ".env")
         env_nested_delimiter = "__"
 
 

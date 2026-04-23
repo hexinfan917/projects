@@ -42,7 +42,11 @@ export default function Settings() {
   }
 
   return (
-    <View className='settings-page'>
+    <View className='settings-page' style={{ paddingTop: '140rpx' }}>
+
+        <View className='page-back' onClick={() => Taro.navigateBack()}>
+          <Text className='page-back-icon'>←</Text>
+        </View>
       <View className='settings-group'>
         <Text className='group-title'>消息通知</Text>
         <View className='settings-list'>
@@ -68,9 +72,9 @@ export default function Settings() {
             <View key={item.label} className='settings-item' onClick={() => handleItem(item)}>
               <Text className='settings-label'>{item.label}</Text>
               {item.action === 'clear' ? (
-                <Text className='settings-arrow'>></Text>
+                <Text className='settings-arrow'>{'>'}</Text>
               ) : (
-                <Text className='settings-arrow'>></Text>
+                <Text className='settings-arrow'>{'>'}</Text>
               )}
             </View>
           ))}

@@ -220,7 +220,11 @@ export default function OrderConfirm() {
   const canSubmit = selectedTravelers.length > 0 && selectedPetIds.length > 0
 
   return (
-    <View className='order-confirm'>
+    <View className='order-confirm' style={{ paddingTop: '140rpx' }}>
+
+        <View className='page-back' onClick={() => Taro.navigateBack()}>
+          <Text className='page-back-icon'>←</Text>
+        </View>
       {/* 橙色头部栏 */}
       <View className='order-header'>
         <Text className='header-title'>{route?.name || '路线名称'}</Text>
@@ -275,7 +279,7 @@ export default function OrderConfirm() {
                 {pet.is_default ? <Text className='default-tag'>默认</Text> : null}
                 （{calcAge(pet.birth_date)}岁，{GENDER_MAP[pet.gender] || '-'}）
               </Text>
-              <Text className='info-detail'>体重:{pet.weight || '-'}kg</Text>
+              <Text className='info-detail'>{pet.breed || '-'} · 体重:{pet.weight || '-'}kg</Text>
             </View>
             <View className='card-right'>
               <View className='check-circle checked' />
@@ -360,7 +364,7 @@ export default function OrderConfirm() {
                   <View key={p.id} className='modal-item' onClick={() => togglePetInModal(p.id)}>
                     <View className='modal-item-info'>
                       <Text className='modal-item-name'>{p.name} <Text className='modal-item-phone'>{calcAge(p.birth_date)}岁 · {GENDER_MAP[p.gender] || '-'}</Text></Text>
-                      <Text className='modal-item-sub'>体重：{p.weight || '-'}kg</Text>
+                      <Text className='modal-item-sub'>{p.breed || '-'} · 体重：{p.weight || '-'}kg</Text>
                     </View>
                     <View className={`check-circle ${checked ? 'checked' : ''}`} />
                   </View>

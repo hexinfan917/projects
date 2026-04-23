@@ -80,7 +80,7 @@ export default (props: any) => {
   };
   const { initialState, loading, setInitialState } = initialInfo;
   const userConfig = {
-  "title": "犬兜行管理后台",
+  "title": "尾巴旅行PetWay管理后台",
   "locale": false
 };
 const formatMessage = undefined;

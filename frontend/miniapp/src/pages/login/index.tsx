@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import Taro from '@tarojs/taro'
-import { View, Text, Button, Checkbox } from '@tarojs/components'
+import { View, Text, Button, Checkbox, Image } from '@tarojs/components'
 import { login, testLogin } from '../../utils/api'
 import './index.scss'
 
@@ -60,34 +60,58 @@ export default function Login() {
   }
 
   return (
-    <View className='login-page'>
-      <View className='login-header'>
-        <Text className='app-name'>尾巴旅行PetWay</Text>
-        <Text className='app-slogan'>尾巴旅行，与爱宠并肩同行</Text>
+    <View className='login-page' style={{ paddingTop: '140rpx' }}>
+
+        <View className='page-back' onClick={() => Taro.navigateBack()}>
+          <Text className='page-back-icon'>←</Text>
+        </View>
+      {/* 顶部导航栏 */}
+      <View className='login-header-bar'>
+        <View className='header-spacer' />
+        <Text className='header-title'>Welcome</Text>
+        <View className='header-spacer' />
       </View>
 
-      <View className='login-card'>
-        <Text className='login-title'>欢迎登录</Text>
-        <Text className='login-tip'>授权登录后可预订路线、管理订单</Text>
-
-        <Button className='wx-login-btn' onClick={handleLogin}>
-          微信一键登录
-        </Button>
-
-        <Button className='default-login-btn' onClick={handleDefaultLogin}>
-          默认账户登录（开发测试）
-        </Button>
-
-        <View className='agreement-row'>
-          <Checkbox checked={agreed} onClick={() => setAgreed(!agreed)} />
-          <Text className='agreement-text'>
-            我已阅读并同意
-            <Text className='link'>《用户协议》</Text>
-            和
-            <Text className='link'>《隐私政策》</Text>
-          </Text>
+      {/* 品牌区域 */}
+      <View className='brand-section'>
+        <View className='logo-wrapper'>
+          <View className='logo-glow' />
+          <Image className='logo-img' src={require('../../assets/see-throughlogo.png')} mode='aspectFit' />
+        </View>
+        <View className='brand-text'>
+          <Text className='brand-name'>PetWay</Text>
+          <Text className='brand-subname'>尾巴旅行</Text>
+          <Text className='brand-slogan'>带着您的毛孩子，探索世界的每一个角落</Text>
         </View>
       </View>
+
+      {/* 登录操作区域 */}
+      <View className='action-section'>
+        <View className='btn-wrapper'>
+          <Button className='wx-login-btn' onClick={handleLogin}>
+            <Text className='btn-icon'>💬</Text>
+            <Text className='btn-text'>微信授权手机号登录</Text>
+          </Button>
+        </View>
+
+
+      </View>
+
+      {/* 隐私协议 */}
+      <View className='agreement-row'>
+        <Checkbox className='agreement-checkbox' checked={agreed} onClick={() => setAgreed(!agreed)} />
+        <Text className='agreement-text'>
+          我已阅读并同意
+          <Text className='link'>《用户协议》</Text>
+          和
+          <Text className='link'>《隐私政策》</Text>
+          ，未注册手机号登录后将自动创建账号
+        </Text>
+      </View>
+
+      {/* 背景装饰 */}
+      <View className='bg-decoration bg-top-right' />
+      <View className='bg-decoration bg-bottom-left' />
     </View>
   )
 }

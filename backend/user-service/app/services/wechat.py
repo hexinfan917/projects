@@ -70,26 +70,75 @@ class WechatService:
     
     async def _get_openid_by_code(self, code: str) -> tuple:
         """
-        用code换取openid
+        用code换取openid和session_key
         
-        实际项目中调用微信 auth.code2Session 接口
-        https://api.weixin.qq.com/sns/jscode2session
+        配置了微信appid/appsecret时真实调用微信接口，
+        未配置时回退到mock模式（仅开发测试使用）
         """
-        # TODO: 实际调用微信接口
-        # 这里返回模拟数据
-        return f"mock_openid_{code}", "mock_session_key"
+        # 未配置微信参数时使用mock模式（包含占位符值）
+        if not self.appid or not self.appsecret or self.appid == 'your-app-id':
+            import logging
+            logging.getLogger(__name__).warning(
+                "WeChat appid/appsecret not configured, using mock openid. "
+                "Set WECHAT__APPID and WECHAT__APPSECRET env vars for production."
+            )
+            return f"mock_openid_{code}", "mock_session_key"
+        
+        # 真实调用微信 jscode2session 接口
+        url = "https://api.weixin.qq.com/sns/jscode2session"
+        params = {
+            "appid": self.appid,
+            "secret": self.appsecret,
+            "js_code": code,
+            "grant_type": "authorization_code"
+        }
+        
+        try:
+            import httpx
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                response = await client.get(url, params=params)
+                result = response.json()
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).error(f"Failed to call WeChat API: {e}")
+            raise BadRequestException("微信登录服务暂时不可用，请稍后重试")
+        
+        # 处理微信返回错误
+        errcode = result.get("errcode")
+        if errcode is not None and errcode != 0:
+            errmsg = result.get("errmsg", "未知错误")
+            import logging
+            logging.getLogger(__name__).error(f"WeChat API error: {errcode} - {errmsg}")
+            
+            # 常见错误码处理
+            error_map = {
+                -1: "微信系统繁忙，请稍后重试",
+                40029: "登录凭证(code)已失效，请重新授权",
+                40163: "登录凭证(code)已被使用，请重新授权",
+                45009: "微信接口调用频次限制",
+            }
+            raise BadRequestException(error_map.get(errcode, f"微信登录失败: {errmsg}"))
+        
+        openid = result.get("openid")
+        session_key = result.get("session_key")
+        
+        if not openid:
+            raise BadRequestException("微信登录失败，未获取到用户openid")
+        
+        return openid, session_key
     
     def _generate_tokens(self, user_id: int, openid: str) -> dict:
         """生成访问令牌和刷新令牌"""
-        now = datetime.utcnow()
+        import time
+        now_ts = int(time.time())
         
         # 访问令牌
         access_payload = {
             "user_id": user_id,
             "openid": openid,
             "type": "access",
-            "iat": now,
-            "exp": now + timedelta(seconds=self.jwt_expire),
+            "iat": now_ts,
+            "exp": now_ts + self.jwt_expire,
         }
         access_token = jwt.encode(access_payload, self.jwt_secret, algorithm="HS256")
         
@@ -98,8 +147,8 @@ class WechatService:
             "user_id": user_id,
             "openid": openid,
             "type": "refresh",
-            "iat": now,
-            "exp": now + timedelta(days=7),
+            "iat": now_ts,
+            "exp": now_ts + 7 * 24 * 3600,
         }
         refresh_token = jwt.encode(refresh_payload, self.jwt_secret, algorithm="HS256")
         

@@ -16,7 +16,11 @@ export default function Equipment() {
   const [activeCat, setActiveCat] = useState('全部')
 
   return (
-    <View className='equipment-page'>
+    <View className='equipment-page' style={{ paddingTop: '140rpx' }}>
+
+        <View className='page-back' onClick={() => Taro.navigateBack()}>
+          <Text className='page-back-icon'>←</Text>
+        </View>
       <ScrollView className='cat-scroll' scrollX>
         {CATEGORIES.map(c => (
           <Text

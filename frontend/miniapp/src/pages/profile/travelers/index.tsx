@@ -39,7 +39,11 @@ export default function Travelers() {
   }
 
   return (
-    <View className='travelers-page'>
+    <View className='travelers-page' style={{ paddingTop: '140rpx' }}>
+
+        <View className='page-back' onClick={() => Taro.navigateBack()}>
+          <Text className='page-back-icon'>←</Text>
+        </View>
       {list.map(item => (
         <View key={item.id} className='traveler-card'>
           <View className='traveler-header'>

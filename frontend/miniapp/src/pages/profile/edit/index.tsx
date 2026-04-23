@@ -68,7 +68,11 @@ export default function ProfileEdit() {
   }
 
   return (
-    <View className='profile-edit'>
+    <View className='profile-edit' style={{ paddingTop: '140rpx' }}>
+
+        <View className='page-back' onClick={() => Taro.navigateBack()}>
+          <Text className='page-back-icon'>←</Text>
+        </View>
       <View className='form-section'>
         <View className='avatar-row' onClick={handleChooseAvatar}>
           <Text className='label'>头像</Text>
@@ -78,7 +82,7 @@ export default function ProfileEdit() {
             ) : (
               <View className='avatar-placeholder'>点击上传</View>
             )}
-            <Text className='arrow'>></Text>
+            <Text className='arrow'>{'>'}</Text>
           </View>
         </View>
         <View className='input-row'>

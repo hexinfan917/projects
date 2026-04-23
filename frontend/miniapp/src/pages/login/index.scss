@@ -1,81 +1,210 @@
+/* 登录页面 - Material Design 3 风格 */
 .login-page {
   min-height: 100vh;
-  background: linear-gradient(180deg, #22C55E 0%, #16A34A 100%);
-  padding: 120rpx 40rpx 40rpx;
+  background: #f5f7f5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 128rpx 48rpx 48rpx;
   box-sizing: border-box;
+  position: relative;
+  overflow: hidden;
 }
 
-.login-header {
-  text-align: center;
+/* 顶部导航栏 */
+.login-header-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 128rpx;
+  background: #eff1ef;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  padding: 0 48rpx 24rpx;
+  box-sizing: border-box;
+  z-index: 50;
+}
+
+.header-spacer {
+  width: 48rpx;
+}
+
+.header-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #9b9d9c;
+  letter-spacing: 2rpx;
+}
+
+/* 品牌区域 */
+.brand-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 48rpx;
   margin-bottom: 80rpx;
-  color: #fff;
+  width: 100%;
 }
 
-.app-name {
-  display: block;
-  font-size: 56rpx;
-  font-weight: bold;
-  margin-bottom: 16rpx;
+.logo-wrapper {
+  position: relative;
+  margin-bottom: 64rpx;
 }
 
-.app-slogan {
-  display: block;
-  font-size: 28rpx;
-  opacity: 0.9;
+.logo-glow {
+  position: absolute;
+  top: -32rpx;
+  left: -32rpx;
+  right: -32rpx;
+  bottom: -32rpx;
+  background: rgba(145, 247, 142, 0.3);
+  border-radius: 50%;
+  filter: blur(64rpx);
 }
 
-.login-card {
-  background: #fff;
-  border-radius: 24rpx;
-  padding: 60rpx 40rpx;
-  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.1);
+.logo-img {
+  position: relative;
+  width: 320rpx;
+  height: 320rpx;
+  z-index: 1;
 }
 
-.login-title {
-  display: block;
-  font-size: 40rpx;
-  font-weight: bold;
-  color: #333;
-  margin-bottom: 16rpx;
+.brand-text {
   text-align: center;
+  margin-top: 8rpx;
 }
 
-.login-tip {
+.brand-name {
+  display: block;
+  font-size: 60rpx;
+  font-weight: 900;
+  color: #006b1b;
+  letter-spacing: -1rpx;
+  line-height: 1.1;
+  margin-bottom: 0;
+}
+
+.brand-subname {
+  display: block;
+  font-size: 36rpx;
+  font-weight: 700;
+  color: #595c5b;
+  line-height: 1.15;
+  margin-bottom: 20rpx;
+}
+
+.brand-slogan {
   display: block;
   font-size: 26rpx;
-  color: #999;
-  margin-bottom: 60rpx;
-  text-align: center;
+  color: #747776;
+  font-weight: 500;
+  max-width: 480rpx;
+  line-height: 1.5;
+}
+
+/* 登录操作区域 */
+.action-section {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 64rpx;
+}
+
+.btn-wrapper {
+  width: 100%;
+  padding: 8rpx;
+  background: #e6e9e7;
+  border-radius: 56rpx;
+  margin-bottom: 64rpx;
 }
 
 .wx-login-btn {
-  background: #07C160;
-  color: #fff;
-  font-size: 32rpx;
-  border-radius: 44rpx;
-  margin-bottom: 24rpx;
-}
-
-.default-login-btn {
-  background: #F3F4F6;
-  color: #374151;
-  font-size: 28rpx;
-  border-radius: 44rpx;
-  margin-bottom: 40rpx;
-}
-
-.agreement-row {
+  width: 100%;
+  height: 112rpx;
+  background: linear-gradient(135deg, #006b1b 0%, #005d16 100%);
+  color: #d1ffc8;
+  font-size: 36rpx;
+  font-weight: 700;
+  border-radius: 48rpx;
+  border: none;
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 24rpx;
+  box-shadow: 0 24rpx 80rpx rgba(0, 107, 27, 0.15);
+  line-height: 112rpx;
+  padding: 0;
+  margin: 0;
+}
+
+.wx-login-btn::after {
+  border: none;
+}
+
+.btn-icon {
+  font-size: 40rpx;
+  line-height: 1;
+}
+
+.btn-text {
+  font-size: 36rpx;
+  font-weight: 700;
+  color: #d1ffc8;
+}
+
+/* 隐私协议 */
+.agreement-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 16rpx;
+  width: 100%;
+  max-width: 600rpx;
+}
+
+.agreement-checkbox {
+  margin-top: 4rpx;
+  transform: scale(0.85);
+  transform-origin: left top;
 }
 
 .agreement-text {
   font-size: 24rpx;
-  color: #666;
-  margin-left: 12rpx;
+  color: #747776;
+  line-height: 1.6;
+  flex: 1;
 }
 
 .link {
-  color: #22C55E;
+  color: #006b1b;
+  font-weight: 700;
+}
+
+/* 背景装饰光晕 */
+.bg-decoration {
+  position: fixed;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.bg-top-right {
+  top: -160rpx;
+  right: -128rpx;
+  width: 512rpx;
+  height: 512rpx;
+  background: rgba(145, 247, 142, 0.2);
+  filter: blur(200rpx);
+}
+
+.bg-bottom-left {
+  bottom: -192rpx;
+  left: -160rpx;
+  width: 640rpx;
+  height: 640rpx;
+  background: rgba(253, 192, 3, 0.1);
+  filter: blur(240rpx);
 }

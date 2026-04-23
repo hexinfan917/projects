@@ -3,7 +3,11 @@ import './index.scss'
 
 export default function Privacy() {
   return (
-    <View className='privacy-page'>
+    <View className='privacy-page' style={{ paddingTop: '140rpx' }}>
+
+        <View className='page-back' onClick={() => Taro.navigateBack()}>
+          <Text className='page-back-icon'>←</Text>
+        </View>
       <View className='content-section'>
         <Text className='title'>隐私政策</Text>
         <Text className='paragraph'>

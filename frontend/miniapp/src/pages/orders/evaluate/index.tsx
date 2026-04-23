@@ -53,7 +53,11 @@ export default function OrderEvaluate() {
   }
 
   return (
-    <View className='evaluate-page'>
+    <View className='evaluate-page' style={{ paddingTop: '140rpx' }}>
+
+        <View className='page-back' onClick={() => Taro.navigateBack()}>
+          <Text className='page-back-icon'>←</Text>
+        </View>
       <View className='card'>
         <Text className='card-title'>订单评价</Text>
         <Text className='route-name'>{order?.route_name}</Text>

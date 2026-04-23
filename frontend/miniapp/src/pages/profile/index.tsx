@@ -1,22 +1,46 @@
 import { useEffect, useState } from 'react'
 import Taro, { useDidShow } from '@tarojs/taro'
 import { View, Text, Image } from '@tarojs/components'
+const logoIcon = '/assets/toplogo.png'
 import { getUserProfile, setActiveTab } from '../../utils/api'
 import './index.scss'
 
+const ICON_MAP: Record<string, string> = {
+  '优惠券': '/assets/icons/profile/coupon.png',
+  '收藏夹': '/assets/icons/profile/favorite.png',
+  '浏览足迹': '/assets/icons/profile/footprint.png',
+  '地址管理': '/assets/icons/profile/address.png',
+  '出行人管理': '/assets/icons/profile/traveler.png',
+  '我的足迹': '/assets/icons/profile/footprint.png',
+  '联系客服': '/assets/icons/profile/service.png',
+  '关于我们': '/assets/icons/profile/about.png',
+  '设置': '/assets/icons/profile/settings.png',
+  '待支付': '/assets/icons/profile/pending.png',
+  '待出行': '/assets/icons/profile/travel.png',
+  '待评价': '/assets/icons/profile/review.png',
+  '退款/售后': '/assets/icons/profile/refund.png',
+  '默认头像': '/assets/icons/profile/default-avatar.png',
+}
+
 const SERVICES = [
-  { label: '优惠券', icon: '🎫', count: 5 },
-  { label: '收藏夹', icon: '⭐', count: 12 },
-  { label: '浏览足迹', icon: '👣' },
-  { label: '地址管理', icon: '📍' },
+  { label: '优惠券', count: 5 },
+  { label: '收藏夹', count: 12 },
+  { label: '浏览足迹' },
+  { label: '地址管理' },
 ]
 
 const MORE = [
-  { label: '出行人管理', icon: '👤', path: '/pages/profile/travelers/index' },
-  { label: '我的足迹', icon: '👣', path: '/pages/profile/footprint/index' },
-  { label: '联系客服', icon: '🎧', action: 'service' },
-  { label: '关于我们', icon: 'ℹ️', path: '/pages/profile/about/index' },
-  { label: '设置', icon: '⚙️', path: '/pages/profile/settings/index' },
+  { label: '出行人管理', path: '/pages/profile/travelers/index' },
+  { label: '我的足迹', path: '/pages/profile/footprint/index' },
+  { label: '联系客服', action: 'service' },
+  { label: '关于我们', path: '/pages/profile/about/index' },
+  { label: '设置', path: '/pages/profile/settings/index' },
+]
+
+const ORDER_ENTRIES = [
+  { label: '待支付', status: '10' },
+  { label: '待出行', status: '20' },
+  { label: '退款/售后', action: 'refund' },
 ]
 
 const showDeveloping = () => {
@@ -100,12 +124,23 @@ export default function Profile() {
 
   return (
     <View className='profile-page'>
+      <View className='custom-navbar'>
+        <View className='navbar-bg' />
+        <View className='navbar-content'>
+          <View className='navbar-left'>
+            <Image className='navbar-icon' src={logoIcon} mode='aspectFit' />
+            <Text className='navbar-title'>尾巴旅行</Text>
+          </View>
+        </View>
+      </View>
       <View className='user-header'>
         <View className='user-top'>
           {user?.avatar ? (
             <Image className='avatar' src={user.avatar} mode='aspectFill' style={{ width: '120rpx', height: '120rpx' }} />
           ) : (
-            <View className='avatar avatar-placeholder' />
+            <View className='avatar avatar-placeholder'>
+              <Image className='avatar-icon-img' src={ICON_MAP['默认头像']} mode='aspectFit' />
+            </View>
           )}
           <View className='user-info'>
             {user ? (
@@ -114,42 +149,54 @@ export default function Profile() {
               </>
             ) : (
               <View className='login-wrap' onClick={goLogin}>
-                <Text className='login-text'>点击登录 / 注册</Text>
+                <Text className='login-text'>点击登录/注册</Text>
+                <Text className='login-subtext'>解锁更多宠友旅行精彩内容</Text>
               </View>
             )}
           </View>
+          {!user && (
+            <View className='login-arrow' onClick={goLogin}>
+              <Text className='login-arrow-text'>›</Text>
+            </View>
+          )}
         </View>
-        <View className='user-actions'>
-          <View className='action-btn' onClick={() => Taro.navigateTo({ url: '/pages/profile/edit/index' })}>
-            <Text className='action-btn-text'>编辑资料</Text>
+        {user && (
+          <View className='user-actions'>
+            <View className='action-btn' onClick={() => Taro.navigateTo({ url: '/pages/profile/edit/index' })}>
+              <Text className='action-btn-text'>编辑资料</Text>
+            </View>
+            <View className='action-btn' onClick={() => Taro.navigateTo({ url: '/pages/notifications/list/index' })}>
+              <Text className='action-btn-text'>消息通知</Text>
+            </View>
           </View>
-        </View>
+        )}
       </View>
 
       <View className='card'>
         <View className='card-header'>
           <Text className='card-title'>我的订单</Text>
           <View className='card-more' onClick={() => goOrders()}>
-            <Text className='card-more-text'>全部 ></Text>
+            <Text className='card-more-text'>全部 {'>'}</Text>
           </View>
         </View>
         <View className='order-entries'>
-          <View className='entry' onClick={() => goOrders('10')}>
-            <Text className='entry-icon'>💳</Text>
-            <Text className='entry-label'>待支付</Text>
-          </View>
-          <View className='entry' onClick={() => goOrders('20')}>
-            <Text className='entry-icon'>🎒</Text>
-            <Text className='entry-label'>待出行</Text>
-          </View>
-          <View className='entry' onClick={() => goOrders('60')}>
-            <Text className='entry-icon'>⭐</Text>
-            <Text className='entry-label'>待评价</Text>
-          </View>
-          <View className='entry' onClick={showDeveloping}>
-            <Text className='entry-icon'>🔄</Text>
-            <Text className='entry-label'>退款/售后</Text>
-          </View>
+          {ORDER_ENTRIES.map(e => (
+            <View
+              key={e.label}
+              className='entry'
+              onClick={() => {
+                if (e.action === 'refund') {
+                  if (!checkLogin()) return
+                  Taro.navigateTo({ url: '/pages/orders/list/index?status=refund' })
+                } else if (e.status) {
+                  goOrders(e.status)
+                }
+              }}
+            >
+              <Image className='entry-icon-img' src={ICON_MAP[e.label]} mode='aspectFit' />
+              <Text className='entry-label'>{e.label}</Text>
+            </View>
+          ))}
         </View>
       </View>
 
@@ -172,9 +219,9 @@ export default function Profile() {
                 }
               }}
             >
-              <Text className='more-icon'>{m.icon}</Text>
+              <Image className='more-icon-img' src={ICON_MAP[m.label]} mode='aspectFit' />
               <Text className='more-label'>{m.label}</Text>
-              <Text className='more-arrow'>></Text>
+              <Text className='more-arrow'>{'>'}</Text>
             </View>
           ))}
         </View>

@@ -46,6 +46,11 @@ export default defineConfig({
           path: '/routes/list',
           component: './Routes/List',
         },
+        {
+          name: '路线类型',
+          path: '/routes/types',
+          component: './RouteTypes',
+        },
       ],
     },
     {
@@ -105,6 +110,21 @@ export default defineConfig({
       name: '内容管理',
       path: '/articles',
       component: './Articles',
+    },
+    {
+      name: '首页轮播',
+      path: '/banners',
+      component: './Banners',
+    },
+    {
+      name: '狗狗回顾',
+      path: '/reviews',
+      component: './Reviews',
+    },
+    {
+      name: '公益管理',
+      path: '/charities',
+      component: './Charities',
     },
     {
       name: '登录',

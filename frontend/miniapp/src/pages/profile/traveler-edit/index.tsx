@@ -55,7 +55,11 @@ export default function TravelerEdit() {
   }
 
   return (
-    <View className='traveler-edit'>
+    <View className='traveler-edit' style={{ paddingTop: '140rpx' }}>
+
+        <View className='page-back' onClick={() => Taro.navigateBack()}>
+          <Text className='page-back-icon'>←</Text>
+        </View>
       <View className='form-section'>
         <View className='input-row'>
           <Text className='label'>姓名</Text>

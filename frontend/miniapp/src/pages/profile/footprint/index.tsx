@@ -34,7 +34,11 @@ export default function Footprint() {
   }
 
   return (
-    <View className='footprint-page'>
+    <View className='footprint-page' style={{ paddingTop: '140rpx' }}>
+
+        <View className='page-back' onClick={() => Taro.navigateBack()}>
+          <Text className='page-back-icon'>←</Text>
+        </View>
       <View className='search-bar'>
         <Text className='search-icon'>🔍</Text>
         <Input

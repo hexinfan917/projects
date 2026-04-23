@@ -99,3 +99,73 @@ page {
 .mt-24 { margin-top: 24rpx; }
 .mb-16 { margin-bottom: 16rpx; }
 .mb-24 { margin-bottom: 24rpx; }
+
+// 自定义导航栏
+.custom-navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  height: 200rpx;
+  padding-top: 77rpx;
+  box-sizing: border-box;
+}
+
+.navbar-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(to bottom, rgba(145, 247, 142, 0.85), rgba(145, 247, 142, 0.25));
+  z-index: -1;
+}
+
+.navbar-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 88rpx;
+  padding: 0 24rpx;
+}
+
+.navbar-left {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+}
+
+.navbar-icon {
+  width: 100rpx;
+  height: 100rpx;
+}
+
+.navbar-title {
+  font-size: 32rpx;
+  font-weight: 700;
+  color: #006b1b;
+  letter-spacing: 1rpx;
+}
+
+// 页面返回按钮
+.page-back {
+  position: fixed;
+  top: 77rpx;
+  left: 24rpx;
+  z-index: 101;
+  width: 72rpx;
+  height: 72rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.85);
+  border-radius: 50%;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.08);
+}
+
+.page-back-icon {
+  font-size: 36rpx;
+  color: #006b1b;
+  font-weight: 700;
+}

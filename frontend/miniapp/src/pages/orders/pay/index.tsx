@@ -30,7 +30,11 @@ export default function OrderPay() {
   if (!order) return <View className='order-pay'><Text>加载中...</Text></View>
 
   return (
-    <View className='order-pay'>
+    <View className='order-pay' style={{ paddingTop: '140rpx' }}>
+
+        <View className='page-back' onClick={() => Taro.navigateBack()}>
+          <Text className='page-back-icon'>←</Text>
+        </View>
       <View className='pay-card'>
         <Text className='pay-title'>订单支付</Text>
         <Text className='pay-amount'>￥{order.pay_amount}</Text>

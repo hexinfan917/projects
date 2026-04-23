@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react'
 import Taro from '@tarojs/taro'
-import { View, Text, Image, ScrollView, Button, RichText } from '@tarojs/components'
+import { View, Text, Image, ScrollView, Button, RichText, Swiper, SwiperItem } from '@tarojs/components'
 import { getRouteDetail, getRouteSchedules } from '../../../utils/api'
 import './index.scss'
 
@@ -63,6 +63,11 @@ export default function RouteDetail() {
   }, [calendarDays, scheduleMap, year, month])
 
   const handleOpenCalendar = () => {
+    const token = Taro.getStorageSync('access_token')
+    if (!token) {
+      Taro.navigateTo({ url: '/pages/login/index' })
+      return
+    }
     if (availableCount === 0) {
       Taro.showToast({ title: '当月暂无营期', icon: 'none' })
       return
@@ -87,10 +92,26 @@ export default function RouteDetail() {
     return <View className='route-detail'><Text>加载中...</Text></View>
   }
 
+  const bannerImages = (route.gallery?.length > 0 ? route.gallery : [route.cover_image]).filter(Boolean)
+  const images = bannerImages.length > 0 ? bannerImages : ['https://via.placeholder.com/750x420']
+
   return (
-    <View className='route-detail'>
+    <View className='route-detail' style={{ paddingTop: '140rpx' }}>
+      <View className='page-back' onClick={() => Taro.navigateBack()}>
+        <Text className='page-back-icon'>←</Text>
+      </View>
       <ScrollView className='detail-scroll' scrollY>
-        <Image className='cover-image' src={route.cover_image || 'https://via.placeholder.com/750x420'} mode='aspectFill' />
+        {images.length === 1 ? (
+          <Image className='cover-image' src={images[0].startsWith('http') ? images[0] : `http://localhost:8081${images[0]}`} mode='aspectFill' />
+        ) : (
+          <Swiper className='cover-swiper' indicatorDots autoplay interval={4000}>
+            {images.map((img: string, idx: number) => (
+              <SwiperItem key={idx}>
+                <Image className='cover-image' src={img.startsWith('http') ? img : `http://localhost:8081${img}`} mode='aspectFill' />
+              </SwiperItem>
+            ))}
+          </Swiper>
+        )}
 
         <View className='info-card'>
           <Text className='route-name'>{route.name}</Text>
@@ -144,6 +165,13 @@ export default function RouteDetail() {
                 <RichText className='rich-text' nodes={route.fee_exclude} />
               </View>
             )}
+          </View>
+        ) : null}
+
+        {route.notice ? (
+          <View className='section'>
+            <Text className='section-title'>注意事项</Text>
+            <RichText className='rich-text' nodes={route.notice} />
           </View>
         ) : null}
       </ScrollView>

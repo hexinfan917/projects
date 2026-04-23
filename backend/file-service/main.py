@@ -7,8 +7,11 @@ import sys
 import os
 import uuid
 import shutil
+import base64
+import re
 from pathlib import Path
 from datetime import datetime
+from pydantic import BaseModel
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
@@ -26,6 +29,29 @@ from common.response import success
 settings.app_name = "file-service"
 settings.app_port = 8008
 logger = setup_logger("file-service")
+
+# OSS 配置与初始化
+OSS_ENABLED = False
+OSS_BUCKET = None
+OSS_BUCKET_NAME = ""
+OSS_ENDPOINT = ""
+
+try:
+    import oss2
+    oss_config = settings.oss
+    if oss_config.endpoint and oss_config.access_key_id and oss_config.access_key_secret and oss_config.bucket:
+        auth = oss2.Auth(oss_config.access_key_id, oss_config.access_key_secret)
+        OSS_BUCKET = oss2.Bucket(auth, oss_config.endpoint, oss_config.bucket)
+        OSS_BUCKET_NAME = oss_config.bucket
+        OSS_ENDPOINT = oss_config.endpoint
+        OSS_ENABLED = True
+        logger.info(f"OSS initialized: {oss_config.bucket} @ {oss_config.endpoint}")
+    else:
+        logger.warning("OSS not configured, using local storage")
+except ImportError:
+    logger.warning("oss2 not installed, using local storage")
+except Exception as e:
+    logger.error(f"OSS init failed: {e}, using local storage")
 
 # 上传配置
 UPLOAD_DIR = Path(__file__).parent / "uploads"
@@ -90,41 +116,56 @@ def validate_file(file: UploadFile, file_type: str = "image"):
 
 
 async def save_upload_file(upload_file: UploadFile, folder: str = "") -> dict:
-    """保存上传文件"""
+    """保存上传文件（优先OSS，未配置则本地存储）"""
+    global OSS_ENABLED
     # 生成唯一文件名
     unique_filename = generate_unique_filename(upload_file.filename or "unknown")
     
-    # 按日期组织文件夹
+    # 按日期组织路径
     date_folder = datetime.now().strftime("%Y%m")
     if folder:
-        save_dir = UPLOAD_DIR / folder / date_folder
+        object_key = f"{folder}/{date_folder}/{unique_filename}"
     else:
-        save_dir = UPLOAD_DIR / date_folder
-    save_dir.mkdir(parents=True, exist_ok=True)
+        object_key = f"{date_folder}/{unique_filename}"
     
-    file_path = save_dir / unique_filename
+    # 读取文件内容
+    content = await upload_file.read()
+    file_size = len(content)
     
-    # 保存文件
-    try:
-        with open(file_path, "wb") as buffer:
-            shutil.copyfileobj(upload_file.file, buffer)
-    except Exception as e:
-        logger.error(f"Failed to save file: {e}")
-        raise HTTPException(status_code=500, detail="文件保存失败")
-    finally:
-        upload_file.file.close()
+    # 上传到OSS或本地
+    if OSS_ENABLED and OSS_BUCKET:
+        try:
+            OSS_BUCKET.put_object(object_key, content)
+            # 构建OSS访问URL（公读或CDN域名）
+            # 如果配置了自定义域名，优先使用自定义域名
+            oss_domain = os.getenv("OSS_CUSTOM_DOMAIN", f"{OSS_BUCKET_NAME}.{OSS_ENDPOINT}")
+            file_url = f"https://{oss_domain}/{object_key}"
+            logger.info(f"File uploaded to OSS: {object_key}")
+        except Exception as e:
+            logger.error(f"OSS upload failed: {e}, falling back to local storage")
+            # 回退到本地存储
+            OSS_ENABLED = False
     
-    # 计算文件大小
-    file_size = file_path.stat().st_size
+    if not OSS_ENABLED:
+        # 本地存储
+        if folder:
+            save_dir = UPLOAD_DIR / folder / date_folder
+        else:
+            save_dir = UPLOAD_DIR / date_folder
+        save_dir.mkdir(parents=True, exist_ok=True)
+        
+        file_path = save_dir / unique_filename
+        
+        try:
+            with open(file_path, "wb") as buffer:
+                buffer.write(content)
+        except Exception as e:
+            logger.error(f"Failed to save file: {e}")
+            raise HTTPException(status_code=500, detail="文件保存失败")
+        
+        file_url = f"/api/v1/files/static/{object_key}"
     
-    # 构建访问 URL
-    if folder:
-        relative_path = f"{folder}/{date_folder}/{unique_filename}"
-    else:
-        relative_path = f"{date_folder}/{unique_filename}"
-    
-    # 构建 URL (使用当前服务地址)
-    file_url = f"/api/v1/files/static/{relative_path}"
+    upload_file.file.close()
     
     return {
         "filename": unique_filename,
@@ -133,8 +174,89 @@ async def save_upload_file(upload_file: UploadFile, folder: str = "") -> dict:
         "full_url": file_url,
         "size": file_size,
         "content_type": upload_file.content_type,
-        "path": str(relative_path)
+        "path": object_key,
+        "storage": "oss" if OSS_ENABLED else "local"
     }
+
+
+async def save_base64_file(base64_str: str, folder: str = "images") -> dict:
+    """保存 base64 图片（优先OSS，未配置则本地存储）"""
+    match = re.match(r'data:(image/\w+);base64,(.+)', base64_str)
+    if not match:
+        raise HTTPException(status_code=400, detail="无效的 base64 格式")
+    
+    mime_type = match.group(1)
+    base64_data = match.group(2)
+    
+    if mime_type not in ALLOWED_IMAGE_TYPES:
+        raise HTTPException(status_code=400, detail=f"不支持的图片格式: {mime_type}")
+    
+    try:
+        file_content = base64.b64decode(base64_data)
+    except Exception:
+        raise HTTPException(status_code=400, detail="base64 解码失败")
+    
+    file_size = len(file_content)
+    if file_size > MAX_IMAGE_SIZE:
+        raise HTTPException(status_code=400, detail=f"图片大小超过限制 (最大 {MAX_IMAGE_SIZE // 1024 // 1024}MB)")
+    
+    ext_map = {
+        "image/jpeg": ".jpg",
+        "image/jpg": ".jpg",
+        "image/png": ".png",
+        "image/gif": ".gif",
+        "image/webp": ".webp",
+    }
+    ext = ext_map.get(mime_type, ".jpg")
+    
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    unique_id = uuid.uuid4().hex[:8]
+    unique_filename = f"{timestamp}_{unique_id}{ext}"
+    
+    date_folder = datetime.now().strftime("%Y%m")
+    object_key = f"{folder}/{date_folder}/{unique_filename}"
+    
+    global OSS_ENABLED
+    if OSS_ENABLED and OSS_BUCKET:
+        try:
+            OSS_BUCKET.put_object(object_key, file_content)
+            oss_domain = os.getenv("OSS_CUSTOM_DOMAIN", f"{OSS_BUCKET_NAME}.{OSS_ENDPOINT}")
+            file_url = f"https://{oss_domain}/{object_key}"
+        except Exception as e:
+            logger.error(f"OSS upload failed: {e}, falling back to local storage")
+            OSS_ENABLED = False
+    
+    if not OSS_ENABLED:
+        save_dir = UPLOAD_DIR / folder / date_folder
+        save_dir.mkdir(parents=True, exist_ok=True)
+        file_path = save_dir / unique_filename
+        
+        with open(file_path, "wb") as buffer:
+            buffer.write(file_content)
+        
+        file_url = f"/api/v1/files/static/{object_key}"
+    
+    return {
+        "filename": unique_filename,
+        "url": file_url,
+        "full_url": file_url,
+        "size": file_size,
+        "content_type": mime_type,
+        "path": object_key,
+        "storage": "oss" if OSS_ENABLED else "local"
+    }
+
+
+class Base64UploadRequest(BaseModel):
+    base64: str
+
+
+@app.post("/api/v1/files/upload/base64")
+async def upload_base64(data: Base64UploadRequest):
+    """上传 base64 图片"""
+    result = await save_base64_file(data.base64, folder="images")
+    logger.info(f"Base64 image uploaded: {result['filename']}")
+    return success(result)
 
 
 @app.get("/health")

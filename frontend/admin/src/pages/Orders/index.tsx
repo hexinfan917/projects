@@ -75,8 +75,51 @@ export default function OrderList() {
     }
   };
 
-  const handleExport = () => {
-    message.info('导出功能开发中');
+  const handleExport = async () => {
+    try {
+      message.loading('正在导出...', 0);
+      // 获取当前筛选条件下的所有订单（最多5000条）
+      const params = tableRef.current?.getParams() || {};
+      const res = await request('/api/v1/admin/orders', {
+        params: { ...params, page: 1, page_size: 5000 },
+      });
+      message.destroy();
+      
+      if (res.code !== 200 || !res.data?.orders?.length) {
+        message.warning('暂无数据可导出');
+        return;
+      }
+      
+      const orders = res.data.orders;
+      const headers = ['订单号', '状态', '路线名称', '出行日期', '联系人', '联系电话', '出行人数', '宠物数', '订单金额', '实付金额', '创建时间'];
+      const rows = orders.map((o: any) => [
+        o.order_no,
+        statusMap[o.status]?.text || o.status,
+        o.route_name,
+        o.travel_date,
+        o.contact?.name || '',
+        o.contact?.phone || '',
+        o.participant_count,
+        o.pet_count,
+        o.total_amount,
+        o.pay_amount,
+        o.created_at ? dayjs(o.created_at).format('YYYY-MM-DD HH:mm:ss') : '',
+      ]);
+      
+      // 构建 CSV
+      const csvContent = [headers, ...rows].map(r => r.map((c: any) => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
+      const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `订单导出_${dayjs().format('YYYYMMDD_HHmmss')}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      message.success(`已导出 ${orders.length} 条订单`);
+    } catch (error) {
+      message.destroy();
+      message.error('导出失败');
+    }
   };
 
   const columns = [

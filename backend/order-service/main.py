@@ -5,6 +5,8 @@
 """
 import sys
 import json
+import os
+import asyncio
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
@@ -14,7 +16,9 @@ from typing import Optional, List
 from datetime import datetime, timedelta, date
 from pydantic import BaseModel
 import httpx
-from sqlalchemy import select, func
+import hmac
+import hashlib
+from sqlalchemy import select, func, text
 from sqlalchemy.ext.asyncio import AsyncSession
 from common.config import settings
 from common.redis_client import redis_client
@@ -22,17 +26,85 @@ from common.middleware import setup_cors, RequestLogMiddleware
 from common.exceptions import APIException, api_exception_handler
 from common.logger import setup_logger
 from common.dependencies import get_current_user
-from common.database import get_db
+from common.database import get_db, AsyncSessionLocal
 from common.response import success
 
 settings.app_name = "order-service"
 settings.app_port = 8003
 logger = setup_logger("order-service")
 
+# 核销密钥（应与环境变量或配置中心同步）
+VERIFY_SECRET = os.getenv("ORDER_VERIFY_SECRET", "quandouxing-verify-secret-2024")
+
+
+def generate_verify_code(order_no: str) -> str:
+    """生成订单核销码（HMAC-SHA256）"""
+    return hmac.new(
+        VERIFY_SECRET.encode('utf-8'),
+        order_no.encode('utf-8'),
+        hashlib.sha256
+    ).hexdigest()[:16].upper()
+
+
+def verify_order_code(order_no: str, code: str) -> bool:
+    """验证核销码"""
+    expected = generate_verify_code(order_no)
+    return hmac.compare_digest(expected, code.upper())
+
+
+async def auto_cancel_expired_orders():
+    """
+    后台任务：自动取消超过15分钟未支付的订单并释放库存
+    """
+    while True:
+        try:
+            await asyncio.sleep(60)  # 每分钟检查一次
+            async with AsyncSessionLocal() as db:
+                # 查询所有待支付且创建时间超过15分钟的订单
+                result = await db.execute(
+                    text("""
+                        SELECT id, order_no, schedule_id, participant_count 
+                        FROM orders 
+                        WHERE status = 10 AND created_at < DATE_SUB(NOW(), INTERVAL 15 MINUTE)
+                    """)
+                )
+                expired_orders = result.mappings().all()
+                
+                for row in expired_orders:
+                    order_id = row["id"]
+                    schedule_id = row["schedule_id"]
+                    quantity = row["participant_count"]
+                    order_no = row["order_no"]
+                    
+                    # 取消订单
+                    await db.execute(
+                        text("UPDATE orders SET status = 30, updated_at = NOW() WHERE id = :order_id"),
+                        {"order_id": order_id}
+                    )
+                    
+                    # 恢复库存
+                    if schedule_id and quantity:
+                        await db.execute(
+                            text("""
+                                UPDATE route_schedules 
+                                SET stock = stock + :quantity, sold = sold - :quantity 
+                                WHERE id = :schedule_id
+                            """),
+                            {"schedule_id": schedule_id, "quantity": quantity}
+                        )
+                    
+                    await db.commit()
+                    logger.info(f"Auto cancelled expired order: {order_no}, restored stock for schedule {schedule_id}")
+        except Exception as e:
+            logger.error(f"Auto cancel task error: {e}")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info(f"Starting {settings.app_name}...")
     await redis_client.connect()
+    # 启动自动取消任务
+    asyncio.create_task(auto_cancel_expired_orders())
     yield
     await redis_client.close()
 
@@ -192,6 +264,88 @@ def generate_order_no() -> str:
     now = datetime.now()
     return f"QD{now.strftime('%Y%m%d%H%M%S')}{now.microsecond // 1000:03d}"
 
+
+# ==================== 订单核销 API ====================
+
+@app.post("/api/v1/orders/{order_id}/verify")
+async def verify_order(
+    order_id: int,
+    data: dict,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    订单核销（扫码核销）
+    
+    Request Body:
+        - verify_code: 核销码（与订单号匹配）
+    """
+    from app.models.order import Order
+    
+    verify_code = data.get("verify_code", "")
+    
+    result = await db.execute(select(Order).where(Order.id == order_id))
+    order = result.scalar_one_or_none()
+    
+    if not order:
+        return {"code": 404, "message": "订单不存在", "data": None}
+    
+    # 校验订单状态（只能核销待出行订单）
+    if order.status != 20:
+        return {"code": 400, "message": f"订单状态不允许核销，当前状态: {STATUS_MAP.get(order.status, order.status)}", "data": None}
+    
+    # 校验核销码
+    if not verify_order_code(order.order_no, verify_code):
+        logger.warning(f"Invalid verify code for order {order_id}: {verify_code}")
+        return {"code": 400, "message": "核销码错误", "data": None}
+    
+    # 核销：更新订单状态为已完成（待评价）
+    order.status = 60
+    order.updated_at = datetime.now()
+    await db.commit()
+    
+    logger.info(f"Order verified: {order.order_no}, id={order_id}")
+    
+    return success({
+        "order_id": order_id,
+        "order_no": order.order_no,
+        "status": 60,
+        "status_name": "待评价",
+        "verified_at": datetime.now().isoformat()
+    }, message="核销成功")
+
+
+@app.post("/api/v1/admin/orders/{order_id}/verify")
+async def admin_verify_order(
+    order_id: int,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    管理后台直接核销订单（无需核销码，用于线下特殊情况）
+    """
+    from app.models.order import Order
+    
+    result = await db.execute(select(Order).where(Order.id == order_id))
+    order = result.scalar_one_or_none()
+    
+    if not order:
+        return {"code": 404, "message": "订单不存在", "data": None}
+    
+    if order.status != 20:
+        return {"code": 400, "message": f"订单状态不允许核销，当前: {STATUS_MAP.get(order.status, order.status)}", "data": None}
+    
+    order.status = 60
+    order.updated_at = datetime.now()
+    await db.commit()
+    
+    logger.info(f"Order admin verified: {order.order_no}, id={order_id}")
+    
+    return success({
+        "order_id": order_id,
+        "order_no": order.order_no,
+        "status": 60
+    }, message="核销成功")
+
+
 # 库存相关函数已移除（不限制名额）
 
 
@@ -201,13 +355,12 @@ async def create_order(
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """创建订单（保存到数据库，不限制库存）"""
+    """创建订单（校验库存并扣减）"""
     from app.models.order import Order
     
     user_id = current_user.get("user_id", 1)
     
-    # 计算金额（不限制库存）
-    # 路线费用只收一次（不按人数），保险费用已由前端按数量计算好
+    # 计算金额
     total_amount = (data.route_price + 
                    data.insurance_price + 
                    data.equipment_price)
@@ -221,6 +374,20 @@ async def create_order(
         travel_date = date.fromisoformat(data.travel_date)
     except:
         travel_date = date.today()
+    
+    # 校验并扣减库存
+    quantity = data.participant_count or 1
+    stock_result = await db.execute(
+        text("""
+            UPDATE route_schedules 
+            SET stock = stock - :quantity, sold = sold + :quantity 
+            WHERE id = :schedule_id AND stock >= :quantity
+        """),
+        {"schedule_id": data.schedule_id, "quantity": quantity}
+    )
+    
+    if stock_result.rowcount == 0:
+        raise HTTPException(status_code=400, detail="该排期库存不足或已售罄，请选择其他日期")
     
     # 创建订单
     order = Order(
@@ -242,7 +409,7 @@ async def create_order(
         discount_amount=data.discount_amount,
         pay_amount=pay_amount,
         status=10,
-        qrcode=f"https://via.placeholder.com/200x200/FF8C42/FFFFFF?text={order_no}"
+        qrcode=generate_verify_code(order_no)
     )
     
     db.add(order)
@@ -345,13 +512,22 @@ async def cancel_order(
     if order.status != 10:  # 只能取消待支付订单
         return success({"message": "订单状态不允许取消"})
     
-    # 不恢复库存（无库存限制）
+    # 恢复库存
+    if order.schedule_id and order.participant_count:
+        await db.execute(
+            text("""
+                UPDATE route_schedules 
+                SET stock = stock + :quantity, sold = sold - :quantity 
+                WHERE id = :schedule_id
+            """),
+            {"schedule_id": order.schedule_id, "quantity": order.participant_count}
+        )
     
     order.status = 30  # 已取消
     await db.flush()
     await db.commit()
     
-    logger.info(f"Order cancelled: {order_id}, stock restored")
+    logger.info(f"Order cancelled: {order_id}, stock restored for schedule {order.schedule_id}")
     return success({"message": "取消成功，库存已释放"})
 
 @app.post("/api/v1/orders/{order_id}/refund")
@@ -471,15 +647,57 @@ async def evaluate_order(
     })
 
 @app.post("/api/v1/orders/pay/callback")
-async def pay_callback(data: dict):
-    """支付回调"""
+async def pay_callback(data: dict, db: AsyncSession = Depends(get_db)):
+    """
+    支付回调 - 更新订单支付状态
+    
+    由 pay-service 调用，通知订单支付结果
+    """
     logger.info(f"Pay callback received: {data}")
     
-    # 处理支付结果
-    # 1. 验证签名
-    # 2. 更新订单状态
-    # 3. 扣减库存
-    # 4. 发送通知
+    from app.models.order import Order
+    
+    # 获取订单标识
+    order_no = data.get("order_no") or data.get("out_trade_no")
+    transaction_id = data.get("transaction_id", "")
+    pay_channel = data.get("pay_channel", "wechat")
+    
+    if not order_no:
+        logger.error("Pay callback missing order_no")
+        return {"code": "FAIL", "message": "Missing order_no"}
+    
+    try:
+        # 查询订单
+        result = await db.execute(select(Order).where(Order.order_no == order_no))
+        order = result.scalar_one_or_none()
+        
+        if not order:
+            logger.error(f"Pay callback order not found: {order_no}")
+            return {"code": "FAIL", "message": "Order not found"}
+        
+        # 只能更新待支付订单
+        if order.status != 10:
+            logger.warning(f"Pay callback order status invalid: {order_no}, status={order.status}")
+            return {"code": "SUCCESS", "message": "Order already processed"}
+        
+        # 更新订单状态
+        order.status = 20  # 待出行
+        order.pay_time = datetime.now()
+        order.pay_channel = pay_channel
+        order.pay_trade_no = transaction_id or f"WX{datetime.now().strftime('%Y%m%d%H%M%S')}"
+        
+        await db.commit()
+        
+        logger.info(f"Order paid via callback: {order_no}, id={order.id}")
+        
+        # TODO: 扣减排期库存（如需恢复库存管理，调用 route-service 扣减库存）
+        # TODO: 发送支付成功通知（短信/推送）
+        
+    except Exception as e:
+        logger.error(f"Pay callback processing error: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
+        return {"code": "FAIL", "message": "Internal error"}
     
     return {"code": "SUCCESS", "message": "OK"}
 
@@ -881,8 +1099,9 @@ async def admin_get_stats(
         today_start = datetime.combine(today, datetime.min.time())
         today_end = datetime.combine(today, datetime.max.time())
         
-        # 总用户数（从用户服务获取，这里先模拟）
-        total_users = 0
+        # 总用户数（直接查询共享数据库）
+        total_users_result = await db.execute(text("SELECT COUNT(*) FROM users WHERE status = 1"))
+        total_users = total_users_result.scalar() or 0
         
         # 今日订单数
         today_orders_result = await db.execute(

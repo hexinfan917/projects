@@ -4,9 +4,9 @@
   padding-bottom: 160px;
 }
 
-/* 橙色头部栏 */
+/* 头部栏 */
 .order-header {
-  background: linear-gradient(135deg, #ff9900 0%, #ff7700 100%);
+  background: #22C55E;
   padding: 36px 28px;
   color: #fff;
   .header-title {
@@ -60,7 +60,7 @@
   color: #666;
   padding: 6px 12px;
   &.primary {
-    color: #ff7700;
+    color: #22C55E;
   }
 }
 
@@ -259,7 +259,7 @@
   z-index: 101;
   pointer-events: auto;
   &.active {
-    background: linear-gradient(135deg, #ff9900 0%, #ff7700 100%);
+    background: #22C55E;
   }
   &.disabled {
     background: #ccc;
@@ -383,7 +383,7 @@
   height: 72px;
   line-height: 72px;
   text-align: center;
-  background: linear-gradient(135deg, #ff9900 0%, #ff7700 100%);
+  background: #22C55E;
   color: #fff;
   font-size: 28px;
   border-radius: 36px;

@@ -1,26 +1,46 @@
-# 犬兜行项目 - 一键启动所有服务
+# 犬兜行项目 - 一键启动所有后端服务
 # 使用说明: 在 PowerShell 中运行 .\start-all-services.ps1
 
+$ErrorActionPreference = "Stop"
+
 Write-Host "========================================" -ForegroundColor Cyan
-Write-Host "  犬兜行项目 - 启动所有服务" -ForegroundColor Cyan
+Write-Host "  犬兜行项目 - 启动所有后端服务" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
 
-# 检查进程是否已在运行
-$ports = @(8031, 8032, 8033, 8005, 8084)
-$running = $false
+# 获取项目根目录
+$ProjectRoot = $PSScriptRoot
+$BackendDir = Join-Path $ProjectRoot "backend"
 
-foreach ($port in $ports) {
-    $conn = netstat -ano | findstr ":$port" | findstr "LISTENING"
+# 服务配置: 名称 = 端口
+$Services = @{
+    "gateway"        = 8081
+    "user-service"   = 8001
+    "route-service"  = 8033
+    "order-service"  = 8003
+    "pay-service"    = 8006
+    "content-service"= 8005
+    "map-service"    = 8004
+    "message-service"= 8007
+    "file-service"   = 8008
+    "charity-service"= 8009
+}
+
+# 先检查端口占用
+Write-Host "检查端口占用..." -ForegroundColor Gray
+$occupied = @()
+foreach ($svc in $Services.GetEnumerator()) {
+    $port = $svc.Value
+    $conn = netstat -ano | findstr ":$port " | findstr "LISTENING"
     if ($conn) {
-        $running = $true
-        Write-Host "端口 $port 已被占用" -ForegroundColor Yellow
+        $occupied += $port
+        Write-Host "  端口 $port 已被占用" -ForegroundColor Yellow
     }
 }
 
-if ($running) {
+if ($occupied.Count -gt 0) {
     Write-Host ""
-    Write-Host "警告: 部分服务可能已在运行" -ForegroundColor Yellow
+    Write-Host "警告: 以下端口已被占用，可能导致启动失败" -ForegroundColor Yellow
     $continue = Read-Host "是否继续? (y/n)"
     if ($continue -ne 'y') {
         exit
@@ -29,30 +49,40 @@ if ($running) {
 
 Write-Host ""
 Write-Host "正在启动后端服务..." -ForegroundColor Green
+Write-Host ""
 
-# 启动 User Service (端口 8031)
-Write-Host "[1/5] 启动 User Service (端口 8031)..." -ForegroundColor Gray
-Start-Process -WindowStyle Hidden -FilePath "python" -ArgumentList "-m uvicorn user-service.main:app --host 0.0.0.0 --port 8031" -WorkingDirectory "$PSScriptRoot\backend"
-Start-Sleep -Seconds 2
+# 日志目录
+$LogDir = Join-Path $ProjectRoot "logs"
+if (!(Test-Path $LogDir)) {
+    New-Item -ItemType Directory -Path $LogDir | Out-Null
+}
 
-# 启动 Order Service (端口 8032)
-Write-Host "[2/5] 启动 Order Service (端口 8032)..." -ForegroundColor Gray
-Start-Process -WindowStyle Hidden -FilePath "python" -ArgumentList "-m uvicorn order-service.main:app --host 0.0.0.0 --port 8032" -WorkingDirectory "$PSScriptRoot\backend"
-Start-Sleep -Seconds 2
+$index = 0
+foreach ($svc in $Services.GetEnumerator()) {
+    $index++
+    $name = $svc.Key
+    $port = $svc.Value
+    $module = "$name.main:app"
+    $logFile = Join-Path $LogDir "$name.log"
 
-# 启动 Route Service (端口 8033)
-Write-Host "[3/5] 启动 Route Service (端口 8033)..." -ForegroundColor Gray
-Start-Process -WindowStyle Hidden -FilePath "python" -ArgumentList "-m uvicorn route-service.main:app --host 0.0.0.0 --port 8033" -WorkingDirectory "$PSScriptRoot\backend"
-Start-Sleep -Seconds 2
+    Write-Host "[$index/$($Services.Count)] 启动 $name (端口 $port)..." -ForegroundColor Gray
 
-# 启动 Content Service (端口 8005)
-Write-Host "[4/5] 启动 Content Service (端口 8005)..." -ForegroundColor Gray
-Start-Process -WindowStyle Hidden -FilePath "python" -ArgumentList "-m uvicorn content-service.main:app --host 0.0.0.0 --port 8005" -WorkingDirectory "$PSScriptRoot\backend"
-Start-Sleep -Seconds 2
+    # 使用 uvicorn 启动，切换到服务目录后再启动，确保 import app 能找到模块
+    $outLog = "$logFile.out.log"
+    $errLog = "$logFile.err.log"
+    $svcDir = Join-Path $BackendDir $name
+    $pythonExe = Join-Path $BackendDir "venv\Scripts\python.exe"
+    $proc = Start-Process -FilePath $pythonExe `
+        -ArgumentList "-m uvicorn main:app --host 0.0.0.0 --port $port" `
+        -WorkingDirectory $svcDir `
+        -WindowStyle Hidden `
+        -RedirectStandardOutput $outLog `
+        -RedirectStandardError $errLog `
+        -PassThru
 
-# 启动 Gateway (端口 8084)
-Write-Host "[5/5] 启动 Gateway (端口 8084)..." -ForegroundColor Gray
-Start-Process -WindowStyle Hidden -FilePath "python" -ArgumentList "-m uvicorn gateway.main:app --host 0.0.0.0 --port 8084" -WorkingDirectory "$PSScriptRoot\backend"
+    Start-Sleep -Seconds 1
+}
+
 Start-Sleep -Seconds 3
 
 Write-Host ""
@@ -61,34 +91,42 @@ Write-Host "  所有后端服务已启动!" -ForegroundColor Green
 Write-Host "========================================" -ForegroundColor Green
 Write-Host ""
 Write-Host "服务地址:" -ForegroundColor Cyan
-Write-Host "  Gateway (API入口): http://localhost:8084" -ForegroundColor White
-Write-Host "  User Service:      http://localhost:8031" -ForegroundColor White
-Write-Host "  Order Service:     http://localhost:8032" -ForegroundColor White
+Write-Host "  Gateway (API入口): http://localhost:8081" -ForegroundColor White
+Write-Host "  User Service:      http://localhost:8001" -ForegroundColor White
+Write-Host "  Order Service:     http://localhost:8003" -ForegroundColor White
 Write-Host "  Route Service:     http://localhost:8033" -ForegroundColor White
+Write-Host "  Pay Service:       http://localhost:8006" -ForegroundColor White
 Write-Host "  Content Service:   http://localhost:8005" -ForegroundColor White
+Write-Host "  Map Service:       http://localhost:8004" -ForegroundColor White
+Write-Host "  Message Service:   http://localhost:8007" -ForegroundColor White
+Write-Host "  File Service:      http://localhost:8008" -ForegroundColor White
+Write-Host "  Charity Service:   http://localhost:8009" -ForegroundColor White
 Write-Host ""
 Write-Host "前端配置:" -ForegroundColor Cyan
-Write-Host "  管理后台代理: http://localhost:8084" -ForegroundColor White
-Write-Host "  小程序API地址: http://localhost:8084" -ForegroundColor White
+Write-Host "  管理后台代理: http://localhost:8081" -ForegroundColor White
+Write-Host "  小程序API地址: http://localhost:8081" -ForegroundColor White
 Write-Host ""
-Write-Host "测试命令:" -ForegroundColor Cyan
-Write-Host "  curl http://localhost:8084/health" -ForegroundColor White
+Write-Host "日志文件:" -ForegroundColor Cyan
+Write-Host "  $LogDir\*.out.log (标准输出)" -ForegroundColor White
+Write-Host "  $LogDir\*.err.log (错误输出)" -ForegroundColor White
 Write-Host ""
 
-# 测试服务是否启动
-Write-Host "正在测试服务..." -ForegroundColor Gray
+# 测试 Gateway
+Write-Host "正在测试 Gateway..." -ForegroundColor Gray
 try {
-    $response = Invoke-WebRequest -Uri "http://localhost:8084/health" -UseBasicParsing -TimeoutSec 5
+    $response = Invoke-WebRequest -Uri "http://localhost:8081/health" -UseBasicParsing -TimeoutSec 5
     if ($response.StatusCode -eq 200) {
         Write-Host "✅ Gateway 测试通过" -ForegroundColor Green
     }
 } catch {
-    Write-Host "⚠️  Gateway 可能尚未就绪，请稍后再试" -ForegroundColor Yellow
+    Write-Host "⚠️  Gateway 可能尚未就绪，请查看日志: $LogDir\gateway.log.err.log" -ForegroundColor Yellow
 }
 
 Write-Host ""
-Write-Host "提示: 关闭此窗口不会停止服务，服务在后台运行" -ForegroundColor Yellow
-Write-Host "      如需停止服务，请运行 stop-all-services.ps1" -ForegroundColor Yellow
+Write-Host "提示:" -ForegroundColor Yellow
+Write-Host "  - 关闭此窗口不会停止服务，服务在后台运行" -ForegroundColor Yellow
+Write-Host "  - 如需停止服务，请运行 .\stop-all-services.ps1" -ForegroundColor Yellow
+Write-Host "  - 查看实时日志: Get-Content logs\gateway.log -Wait" -ForegroundColor Yellow
 Write-Host ""
 
 Read-Host "按 Enter 键继续..."

@@ -7,11 +7,16 @@ Write-Host "========================================" -ForegroundColor Red
 Write-Host ""
 
 $ports = @(
-    @{ Port = 8031; Name = "User Service" },
-    @{ Port = 8032; Name = "Order Service" },
+    @{ Port = 8081; Name = "Gateway" },
+    @{ Port = 8001; Name = "User Service" },
+    @{ Port = 8003; Name = "Order Service" },
     @{ Port = 8033; Name = "Route Service" },
+    @{ Port = 8006; Name = "Pay Service" },
     @{ Port = 8005; Name = "Content Service" },
-    @{ Port = 8084; Name = "Gateway" }
+    @{ Port = 8004; Name = "Map Service" },
+    @{ Port = 8007; Name = "Message Service" },
+    @{ Port = 8008; Name = "File Service" },
+    @{ Port = 8009; Name = "Charity Service" }
 )
 
 $stoppedCount = 0

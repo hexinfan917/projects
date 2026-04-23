@@ -44,20 +44,26 @@ export const request: RequestConfig = {
   timeout: 10000,
   errorConfig: {
     errorThrower: (res) => {
-      const { success, data, errorCode, errorMessage } = res;
-      if (!success) {
-        const error: any = new Error(errorMessage);
+      const { code, data, message } = res;
+      if (code !== 200) {
+        const error: any = new Error(message);
         error.name = 'BizError';
-        error.info = { errorCode, errorMessage, data };
+        error.info = { errorCode: code, errorMessage: message, data };
         throw error;
       }
     },
     errorHandler: (error: any) => {
       console.error('Request error:', error);
+      // 处理 HTTP 401（token 无效或过期）
+      if (error.response?.status === 401) {
+        localStorage.removeItem('token');
+        history.push('/login');
+        return;
+      }
       if (error.name === 'BizError') {
         return error.info;
       }
-      return { success: false, errorMessage: '请求失败' };
+      return { code: 500, message: '请求失败', data: null };
     },
   },
   requestInterceptors: [
@@ -70,13 +76,18 @@ export const request: RequestConfig = {
     },
   ],
   responseInterceptors: [
-    (response: any) => {
-      // 统一处理 401
-      if (response.status === 401) {
-        localStorage.removeItem('token');
-        history.push('/login');
-      }
-      return response;
-    },
+    [
+      (response: any) => {
+        return response;
+      },
+      (error: any) => {
+        // 统一处理 401（axios 将非 2xx 视为错误，需在 rejected 回调中捕获）
+        if (error.response?.status === 401) {
+          localStorage.removeItem('token');
+          history.push('/login');
+        }
+        return Promise.reject(error);
+      },
+    ],
   ],
 };

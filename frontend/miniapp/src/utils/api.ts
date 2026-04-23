@@ -26,16 +26,18 @@ export async function request(path: string, options: any = {}) {
 
     // 统一状态码拦截
     if (res.statusCode === 401) {
-      Taro.removeStorageSync('access_token')
-      Taro.removeStorageSync('user_info')
-      Taro.showModal({
-        title: '登录已过期',
-        content: '请重新登录',
-        showCancel: false,
-        success: () => {
-          Taro.navigateTo({ url: '/pages/login/index' })
-        }
-      })
+      if (!options.skipAuthModal) {
+        Taro.removeStorageSync('access_token')
+        Taro.removeStorageSync('user_info')
+        Taro.showModal({
+          title: '登录已过期',
+          content: '请重新登录',
+          showCancel: false,
+          success: () => {
+            Taro.navigateTo({ url: '/pages/login/index' })
+          }
+        })
+      }
       throw new Error('Unauthorized')
     }
 
@@ -80,15 +82,23 @@ export function updateUserProfile(data: any) {
 
 // 路线
 export function getRoutes(params?: any) {
-  return request('/api/v1/routes', { data: params })
+  return request('/api/v1/routes', { data: params, skipAuthModal: true })
+}
+
+export function getRouteTypes() {
+  return request('/api/v1/routes/types', { skipAuthModal: true })
 }
 
 export function getRouteDetail(id: number) {
-  return request(`/api/v1/routes/${id}`)
+  return request(`/api/v1/routes/${id}`, { skipAuthModal: true })
 }
 
 export function getRouteSchedules(id: number) {
-  return request(`/api/v1/routes/${id}/schedules`)
+  return request(`/api/v1/routes/${id}/schedules`, { skipAuthModal: true })
+}
+
+export function getRouteEvaluations(id: number, params?: any) {
+  return request(`/api/v1/routes/${id}/evaluations`, { data: params, skipAuthModal: true })
 }
 
 // 订单
@@ -152,6 +162,68 @@ export function updateTraveler(id: number, data: any) {
 
 export function deleteTraveler(id: number) {
   return request(`/api/v1/travelers/${id}`, { method: 'DELETE' })
+}
+
+// 内容
+export function getArticles(params?: any) {
+  return request('/api/v1/contents/articles', { data: params, skipAuthModal: true })
+}
+
+export function getArticleDetail(id: number) {
+  return request(`/api/v1/contents/articles/${id}`, { skipAuthModal: true })
+}
+
+export function likeArticle(id: number) {
+  return request(`/api/v1/contents/articles/${id}/like`, { method: 'POST' })
+}
+
+// 首页轮播图
+export function getBanners() {
+  return request('/api/v1/contents/banners', { skipAuthModal: true })
+}
+
+// 狗狗回顾
+export function getReviews(params?: any) {
+  return request('/api/v1/contents/articles', { data: { ...params, category: 'review' }, skipAuthModal: true })
+}
+
+export function getReviewDetail(id: number) {
+  return request(`/api/v1/contents/articles/${id}`, { skipAuthModal: true })
+}
+
+// 地图/POI
+export function getPOIs(params?: any) {
+  return request('/api/v1/map/pois', { data: params, skipAuthModal: true })
+}
+
+export function getNearbyPOIs(params?: any) {
+  return request('/api/v1/map/pois/nearby', { data: params, skipAuthModal: true })
+}
+
+export function getPOIDetail(id: number) {
+  return request(`/api/v1/map/pois/${id}`, { skipAuthModal: true })
+}
+
+// 通知
+export function getNotifications(params?: any) {
+  return request('/api/v1/notifications', { data: params })
+}
+
+export function markNotificationRead(id: number) {
+  return request(`/api/v1/notifications/${id}/read`, { method: 'POST' })
+}
+
+export function markAllNotificationsRead() {
+  return request('/api/v1/notifications/read-all', { method: 'POST' })
+}
+
+// 公益
+export function getCharityActivities(params?: any) {
+  return request('/api/v1/charities/activities', { data: params, skipAuthModal: true })
+}
+
+export function getCharityActivityDetail(id: number) {
+  return request(`/api/v1/charities/activities/${id}`, { skipAuthModal: true })
 }
 
 // 上传

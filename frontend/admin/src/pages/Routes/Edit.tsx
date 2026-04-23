@@ -31,15 +31,6 @@ const quillFormats = [
   'link', 'image'
 ];
 
-// 路线类型
-const routeTypes = [
-  { id: 1, name: '山野厨房' },
-  { id: 2, name: '海边度假' },
-  { id: 3, name: '森林露营' },
-  { id: 4, name: '主题派对' },
-  { id: 5, name: '自驾路线' },
-];
-
 export default function RouteEdit() {
   const { id } = useParams<{ id: string }>();
   const isEdit = !!id;
@@ -49,6 +40,22 @@ export default function RouteEdit() {
   const [gallery, setGallery] = useState<string[]>([]);
   const [highlights, setHighlights] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState('basic');
+  const [routeTypes, setRouteTypes] = useState<{ id: number; name: string }[]>([
+    { id: 1, name: '山野厨房' },
+    { id: 2, name: '海边度假' },
+    { id: 3, name: '森林露营' },
+    { id: 4, name: '主题派对' },
+    { id: 5, name: '自驾路线' },
+  ]);
+
+  // 获取路线类型列表
+  useEffect(() => {
+    request('/api/v1/admin/route-types').then((res: any) => {
+      if (res.code === 200 && res.data) {
+        setRouteTypes(res.data.map((item: any) => ({ id: item.id, name: item.name })));
+      }
+    });
+  }, []);
 
   // 富文本内容
   const [highlightsDetail, setHighlightsDetail] = useState('');
@@ -56,6 +63,7 @@ export default function RouteEdit() {
   const [feeInclude, setFeeInclude] = useState('');
   const [feeExclude, setFeeExclude] = useState('');
   const [notice, setNotice] = useState('');
+  const [contentModules, setContentModules] = useState<{ label: string; icon: string; content: string }[]>([]);
 
   // 获取路线详情
   useEffect(() => {
@@ -88,6 +96,7 @@ export default function RouteEdit() {
         setFeeInclude(data.fee_include || '');
         setFeeExclude(data.fee_exclude || '');
         setNotice(data.notice || '');
+        setContentModules(data.content_modules || []);
         fetchSchedules();
       }
     } catch (error) {
@@ -126,6 +135,7 @@ export default function RouteEdit() {
         fee_include: feeInclude,
         fee_exclude: feeExclude,
         notice,
+        content_modules: contentModules,
       };
 
       if (isEdit) {
@@ -168,6 +178,26 @@ export default function RouteEdit() {
     setHighlights(highlights.filter((_, i) => i !== index));
   };
 
+  // 内容模块操作
+  const addContentModule = () => {
+    setContentModules([...contentModules, { label: '', icon: '', content: '' }]);
+  };
+  const updateContentModule = (index: number, field: string, value: string) => {
+    const newModules = [...contentModules];
+    newModules[index] = { ...newModules[index], [field]: value };
+    setContentModules(newModules);
+  };
+  const removeContentModule = (index: number) => {
+    setContentModules(contentModules.filter((_, i) => i !== index));
+  };
+  const moveContentModule = (index: number, direction: number) => {
+    const newModules = [...contentModules];
+    const target = index + direction;
+    if (target < 0 || target >= newModules.length) return;
+    [newModules[index], newModules[target]] = [newModules[target], newModules[index]];
+    setContentModules(newModules);
+  };
+
   // 添加图集图片
   const handleGalleryUpload = (url: string) => {
     setGallery([...gallery, url]);
@@ -183,14 +213,15 @@ export default function RouteEdit() {
     name: 'file',
     action: '/api/v1/files/upload/image',
     headers: {
-      authorization: 'authorization-text',
+      Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
     },
     onChange(info: any) {
       if (info.file.status === 'done') {
         const url = info.file.response?.data?.url;
         if (url) {
           message.success(`${info.file.name} 上传成功`);
-          handleGalleryUpload(url);
+          const fullUrl = url.startsWith('http') ? url : `http://localhost:8081${url}`;
+          handleGalleryUpload(fullUrl);
         }
       } else if (info.file.status === 'error') {
         message.error(`${info.file.name} 上传失败`);
@@ -365,6 +396,7 @@ export default function RouteEdit() {
               layout="vertical"
               initialValues={{
                 status: 1,
+                is_hot: 0,
                 difficulty: 3,
                 min_participants: 4,
                 max_participants: 12,
@@ -487,22 +519,77 @@ export default function RouteEdit() {
                 </Radio.Group>
               </Form.Item>
 
+              <Form.Item
+                name="is_hot"
+                label="是否热门"
+                tooltip="设为热门后，该路线将在小程序首页展示"
+              >
+                <Radio.Group>
+                  <Radio.Button value={1}>热门</Radio.Button>
+                  <Radio.Button value={0}>普通</Radio.Button>
+                </Radio.Group>
+              </Form.Item>
+
               <Form.Item label="封面图片">
                 <Form.Item name="cover_image" noStyle>
                   <Input placeholder="图片URL" style={{ marginBottom: 8 }} />
                 </Form.Item>
                 <Upload
                   name="file"
-                  action="/api/v1/files/upload"
+                  action="/api/v1/files/upload/image"
                   headers={{ Authorization: `Bearer ${localStorage.getItem('token')}` }}
                   onChange={(info) => {
                     if (info.file.status === 'done') {
-                      form.setFieldValue('cover_image', info.file.response?.data?.url);
+                      const url = info.file.response?.data?.url;
+                      if (url) {
+                        const fullUrl = url.startsWith('http') ? url : `http://localhost:8081${url}`;
+                        form.setFieldValue('cover_image', fullUrl);
+                      }
                     }
                   }}
                 >
                   <Button icon={<UploadOutlined />}>上传图片</Button>
                 </Upload>
+              </Form.Item>
+
+              <Form.Item label="路线图集">
+                <div style={{ marginBottom: 16 }}>
+                  <Upload {...uploadProps} showUploadList={false}>
+                    <Button icon={<UploadOutlined />}>上传图片</Button>
+                  </Upload>
+                  <span style={{ marginLeft: 8, color: '#999' }}>或直接输入图片URL：</span>
+                  <Input
+                    style={{ width: 300, marginLeft: 8 }}
+                    placeholder="输入图片URL"
+                    onPressEnter={(e: any) => {
+                      if (e.target.value) {
+                        handleGalleryUpload(e.target.value);
+                        e.target.value = '';
+                      }
+                    }}
+                  />
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16 }}>
+                  {gallery.map((url, index) => (
+                    <div key={index} style={{ position: 'relative', width: 200, height: 150 }}>
+                      <img
+                        src={url}
+                        alt={`图集${index + 1}`}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 8 }}
+                      />
+                      <Button
+                        type="primary"
+                        danger
+                        size="small"
+                        icon={<DeleteOutlined />}
+                        style={{ position: 'absolute', top: 8, right: 8 }}
+                        onClick={() => removeGalleryImage(index)}
+                      >
+                        删除
+                      </Button>
+                    </div>
+                  ))}
+                </div>
               </Form.Item>
 
               <Form.Item label="亮点标签">
@@ -595,6 +682,61 @@ export default function RouteEdit() {
           </Card>
         </Tabs.TabPane>
 
+        <Tabs.TabPane tab="内容模块" key="content_modules">
+          <Card title="内容模块（小程序标签页展示）" extra={
+            <Button type="primary" onClick={addContentModule} icon={<PlusOutlined />}>
+              添加模块
+            </Button>
+          }>
+            {contentModules.length === 0 && (
+              <div style={{ textAlign: 'center', padding: '40px 0', color: '#999' }}>
+                暂无内容模块，点击右上角添加
+              </div>
+            )}
+            {contentModules.map((mod, index) => (
+              <div key={index} style={{ marginBottom: 24, padding: 16, border: '1px solid #f0f0f0', borderRadius: 8 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                  <span style={{ fontWeight: 500 }}>模块 {index + 1}</span>
+                  <Space>
+                    <Button size="small" disabled={index === 0} onClick={() => moveContentModule(index, -1)}>上移</Button>
+                    <Button size="small" disabled={index === contentModules.length - 1} onClick={() => moveContentModule(index, 1)}>下移</Button>
+                    <Button size="small" danger onClick={() => removeContentModule(index)} icon={<DeleteOutlined />}>删除</Button>
+                  </Space>
+                </div>
+                <Row gutter={16} style={{ marginBottom: 12 }}>
+                  <Col span={12}>
+                    <Form.Item label="标签名称" style={{ marginBottom: 0 }}>
+                      <Input
+                        value={mod.label}
+                        onChange={(e) => updateContentModule(index, 'label', e.target.value)}
+                        placeholder="如：行程亮点"
+                      />
+                    </Form.Item>
+                  </Col>
+                  <Col span={12}>
+                    <Form.Item label="图标 Emoji" style={{ marginBottom: 0 }}>
+                      <Input
+                        value={mod.icon}
+                        onChange={(e) => updateContentModule(index, 'icon', e.target.value)}
+                        placeholder="如：✨"
+                      />
+                    </Form.Item>
+                  </Col>
+                </Row>
+                <div style={{ marginBottom: 8, color: '#666' }}>内容（富文本）</div>
+                <ReactQuill
+                  theme="snow"
+                  value={mod.content}
+                  onChange={(value) => updateContentModule(index, 'content', value)}
+                  modules={quillModules}
+                  formats={quillFormats}
+                  style={{ height: 300, marginBottom: 40 }}
+                />
+              </div>
+            ))}
+          </Card>
+        </Tabs.TabPane>
+
         {isEdit && (
           <Tabs.TabPane tab="营期管理" key="schedules">
             <Card title="排期列表" extra={
@@ -637,47 +779,7 @@ export default function RouteEdit() {
           </Tabs.TabPane>
         )}
 
-        <Tabs.TabPane tab="图集管理" key="gallery">
-          <Card title="图集">
-            <div style={{ marginBottom: 16 }}>
-              <Upload {...uploadProps} showUploadList={false}>
-                <Button icon={<UploadOutlined />}>上传图片</Button>
-              </Upload>
-              <span style={{ marginLeft: 8, color: '#999' }}>或直接输入图片URL：</span>
-              <Input
-                style={{ width: 300, marginLeft: 8 }}
-                placeholder="输入图片URL"
-                onPressEnter={(e: any) => {
-                  if (e.target.value) {
-                    handleGalleryUpload(e.target.value);
-                    e.target.value = '';
-                  }
-                }}
-              />
-            </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16 }}>
-              {gallery.map((url, index) => (
-                <div key={index} style={{ position: 'relative', width: 200, height: 150 }}>
-                  <img
-                    src={url}
-                    alt={`图集${index + 1}`}
-                    style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 8 }}
-                  />
-                  <Button
-                    type="primary"
-                    danger
-                    size="small"
-                    icon={<DeleteOutlined />}
-                    style={{ position: 'absolute', top: 8, right: 8 }}
-                    onClick={() => removeGalleryImage(index)}
-                  >
-                    删除
-                  </Button>
-                </div>
-              ))}
-            </div>
-          </Card>
-        </Tabs.TabPane>
+
       </Tabs>
 
       {/* 批量添加排期Modal */}

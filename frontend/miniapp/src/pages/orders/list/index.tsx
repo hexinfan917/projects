@@ -8,7 +8,7 @@ const TABS = [
   { key: 'all', label: '全部' },
   { key: '10', label: '待支付' },
   { key: '20', label: '待出行' },
-  { key: '60', label: '待评价' },
+  { key: 'refund', label: '退款/售后' },
 ]
 
 const STATUS_MAP: any = {
@@ -16,9 +16,7 @@ const STATUS_MAP: any = {
   20: '待出行',
   30: '已取消',
   40: '退款中',
-  50: '已退款',
-  60: '待评价',
-  70: '已评价'
+  50: '已退款'
 }
 
 const COUNTDOWN_24H = 24 * 60 * 60 * 1000
@@ -42,11 +40,29 @@ export default function OrderList() {
   }, [activeTab])
 
   useEffect(() => {
+    const instance = Taro.getCurrentInstance()
+    const status = instance.router?.params?.status
+    if (status) {
+      setActiveTab(status)
+    }
+  }, [])
+
+  useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 1000)
     return () => clearInterval(timer)
   }, [])
 
   const loadOrders = async () => {
+    if (activeTab === 'refund') {
+      const [res1, res2] = await Promise.all([
+        getOrders({ status: 40 }),
+        getOrders({ status: 50 })
+      ])
+      const list = [...(res1.data?.orders || []), ...(res2.data?.orders || [])]
+      setOrders(list)
+      return
+    }
+
     const params: any = {}
     if (activeTab !== 'all') params.status = Number(activeTab)
     const res = await getOrders(params)
@@ -96,7 +112,11 @@ export default function OrderList() {
   }
 
   return (
-    <View className='order-list'>
+    <View className='order-list' style={{ paddingTop: '140rpx' }}>
+
+        <View className='page-back' onClick={() => Taro.navigateBack()}>
+          <Text className='page-back-icon'>←</Text>
+        </View>
       <View className='tabs'>
         {TABS.map(tab => (
           <View

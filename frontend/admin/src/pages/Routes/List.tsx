@@ -1,11 +1,30 @@
 import { PageContainer, ProTable } from '@ant-design/pro-components';
 import { Button, Tag, Space, Popconfirm, message } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, CalendarOutlined } from '@ant-design/icons';
-import { useRef } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { request, history } from '@umijs/max';
 
 export default function RouteList() {
   const tableRef = useRef<any>(null);
+  const [routeTypeEnum, setRouteTypeEnum] = useState<Record<string, { text: string }>>({
+    1: { text: '山野厨房' },
+    2: { text: '海边度假' },
+    3: { text: '森林露营' },
+    4: { text: '主题派对' },
+    5: { text: '自驾路线' },
+  });
+
+  useEffect(() => {
+    request('/api/v1/admin/route-types').then((res: any) => {
+      if (res.code === 200 && res.data) {
+        const enumMap: Record<string, { text: string }> = {};
+        res.data.forEach((item: any) => {
+          enumMap[String(item.id)] = { text: item.name };
+        });
+        setRouteTypeEnum(enumMap);
+      }
+    });
+  }, []);
 
   const columns = [
     {
@@ -37,13 +56,7 @@ export default function RouteList() {
       title: '类型',
       dataIndex: 'route_type',
       width: 100,
-      valueEnum: {
-        1: { text: '山野厨房' },
-        2: { text: '海边度假' },
-        3: { text: '森林露营' },
-        4: { text: '主题派对' },
-        5: { text: '自驾路线' },
-      },
+      valueEnum: routeTypeEnum,
     },
     {
       title: '价格',
@@ -63,6 +76,21 @@ export default function RouteList() {
       search: false,
       width: 120,
       render: (record: any) => `${record.min_participants}-${record.max_participants}人`,
+    },
+    {
+      title: '热门',
+      dataIndex: 'is_hot',
+      width: 80,
+      search: false,
+      valueEnum: {
+        0: { text: '普通', status: 'Default' },
+        1: { text: '热门', status: 'Success' },
+      },
+      render: (_: any, record: any) => (
+        <Tag color={record.is_hot === 1 ? 'red' : 'default'}>
+          {record.is_hot === 1 ? '热门' : '普通'}
+        </Tag>
+      ),
     },
     {
       title: '状态',

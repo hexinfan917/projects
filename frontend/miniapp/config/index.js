@@ -16,7 +16,9 @@ const config = {
   },
   copy: {
     patterns: [
-      { from: 'src/assets/icons', to: 'dist/assets/icons' }
+      { from: 'src/assets/icons', to: 'dist/assets/icons' },
+      { from: 'src/assets/toplogo.png', to: 'dist/assets/toplogo.png' },
+      { from: 'src/assets/see-throughlogo.png', to: 'dist/assets/see-throughlogo.png' }
     ],
     options: {}
   },

@@ -114,4 +114,31 @@
   display: block;
   font-size: 26rpx;
   color: #999;
+  margin-bottom: 8rpx;
+}
+
+.poi-tag {
+  display: inline-block;
+  font-size: 22rpx;
+  padding: 4rpx 12rpx;
+  border-radius: 8rpx;
+}
+
+.poi-tag.pet-friendly {
+  background: rgba(34, 197, 94, 0.1);
+  color: #22C55E;
+}
+
+.empty-tip {
+  text-align: center;
+  padding: 60rpx 20rpx;
+  color: #999;
+  font-size: 28rpx;
+}
+
+.loading-text {
+  text-align: center;
+  padding: 20rpx;
+  color: #999;
+  font-size: 26rpx;
 }

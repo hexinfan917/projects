@@ -1,0 +1,105 @@
+.charity-list-page {
+  min-height: 100vh;
+  background: #f5f7f5;
+
+  .list-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 200rpx 32px 32px;
+    background: #f5f7f5;
+
+    .list-header-left {
+      .list-header-title {
+        display: block;
+        font-size: 44px;
+        font-weight: 800;
+        color: #1f2937;
+        line-height: 1.3;
+      }
+      .list-header-sub {
+        display: block;
+        font-size: 24px;
+        color: #6b7280;
+        margin-top: 12px;
+      }
+    }
+
+    .list-header-right {
+      .list-header-link {
+        font-size: 24px;
+        color: #22C55E;
+        font-weight: 600;
+      }
+    }
+  }
+
+  .scroll-container {
+    height: calc(100vh - 220px);
+  }
+
+  .charity-list {
+    padding: 20px;
+  }
+
+  .charity-card {
+    background: #fff;
+    border-radius: 16px;
+    overflow: hidden;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+
+    .charity-image {
+      width: 100%;
+      height: 380px;
+    }
+
+    .charity-info {
+      padding: 24px;
+
+      .charity-title {
+        font-size: 32px;
+        font-weight: 600;
+        color: #1f2937;
+        display: block;
+        margin-bottom: 12px;
+      }
+
+      .charity-sub {
+        font-size: 26px;
+        color: #6b7280;
+        display: block;
+        margin-bottom: 16px;
+      }
+
+      .charity-status {
+        .status-tag {
+          display: inline-block;
+          padding: 6px 16px;
+          border-radius: 20px;
+          font-size: 24px;
+        }
+        .status-open {
+          background: #dcfce7;
+          color: #166534;
+        }
+        .status-progress {
+          background: #dbeafe;
+          color: #1e40af;
+        }
+        .status-closed {
+          background: #f3f4f6;
+          color: #6b7280;
+        }
+      }
+    }
+  }
+
+  .loading-text, .empty-text {
+    display: block;
+    text-align: center;
+    padding: 40px 0;
+    font-size: 26px;
+    color: #9ca3af;
+  }
+}

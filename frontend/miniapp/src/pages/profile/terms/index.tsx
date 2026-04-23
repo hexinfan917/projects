@@ -3,7 +3,11 @@ import './index.scss'
 
 export default function Terms() {
   return (
-    <View className='terms-page'>
+    <View className='terms-page' style={{ paddingTop: '140rpx' }}>
+
+        <View className='page-back' onClick={() => Taro.navigateBack()}>
+          <Text className='page-back-icon'>←</Text>
+        </View>
       <View className='content-section'>
         <Text className='title'>用户协议</Text>
         <Text className='paragraph'>

@@ -1,0 +1,93 @@
+.notification-page {
+  min-height: 100vh;
+  background: #f5f5f5;
+}
+
+.notification-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20rpx;
+  background: #fff;
+  border-bottom: 1rpx solid #eee;
+}
+
+.header-title {
+  font-size: 34rpx;
+  font-weight: bold;
+  color: #333;
+}
+
+.read-all-btn {
+  font-size: 28rpx;
+  color: #22C55E;
+}
+
+.notification-list {
+  height: calc(100vh - 90rpx);
+  padding: 20rpx;
+}
+
+.notification-card {
+  background: #fff;
+  border-radius: 16rpx;
+  padding: 24rpx;
+  margin-bottom: 16rpx;
+}
+
+.notification-card.unread {
+  border-left: 6rpx solid #22C55E;
+}
+
+.notification-card.read {
+  opacity: 0.8;
+}
+
+.notification-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12rpx;
+}
+
+.notification-type {
+  font-size: 24rpx;
+  color: #22C55E;
+  background: rgba(34, 197, 94, 0.1);
+  padding: 4rpx 12rpx;
+  border-radius: 8rpx;
+}
+
+.notification-time {
+  font-size: 24rpx;
+  color: #999;
+}
+
+.notification-title {
+  display: block;
+  font-size: 30rpx;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 8rpx;
+}
+
+.notification-content {
+  display: block;
+  font-size: 26rpx;
+  color: #666;
+  line-height: 1.4;
+}
+
+.empty-tip {
+  text-align: center;
+  padding: 100rpx 20rpx;
+  color: #999;
+  font-size: 28rpx;
+}
+
+.loading-text {
+  text-align: center;
+  padding: 20rpx;
+  color: #999;
+  font-size: 26rpx;
+}

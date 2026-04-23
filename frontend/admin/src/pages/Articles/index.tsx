@@ -11,6 +11,7 @@ const categoryMap: Record<string, { text: string; color: string }> = {
   travel: { text: '旅行', color: 'blue' },
   guide: { text: '攻略', color: 'green' },
   story: { text: '故事', color: 'purple' },
+  review: { text: '回顾', color: 'orange' },
 };
 
 const statusMap: Record<number, { text: string; color: string }> = {
@@ -126,7 +127,7 @@ export default function ArticleManage() {
       title: '分类',
       dataIndex: 'category',
       width: 100,
-      valueEnum: { travel: { text: '旅行' }, guide: { text: '攻略' }, story: { text: '故事' } },
+      valueEnum: { travel: { text: '旅行' }, guide: { text: '攻略' }, story: { text: '故事' }, review: { text: '回顾' } },
       render: (category: string) => {
         const config = categoryMap[category] || { text: category, color: 'default' };
         return <Tag color={config.color}>{config.text}</Tag>;
@@ -238,6 +239,7 @@ export default function ArticleManage() {
             { label: '旅行', value: 'travel' },
             { label: '攻略', value: 'guide' },
             { label: '故事', value: 'story' },
+            { label: '回顾', value: 'review' },
           ]}
           rules={[{ required: true }]}
         />

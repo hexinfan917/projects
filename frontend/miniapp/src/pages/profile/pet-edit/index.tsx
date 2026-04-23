@@ -27,6 +27,7 @@ function ageToBirthDate(age: string) {
 export default function PetEdit() {
   const [pet, setPet] = useState<any>({
     name: '',
+    breed: '',
     age: '',
     gender: 1,
     weight: '',
@@ -84,6 +85,7 @@ export default function PetEdit() {
     }
     const payload: any = {
       name: pet.name,
+      breed: pet.breed || undefined,
       birth_date: ageToBirthDate(pet.age),
       gender: pet.gender,
       weight: pet.weight ? Number(pet.weight) : undefined,
@@ -115,7 +117,11 @@ export default function PetEdit() {
   const canSubmit = !!pet.name && !!pet.age && /^[1-9]\d*$/.test(String(pet.age)) && pet.gender !== undefined && pet.gender !== null
 
   return (
-    <View className='pet-edit-page'>
+    <View className='pet-edit-page' style={{ paddingTop: '140rpx' }}>
+
+        <View className='page-back' onClick={() => Taro.navigateBack()}>
+          <Text className='page-back-icon'>←</Text>
+        </View>
       <View className='pet-edit-modal'>
         <Text className='modal-title'>{pet.id ? '编辑宠物' : '添加宠物'}</Text>
 
@@ -167,6 +173,17 @@ export default function PetEdit() {
               onClick={() => setPet({ ...pet, gender: 0 })}
             >母</Text>
           </View>
+        </View>
+
+        {/* 品种 */}
+        <View className='form-row'>
+          <Text className='form-label'>品种</Text>
+          <Input
+            className='form-input'
+            placeholder='请输入宠物品种'
+            value={pet.breed}
+            onInput={(e) => setPet({ ...pet, breed: e.detail.value })}
+          />
         </View>
 
         {/* 体重 */}

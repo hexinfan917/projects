@@ -6,11 +6,11 @@ import './index.scss'
 
 const STATUS_MAP: any = {
   10: '待支付',
-  20: '已支付',
+  20: '待出行',
   30: '已取消',
   40: '退款中',
   50: '已退款',
-  60: '已完成',
+  60: '待评价',
   70: '已评价'
 }
 
@@ -43,7 +43,11 @@ export default function OrderDetail() {
   if (!order) return <View className='order-detail'><Text>加载中...</Text></View>
 
   return (
-    <View className='order-detail'>
+    <View className='order-detail' style={{ paddingTop: '140rpx' }}>
+
+        <View className='page-back' onClick={() => Taro.navigateBack()}>
+          <Text className='page-back-icon'>←</Text>
+        </View>
       <View className='status-bar'>
         <Text className='status-text'>{STATUS_MAP[order.status] || '未知'}</Text>
       </View>
