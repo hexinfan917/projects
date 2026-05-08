@@ -34,6 +34,7 @@ logger = setup_logger("route-service")
 # 导入模型和Schema
 from app.models.route import Route, RouteSchedule
 from app.models.route_type import RouteType
+from app.models.addon import RouteAddon
 from app.schemas.route import RouteResponse, RouteListResponse, RouteDetailResponse
 
 @asynccontextmanager
@@ -582,44 +583,47 @@ class ScheduleCreateUpdate(BaseModel):
     trainer_id: Optional[int] = None
 
 
+async def _process_rich_text(content: str) -> str:
+    """提取富文本中的 base64 图片，上传到 file-service，替换为 URL"""
+    if not content or not isinstance(content, str):
+        return content
+    
+    img_regex = re.compile(r'<img[^>]+src=["\'](data:image/(jpeg|jpg|png|gif|webp);base64,([^"\']+))["\'][^>]*>')
+    matches = list(img_regex.finditer(content))
+    if not matches:
+        return content
+    
+    new_content = content
+    async with httpx.AsyncClient() as client:
+        for match in matches:
+            full_data_uri = match.group(1)
+            try:
+                resp = await client.post(
+                    f"{FILE_SERVICE_URL}/api/v1/files/upload/base64",
+                    json={"base64": full_data_uri},
+                    timeout=30.0
+                )
+                if resp.status_code == 200:
+                    result = resp.json()
+                    if result.get("code") == 200:
+                        file_url = result["data"]["url"]
+                        new_content = new_content.replace(full_data_uri, file_url)
+            except Exception as e:
+                logger.error(f"Failed to upload base64 image: {e}")
+    
+    return new_content
+
+
 async def process_content_modules(content_modules: list) -> list:
     """提取 content 中的 base64 图片，上传到 file-service，替换为 URL"""
     if not content_modules:
         return content_modules
     
-    img_regex = re.compile(r'<img[^>]+src=["\'](data:image/(jpeg|jpg|png|gif|webp);base64,([^"\']+))["\'][^>]*>')
     processed = []
-    
-    async with httpx.AsyncClient() as client:
-        for mod in content_modules:
-            content = mod.get("content", "")
-            if not content or not isinstance(content, str):
-                processed.append(mod)
-                continue
-            
-            matches = list(img_regex.finditer(content))
-            if not matches:
-                processed.append(mod)
-                continue
-            
-            new_content = content
-            for match in matches:
-                full_data_uri = match.group(1)
-                try:
-                    resp = await client.post(
-                        f"{FILE_SERVICE_URL}/api/v1/files/upload/base64",
-                        json={"base64": full_data_uri},
-                        timeout=30.0
-                    )
-                    if resp.status_code == 200:
-                        result = resp.json()
-                        if result.get("code") == 200:
-                            file_url = result["data"]["url"]
-                            new_content = new_content.replace(full_data_uri, file_url)
-                except Exception as e:
-                    logger.error(f"Failed to upload base64 image: {e}")
-            
-            processed.append({**mod, "content": new_content})
+    for mod in content_modules:
+        content = mod.get("content", "")
+        new_content = await _process_rich_text(content)
+        processed.append({**mod, "content": new_content})
     
     return processed
 
@@ -642,6 +646,13 @@ async def admin_create_route(
         if content_modules:
             content_modules = await process_content_modules(content_modules)
         
+        # 处理富文本中的 base64 图片
+        highlights_detail = await _process_rich_text(data.highlights_detail) if data.highlights_detail else data.highlights_detail
+        fee_description = await _process_rich_text(data.fee_description) if data.fee_description else data.fee_description
+        fee_include = await _process_rich_text(data.fee_include) if data.fee_include else data.fee_include
+        fee_exclude = await _process_rich_text(data.fee_exclude) if data.fee_exclude else data.fee_exclude
+        notice = await _process_rich_text(data.notice) if data.notice else data.notice
+        
         route = Route(
             route_no=data.route_no,
             name=data.name,
@@ -652,11 +663,11 @@ async def admin_create_route(
             gallery=data.gallery,
             description=data.description,
             highlights=data.highlights,
-            highlights_detail=data.highlights_detail,
-            fee_description=data.fee_description,
-            fee_include=data.fee_include,
-            fee_exclude=data.fee_exclude,
-            notice=data.notice,
+            highlights_detail=highlights_detail,
+            fee_description=fee_description,
+            fee_include=fee_include,
+            fee_exclude=fee_exclude,
+            notice=notice,
             content_modules=content_modules,
             suitable_breeds=data.suitable_breeds,
             unsuitable_breeds=data.unsuitable_breeds,
@@ -705,6 +716,10 @@ async def admin_update_route(
         update_data = data.model_dump(exclude={'route_no'})
         if update_data.get('content_modules'):
             update_data['content_modules'] = await process_content_modules(update_data['content_modules'])
+        # 处理富文本中的 base64 图片
+        for rich_field in ['highlights_detail', 'fee_description', 'fee_include', 'fee_exclude', 'notice']:
+            if update_data.get(rich_field):
+                update_data[rich_field] = await _process_rich_text(update_data[rich_field])
         for field, value in update_data.items():
             if value is not None or field in ['subtitle', 'title', 'description', 'is_hot', 'status', 'content_modules']:  # 允许清空这些字段
                 setattr(route, field, value)
@@ -1352,6 +1367,196 @@ async def admin_batch_create_schedules(
         import traceback
         logger.error(traceback.format_exc())
         return {"code": 500, "message": f"批量创建失败: {str(e)}", "data": None}
+
+
+# ==================== 行程选配 API ====================
+
+@app.get("/api/v1/routes/{route_id}/addons")
+async def get_route_addons(
+    route_id: int,
+    category: Optional[str] = None,
+    db: AsyncSession = Depends(get_db)
+):
+    """获取线路的行程选配列表（小程序端）"""
+    query = select(RouteAddon).where(
+        RouteAddon.route_id == route_id,
+        RouteAddon.status == 1
+    )
+    if category:
+        query = query.where(RouteAddon.category == category)
+    query = query.order_by(RouteAddon.sort_order.asc(), RouteAddon.id.asc())
+    result = await db.execute(query)
+    addons = result.scalars().all()
+    return success({
+        "addons": [
+            {
+                "id": a.id,
+                "category": a.category,
+                "name": a.name,
+                "price": float(a.price),
+                "unit": a.unit,
+                "description": a.description,
+                "stock": a.stock,
+                "limit_per_order": a.limit_per_order,
+                "is_required": a.is_required,
+                "need_info": a.need_info,
+                "extra_config": a.extra_config or {}
+            }
+            for a in addons
+        ]
+    })
+
+
+# 管理后台 - 行程选配管理
+
+@app.get("/api/v1/admin/addons")
+async def admin_list_addons(
+    route_id: Optional[int] = None,
+    category: Optional[str] = None,
+    keyword: Optional[str] = None,
+    status: Optional[int] = None,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    db: AsyncSession = Depends(get_db)
+):
+    """管理后台：行程选配列表"""
+    query = select(RouteAddon)
+    if route_id:
+        query = query.where(RouteAddon.route_id == route_id)
+    if category:
+        query = query.where(RouteAddon.category == category)
+    if keyword:
+        query = query.where(RouteAddon.name.contains(keyword))
+    if status is not None:
+        query = query.where(RouteAddon.status == status)
+    query = query.order_by(RouteAddon.sort_order.asc(), RouteAddon.id.desc())
+
+    total_result = await db.execute(select(func.count()).select_from(query.subquery()))
+    total = total_result.scalar() or 0
+
+    query = query.offset((page - 1) * page_size).limit(page_size)
+    result = await db.execute(query)
+    addons = result.scalars().all()
+
+    return success({
+        "total": total,
+        "page": page,
+        "page_size": page_size,
+        "addons": [
+            {
+                "id": a.id,
+                "route_id": a.route_id,
+                "category": a.category,
+                "name": a.name,
+                "price": float(a.price),
+                "unit": a.unit,
+                "stock": a.stock,
+                "sold": a.sold,
+                "limit_per_order": a.limit_per_order,
+                "is_required": a.is_required,
+                "need_info": a.need_info,
+                "status": a.status,
+                "sort_order": a.sort_order,
+                "extra_config": a.extra_config or {},
+                "created_at": a.created_at.isoformat() if a.created_at else None
+            }
+            for a in addons
+        ]
+    })
+
+
+@app.get("/api/v1/admin/addons/{addon_id}")
+async def admin_get_addon(
+    addon_id: int,
+    db: AsyncSession = Depends(get_db)
+):
+    """管理后台：行程选配详情"""
+    result = await db.execute(select(RouteAddon).where(RouteAddon.id == addon_id))
+    a = result.scalar_one_or_none()
+    if not a:
+        return success(None)
+    return success({
+        "id": a.id,
+        "route_id": a.route_id,
+        "category": a.category,
+        "name": a.name,
+        "price": float(a.price),
+        "unit": a.unit,
+        "description": a.description,
+        "stock": a.stock,
+        "sold": a.sold,
+        "limit_per_order": a.limit_per_order,
+        "is_required": a.is_required,
+        "need_info": a.need_info,
+        "status": a.status,
+        "sort_order": a.sort_order,
+        "extra_config": a.extra_config or {}
+    })
+
+
+@app.post("/api/v1/admin/addons")
+async def admin_create_addon(
+    data: dict,
+    db: AsyncSession = Depends(get_db)
+):
+    """管理后台：创建行程选配"""
+    addon = RouteAddon(
+        route_id=data.get("route_id"),
+        category=data.get("category"),
+        name=data.get("name"),
+        price=data.get("price", 0),
+        unit=data.get("unit", "份"),
+        description=data.get("description"),
+        stock=data.get("stock", 999),
+        limit_per_order=data.get("limit_per_order", 0),
+        is_required=data.get("is_required", 0),
+        need_info=data.get("need_info", 0),
+        sort_order=data.get("sort_order", 0),
+        status=data.get("status", 1),
+        extra_config=data.get("extra_config", {})
+    )
+    db.add(addon)
+    await db.commit()
+    await db.refresh(addon)
+    return success({"id": addon.id})
+
+
+@app.put("/api/v1/admin/addons/{addon_id}")
+async def admin_update_addon(
+    addon_id: int,
+    data: dict,
+    db: AsyncSession = Depends(get_db)
+):
+    """管理后台：更新行程选配"""
+    result = await db.execute(select(RouteAddon).where(RouteAddon.id == addon_id))
+    addon = result.scalar_one_or_none()
+    if not addon:
+        return {"code": 404, "message": "选配不存在", "data": None}
+
+    for field in ["route_id", "category", "name", "price", "unit", "description",
+                  "stock", "limit_per_order", "is_required", "need_info",
+                  "sort_order", "status", "extra_config"]:
+        if field in data:
+            setattr(addon, field, data[field])
+
+    await db.commit()
+    await db.refresh(addon)
+    return success({"id": addon.id})
+
+
+@app.delete("/api/v1/admin/addons/{addon_id}")
+async def admin_delete_addon(
+    addon_id: int,
+    db: AsyncSession = Depends(get_db)
+):
+    """管理后台：删除行程选配"""
+    result = await db.execute(select(RouteAddon).where(RouteAddon.id == addon_id))
+    addon = result.scalar_one_or_none()
+    if not addon:
+        return {"code": 404, "message": "选配不存在", "data": None}
+    await db.delete(addon)
+    await db.commit()
+    return success(None)
 
 
 if __name__ == "__main__":

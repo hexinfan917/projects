@@ -4,6 +4,10 @@
   padding-bottom: 140rpx;
 }
 
+.detail-scroll {
+  height: calc(100vh - 140rpx);
+}
+
 .status-bar {
   background: linear-gradient(135deg, #22C55E, #16A34A);
   padding: 60rpx 30rpx;
@@ -77,6 +81,80 @@
   font-size: 28rpx;
   color: #333;
   flex: 1;
+}
+
+.reject-card {
+  background: #FFF2F0;
+  border: 2rpx solid #FFCCC7;
+}
+
+.reject-title {
+  color: #FF4D4F;
+}
+
+.reject-reason {
+  display: block;
+  font-size: 28rpx;
+  color: #333;
+  margin-bottom: 12rpx;
+  line-height: 1.6;
+}
+
+.reject-tip {
+  display: block;
+  font-size: 24rpx;
+  color: #999;
+}
+
+.qr-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.qr-modal-content {
+  background: #fff;
+  border-radius: 20rpx;
+  padding: 40rpx;
+  width: 560rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.qr-modal-title {
+  font-size: 36rpx;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 30rpx;
+}
+
+.qr-image {
+  width: 400rpx;
+  height: 400rpx;
+  border-radius: 12rpx;
+}
+
+.qr-modal-tip {
+  font-size: 26rpx;
+  color: #999;
+  margin-top: 20rpx;
+  margin-bottom: 30rpx;
+}
+
+.qr-modal-close {
+  background: #f5f5f5;
+  color: #666;
+  font-size: 28rpx;
+  padding: 16rpx 60rpx;
+  border-radius: 32rpx;
 }
 
 .action-bar {

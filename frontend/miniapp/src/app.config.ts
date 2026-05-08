@@ -24,12 +24,14 @@ export default defineAppConfig({
     'pages/orders/detail/index',
     'pages/orders/list/index',
     'pages/orders/evaluate/index',
+    'pages/orders/refund/index',
     'pages/search/index',
     'pages/notifications/list/index',
     'pages/reviews/list/index',
     'pages/reviews/detail/index',
     'pages/charities/list/index',
-    'pages/charities/detail/index'
+    'pages/charities/detail/index',
+    'pages/charities/enroll/index'
   ],
   window: {
     backgroundTextStyle: 'light',

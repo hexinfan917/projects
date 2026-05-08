@@ -47,7 +47,7 @@ export async function request(path: string, options: any = {}) {
     }
 
     if (res.statusCode >= 400) {
-      const msg = res.data?.message || `请求失败 (${res.statusCode})`
+      const msg = res.data?.message || res.data?.detail || `请求失败 (${res.statusCode})`
       Taro.showToast({ title: msg, icon: 'none' })
       throw new Error(msg)
     }
@@ -124,6 +124,10 @@ export function cancelOrder(id: number) {
 
 export function evaluateOrder(id: number, data: any) {
   return request(`/api/v1/orders/${id}/evaluate`, { method: 'POST', data })
+}
+
+export function refundOrder(id: number, data: any) {
+  return request(`/api/v1/orders/${id}/refund`, { method: 'POST', data })
 }
 
 // 宠物
@@ -224,6 +228,19 @@ export function getCharityActivities(params?: any) {
 
 export function getCharityActivityDetail(id: number) {
   return request(`/api/v1/charities/activities/${id}`, { skipAuthModal: true })
+}
+
+export function registerCharityActivity(activityId: number, data: any) {
+  return request(`/api/v1/charities/activities/${activityId}/register`, { method: 'POST', data })
+}
+
+export function getCharityRegisterStatus(activityId: number) {
+  return request(`/api/v1/charities/activities/${activityId}/register/status`)
+}
+
+// 行程选配
+export function getRouteAddons(routeId: number, category?: string) {
+  return request(`/api/v1/routes/${routeId}/addons`, { data: category ? { category } : {}, skipAuthModal: true })
 }
 
 // 上传

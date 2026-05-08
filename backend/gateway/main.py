@@ -82,6 +82,7 @@ SERVICE_ROUTES = {
     "/api/v1/admin/operation-logs": "http://localhost:8001",
     "/api/v1/admin/route-types": "http://localhost:8033",
     "/api/v1/admin/routes": "http://localhost:8033",
+    "/api/v1/admin/addons": "http://localhost:8033",
     "/api/v1/admin/schedules": "http://localhost:8033",
     "/api/v1/routes": "http://localhost:8033",
     "/api/v1/admin/orders": "http://localhost:8003",
@@ -202,9 +203,9 @@ async def proxy(request: Request, path: str):
         
         logger.info(f"Proxy response: {response.status_code} for {target_url}")
         
-        # 检查响应内容类型，二进制数据（如图片）直接流式转发
+        # 检查响应内容类型，二进制数据（如图片、Excel）直接流式转发
         content_type = response.headers.get("content-type", "")
-        if content_type.startswith(("image/", "video/", "audio/", "application/octet-stream")):
+        if content_type.startswith(("image/", "video/", "audio/", "application/octet-stream", "application/vnd.openxmlformats-officedocument")):
             return Response(
                 status_code=response.status_code,
                 content=response.content,

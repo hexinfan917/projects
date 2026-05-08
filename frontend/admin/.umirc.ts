@@ -127,6 +127,11 @@ export default defineConfig({
       component: './Charities',
     },
     {
+      name: '行程选配',
+      path: '/addons',
+      component: './Addons',
+    },
+    {
       name: '登录',
       path: '/login',
       component: './Login',

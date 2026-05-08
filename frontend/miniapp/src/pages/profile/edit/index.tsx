@@ -4,6 +4,13 @@ import { View, Text, Input, Button, Image } from '@tarojs/components'
 import { getUserProfile, updateUserProfile, uploadFile } from '../../../utils/api'
 import './index.scss'
 
+const BASE_URL = 'http://localhost:8081'
+
+function fullImageUrl(url?: string) {
+  if (!url) return ''
+  return url.startsWith('http') ? url : `${BASE_URL}${url}`
+}
+
 const GENDER_OPTIONS = [
   { label: '男', value: 1 },
   { label: '女', value: 2 },
@@ -20,7 +27,7 @@ export default function ProfileEdit() {
     const info = Taro.getStorageSync('user_info')
     if (info) {
       const gender = info.gender === 1 || info.gender === 2 ? info.gender : 1
-      setUser({ ...info, gender })
+      setUser({ ...info, gender, avatar: fullImageUrl(info.avatar) })
     }
   }
 
@@ -35,7 +42,7 @@ export default function ProfileEdit() {
           const uploadRes: any = await uploadFile(tempFilePath)
           const data = JSON.parse(uploadRes.data)
           if (data.code === 200 && data.data?.url) {
-            setUser({ ...user, avatar: data.data.url })
+            setUser({ ...user, avatar: fullImageUrl(data.data.url) })
           } else {
             Taro.showToast({ title: '上传失败', icon: 'none' })
           }
@@ -78,7 +85,7 @@ export default function ProfileEdit() {
           <Text className='label'>头像</Text>
           <View className='avatar-wrap'>
             {user.avatar ? (
-              <Image className='avatar-img' src={user.avatar} mode='aspectFill' />
+              <Image className='avatar-img' src={fullImageUrl(user.avatar)} mode='aspectFill' />
             ) : (
               <View className='avatar-placeholder'>点击上传</View>
             )}

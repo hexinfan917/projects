@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react'
-import Taro from '@tarojs/taro'
-import { View, Text, Image, ScrollView, RichText, Button } from '@tarojs/components'
-import { getCharityActivityDetail } from '../../../utils/api'
+import Taro, { useDidShow } from '@tarojs/taro'
+import { View, Text, Image, ScrollView, Button } from '@tarojs/components'
+import { getCharityActivityDetail, getCharityRegisterStatus } from '../../../utils/api'
 import './index.scss'
 
 export default function CharityDetail() {
   const [detail, setDetail] = useState<any>(null)
   const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const [registerStatus, setRegisterStatus] = useState<any>(null)
 
   useEffect(() => {
     const instance = Taro.getCurrentInstance()
@@ -14,10 +15,20 @@ export default function CharityDetail() {
     if (id) {
       loadDetail(Number(id))
     }
-    // Check login status
-    const token = Taro.getStorageSync('access_token')
-    setIsLoggedIn(!!token)
   }, [])
+
+  // 每次页面显示时重新检查登录状态（从登录页返回后会触发）
+  useDidShow(() => {
+    const token = Taro.getStorageSync('access_token')
+    const loggedIn = !!token
+    setIsLoggedIn(loggedIn)
+
+    const instance = Taro.getCurrentInstance()
+    const id = instance.router?.params?.id
+    if (id && loggedIn) {
+      loadRegisterStatus(Number(id))
+    }
+  })
 
   const loadDetail = async (id: number) => {
     try {
@@ -35,6 +46,17 @@ export default function CharityDetail() {
     }
   }
 
+  const loadRegisterStatus = async (id: number) => {
+    try {
+      const res = await getCharityRegisterStatus(id)
+      if (res.code === 200 && res.data) {
+        setRegisterStatus(res.data)
+      }
+    } catch (error) {
+      // ignore
+    }
+  }
+
   const handleJoin = () => {
     if (!isLoggedIn) {
       Taro.showModal({
@@ -48,7 +70,11 @@ export default function CharityDetail() {
       })
       return
     }
-    Taro.showToast({ title: '报名功能开发中', icon: 'none' })
+    if (registerStatus?.registered) {
+      Taro.showToast({ title: `您已报名，当前状态：${registerStatus.status_name}`, icon: 'none' })
+      return
+    }
+    Taro.navigateTo({ url: `/pages/charities/enroll/index?id=${detail.id}` })
   }
 
   if (!detail) return null
@@ -61,7 +87,7 @@ export default function CharityDetail() {
   }
   const statusText = detail.status_name || statusMap[String(detail.status)] || '报名中'
   const statusClass = statusText === '报名中' ? 'open' : statusText === '进行中' ? 'progress' : 'closed'
-  
+
   // 解析图集
   let galleryImages: string[] = []
   if (detail.images) {
@@ -72,7 +98,7 @@ export default function CharityDetail() {
     }
   }
   galleryImages = galleryImages.filter((url: string) => url !== detail.cover_image)
-  
+
   const getFullImageUrl = (url: string) => url.startsWith('http') ? url : `http://localhost:8081${url}`
 
   // 处理 RichText 内容中的图片，使其自适应宽度
@@ -82,7 +108,7 @@ export default function CharityDetail() {
         let newAttrs = attrs
           .replace(/\s+width\s*=\s*["']?[^"'>\s]*["']?/gi, '')
           .replace(/\s+height\s*=\s*["']?[^"'>\s]*["']?/gi, '')
-        
+
         // 2. 处理 style 属性：移除其中的 width/height 定义
         const styleMatch = newAttrs.match(/style\s*=\s*"([^"]*)"/i)
         if (styleMatch) {
@@ -98,6 +124,19 @@ export default function CharityDetail() {
         return `<img${newAttrs}>`
       })
     : ''
+
+  // 按钮文案
+  let btnText = statusText
+  let btnDisabled = statusClass !== 'open'
+  if (statusClass === 'open') {
+    if (registerStatus?.registered) {
+      btnText = registerStatus.status_name || '已报名'
+      btnDisabled = true
+    } else {
+      btnText = '立即报名'
+      btnDisabled = false
+    }
+  }
 
   return (
     <View className='charity-detail-page'>
@@ -126,8 +165,11 @@ export default function CharityDetail() {
             {detail.current_participants > 0 && (
               <Text className='meta-item'>✅ 已报名: {detail.current_participants}人</Text>
             )}
+            {detail.max_participants > 0 && (
+              <Text className='meta-item'>👥 限额: {detail.max_participants}人</Text>
+            )}
           </View>
-          
+
           {/* 图集展示 */}
           {galleryImages.length > 0 && (
             <View className='gallery-section'>
@@ -150,7 +192,7 @@ export default function CharityDetail() {
               </View>
             </View>
           )}
-          
+
           <View className='detail-body'>
             {/* 使用原生 rich-text 组件，通过 tagStyle 控制图片自适应 */}
             <rich-text
@@ -162,11 +204,11 @@ export default function CharityDetail() {
       </ScrollView>
       <View className='bottom-bar'>
         <Button
-          className={`join-btn ${statusClass !== 'open' ? 'disabled' : ''}`}
-          disabled={statusClass !== 'open'}
+          className={`join-btn ${btnDisabled ? 'disabled' : ''}`}
+          disabled={btnDisabled}
           onClick={handleJoin}
         >
-          {statusClass === 'open' ? '立即报名' : statusText}
+          {btnText}
         </Button>
       </View>
     </View>

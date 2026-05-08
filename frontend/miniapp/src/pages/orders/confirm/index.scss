@@ -388,3 +388,521 @@
   font-size: 28px;
   border-radius: 36px;
 }
+
+/* 顶部返回按钮 */
+.page-back {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 100;
+  padding: 20rpx 28rpx;
+  display: flex;
+  align-items: center;
+}
+
+.page-back-icon {
+  font-size: 40rpx;
+  color: #fff;
+  font-weight: bold;
+}
+
+/* 行程选配 Tab */
+.addon-tabs {
+  display: flex;
+  gap: 16rpx;
+  margin-bottom: 24rpx;
+  border-bottom: 1rpx solid #f0f0f0;
+  padding-bottom: 16rpx;
+}
+
+.addon-tab {
+  padding: 12rpx 28rpx;
+  border-radius: 32rpx;
+  font-size: 28rpx;
+  color: #666;
+  background: #F0FDF4;
+  transition: all 0.2s;
+
+  &.active {
+    background: #F0FDF4;
+    color: #22C55E;
+    font-weight: 600;
+  }
+}
+
+/* 选配列表 */
+.addon-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+
+.addon-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #fafbfc;
+  border: 2rpx solid #e5e6eb;
+  border-radius: 14rpx;
+  padding: 22rpx;
+
+  &.addon-with-options {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16rpx;
+  }
+}
+
+.addon-name {
+  display: block;
+  font-size: 32rpx;
+  color: #222;
+  font-weight: 500;
+  margin-bottom: 8rpx;
+}
+
+.addon-desc {
+  display: block;
+  font-size: 26rpx;
+  color: #888;
+  margin-bottom: 8rpx;
+  line-height: 1.4;
+}
+
+.addon-price {
+  font-size: 30rpx;
+  color: #FF4D4F;
+  font-weight: bold;
+}
+
+.addon-info {
+  flex: 1;
+  min-width: 0;
+}
+
+/* 狗狗票选项列表 */
+.addon-options-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+  width: 100%;
+}
+
+.addon-option-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #fff;
+  padding: 18rpx 20rpx;
+  border-radius: 12rpx;
+  border: 1rpx solid #eee;
+}
+
+.addon-option-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+}
+
+.addon-option-name {
+  font-size: 30rpx;
+  color: #333;
+  font-weight: 500;
+}
+
+.addon-option-desc {
+  font-size: 24rpx;
+  color: #999;
+  line-height: 1.4;
+}
+
+/* 数量控制 */
+.addon-qty-row {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.addon-subtotal {
+  font-size: 28rpx;
+  color: #FF4D4F;
+  font-weight: bold;
+  margin-right: 8rpx;
+}
+
+.qty-control {
+  display: flex;
+  align-items: center;
+  gap: 4rpx;
+}
+
+.qty-btn {
+  width: 48rpx;
+  height: 48rpx;
+  line-height: 44rpx;
+  text-align: center;
+  border-radius: 8rpx;
+  font-size: 32rpx;
+  color: #333;
+  background: #f0f0f0;
+  border: 1rpx solid #ddd;
+
+  &.disabled {
+    color: #ccc;
+    background: #f5f5f5;
+    border-color: #eee;
+  }
+}
+
+.qty-value {
+  min-width: 48rpx;
+  text-align: center;
+  font-size: 30rpx;
+  color: #333;
+  font-weight: 500;
+}
+
+/* 选配合计 */
+.addon-total-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 24rpx;
+  padding-top: 20rpx;
+  border-top: 2rpx dashed #e5e5e5;
+}
+
+.addon-total-label {
+  font-size: 30rpx;
+  color: #666;
+}
+
+.addon-total-price {
+  font-size: 36rpx;
+  color: #FF4D4F;
+  font-weight: bold;
+}
+
+/* 底部价格区域 */
+.bottom-price-wrap {
+  display: flex;
+  flex-direction: column;
+}
+
+.bottom-price-main {
+  font-size: 36rpx;
+  color: #ff4d4f;
+  font-weight: 600;
+}
+
+.bottom-price-detail {
+  font-size: 24rpx;
+  color: #999;
+  margin-top: 4rpx;
+}
+
+/* 酒店房型行 */
+.hotel-room-row {
+  align-items: flex-start;
+  padding: 24px;
+}
+
+.hotel-room-mini-specs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.hotel-room-mini-spec {
+  font-size: 30px;
+  color: #888;
+}
+
+/* 酒店房型卡片（订单确认页） */
+.hotel-room-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  margin-top: 16px;
+}
+
+.hotel-room-card-confirm {
+  display: flex;
+  background: #f8f9fa;
+  border-radius: 16px;
+  padding: 20px;
+  align-items: flex-start;
+}
+
+.hotel-room-top-confirm {
+  position: relative;
+  flex-shrink: 0;
+  margin-right: 20px;
+}
+
+.hotel-room-img-confirm {
+  width: 180px;
+  height: 140px;
+  border-radius: 12px;
+}
+
+.hotel-room-tags-under-img {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8rpx;
+  margin-top: 12rpx;
+  max-width: 180px;
+}
+
+.hotel-room-tag-under {
+  font-size: 28rpx;
+  color: #FF8C42;
+  background: rgba(255, 140, 66, 0.1);
+  padding: 4rpx 10rpx;
+  border-radius: 6rpx;
+}
+
+.hotel-room-body-confirm {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.hotel-room-name-confirm {
+  font-size: 36px;
+  font-weight: bold;
+  color: #333;
+}
+
+.hotel-room-tags-confirm {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8rpx;
+}
+
+.hotel-room-tag-confirm {
+  font-size: 28rpx;
+  color: #FF8C42;
+  background: rgba(255, 140, 66, 0.1);
+  padding: 4rpx 10rpx;
+  border-radius: 6rpx;
+}
+
+.hotel-room-specs-confirm {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+}
+
+.hotel-room-spec-confirm {
+  font-size: 30rpx;
+  color: #666;
+}
+
+.hotel-room-policy-confirm {
+  font-size: 28rpx;
+  color: #999;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.hotel-room-breakfast-confirm {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.hotel-room-bf-icon {
+  width: 36rpx;
+  height: 36rpx;
+  background: #333;
+  color: #fff;
+  font-size: 28rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6rpx;
+}
+
+.hotel-room-bf-text {
+  font-size: 30rpx;
+  color: #666;
+}
+
+.hotel-room-action-confirm {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-left: 16px;
+  flex-shrink: 0;
+  min-width: 120px;
+}
+
+.hotel-room-stock-confirm {
+  font-size: 30rpx;
+  color: #999;
+}
+
+.hotel-room-price-row-confirm {
+  display: flex;
+  align-items: baseline;
+  gap: 12rpx;
+}
+
+.hotel-room-op-confirm {
+  font-size: 32rpx;
+  color: #bbb;
+  text-decoration: line-through;
+}
+
+.hotel-room-p-confirm {
+  font-size: 42rpx;
+  color: #FF4D4F;
+  font-weight: bold;
+}
+
+/* ---------- 酒店房型详情弹窗（订单确认页） ---------- */
+.room-modal-confirm {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.room-modal-mask-confirm {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.room-modal-content-confirm {
+  position: relative;
+  background: #fff;
+  border-radius: 24rpx 24rpx 0 0;
+  z-index: 2001;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.room-modal-header-confirm {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24rpx 30rpx;
+  position: relative;
+  border-bottom: 1rpx solid #f0f0f0;
+}
+
+.room-modal-title-confirm {
+  font-size: 40rpx;
+  font-weight: bold;
+  color: #333;
+}
+
+.room-modal-close-confirm {
+  position: absolute;
+  right: 30rpx;
+  font-size: 36rpx;
+  color: #999;
+  padding: 10rpx;
+}
+
+.room-modal-scroll-confirm {
+  max-height: calc(85vh - 100rpx);
+}
+
+.room-modal-swiper-confirm {
+  width: 100%;
+  height: 420rpx;
+}
+
+.room-modal-image-confirm {
+  width: 100%;
+  height: 420rpx;
+}
+
+.room-modal-body-confirm {
+  padding: 30rpx;
+}
+
+.room-modal-name-confirm {
+  display: block;
+  font-size: 40rpx;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 16rpx;
+}
+
+.room-modal-specs-confirm {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24rpx;
+  margin-bottom: 30rpx;
+}
+
+.room-modal-spec-confirm {
+  font-size: 32rpx;
+  color: #666;
+}
+
+.room-modal-section-confirm {
+  margin-bottom: 24rpx;
+}
+
+.room-modal-section-title-confirm {
+  display: block;
+  font-size: 36rpx;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 16rpx;
+  position: relative;
+  padding-left: 20rpx;
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 6rpx;
+    height: 28rpx;
+    background: #FF8C42;
+    border-radius: 4rpx;
+  }
+}
+
+.room-modal-info-row-confirm {
+  display: flex;
+  margin-bottom: 16rpx;
+}
+
+.room-modal-info-label-confirm {
+  width: 180rpx;
+  font-size: 34rpx;
+  color: #333;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.room-modal-info-value-confirm {
+  flex: 1;
+  font-size: 34rpx;
+  color: #666;
+  line-height: 1.5;
+}

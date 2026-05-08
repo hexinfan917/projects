@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import Taro, { useDidShow } from '@tarojs/taro'
-import { View, Text, Image } from '@tarojs/components'
-import { getRouteDetail, getRouteSchedules, getPets, getTravelers, createOrder } from '../../../utils/api'
+import { View, Text, Image, Swiper, SwiperItem, ScrollView } from '@tarojs/components'
+import { getRouteDetail, getRouteSchedules, getPets, getTravelers, createOrder, getRouteAddons } from '../../../utils/api'
 import './index.scss'
 
 const GENDER_MAP: any = { 0: '母', 1: '公' }
@@ -26,6 +26,78 @@ function maskIdCard(idCard?: string) {
   return idCard.slice(0, 3) + '***********' + idCard.slice(-4)
 }
 
+/* ---------- 酒店房型详情弹窗 ---------- */
+function HotelRoomModal({ room, visible, onClose }: any) {
+  if (!visible || !room) return null
+  const images = room.images?.length > 0 ? room.images : ['https://via.placeholder.com/750x420']
+  return (
+    <View className='room-modal-confirm' onClick={onClose}>
+      <View className='room-modal-mask-confirm' />
+      <View className='room-modal-content-confirm' onClick={(e) => e.stopPropagation()}>
+        <View className='room-modal-header-confirm'>
+          <Text className='room-modal-title-confirm'>基本信息</Text>
+          <Text className='room-modal-close-confirm' onClick={onClose}>✕</Text>
+        </View>
+        <ScrollView className='room-modal-scroll-confirm' scrollY>
+          {images.length === 1 ? (
+            <Image className='room-modal-image-confirm' src={images[0]} mode='aspectFill' />
+          ) : (
+            <Swiper className='room-modal-swiper-confirm' indicatorDots autoplay interval={4000}>
+              {images.map((img: string, idx: number) => (
+                <SwiperItem key={idx}>
+                  <Image className='room-modal-image-confirm' src={img} mode='aspectFill' />
+                </SwiperItem>
+              ))}
+            </Swiper>
+          )}
+          <View className='room-modal-body-confirm'>
+            <Text className='room-modal-name-confirm'>{room.name}</Text>
+            <View className='room-modal-specs-confirm'>
+              {room.max_guests ? <Text className='room-modal-spec-confirm'>至多{room.max_guests}人</Text> : null}
+              {room.area ? <Text className='room-modal-spec-confirm'>面积{room.area}</Text> : null}
+              {room.bed_type ? <Text className='room-modal-spec-confirm'>{room.bed_type}</Text> : null}
+              {room.window ? <Text className='room-modal-spec-confirm'>{room.window}</Text> : null}
+            </View>
+            <View className='room-modal-section-confirm'>
+              <Text className='room-modal-section-title-confirm'>预定必读</Text>
+              {room.breakfast ? (
+                <View className='room-modal-info-row-confirm'>
+                  <Text className='room-modal-info-label-confirm'>早餐</Text>
+                  <Text className='room-modal-info-value-confirm'>{room.breakfast}</Text>
+                </View>
+              ) : null}
+              {room.max_pets !== undefined ? (
+                <View className='room-modal-info-row-confirm'>
+                  <Text className='room-modal-info-label-confirm'>携宠数量</Text>
+                  <Text className='room-modal-info-value-confirm'>至多{room.max_pets}只宠物</Text>
+                </View>
+              ) : null}
+              {room.pet_weight_limit ? (
+                <View className='room-modal-info-row-confirm'>
+                  <Text className='room-modal-info-label-confirm'>携宠体重</Text>
+                  <Text className='room-modal-info-value-confirm'>{room.pet_weight_limit}</Text>
+                </View>
+              ) : null}
+              {room.cancel_policy ? (
+                <View className='room-modal-info-row-confirm'>
+                  <Text className='room-modal-info-label-confirm'>退订政策</Text>
+                  <Text className='room-modal-info-value-confirm'>{room.cancel_policy}</Text>
+                </View>
+              ) : null}
+              {room.checkin_notes ? (
+                <View className='room-modal-info-row-confirm'>
+                  <Text className='room-modal-info-label-confirm'>入住必读</Text>
+                  <Text className='room-modal-info-value-confirm'>{room.checkin_notes}</Text>
+                </View>
+              ) : null}
+            </View>
+          </View>
+        </ScrollView>
+      </View>
+    </View>
+  )
+}
+
 export default function OrderConfirm() {
   const [route, setRoute] = useState<any>(null)
   const [schedule, setSchedule] = useState<any>(null)
@@ -35,6 +107,21 @@ export default function OrderConfirm() {
   const [selectedPetIds, setSelectedPetIds] = useState<number[]>([])
   const [showTravelerModal, setShowTravelerModal] = useState(false)
   const [showPetModal, setShowPetModal] = useState(false)
+
+  // 行程选配
+  const ADDON_TABS = [
+    { key: 'dog_ticket', label: '狗狗票' },
+    { key: 'hotel', label: '酒店' },
+    { key: 'amusement', label: '游乐项目' }
+  ]
+  const [addons, setAddons] = useState<any[]>([])
+  const [activeAddonTab, setActiveAddonTab] = useState('dog_ticket')
+  const [addonQuantities, setAddonQuantities] = useState<Record<number, number>>({})
+  // 狗狗票选项数量：{ addonId: { optionName: quantity } }
+  const [addonOptionQuantities, setAddonOptionQuantities] = useState<Record<number, Record<string, number>>>({})
+  // 酒店房型数量：{ addonId: { roomName: quantity } }
+  const [addonRoomQuantities, setAddonRoomQuantities] = useState<Record<number, Record<string, number>>>({})
+  const [selectedRoom, setSelectedRoom] = useState<any>(null)
 
   useEffect(() => {
     const instance = Taro.getCurrentInstance()
@@ -58,6 +145,28 @@ export default function OrderConfirm() {
       const schedules = sres.data?.schedules || []
       const found = schedules.find((s: any) => String(s.id) === String(scheduleId))
       setSchedule(found || null)
+      // 加载行程选配
+      const ares = await getRouteAddons(routeId)
+      const addonList = ares.data?.addons || []
+      setAddons(addonList)
+      // 必选项默认数量为1
+      const defaultQty: Record<number, number> = {}
+      const defaultOptionQty: Record<number, Record<string, number>> = {}
+      const defaultRoomQty: Record<number, Record<string, number>> = {}
+      addonList.forEach((a: any) => {
+        if (a.is_required) {
+          if (a.category === 'dog_ticket' && a.extra_config?.options?.length > 0) {
+            // 有选项的狗狗票，默认不选任何选项（让用户自己选择）
+          } else if (a.category === 'hotel' && a.extra_config?.rooms?.length > 0) {
+            // 有房型的酒店，默认不选任何房型（让用户自己选择）
+          } else {
+            defaultQty[a.id] = 1
+          }
+        }
+      })
+      setAddonQuantities(defaultQty)
+      setAddonOptionQuantities(defaultOptionQty)
+      setAddonRoomQuantities(defaultRoomQty)
     } catch (err) {
       console.error(err)
     }
@@ -165,6 +274,72 @@ export default function OrderConfirm() {
     setSelectedPetIds(prev => prev.filter(pid => pid !== id))
   }
 
+  // 行程选配数量调整
+  const changeAddonQty = (addonId: number, delta: number, limit: number) => {
+    setAddonQuantities(prev => {
+      const current = prev[addonId] || 0
+      const next = Math.max(0, Math.min(limit > 0 ? limit : 99, current + delta))
+      if (next === 0) {
+        const { [addonId]: _, ...rest } = prev
+        return rest
+      }
+      return { ...prev, [addonId]: next }
+    })
+  }
+
+  const setAddonQtyInput = (addonId: number, value: string, limit: number) => {
+    const num = parseInt(value, 10)
+    if (isNaN(num) || num <= 0) {
+      setAddonQuantities(prev => {
+        const { [addonId]: _, ...rest } = prev
+        return rest
+      })
+      return
+    }
+    const next = Math.min(limit > 0 ? limit : 99, num)
+    setAddonQuantities(prev => ({ ...prev, [addonId]: next }))
+  }
+
+  // 狗狗票选项数量调整
+  const changeAddonOptionQty = (addonId: number, optionName: string, delta: number, limit: number) => {
+    setAddonOptionQuantities(prev => {
+      const addonOptions = prev[addonId] || {}
+      const current = addonOptions[optionName] || 0
+      const next = Math.max(0, Math.min(limit > 0 ? limit : 99, current + delta))
+      const newAddonOptions = { ...addonOptions }
+      if (next === 0) {
+        delete newAddonOptions[optionName]
+      } else {
+        newAddonOptions[optionName] = next
+      }
+      if (Object.keys(newAddonOptions).length === 0) {
+        const { [addonId]: _, ...rest } = prev
+        return rest
+      }
+      return { ...prev, [addonId]: newAddonOptions }
+    })
+  }
+
+  // 酒店房型数量调整
+  const changeAddonRoomQty = (addonId: number, roomName: string, delta: number, limit: number) => {
+    setAddonRoomQuantities(prev => {
+      const addonRooms = prev[addonId] || {}
+      const current = addonRooms[roomName] || 0
+      const next = Math.max(0, Math.min(limit > 0 ? limit : 99, current + delta))
+      const newAddonRooms = { ...addonRooms }
+      if (next === 0) {
+        delete newAddonRooms[roomName]
+      } else {
+        newAddonRooms[roomName] = next
+      }
+      if (Object.keys(newAddonRooms).length === 0) {
+        const { [addonId]: _, ...rest } = prev
+        return rest
+      }
+      return { ...prev, [addonId]: newAddonRooms }
+    })
+  }
+
   const handleSubmit = async () => {
     console.log('submit clicked', { selectedTravelers: selectedTravelers.length, selectedPetIds: selectedPetIds.length, hasRoute: !!route, hasSchedule: !!schedule })
     if (selectedTravelers.length === 0) {
@@ -183,6 +358,70 @@ export default function OrderConfirm() {
       const contact = selectedTravelers[0]
       const participants = selectedTravelers.slice(1)
       const insurancePrice = 15 * selectedPetIds.length + 10 * selectedTravelers.length
+      const selectedAddons = addons
+        .filter((a: any) => {
+          if (a.category === 'dog_ticket' && a.extra_config?.options?.length > 0) {
+            const optionQtyMap = addonOptionQuantities[a.id] || {}
+            return Object.values(optionQtyMap).some((q: number) => q > 0)
+          }
+          if (a.category === 'hotel' && a.extra_config?.rooms?.length > 0) {
+            const roomQtyMap = addonRoomQuantities[a.id] || {}
+            return Object.values(roomQtyMap).some((q: number) => q > 0)
+          }
+          return (addonQuantities[a.id] || 0) > 0
+        })
+        .map((a: any) => {
+          if (a.category === 'dog_ticket' && a.extra_config?.options?.length > 0) {
+            const optionQtyMap = addonOptionQuantities[a.id] || {}
+            const selectedOptions = a.extra_config.options
+              .filter((opt: any) => (optionQtyMap[opt.name] || 0) > 0)
+              .map((opt: any) => ({
+                name: opt.name,
+                price: opt.price,
+                quantity: optionQtyMap[opt.name],
+                description: opt.description
+              }))
+            return {
+              addon_id: a.id,
+              category: a.category,
+              name: a.name,
+              price: 0,
+              quantity: 1,
+              unit: a.unit,
+              selected_options: selectedOptions
+            }
+          }
+          if (a.category === 'hotel' && a.extra_config?.rooms?.length > 0) {
+            const roomQtyMap = addonRoomQuantities[a.id] || {}
+            const selectedRooms = a.extra_config.rooms
+              .filter((room: any) => (roomQtyMap[room.name] || 0) > 0)
+              .map((room: any) => ({
+                name: room.name,
+                price: room.price,
+                quantity: roomQtyMap[room.name],
+                images: room.images || [],
+                area: room.area,
+                bed_type: room.bed_type,
+              }))
+            return {
+              addon_id: a.id,
+              category: a.category,
+              name: a.name,
+              price: 0,
+              quantity: 1,
+              unit: a.unit,
+              selected_rooms: selectedRooms
+            }
+          }
+          return {
+            addon_id: a.id,
+            category: a.category,
+            name: a.name,
+            price: a.price,
+            quantity: addonQuantities[a.id],
+            unit: a.unit
+          }
+        })
       const res: any = await createOrder({
         route_id: route.id,
         schedule_id: schedule.id,
@@ -196,7 +435,9 @@ export default function OrderConfirm() {
         route_price: schedule.price || route.base_price || 0,
         insurance_price: insurancePrice,
         equipment_price: 0,
-        discount_amount: 0
+        discount_amount: 0,
+        addons: selectedAddons,
+        addon_amount: addonTotal
       })
       if (res.code !== 200) {
         throw new Error(res.message || '创建订单失败')
@@ -216,7 +457,30 @@ export default function OrderConfirm() {
   const unitPrice = schedule?.price || route?.base_price || 0
   const petInsuranceTotal = 15 * selectedPetIds.length
   const personInsuranceTotal = 10 * selectedTravelers.length
-  const total = unitPrice * selectedTravelers.length + petInsuranceTotal + personInsuranceTotal
+  // 行程选配合计
+  const addonTotal = addons.reduce((sum, a) => {
+    // 有选项的狗狗票，累加选项价格
+    if (a.category === 'dog_ticket' && a.extra_config?.options?.length > 0) {
+      const optionQtyMap = addonOptionQuantities[a.id] || {}
+      const optionSum = a.extra_config.options.reduce((optSum: number, opt: any) => {
+        const qty = optionQtyMap[opt.name] || 0
+        return optSum + opt.price * qty
+      }, 0)
+      return sum + optionSum
+    }
+    // 有房型酒店，累加房型价格
+    if (a.category === 'hotel' && a.extra_config?.rooms?.length > 0) {
+      const roomQtyMap = addonRoomQuantities[a.id] || {}
+      const roomSum = a.extra_config.rooms.reduce((rSum: number, room: any) => {
+        const qty = roomQtyMap[room.name] || 0
+        return rSum + room.price * qty
+      }, 0)
+      return sum + roomSum
+    }
+    const qty = addonQuantities[a.id] || 0
+    return sum + a.price * qty
+  }, 0)
+  const total = unitPrice * selectedTravelers.length + petInsuranceTotal + personInsuranceTotal + addonTotal
   const canSubmit = selectedTravelers.length > 0 && selectedPetIds.length > 0
 
   return (
@@ -293,6 +557,161 @@ export default function OrderConfirm() {
         {selectedPets.length === 0 && <Text className='empty-tip'>尚未选择宠物</Text>}
       </View>
 
+      {/* 行程选配 */}
+      {addons.length > 0 && (
+        <View className='section-block'>
+          <Text className='section-label'>【行程选配】</Text>
+          <View className='addon-tabs'>
+            {ADDON_TABS.map(tab => (
+              <View
+                key={tab.key}
+                className={`addon-tab ${activeAddonTab === tab.key ? 'active' : ''}`}
+                onClick={() => setActiveAddonTab(tab.key)}
+              >
+                <Text>{tab.label}</Text>
+              </View>
+            ))}
+          </View>
+          <View className='addon-list'>
+            {(() => { const list = addons.filter((a: any) => a.category === activeAddonTab); if (list.length === 0) return <Text className='empty-tip'>该分类暂无选配项目</Text>; return list.map((addon: any) => {
+              const limit = addon.limit_per_order || 99
+              // 狗狗票且有选项规格
+              if (addon.category === 'dog_ticket' && addon.extra_config?.options?.length > 0) {
+                const optionQtyMap = addonOptionQuantities[addon.id] || {}
+                return (
+                  <View key={addon.id} className='addon-item addon-with-options'>
+                    <Text className='addon-name'>{addon.name}</Text>
+                    {addon.description ? <Text className='addon-desc'>{addon.description}</Text> : null}
+                    <View className='addon-options-list'>
+                      {addon.extra_config.options.map((opt: any, idx: number) => {
+                        const qty = optionQtyMap[opt.name] || 0
+                        return (
+                          <View key={idx} className='addon-option-row'>
+                            <View className='addon-option-info'>
+                              <Text className='addon-option-name'>{opt.name}</Text>
+                              {opt.description && opt.description !== opt.name ? <Text className='addon-option-desc'>{opt.description}</Text> : null}
+                            </View>
+                            <View className='addon-qty-row'>
+                              {qty > 0 && <Text className='addon-subtotal'>¥{opt.price * qty}</Text>}
+                              <View className='qty-control'>
+                                <Text
+                                  className={`qty-btn ${qty <= 0 ? 'disabled' : ''}`}
+                                  onClick={() => changeAddonOptionQty(addon.id, opt.name, -1, limit)}
+                                >-</Text>
+                                <Text className='qty-value'>{qty}</Text>
+                                <Text
+                                  className={`qty-btn ${qty >= limit ? 'disabled' : ''}`}
+                                  onClick={() => changeAddonOptionQty(addon.id, opt.name, 1, limit)}
+                                >+</Text>
+                              </View>
+                            </View>
+                          </View>
+                        )
+                      })}
+                    </View>
+                  </View>
+                )
+              }
+              // 酒店且有房型
+              if (addon.category === 'hotel' && addon.extra_config?.rooms?.length > 0) {
+                const roomQtyMap = addonRoomQuantities[addon.id] || {}
+                return (
+                  <View key={addon.id} className='addon-item addon-with-options'>
+                    <Text className='addon-name'>{addon.name}</Text>
+                    {addon.description ? <Text className='addon-desc'>{addon.description}</Text> : null}
+                    <View className='hotel-room-cards'>
+                      {addon.extra_config.rooms.map((room: any, idx: number) => {
+                        const qty = roomQtyMap[room.name] || 0
+                        const roomLimit = room.stock || limit
+                        const imgUrl = room.images?.[0] || 'https://via.placeholder.com/200x150'
+                        return (
+                          <View key={idx} className='hotel-room-card-confirm'>
+                            <View className='hotel-room-top-confirm' onClick={() => setSelectedRoom(room)}>
+                              <Image className='hotel-room-img-confirm' src={imgUrl} mode='aspectFill' />
+                              <View className='hotel-room-tags-under-img'>
+                                {room.tags?.slice(0, 3).map((t: string, i: number) => (
+                                  <Text key={i} className='hotel-room-tag-under'>{t}</Text>
+                                ))}
+                              </View>
+                            </View>
+                            <View className='hotel-room-body-confirm' onClick={() => setSelectedRoom(room)}>
+                              <Text className='hotel-room-name-confirm'>{room.name}</Text>
+                              <View className='hotel-room-specs-confirm'>
+                                {room.area ? <Text className='hotel-room-spec-confirm'>{room.area}</Text> : null}
+                                {room.window ? <Text className='hotel-room-spec-confirm'>{room.window}</Text> : null}
+                                {room.max_guests ? <Text className='hotel-room-spec-confirm'>至多{room.max_guests}人{room.max_pets ? `/${room.max_pets}宠` : ''}</Text> : null}
+                                {room.bed_type ? <Text className='hotel-room-spec-confirm'>{room.bed_type}</Text> : null}
+                              </View>
+                              {room.breakfast ? (
+                                <View className='hotel-room-breakfast-confirm'>
+                                  <Text className='hotel-room-bf-icon'>食</Text>
+                                  <Text className='hotel-room-bf-text'>{room.breakfast}</Text>
+                                </View>
+                              ) : null}
+                            </View>
+                            <View className='hotel-room-action-confirm'>
+                              {room.stock !== undefined ? (
+                                <Text className='hotel-room-stock-confirm'>仅剩{room.stock}间</Text>
+                              ) : null}
+                              <View className='hotel-room-price-row-confirm'>
+                                {room.original_price ? (
+                                  <Text className='hotel-room-op-confirm'>¥{room.original_price}</Text>
+                                ) : null}
+                                <Text className='hotel-room-p-confirm'>¥{room.price}</Text>
+                              </View>
+                              <View className='addon-qty-row' style={{ marginTop: '8rpx' }}>
+                                {qty > 0 && <Text className='addon-subtotal'>¥{room.price * qty}</Text>}
+                                <View className='qty-control'>
+                                  <Text className={`qty-btn ${qty <= 0 ? 'disabled' : ''}`} onClick={() => changeAddonRoomQty(addon.id, room.name, -1, roomLimit)}>-</Text>
+                                  <Text className='qty-value'>{qty}</Text>
+                                  <Text className={`qty-btn ${qty >= roomLimit ? 'disabled' : ''}`} onClick={() => changeAddonRoomQty(addon.id, room.name, 1, roomLimit)}>+</Text>
+                                </View>
+                              </View>
+                            </View>
+                          </View>
+                        )
+                      })}
+                    </View>
+                  </View>
+                )
+              }
+              // 普通选配
+              const qty = addonQuantities[addon.id] || 0
+              return (
+                <View key={addon.id} className='addon-item'>
+                  <View className='addon-info'>
+                    <Text className='addon-name'>{addon.name}</Text>
+                    <Text className='addon-desc'>{addon.description || ''}</Text>
+                    <Text className='addon-price'>¥{addon.price}/{addon.unit}</Text>
+                  </View>
+                  <View className='addon-qty-row'>
+                    {qty > 0 && <Text className='addon-subtotal'>¥{addon.price * qty}</Text>}
+                    <View className='qty-control'>
+                      <Text
+                        className={`qty-btn ${qty <= 0 ? 'disabled' : ''}`}
+                        onClick={() => changeAddonQty(addon.id, -1, limit)}
+                      >-</Text>
+                      <Text className='qty-value'>{qty}</Text>
+                      <Text
+                        className={`qty-btn ${qty >= limit ? 'disabled' : ''}`}
+                        onClick={() => changeAddonQty(addon.id, 1, limit)}
+                      >+</Text>
+                    </View>
+                  </View>
+                </View>
+              )
+            })
+          })()}
+          </View>
+          {addonTotal > 0 && (
+            <View className='addon-total-row'>
+              <Text className='addon-total-label'>行程选配合计</Text>
+              <Text className='addon-total-price'>¥{addonTotal}</Text>
+            </View>
+          )}
+        </View>
+      )}
+
       {/* 保险服务 */}
       <View className='section-block'>
         <Text className='section-label'>【保险服务】（必选）</Text>
@@ -309,7 +728,13 @@ export default function OrderConfirm() {
 
       {/* 底部固定栏 */}
       <View className='bottom-bar'>
-        <Text className='bottom-price'>实付：¥{total}</Text>
+        <View className='bottom-price-wrap'>
+          <Text className='bottom-price-main'>实付：¥{total}</Text>
+          <Text className='bottom-price-detail'>
+            基础¥{unitPrice * selectedTravelers.length} + 保险¥{petInsuranceTotal + personInsuranceTotal}
+            {addonTotal > 0 ? ` + 选配¥${addonTotal}` : ''}
+          </Text>
+        </View>
         <View className={`bottom-submit ${canSubmit ? 'active' : 'disabled'}`} onClick={handleSubmit}>提交订单</View>
       </View>
 
@@ -347,6 +772,9 @@ export default function OrderConfirm() {
           </View>
         </View>
       )}
+
+      {/* 酒店房型详情弹窗 */}
+      <HotelRoomModal room={selectedRoom} visible={!!selectedRoom} onClose={() => setSelectedRoom(null)} />
 
       {/* 宠物选择弹窗 */}
       {showPetModal && (

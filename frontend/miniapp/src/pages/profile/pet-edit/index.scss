@@ -100,9 +100,9 @@
   background: #f5f6f7;
   border: 2px solid transparent;
   &.active {
-    color: #ff7700;
-    background: #fff7e6;
-    border-color: #ffcc80;
+    color: #22C55E;
+    background: #f0fdf4;
+    border-color: #86efac;
   }
 }
 
@@ -120,8 +120,8 @@
   margin-right: 12px;
   position: relative;
   &.checked {
-    border-color: #ff7700;
-    background: #ff7700;
+    border-color: #22C55E;
+    background: #22C55E;
     &::after {
       content: '';
       position: absolute;
@@ -151,7 +151,7 @@
   text-align: center;
   border: none;
   &.active {
-    background: linear-gradient(135deg, #ff9900 0%, #ff7700 100%);
+    background: #22C55E;
   }
   &.disabled {
     background: #ccc;

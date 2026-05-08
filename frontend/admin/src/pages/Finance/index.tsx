@@ -1,5 +1,5 @@
 import { PageContainer, ProTable } from '@ant-design/pro-components';
-import { Button, Tag, message, Popconfirm, Modal } from 'antd';
+import { Button, Tag, message, Popconfirm, Modal, Input } from 'antd';
 import { CheckOutlined, CloseOutlined } from '@ant-design/icons';
 import { useRef, useState } from 'react';
 import { request } from '@umijs/max';
@@ -7,6 +7,7 @@ import dayjs from 'dayjs';
 
 const statusMap: Record<number, { text: string; color: string }> = {
   40: { text: '退款中', color: 'orange' },
+  45: { text: '退款驳回', color: 'red' },
   50: { text: '已退款', color: 'default' },
 };
 
@@ -14,6 +15,7 @@ export default function FinanceManage() {
   const tableRef = useRef<any>(null);
   const [rejectModalVisible, setRejectModalVisible] = useState(false);
   const [currentOrder, setCurrentOrder] = useState<any>(null);
+  const [rejectReason, setRejectReason] = useState('');
 
   const handleApprove = async (orderId: number) => {
     try {
@@ -33,14 +35,19 @@ export default function FinanceManage() {
 
   const handleReject = async () => {
     if (!currentOrder) return;
+    if (!rejectReason.trim()) {
+      message.warning('请填写拒绝原因');
+      return;
+    }
     try {
       const res = await request(`/api/v1/admin/refunds/${currentOrder.id}/reject`, {
         method: 'POST',
-        data: { reason: '不符合退款条件' },
+        data: { reason: rejectReason.trim() },
       });
       if (res.code === 200) {
         message.success('已拒绝退款申请');
         setRejectModalVisible(false);
+        setRejectReason('');
         tableRef.current?.reload();
       } else {
         message.error(res.message || '操作失败');
@@ -92,11 +99,12 @@ export default function FinanceManage() {
       width: 100,
       valueEnum: {
         40: { text: '退款中' },
+        45: { text: '退款驳回' },
         50: { text: '已退款' },
       },
-      render: (status: number) => (
-        <Tag color={statusMap[status]?.color || 'default'}>
-          {statusMap[status]?.text || '未知'}
+      render: (_: any, record: any) => (
+        <Tag color={statusMap[record.status]?.color || 'default'}>
+          {statusMap[record.status]?.text || '未知'}
         </Tag>
       ),
     },
@@ -168,10 +176,21 @@ export default function FinanceManage() {
         title="拒绝退款申请"
         open={rejectModalVisible}
         onOk={handleReject}
-        onCancel={() => setRejectModalVisible(false)}
+        onCancel={() => {
+          setRejectModalVisible(false);
+          setRejectReason('');
+        }}
       >
         <p>订单号: {currentOrder?.order_no}</p>
-        <p>确认拒绝该退款申请吗？</p>
+        <p style={{ marginBottom: 8 }}>拒绝原因：</p>
+        <Input.TextArea
+          rows={4}
+          placeholder="请填写拒绝退款的原因，用户将看到此说明"
+          value={rejectReason}
+          onChange={(e) => setRejectReason(e.target.value)}
+          maxLength={500}
+          showCount
+        />
       </Modal>
     </PageContainer>
   );

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
-import Taro from '@tarojs/taro'
-import { View, Text, Button } from '@tarojs/components'
-import { getOrderDetail, cancelOrder } from '../../../utils/api'
+import Taro, { useDidShow } from '@tarojs/taro'
+import { View, Text, Button, Image, ScrollView } from '@tarojs/components'
+import { getOrderDetail, cancelOrder, refundOrder } from '../../../utils/api'
 import './index.scss'
 
 const STATUS_MAP: any = {
@@ -9,6 +9,7 @@ const STATUS_MAP: any = {
   20: '待出行',
   30: '已取消',
   40: '退款中',
+  45: '退款驳回',
   50: '已退款',
   60: '待评价',
   70: '已评价'
@@ -16,6 +17,8 @@ const STATUS_MAP: any = {
 
 export default function OrderDetail() {
   const [order, setOrder] = useState<any>(null)
+  const [qrModalVisible, setQrModalVisible] = useState(false)
+  const [refreshing, setRefreshing] = useState(false)
 
   useEffect(() => {
     const instance = Taro.getCurrentInstance()
@@ -25,9 +28,29 @@ export default function OrderDetail() {
     }
   }, [])
 
+  useDidShow(() => {
+    const instance = Taro.getCurrentInstance()
+    const id = instance.router?.params?.id
+    if (id) {
+      loadOrder(Number(id))
+    }
+  })
+
   const loadOrder = async (id: number) => {
     const res = await getOrderDetail(id)
     setOrder(res.data)
+  }
+
+  const onRefresh = async () => {
+    const instance = Taro.getCurrentInstance()
+    const id = instance.router?.params?.id
+    if (!id) return
+    setRefreshing(true)
+    try {
+      await loadOrder(Number(id))
+    } finally {
+      setRefreshing(false)
+    }
   }
 
   const handleCancel = async () => {
@@ -40,6 +63,10 @@ export default function OrderDetail() {
     }
   }
 
+  const goRefund = () => {
+    Taro.navigateTo({ url: `/pages/orders/refund/index?id=${order.id}` })
+  }
+
   if (!order) return <View className='order-detail'><Text>加载中...</Text></View>
 
   return (
@@ -48,9 +75,18 @@ export default function OrderDetail() {
         <View className='page-back' onClick={() => Taro.navigateBack()}>
           <Text className='page-back-icon'>←</Text>
         </View>
+      <ScrollView className='detail-scroll' scrollY refresherEnabled refresherTriggered={refreshing} onRefresherRefresh={onRefresh}>
       <View className='status-bar'>
         <Text className='status-text'>{STATUS_MAP[order.status] || '未知'}</Text>
       </View>
+
+      {order.refund_reject_reason && order.status === 45 && (
+        <View className='info-card reject-card'>
+          <Text className='card-title reject-title'>退款申请未通过</Text>
+          <Text className='reject-reason'>原因：{order.refund_reject_reason}</Text>
+          <Text className='reject-tip'>您可点击"重新申请"再次提交</Text>
+        </View>
+      )}
 
       <View className='info-card'>
         <Text className='route-name'>{order.route_name}</Text>
@@ -90,6 +126,7 @@ export default function OrderDetail() {
         <View className='divider' />
         <Text className='total-row'>实付金额: ￥{order.pay_amount}</Text>
       </View>
+      </ScrollView>
 
       <View className='action-bar'>
         {order.status === 10 && (
@@ -98,10 +135,45 @@ export default function OrderDetail() {
             <Button className='btn-primary' onClick={() => Taro.navigateTo({ url: `/pages/orders/pay/index?id=${order.id}` })}>去支付</Button>
           </View>
         )}
+        {order.status === 20 && (
+          <View className='action-btns'>
+            <Button className='btn-default' onClick={() => setQrModalVisible(true)}>联系客服</Button>
+            <Button className='btn-default' onClick={goRefund}>申请退款</Button>
+          </View>
+        )}
+        {order.status === 45 && (
+          <View className='action-btns'>
+            <Button className='btn-default' onClick={() => setQrModalVisible(true)}>联系客服</Button>
+            <Button className='btn-default' onClick={goRefund}>重新申请</Button>
+          </View>
+        )}
+        {(order.status === 40 || order.status === 50) && (
+          <View className='action-btns'>
+            <Button className='btn-default' onClick={() => setQrModalVisible(true)}>联系客服</Button>
+          </View>
+        )}
         {order.status === 60 && (
           <Button className='btn-primary' onClick={() => Taro.navigateTo({ url: `/pages/orders/evaluate/index?id=${order.id}` })}>评价</Button>
         )}
       </View>
+
+      {qrModalVisible && (
+        <View className='qr-modal' onClick={() => setQrModalVisible(false)}>
+          <View className='qr-modal-content' onClick={(e) => e.stopPropagation()}>
+            <Text className='qr-modal-title'>联系客服</Text>
+            <Image
+              className='qr-image'
+              src={require('../../../assets/images/customer-service.jpg')}
+              mode='widthFix'
+              onError={() => Taro.showToast({ title: '图片加载失败', icon: 'none' })}
+            />
+            <Text className='qr-modal-tip'>长按二维码识别，添加客服微信</Text>
+            <View className='qr-modal-close' onClick={() => setQrModalVisible(false)}>
+              <Text>关闭</Text>
+            </View>
+          </View>
+        </View>
+      )}
     </View>
   )
 }

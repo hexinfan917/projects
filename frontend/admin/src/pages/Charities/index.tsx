@@ -1,6 +1,6 @@
 import { PageContainer, ProTable, ModalForm, ProFormText, ProFormSelect, ProFormDigit, ProFormTextArea, ProFormDatePicker } from '@ant-design/pro-components';
-import { Button, Tag, Image, message, Popconfirm, Space, Form, Upload, Input } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, LoadingOutlined } from '@ant-design/icons';
+import { Button, Tag, Image, message, Popconfirm, Space, Form, Upload, Input, Drawer, Table, Select } from 'antd';
+import { PlusOutlined, EditOutlined, DeleteOutlined, LoadingOutlined, TeamOutlined, DownloadOutlined } from '@ant-design/icons';
 import { useRef, useState } from 'react';
 import { request } from '@umijs/max';
 import dayjs from 'dayjs';
@@ -22,6 +22,13 @@ const statusMap: Record<number, { text: string; color: string }> = {
   4: { text: '已取消', color: 'warning' },
 };
 
+const regStatusMap: Record<number, { text: string; color: string }> = {
+  0: { text: '待审核', color: 'default' },
+  1: { text: '已通过', color: 'success' },
+  2: { text: '已拒绝', color: 'error' },
+  3: { text: '已签到', color: 'blue' },
+};
+
 const quillModules = {
   toolbar: [
     [{ header: [1, 2, 3, false] }],
@@ -36,12 +43,24 @@ const quillModules = {
 
 export default function CharityManage() {
   const tableRef = useRef<any>(null);
+  const regTableRef = useRef<any>(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [editData, setEditData] = useState<any>(null);
   const [content, setContent] = useState('');
   const [coverImageUrl, setCoverImageUrl] = useState('');
   const [coverUploading, setCoverUploading] = useState(false);
   const [form] = Form.useForm();
+
+  // 报名人列表 Drawer
+  const [drawerVisible, setDrawerVisible] = useState(false);
+  const [currentActivity, setCurrentActivity] = useState<any>(null);
+  const [registrations, setRegistrations] = useState<any[]>([]);
+  const [regLoading, setRegLoading] = useState(false);
+  const [regTotal, setRegTotal] = useState(0);
+  const [regPage, setRegPage] = useState(1);
+  const [regPageSize, setRegPageSize] = useState(10);
+  const [regKeyword, setRegKeyword] = useState('');
+  const [regStatusFilter, setRegStatusFilter] = useState<number | undefined>(undefined);
 
   const openModal = (record?: any) => {
     setEditData(record || null);
@@ -126,6 +145,105 @@ export default function CharityManage() {
     }
   };
 
+  // 报名人管理
+  const openRegistrations = (record: any) => {
+    setCurrentActivity(record);
+    setDrawerVisible(true);
+    setRegPage(1);
+    setRegKeyword('');
+    setRegStatusFilter(undefined);
+    loadRegistrations(record.id, 1, 10, '', undefined);
+  };
+
+  const loadRegistrations = async (
+    activityId: number,
+    page: number,
+    pageSize: number,
+    keyword: string,
+    status?: number
+  ) => {
+    setRegLoading(true);
+    try {
+      const res = await request(`/api/v1/admin/charities/activities/${activityId}/registrations`, {
+        params: { page, page_size: pageSize, keyword: keyword || undefined, status },
+      });
+      if (res.code === 200) {
+        setRegistrations(res.data?.registrations || []);
+        setRegTotal(res.data?.total || 0);
+      } else {
+        message.error(res.message || '加载失败');
+      }
+    } catch (error) {
+      message.error('加载失败');
+    } finally {
+      setRegLoading(false);
+    }
+  };
+
+  const handleRegPageChange = (page: number, pageSize: number) => {
+    setRegPage(page);
+    setRegPageSize(pageSize);
+    if (currentActivity) {
+      loadRegistrations(currentActivity.id, page, pageSize, regKeyword, regStatusFilter);
+    }
+  };
+
+  const handleRegSearch = () => {
+    setRegPage(1);
+    if (currentActivity) {
+      loadRegistrations(currentActivity.id, 1, regPageSize, regKeyword, regStatusFilter);
+    }
+  };
+
+  const handleRegStatusChange = (status?: number) => {
+    setRegStatusFilter(status);
+    setRegPage(1);
+    if (currentActivity) {
+      loadRegistrations(currentActivity.id, 1, regPageSize, regKeyword, status);
+    }
+  };
+
+  const updateRegStatus = async (registrationId: number, status: number) => {
+    try {
+      const res = await request(
+        `/api/v1/admin/charities/activities/${currentActivity.id}/registrations/${registrationId}/status`,
+        { method: 'PUT', data: { status } }
+      );
+      if (res.code === 200) {
+        message.success('操作成功');
+        loadRegistrations(currentActivity.id, regPage, regPageSize, regKeyword, regStatusFilter);
+        tableRef.current?.reload();
+      } else {
+        message.error(res.message || '操作失败');
+      }
+    } catch (error) {
+      message.error('操作失败');
+    }
+  };
+
+  const handleExport = () => {
+    if (!currentActivity) return;
+    const token = localStorage.getItem('token');
+    let url = `/api/v1/admin/charities/activities/${currentActivity.id}/registrations/export`;
+    if (regStatusFilter !== undefined) {
+      url += `?status=${regStatusFilter}`;
+    }
+    fetch(url, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    })
+      .then((res) => res.blob())
+      .then((blob) => {
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `${currentActivity.title}_报名名单.xlsx`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        message.success('导出成功');
+      })
+      .catch(() => message.error('导出失败'));
+  };
+
   const columns = [
     { title: 'ID', dataIndex: 'id', width: 60, search: false },
     {
@@ -187,6 +305,15 @@ export default function CharityManage() {
       },
     },
     {
+      title: '已报名',
+      dataIndex: 'current_participants',
+      width: 100,
+      search: false,
+      render: (count: number, record: any) => (
+        <span>{count}人{record.max_participants > 0 ? ` / ${record.max_participants}人` : ''}</span>
+      ),
+    },
+    {
       title: '创建时间',
       dataIndex: 'created_at',
       width: 180,
@@ -196,12 +323,15 @@ export default function CharityManage() {
     {
       title: '操作',
       valueType: 'option',
-      width: 160,
+      width: 220,
       fixed: 'right',
       render: (_: any, record: any) => (
         <Space size="small">
           <Button type="link" size="small" icon={<EditOutlined />} onClick={() => openModal(record)}>
             编辑
+          </Button>
+          <Button type="link" size="small" icon={<TeamOutlined />} onClick={() => openRegistrations(record)}>
+            报名人
           </Button>
           <Popconfirm
             title="确认删除"
@@ -212,6 +342,55 @@ export default function CharityManage() {
               删除
             </Button>
           </Popconfirm>
+        </Space>
+      ),
+    },
+  ];
+
+  const regColumns = [
+    { title: 'ID', dataIndex: 'id', width: 60 },
+    { title: '姓名', dataIndex: 'name', width: 100 },
+    { title: '电话', dataIndex: 'phone', width: 120 },
+    { title: '参与人数', dataIndex: 'participant_count', width: 90 },
+    { title: '所在城市', dataIndex: 'city', width: 120, render: (v: string) => v || '-' },
+    { title: '备注', dataIndex: 'remark', width: 150, ellipsis: true, render: (v: string) => v || '-' },
+    { title: '紧急联系人', dataIndex: 'emergency_name', width: 120, render: (v: string) => v || '-' },
+    { title: '紧急电话', dataIndex: 'emergency_phone', width: 120, render: (v: string) => v || '-' },
+    {
+      title: '状态',
+      dataIndex: 'status',
+      width: 100,
+      render: (status: number) => {
+        const config = regStatusMap[status] || { text: '未知', color: 'default' };
+        return <Tag color={config.color}>{config.text}</Tag>;
+      },
+    },
+    {
+      title: '报名时间',
+      dataIndex: 'created_at',
+      width: 170,
+      render: (date: string) => (date ? dayjs(date).format('YYYY-MM-DD HH:mm') : '-'),
+    },
+    {
+      title: '操作',
+      width: 180,
+      render: (_: any, record: any) => (
+        <Space size="small">
+          {record.status !== 1 && (
+            <Button type="link" size="small" onClick={() => updateRegStatus(record.id, 1)}>
+              通过
+            </Button>
+          )}
+          {record.status !== 2 && (
+            <Button type="link" danger size="small" onClick={() => updateRegStatus(record.id, 2)}>
+              拒绝
+            </Button>
+          )}
+          {record.status !== 3 && (
+            <Button type="link" size="small" style={{ color: '#1890ff' }} onClick={() => updateRegStatus(record.id, 3)}>
+              签到
+            </Button>
+          )}
         </Space>
       ),
     },
@@ -237,7 +416,7 @@ export default function CharityManage() {
         rowKey="id"
         search={{ labelWidth: 'auto' }}
         pagination={{ pageSize: 10, showSizeChanger: true }}
-        scroll={{ x: 1300 }}
+        scroll={{ x: 1500 }}
         toolBarRender={() => [
           <Button key="add" type="primary" icon={<PlusOutlined />} onClick={() => openModal()}>
             新建活动
@@ -302,6 +481,24 @@ export default function CharityManage() {
         <ProFormText name="location" label="活动地点" />
         <ProFormDatePicker name="start_date" label="开始日期" />
         <ProFormDatePicker name="end_date" label="结束日期" />
+        <ProFormDigit name="max_participants" label="最大人数" min={0} extra="0表示不限" />
+        <ProFormSelect
+          name="require_city"
+          label="是否必填城市"
+          options={[
+            { label: '否', value: 0 },
+            { label: '是', value: 1 },
+          ]}
+        />
+        <ProFormSelect
+          name="require_emergency"
+          label="是否必填紧急联系人"
+          options={[
+            { label: '否', value: 0 },
+            { label: '是', value: 1 },
+          ]}
+        />
+        <ProFormTextArea name="disclaimer" label="免责条款内容" fieldProps={{ rows: 4 }} />
         <ProFormText name="contact_name" label="联系人" />
         <ProFormText name="contact_phone" label="联系电话" />
         <ProFormText name="organizer" label="主办方" />
@@ -326,6 +523,56 @@ export default function CharityManage() {
           ]}
         />
       </ModalForm>
+
+      <Drawer
+        title={`${currentActivity?.title || ''} - 报名人列表`}
+        width={1100}
+        open={drawerVisible}
+        onClose={() => setDrawerVisible(false)}
+        destroyOnClose
+      >
+        <div style={{ marginBottom: 16, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+          <Input.Search
+            placeholder="搜索姓名或电话"
+            allowClear
+            style={{ width: 240 }}
+            value={regKeyword}
+            onChange={(e) => setRegKeyword(e.target.value)}
+            onSearch={handleRegSearch}
+          />
+          <Select
+            placeholder="状态筛选"
+            style={{ width: 140 }}
+            value={regStatusFilter}
+            onChange={(val) => handleRegStatusChange(val)}
+            options={[
+              { label: '全部', value: undefined },
+              { label: '待审核', value: 0 },
+              { label: '已通过', value: 1 },
+              { label: '已拒绝', value: 2 },
+              { label: '已签到', value: 3 },
+            ]}
+            allowClear
+          />
+          <Button type="primary" icon={<DownloadOutlined />} onClick={handleExport}>
+            导出Excel
+          </Button>
+        </div>
+        <Table
+          columns={regColumns}
+          dataSource={registrations}
+          rowKey="id"
+          loading={regLoading}
+          pagination={{
+            current: regPage,
+            pageSize: regPageSize,
+            total: regTotal,
+            showSizeChanger: true,
+            onChange: handleRegPageChange,
+          }}
+          scroll={{ x: 1200 }}
+        />
+      </Drawer>
     </PageContainer>
   );
 }

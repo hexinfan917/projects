@@ -4,7 +4,7 @@
 import React from 'react';
 
 export async function getRoutes() {
-  const routes = {"1":{"path":"/","redirect":"/home","parentId":"ant-design-pro-layout","id":"1"},"2":{"name":"首页","path":"/home","parentId":"ant-design-pro-layout","id":"2"},"3":{"name":"用户管理","path":"/users","parentId":"ant-design-pro-layout","id":"3"},"4":{"name":"用户列表","path":"/users/list","parentId":"3","id":"4"},"5":{"name":"路线管理","path":"/routes","parentId":"ant-design-pro-layout","id":"5"},"6":{"name":"路线列表","path":"/routes/list","parentId":"5","id":"6"},"7":{"name":"新建路线","path":"/routes/edit","hideInMenu":true,"parentId":"ant-design-pro-layout","id":"7"},"8":{"name":"编辑路线","path":"/routes/edit/:id","hideInMenu":true,"parentId":"ant-design-pro-layout","id":"8"},"9":{"name":"订单管理","path":"/orders","parentId":"ant-design-pro-layout","id":"9"},"10":{"name":"排期管理","path":"/schedules","parentId":"ant-design-pro-layout","id":"10"},"11":{"name":"评价管理","path":"/evaluations","parentId":"ant-design-pro-layout","id":"11"},"12":{"name":"宠物档案","path":"/pets","hideInMenu":true,"parentId":"ant-design-pro-layout","id":"12"},"13":{"name":"出行人管理","path":"/travelers","parentId":"ant-design-pro-layout","id":"13"},"14":{"name":"财务管理","path":"/finance","parentId":"ant-design-pro-layout","id":"14"},"15":{"name":"系统设置","path":"/settings","parentId":"ant-design-pro-layout","id":"15"},"16":{"name":"操作日志","path":"/logs","parentId":"ant-design-pro-layout","id":"16"},"17":{"name":"内容管理","path":"/articles","parentId":"ant-design-pro-layout","id":"17"},"18":{"name":"首页轮播","path":"/banners","parentId":"ant-design-pro-layout","id":"18"},"19":{"name":"狗狗回顾","path":"/reviews","parentId":"ant-design-pro-layout","id":"19"},"20":{"name":"公益管理","path":"/charities","parentId":"ant-design-pro-layout","id":"20"},"21":{"name":"登录","path":"/login","layout":false,"id":"21"},"ant-design-pro-layout":{"id":"ant-design-pro-layout","path":"/","isLayout":true}} as const;
+  const routes = {"1":{"path":"/","redirect":"/home","parentId":"ant-design-pro-layout","id":"1"},"2":{"name":"首页","path":"/home","parentId":"ant-design-pro-layout","id":"2"},"3":{"name":"用户管理","path":"/users","parentId":"ant-design-pro-layout","id":"3"},"4":{"name":"用户列表","path":"/users/list","parentId":"3","id":"4"},"5":{"name":"路线管理","path":"/routes","parentId":"ant-design-pro-layout","id":"5"},"6":{"name":"路线列表","path":"/routes/list","parentId":"5","id":"6"},"7":{"name":"路线类型","path":"/routes/types","parentId":"5","id":"7"},"8":{"name":"新建路线","path":"/routes/edit","hideInMenu":true,"parentId":"ant-design-pro-layout","id":"8"},"9":{"name":"编辑路线","path":"/routes/edit/:id","hideInMenu":true,"parentId":"ant-design-pro-layout","id":"9"},"10":{"name":"订单管理","path":"/orders","parentId":"ant-design-pro-layout","id":"10"},"11":{"name":"排期管理","path":"/schedules","parentId":"ant-design-pro-layout","id":"11"},"12":{"name":"评价管理","path":"/evaluations","parentId":"ant-design-pro-layout","id":"12"},"13":{"name":"宠物档案","path":"/pets","hideInMenu":true,"parentId":"ant-design-pro-layout","id":"13"},"14":{"name":"出行人管理","path":"/travelers","parentId":"ant-design-pro-layout","id":"14"},"15":{"name":"财务管理","path":"/finance","parentId":"ant-design-pro-layout","id":"15"},"16":{"name":"系统设置","path":"/settings","parentId":"ant-design-pro-layout","id":"16"},"17":{"name":"操作日志","path":"/logs","parentId":"ant-design-pro-layout","id":"17"},"18":{"name":"内容管理","path":"/articles","parentId":"ant-design-pro-layout","id":"18"},"19":{"name":"首页轮播","path":"/banners","parentId":"ant-design-pro-layout","id":"19"},"20":{"name":"狗狗回顾","path":"/reviews","parentId":"ant-design-pro-layout","id":"20"},"21":{"name":"公益管理","path":"/charities","parentId":"ant-design-pro-layout","id":"21"},"22":{"name":"行程选配","path":"/addons","parentId":"ant-design-pro-layout","id":"22"},"23":{"name":"登录","path":"/login","layout":false,"id":"23"},"ant-design-pro-layout":{"id":"ant-design-pro-layout","path":"/","isLayout":true}} as const;
   return {
     routes,
     routeComponents: {
@@ -14,21 +14,23 @@ export async function getRoutes() {
 '4': React.lazy(() => import(/* webpackChunkName: "p__Users__List" */'@/pages/Users/List.tsx')),
 '5': React.lazy(() => import('./EmptyRoute')),
 '6': React.lazy(() => import(/* webpackChunkName: "p__Routes__List" */'@/pages/Routes/List.tsx')),
-'7': React.lazy(() => import(/* webpackChunkName: "p__Routes__Edit" */'@/pages/Routes/Edit.tsx')),
+'7': React.lazy(() => import(/* webpackChunkName: "p__RouteTypes__index" */'@/pages/RouteTypes/index.tsx')),
 '8': React.lazy(() => import(/* webpackChunkName: "p__Routes__Edit" */'@/pages/Routes/Edit.tsx')),
-'9': React.lazy(() => import(/* webpackChunkName: "p__Orders__index" */'@/pages/Orders/index.tsx')),
-'10': React.lazy(() => import(/* webpackChunkName: "p__Schedules__index" */'@/pages/Schedules/index.tsx')),
-'11': React.lazy(() => import(/* webpackChunkName: "p__Evaluations__index" */'@/pages/Evaluations/index.tsx')),
-'12': React.lazy(() => import(/* webpackChunkName: "p__Pets__index" */'@/pages/Pets/index.tsx')),
-'13': React.lazy(() => import(/* webpackChunkName: "p__Travelers__index" */'@/pages/Travelers/index.tsx')),
-'14': React.lazy(() => import(/* webpackChunkName: "p__Finance__index" */'@/pages/Finance/index.tsx')),
-'15': React.lazy(() => import(/* webpackChunkName: "p__Settings__index" */'@/pages/Settings/index.tsx')),
-'16': React.lazy(() => import(/* webpackChunkName: "p__Logs__index" */'@/pages/Logs/index.tsx')),
-'17': React.lazy(() => import(/* webpackChunkName: "p__Articles__index" */'@/pages/Articles/index.tsx')),
-'18': React.lazy(() => import(/* webpackChunkName: "p__Banners__index" */'@/pages/Banners/index.tsx')),
-'19': React.lazy(() => import(/* webpackChunkName: "p__Reviews__index" */'@/pages/Reviews/index.tsx')),
-'20': React.lazy(() => import(/* webpackChunkName: "p__Charities__index" */'@/pages/Charities/index.tsx')),
-'21': React.lazy(() => import(/* webpackChunkName: "p__Login__index" */'@/pages/Login/index.tsx')),
+'9': React.lazy(() => import(/* webpackChunkName: "p__Routes__Edit" */'@/pages/Routes/Edit.tsx')),
+'10': React.lazy(() => import(/* webpackChunkName: "p__Orders__index" */'@/pages/Orders/index.tsx')),
+'11': React.lazy(() => import(/* webpackChunkName: "p__Schedules__index" */'@/pages/Schedules/index.tsx')),
+'12': React.lazy(() => import(/* webpackChunkName: "p__Evaluations__index" */'@/pages/Evaluations/index.tsx')),
+'13': React.lazy(() => import(/* webpackChunkName: "p__Pets__index" */'@/pages/Pets/index.tsx')),
+'14': React.lazy(() => import(/* webpackChunkName: "p__Travelers__index" */'@/pages/Travelers/index.tsx')),
+'15': React.lazy(() => import(/* webpackChunkName: "p__Finance__index" */'@/pages/Finance/index.tsx')),
+'16': React.lazy(() => import(/* webpackChunkName: "p__Settings__index" */'@/pages/Settings/index.tsx')),
+'17': React.lazy(() => import(/* webpackChunkName: "p__Logs__index" */'@/pages/Logs/index.tsx')),
+'18': React.lazy(() => import(/* webpackChunkName: "p__Articles__index" */'@/pages/Articles/index.tsx')),
+'19': React.lazy(() => import(/* webpackChunkName: "p__Banners__index" */'@/pages/Banners/index.tsx')),
+'20': React.lazy(() => import(/* webpackChunkName: "p__Reviews__index" */'@/pages/Reviews/index.tsx')),
+'21': React.lazy(() => import(/* webpackChunkName: "p__Charities__index" */'@/pages/Charities/index.tsx')),
+'22': React.lazy(() => import(/* webpackChunkName: "p__Addons__index" */'@/pages/Addons/index.tsx')),
+'23': React.lazy(() => import(/* webpackChunkName: "p__Login__index" */'@/pages/Login/index.tsx')),
 'ant-design-pro-layout': React.lazy(() => import(/* webpackChunkName: "t__plugin-layout__Layout" */'D:/projects/frontend/admin/src/.umi-production/plugin-layout/Layout.tsx')),
 },
   };

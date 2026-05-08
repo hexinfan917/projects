@@ -41,7 +41,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 1
+        "register": 2
       },
       "enableBy": "register"
     },
@@ -54,7 +54,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 71
+        "register": 76
       },
       "enableBy": "register"
     },
@@ -67,7 +67,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 21
+        "register": 19
       },
       "enableBy": "register"
     },
@@ -84,7 +84,7 @@
             0
           ]
         },
-        "register": 11
+        "register": 9
       },
       "enableBy": "register"
     },
@@ -98,10 +98,10 @@
       "time": {
         "hooks": {
           "onStart": [
-            4
+            3
           ]
         },
-        "register": 6
+        "register": 8
       },
       "enableBy": "register"
     },
@@ -145,10 +145,10 @@
       "time": {
         "hooks": {
           "modifyAppData": [
-            216
+            180
           ]
         },
-        "register": 49
+        "register": 71
       },
       "enableBy": "register"
     },
@@ -161,7 +161,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 2
+        "register": 1
       },
       "enableBy": "register"
     },
@@ -178,10 +178,10 @@
             0
           ],
           "onCheck": [
-            1
+            0
           ]
         },
-        "register": 3
+        "register": 2
       },
       "enableBy": "register"
     },
@@ -228,7 +228,7 @@
             0
           ]
         },
-        "register": 25
+        "register": 31
       },
       "enableBy": "register"
     },
@@ -1094,7 +1094,7 @@
       "time": {
         "hooks": {
           "onStart": [
-            0
+            1
           ]
         },
         "register": 2
@@ -1110,7 +1110,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 1
+        "register": 2
       },
       "enableBy": "register"
     },
@@ -1123,7 +1123,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 130
+        "register": 180
       },
       "enableBy": "register"
     },
@@ -1136,7 +1136,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 128
+        "register": 203
       },
       "enableBy": "config"
     },
@@ -1149,7 +1149,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 45
+        "register": 46
       },
       "enableBy": "config"
     },
@@ -1166,7 +1166,7 @@
             0
           ]
         },
-        "register": 1
+        "register": 2
       },
       "enableBy": "register"
     },
@@ -1179,7 +1179,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 2
+        "register": 3
       },
       "enableBy": "register"
     },
@@ -1209,7 +1209,7 @@
             2
           ]
         },
-        "register": 66
+        "register": 75
       }
     },
     "./node_modules/@umijs/preset-umi/dist/features/mpa/mpa": {
@@ -1221,7 +1221,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 3
+        "register": 4
       },
       "enableBy": "config"
     },
@@ -1234,7 +1234,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 2
+        "register": 3
       }
     },
     "./node_modules/@umijs/preset-umi/dist/features/overrides/overrides": {
@@ -1273,10 +1273,10 @@
       "time": {
         "hooks": {
           "modifyConfig": [
-            1
+            2
           ]
         },
-        "register": 5
+        "register": 6
       }
     },
     "./node_modules/@umijs/preset-umi/dist/features/polyfill/publicPathPolyfill": {
@@ -1288,7 +1288,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 2
+        "register": 3
       },
       "enableBy": "register"
     },
@@ -1301,7 +1301,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 5
+        "register": 6
       },
       "enableBy": "register"
     },
@@ -1314,7 +1314,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 1
+        "register": 2
       },
       "enableBy": "config"
     },
@@ -1327,7 +1327,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 1
+        "register": 2
       },
       "enableBy": "config"
     },
@@ -1340,7 +1340,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 2
+        "register": 3
       },
       "enableBy": "register"
     },
@@ -1353,7 +1353,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 32
+        "register": 21
       },
       "enableBy": "register"
     },
@@ -1379,7 +1379,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 2
+        "register": 1
       }
     },
     "./node_modules/@umijs/preset-umi/dist/features/ssr/ssr": {
@@ -1391,7 +1391,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 9
+        "register": 11
       },
       "enableBy": "config"
     },
@@ -1404,7 +1404,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 7
+        "register": 9
       },
       "enableBy": "register"
     },
@@ -1417,7 +1417,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 10
+        "register": 8
       },
       "enableBy": "register"
     },
@@ -1430,7 +1430,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 8
+        "register": 7
       },
       "enableBy": "config"
     },
@@ -1443,7 +1443,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 6
+        "register": 7
       },
       "enableBy": "config"
     },
@@ -1468,7 +1468,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 39
+        "register": 37
       },
       "enableBy": "config"
     },
@@ -1493,7 +1493,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 2
+        "register": 3
       },
       "enableBy": "config"
     },
@@ -1519,7 +1519,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 2
+        "register": 1
       },
       "enableBy": "config"
     },
@@ -1561,7 +1561,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 8
+        "register": 9
       }
     },
     "./node_modules/@umijs/preset-umi/dist/features/mako/mako": {
@@ -1586,7 +1586,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 3
+        "register": 2
       }
     },
     "./node_modules/@umijs/preset-umi/dist/features/hmrGuardian/hmrGuardian": {
@@ -1610,7 +1610,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 61
+        "register": 54
       }
     },
     "./node_modules/@umijs/preset-umi/dist/features/forget/forget": {
@@ -1622,7 +1622,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 3
+        "register": 4
       },
       "enableBy": "config"
     },
@@ -1635,7 +1635,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 3
+        "register": 4
       },
       "enableBy": "register"
     },
@@ -1648,7 +1648,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 22
+        "register": 25
       },
       "enableBy": "register"
     },
@@ -1661,7 +1661,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 85
+        "register": 122
       },
       "enableBy": "register"
     },
@@ -1675,10 +1675,10 @@
       "time": {
         "hooks": {
           "modifyAppData": [
-            28
+            24
           ]
         },
-        "register": 110
+        "register": 138
       }
     },
     "./node_modules/@umijs/preset-umi/dist/commands/help": {
@@ -1703,7 +1703,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 1
+        "register": 2
       },
       "enableBy": "register"
     },
@@ -1729,7 +1729,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 1
+        "register": 2
       },
       "enableBy": "register"
     },
@@ -1755,7 +1755,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 5
+        "register": 6
       },
       "enableBy": "register"
     },
@@ -1768,7 +1768,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 1
+        "register": 3
       },
       "enableBy": "register"
     },
@@ -1781,7 +1781,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 9
+        "register": 1
       },
       "enableBy": "register"
     },
@@ -1794,7 +1794,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 1
+        "register": 8
       },
       "enableBy": "register"
     },
@@ -1807,7 +1807,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 2
+        "register": 1
       },
       "enableBy": "register"
     },
@@ -1833,7 +1833,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 2
+        "register": 1
       },
       "enableBy": "register"
     },
@@ -1846,7 +1846,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 1
+        "register": 2
       },
       "enableBy": "register"
     },
@@ -1859,7 +1859,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 2
+        "register": 1
       },
       "enableBy": "register"
     },
@@ -1872,7 +1872,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 1
+        "register": 2
       },
       "enableBy": "register"
     },
@@ -1885,7 +1885,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 2
+        "register": 1
       },
       "enableBy": "register"
     },
@@ -1898,7 +1898,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 2
+        "register": 1
       },
       "enableBy": "register"
     },
@@ -1911,7 +1911,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 2
+        "register": 1
       },
       "enableBy": "register"
     },
@@ -1924,7 +1924,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 47
+        "register": 37
       },
       "enableBy": "register"
     },
@@ -1950,7 +1950,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 7
+        "register": 6
       },
       "enableBy": "register"
     },
@@ -2000,7 +2000,7 @@
             0
           ]
         },
-        "register": 17
+        "register": 16
       }
     },
     "./node_modules/@umijs/plugins/dist/dva": {
@@ -2050,7 +2050,7 @@
             1
           ]
         },
-        "register": 8
+        "register": 9
       },
       "enableBy": "config"
     },
@@ -2063,7 +2063,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 7
+        "register": 6
       },
       "enableBy": "config"
     },
@@ -2076,7 +2076,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 4
+        "register": 13
       },
       "enableBy": "config"
     },
@@ -2089,7 +2089,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 4
+        "register": 2
       },
       "enableBy": "config"
     },
@@ -2102,7 +2102,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 2
+        "register": 1
       },
       "enableBy": "config"
     },
@@ -2140,7 +2140,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 5
+        "register": 3
       }
     },
     "./node_modules/@umijs/plugins/dist/react-query": {
@@ -2165,7 +2165,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 3
+        "register": 2
       },
       "enableBy": "config"
     },
@@ -2178,7 +2178,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 3
+        "register": 4
       },
       "enableBy": "config"
     },
@@ -2191,7 +2191,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 2
+        "register": 1
       },
       "enableBy": "config"
     },
@@ -2204,7 +2204,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 2
+        "register": 9
       },
       "enableBy": "config"
     },
@@ -2221,7 +2221,7 @@
             0
           ]
         },
-        "register": 1
+        "register": 3
       },
       "enableBy": "register"
     },
@@ -2238,7 +2238,7 @@
             0
           ]
         },
-        "register": 1
+        "register": 3
       },
       "enableBy": "register"
     },
@@ -2268,7 +2268,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 1
+        "register": 5
       },
       "enableBy": "register"
     }
@@ -2403,6 +2403,11 @@
         "name": "公益管理",
         "path": "/charities",
         "component": "./Charities"
+      },
+      {
+        "name": "行程选配",
+        "path": "/addons",
+        "component": "./Addons"
       },
       {
         "name": "登录",
@@ -2567,6 +2572,11 @@
         "name": "公益管理",
         "path": "/charities",
         "component": "./Charities"
+      },
+      {
+        "name": "行程选配",
+        "path": "/addons",
+        "component": "./Addons"
       },
       {
         "name": "登录",
@@ -3646,7 +3656,7 @@
       "parentId": "ant-design-pro-layout",
       "id": "15",
       "absPath": "/finance",
-      "__content": "import { PageContainer, ProTable } from '@ant-design/pro-components';\r\nimport { Button, Tag, message, Popconfirm, Modal } from 'antd';\r\nimport { CheckOutlined, CloseOutlined } from '@ant-design/icons';\r\nimport { useRef, useState } from 'react';\r\nimport { request } from '@umijs/max';\r\nimport dayjs from 'dayjs';\r\n\r\nconst statusMap: Record<number, { text: string; color: string }> = {\r\n  40: { text: '退款中', color: 'orange' },\r\n  50: { text: '已退款', color: 'default' },\r\n};\r\n\r\nexport default function FinanceManage() {\r\n  const tableRef = useRef<any>(null);\r\n  const [rejectModalVisible, setRejectModalVisible] = useState(false);\r\n  const [currentOrder, setCurrentOrder] = useState<any>(null);\r\n\r\n  const handleApprove = async (orderId: number) => {\r\n    try {\r\n      const res = await request(`/api/v1/admin/refunds/${orderId}/approve`, {\r\n        method: 'POST',\r\n      });\r\n      if (res.code === 200) {\r\n        message.success('退款审核通过');\r\n        tableRef.current?.reload();\r\n      } else {\r\n        message.error(res.message || '审核失败');\r\n      }\r\n    } catch (error) {\r\n      message.error('审核失败');\r\n    }\r\n  };\r\n\r\n  const handleReject = async () => {\r\n    if (!currentOrder) return;\r\n    try {\r\n      const res = await request(`/api/v1/admin/refunds/${currentOrder.id}/reject`, {\r\n        method: 'POST',\r\n        data: { reason: '不符合退款条件' },\r\n      });\r\n      if (res.code === 200) {\r\n        message.success('已拒绝退款申请');\r\n        setRejectModalVisible(false);\r\n        tableRef.current?.reload();\r\n      } else {\r\n        message.error(res.message || '操作失败');\r\n      }\r\n    } catch (error) {\r\n      message.error('操作失败');\r\n    }\r\n  };\r\n\r\n  const columns = [\r\n    {\r\n      title: '订单号',\r\n      dataIndex: 'order_no',\r\n      width: 180,\r\n      copyable: true,\r\n    },\r\n    {\r\n      title: '用户ID',\r\n      dataIndex: 'user_id',\r\n      width: 80,\r\n    },\r\n    {\r\n      title: '路线',\r\n      dataIndex: 'route_name',\r\n      ellipsis: true,\r\n      width: 200,\r\n    },\r\n    {\r\n      title: '支付金额',\r\n      dataIndex: 'pay_amount',\r\n      width: 100,\r\n      render: (text: number) => <span>¥{text?.toFixed(2)}</span>,\r\n    },\r\n    {\r\n      title: '退款金额',\r\n      dataIndex: 'refund_amount',\r\n      width: 100,\r\n      render: (text: number) => <span style={{ color: '#cf1322' }}>¥{text?.toFixed(2)}</span>,\r\n    },\r\n    {\r\n      title: '退款原因',\r\n      dataIndex: 'refund_reason',\r\n      ellipsis: true,\r\n      width: 200,\r\n    },\r\n    {\r\n      title: '状态',\r\n      dataIndex: 'status',\r\n      width: 100,\r\n      valueEnum: {\r\n        40: { text: '退款中' },\r\n        50: { text: '已退款' },\r\n      },\r\n      render: (status: number) => (\r\n        <Tag color={statusMap[status]?.color || 'default'}>\r\n          {statusMap[status]?.text || '未知'}\r\n        </Tag>\r\n      ),\r\n    },\r\n    {\r\n      title: '申请时间',\r\n      dataIndex: 'created_at',\r\n      width: 180,\r\n      render: (date: string) => date ? dayjs(date).format('YYYY-MM-DD HH:mm') : '-',\r\n    },\r\n    {\r\n      title: '操作',\r\n      valueType: 'option',\r\n      width: 150,\r\n      render: (_: any, record: any) =>\r\n        record.status === 40 ? [\r\n          <Popconfirm\r\n            key=\"approve\"\r\n            title=\"确认通过\"\r\n            description=\"确认同意该退款申请？\"\r\n            onConfirm={() => handleApprove(record.id)}\r\n          >\r\n            <Button type=\"link\" size=\"small\" icon={<CheckOutlined />} style={{ color: '#52c41a' }}>\r\n              通过\r\n            </Button>\r\n          </Popconfirm>,\r\n          <Button\r\n            key=\"reject\"\r\n            type=\"link\"\r\n            danger\r\n            size=\"small\"\r\n            icon={<CloseOutlined />}\r\n            onClick={() => {\r\n              setCurrentOrder(record);\r\n              setRejectModalVisible(true);\r\n            }}\r\n          >\r\n            拒绝\r\n          </Button>,\r\n        ] : null,\r\n    },\r\n  ];\r\n\r\n  return (\r\n    <PageContainer title=\"退款审核\">\r\n      <ProTable\r\n        columns={columns}\r\n        actionRef={tableRef}\r\n        request={async (params) => {\r\n          const res = await request('/api/v1/admin/refunds', {\r\n            params: {\r\n              page: params.current,\r\n              page_size: params.pageSize,\r\n              status: params.status,\r\n            },\r\n          });\r\n          return {\r\n            data: res.data?.refunds || [],\r\n            success: res.code === 200,\r\n            total: res.data?.total || 0,\r\n          };\r\n        }}\r\n        rowKey=\"id\"\r\n        search={{ labelWidth: 'auto' }}\r\n        pagination={{ pageSize: 10, showSizeChanger: true }}\r\n        scroll={{ x: 1200 }}\r\n      />\r\n\r\n      <Modal\r\n        title=\"拒绝退款申请\"\r\n        open={rejectModalVisible}\r\n        onOk={handleReject}\r\n        onCancel={() => setRejectModalVisible(false)}\r\n      >\r\n        <p>订单号: {currentOrder?.order_no}</p>\r\n        <p>确认拒绝该退款申请吗？</p>\r\n      </Modal>\r\n    </PageContainer>\r\n  );\r\n}\r\n",
+      "__content": "import { PageContainer, ProTable } from '@ant-design/pro-components';\nimport { Button, Tag, message, Popconfirm, Modal, Input } from 'antd';\nimport { CheckOutlined, CloseOutlined } from '@ant-design/icons';\nimport { useRef, useState } from 'react';\nimport { request } from '@umijs/max';\nimport dayjs from 'dayjs';\n\nconst statusMap: Record<number, { text: string; color: string }> = {\n  40: { text: '退款中', color: 'orange' },\n  45: { text: '退款驳回', color: 'red' },\n  50: { text: '已退款', color: 'default' },\n};\n\nexport default function FinanceManage() {\n  const tableRef = useRef<any>(null);\n  const [rejectModalVisible, setRejectModalVisible] = useState(false);\n  const [currentOrder, setCurrentOrder] = useState<any>(null);\n  const [rejectReason, setRejectReason] = useState('');\n\n  const handleApprove = async (orderId: number) => {\n    try {\n      const res = await request(`/api/v1/admin/refunds/${orderId}/approve`, {\n        method: 'POST',\n      });\n      if (res.code === 200) {\n        message.success('退款审核通过');\n        tableRef.current?.reload();\n      } else {\n        message.error(res.message || '审核失败');\n      }\n    } catch (error) {\n      message.error('审核失败');\n    }\n  };\n\n  const handleReject = async () => {\n    if (!currentOrder) return;\n    if (!rejectReason.trim()) {\n      message.warning('请填写拒绝原因');\n      return;\n    }\n    try {\n      const res = await request(`/api/v1/admin/refunds/${currentOrder.id}/reject`, {\n        method: 'POST',\n        data: { reason: rejectReason.trim() },\n      });\n      if (res.code === 200) {\n        message.success('已拒绝退款申请');\n        setRejectModalVisible(false);\n        setRejectReason('');\n        tableRef.current?.reload();\n      } else {\n        message.error(res.message || '操作失败');\n      }\n    } catch (error) {\n      message.error('操作失败');\n    }\n  };\n\n  const columns = [\n    {\n      title: '订单号',\n      dataIndex: 'order_no',\n      width: 180,\n      copyable: true,\n    },\n    {\n      title: '用户ID',\n      dataIndex: 'user_id',\n      width: 80,\n    },\n    {\n      title: '路线',\n      dataIndex: 'route_name',\n      ellipsis: true,\n      width: 200,\n    },\n    {\n      title: '支付金额',\n      dataIndex: 'pay_amount',\n      width: 100,\n      render: (text: number) => <span>¥{text?.toFixed(2)}</span>,\n    },\n    {\n      title: '退款金额',\n      dataIndex: 'refund_amount',\n      width: 100,\n      render: (text: number) => <span style={{ color: '#cf1322' }}>¥{text?.toFixed(2)}</span>,\n    },\n    {\n      title: '退款原因',\n      dataIndex: 'refund_reason',\n      ellipsis: true,\n      width: 200,\n    },\n    {\n      title: '状态',\n      dataIndex: 'status',\n      width: 100,\n      valueEnum: {\n        40: { text: '退款中' },\n        45: { text: '退款驳回' },\n        50: { text: '已退款' },\n      },\n      render: (_: any, record: any) => (\n        <Tag color={statusMap[record.status]?.color || 'default'}>\n          {statusMap[record.status]?.text || '未知'}\n        </Tag>\n      ),\n    },\n    {\n      title: '申请时间',\n      dataIndex: 'created_at',\n      width: 180,\n      render: (date: string) => date ? dayjs(date).format('YYYY-MM-DD HH:mm') : '-',\n    },\n    {\n      title: '操作',\n      valueType: 'option',\n      width: 150,\n      render: (_: any, record: any) =>\n        record.status === 40 ? [\n          <Popconfirm\n            key=\"approve\"\n            title=\"确认通过\"\n            description=\"确认同意该退款申请？\"\n            onConfirm={() => handleApprove(record.id)}\n          >\n            <Button type=\"link\" size=\"small\" icon={<CheckOutlined />} style={{ color: '#52c41a' }}>\n              通过\n            </Button>\n          </Popconfirm>,\n          <Button\n            key=\"reject\"\n            type=\"link\"\n            danger\n            size=\"small\"\n            icon={<CloseOutlined />}\n            onClick={() => {\n              setCurrentOrder(record);\n              setRejectModalVisible(true);\n            }}\n          >\n            拒绝\n          </Button>,\n        ] : null,\n    },\n  ];\n\n  return (\n    <PageContainer title=\"退款审核\">\n      <ProTable\n        columns={columns}\n        actionRef={tableRef}\n        request={async (params) => {\n          const res = await request('/api/v1/admin/refunds', {\n            params: {\n              page: params.current,\n              page_size: params.pageSize,\n              status: params.status,\n            },\n          });\n          return {\n            data: res.data?.refunds || [],\n            success: res.code === 200,\n            total: res.data?.total || 0,\n          };\n        }}\n        rowKey=\"id\"\n        search={{ labelWidth: 'auto' }}\n        pagination={{ pageSize: 10, showSizeChanger: true }}\n        scroll={{ x: 1200 }}\n      />\n\n      <Modal\n        title=\"拒绝退款申请\"\n        open={rejectModalVisible}\n        onOk={handleReject}\n        onCancel={() => {\n          setRejectModalVisible(false);\n          setRejectReason('');\n        }}\n      >\n        <p>订单号: {currentOrder?.order_no}</p>\n        <p style={{ marginBottom: 8 }}>拒绝原因：</p>\n        <Input.TextArea\n          rows={4}\n          placeholder=\"请填写拒绝退款的原因，用户将看到此说明\"\n          value={rejectReason}\n          onChange={(e) => setRejectReason(e.target.value)}\n          maxLength={500}\n          showCount\n        />\n      </Modal>\n    </PageContainer>\n  );\n}\n",
       "__isJSFile": true,
       "__absFile": "D:/projects/frontend/admin/src/pages/Finance/index.tsx"
     },
@@ -3712,16 +3722,27 @@
       "parentId": "ant-design-pro-layout",
       "id": "21",
       "absPath": "/charities",
-      "__content": "import { PageContainer, ProTable, ModalForm, ProFormText, ProFormSelect, ProFormDigit, ProFormTextArea, ProFormDatePicker } from '@ant-design/pro-components';\nimport { Button, Tag, Image, message, Popconfirm, Space, Form, Upload, Input } from 'antd';\nimport { PlusOutlined, EditOutlined, DeleteOutlined, LoadingOutlined } from '@ant-design/icons';\nimport { useRef, useState } from 'react';\nimport { request } from '@umijs/max';\nimport dayjs from 'dayjs';\nimport ReactQuill from 'react-quill';\nimport 'react-quill/dist/quill.snow.css';\n\nconst typeMap: Record<string, { text: string; color: string }> = {\n  volunteer: { text: '义工招募', color: 'blue' },\n  rescue: { text: '流浪救助', color: 'orange' },\n  donate: { text: '爱心捐赠', color: 'red' },\n  adopt: { text: '宠物领养', color: 'green' },\n};\n\nconst statusMap: Record<number, { text: string; color: string }> = {\n  0: { text: '草稿', color: 'default' },\n  1: { text: '报名中', color: 'success' },\n  2: { text: '进行中', color: 'processing' },\n  3: { text: '已结束', color: 'error' },\n  4: { text: '已取消', color: 'warning' },\n};\n\nconst quillModules = {\n  toolbar: [\n    [{ header: [1, 2, 3, false] }],\n    ['bold', 'italic', 'underline', 'strike'],\n    [{ list: 'ordered' }, { list: 'bullet' }],\n    [{ indent: '-1' }, { indent: '+1' }],\n    [{ color: [] }, { background: [] }],\n    ['link', 'image'],\n    ['clean'],\n  ],\n};\n\nexport default function CharityManage() {\n  const tableRef = useRef<any>(null);\n  const [modalVisible, setModalVisible] = useState(false);\n  const [editData, setEditData] = useState<any>(null);\n  const [content, setContent] = useState('');\n  const [coverImageUrl, setCoverImageUrl] = useState('');\n  const [coverUploading, setCoverUploading] = useState(false);\n  const [form] = Form.useForm();\n\n  const openModal = (record?: any) => {\n    setEditData(record || null);\n    setContent(record?.content || '');\n    setCoverImageUrl(record?.cover_image || '');\n    form.setFieldsValue(record || { status: 0, activity_type: 'adopt' });\n    setModalVisible(true);\n  };\n\n  const handleDelete = async (id: number) => {\n    try {\n      const res = await request('/api/v1/admin/charities/activities/' + id, { method: 'DELETE' });\n      if (res.code === 200) {\n        message.success('删除成功');\n        tableRef.current?.reload();\n      } else {\n        message.error(res.message || '删除失败');\n      }\n    } catch (error) {\n      message.error('删除失败');\n    }\n  };\n\n  const handleCoverUpload = async (file: File) => {\n    setCoverUploading(true);\n    try {\n      const formData = new FormData();\n      formData.append('file', file);\n      const token = localStorage.getItem('token');\n      const res = await fetch('/api/v1/files/upload/image', {\n        method: 'POST',\n        headers: {\n          ...(token ? { Authorization: `Bearer ${token}` } : {}),\n        },\n        body: formData,\n      });\n      const data = await res.json();\n      if (data.code === 200 && data.data?.url) {\n        const url = data.data.url.startsWith('http') ? data.data.url : `http://localhost:8081${data.data.url}`;\n        setCoverImageUrl(url);\n        form.setFieldsValue({ cover_image: url });\n        message.success('上传成功');\n      } else {\n        message.error(data.message || '上传失败');\n      }\n    } catch (error) {\n      message.error('上传失败');\n    } finally {\n      setCoverUploading(false);\n    }\n    return false;\n  };\n\n  const handleSubmit = async (values: any) => {\n    try {\n      const url = editData ? '/api/v1/admin/charities/activities/' + editData.id : '/api/v1/admin/charities/activities';\n      const method = editData ? 'PUT' : 'POST';\n      const data = { ...values, content };\n      if (data.start_date && data.start_date.format) {\n        data.start_date = data.start_date.format('YYYY-MM-DD');\n      }\n      if (data.end_date && data.end_date.format) {\n        data.end_date = data.end_date.format('YYYY-MM-DD');\n      }\n      const res = await request(url, {\n        method,\n        data,\n      });\n      if (res.code === 200) {\n        message.success(editData ? '更新成功' : '创建成功');\n        setModalVisible(false);\n        setEditData(null);\n        setContent('');\n        tableRef.current?.reload();\n        return true;\n      }\n      message.error(res.message || (editData ? '更新失败' : '创建失败'));\n      return false;\n    } catch (error) {\n      message.error(editData ? '更新失败' : '创建失败');\n      return false;\n    }\n  };\n\n  const columns = [\n    { title: 'ID', dataIndex: 'id', width: 60, search: false },\n    {\n      title: '封面',\n      dataIndex: 'cover_image',\n      width: 100,\n      search: false,\n      render: (url: string) =>\n        url ? <Image src={url} width={80} height={60} style={{ objectFit: 'cover' }} /> : <span style={{ color: '#999' }}>无</span>,\n    },\n    {\n      title: '标题',\n      dataIndex: 'title',\n      width: 250,\n      ellipsis: true,\n    },\n    {\n      title: '类型',\n      dataIndex: 'activity_type',\n      width: 100,\n      valueEnum: {\n        volunteer: { text: '义工招募' },\n        rescue: { text: '流浪救助' },\n        donate: { text: '爱心捐赠' },\n        adopt: { text: '宠物领养' },\n      },\n      render: (type: string) => {\n        const config = typeMap[type] || { text: type, color: 'default' };\n        return <Tag color={config.color}>{config.text}</Tag>;\n      },\n    },\n    {\n      title: '地点',\n      dataIndex: 'location',\n      width: 150,\n      ellipsis: true,\n    },\n    {\n      title: '开始日期',\n      dataIndex: 'start_date',\n      width: 120,\n      search: false,\n      render: (date: string) => (date ? dayjs(date).format('YYYY-MM-DD') : '-'),\n    },\n    {\n      title: '状态',\n      dataIndex: 'status',\n      width: 100,\n      valueEnum: {\n        0: { text: '草稿' },\n        1: { text: '报名中' },\n        2: { text: '进行中' },\n        3: { text: '已结束' },\n        4: { text: '已取消' },\n      },\n      render: (status: number) => {\n        const config = statusMap[status] || { text: '未知', color: 'default' };\n        return <Tag color={config.color}>{config.text}</Tag>;\n      },\n    },\n    {\n      title: '创建时间',\n      dataIndex: 'created_at',\n      width: 180,\n      search: false,\n      render: (date: string) => (date ? dayjs(date).format('YYYY-MM-DD HH:mm') : '-'),\n    },\n    {\n      title: '操作',\n      valueType: 'option',\n      width: 160,\n      fixed: 'right',\n      render: (_: any, record: any) => (\n        <Space size=\"small\">\n          <Button type=\"link\" size=\"small\" icon={<EditOutlined />} onClick={() => openModal(record)}>\n            编辑\n          </Button>\n          <Popconfirm\n            title=\"确认删除\"\n            description=\"删除后无法恢复，是否继续？\"\n            onConfirm={() => handleDelete(record.id)}\n          >\n            <Button type=\"link\" danger size=\"small\" icon={<DeleteOutlined />}>\n              删除\n            </Button>\n          </Popconfirm>\n        </Space>\n      ),\n    },\n  ];\n\n  return (\n    <PageContainer title=\"公益管理\">\n      <ProTable\n        columns={columns}\n        actionRef={tableRef}\n        request={async (params) => {\n          const res = await request('/api/v1/admin/charities/activities', {\n            params: {\n              page: params.current,\n              page_size: params.pageSize,\n              activity_type: params.activity_type,\n              status: params.status,\n              keyword: params.title,\n            },\n          });\n          return { data: res.data?.activities || [], success: res.code === 200, total: res.data?.total || 0 };\n        }}\n        rowKey=\"id\"\n        search={{ labelWidth: 'auto' }}\n        pagination={{ pageSize: 10, showSizeChanger: true }}\n        scroll={{ x: 1300 }}\n        toolBarRender={() => [\n          <Button key=\"add\" type=\"primary\" icon={<PlusOutlined />} onClick={() => openModal()}>\n            新建活动\n          </Button>,\n        ]}\n      />\n      <ModalForm\n        title={editData ? '编辑公益活动' : '新建公益活动'}\n        open={modalVisible}\n        onOpenChange={setModalVisible}\n        onFinish={handleSubmit}\n        form={form}\n        width={900}\n        modalProps={{\n          destroyOnClose: true,\n          afterClose: () => {\n            setContent('');\n            setEditData(null);\n            setCoverImageUrl('');\n            form.resetFields();\n          },\n        }}\n      >\n        <ProFormText name=\"title\" label=\"标题\" rules={[{ required: true }]} />\n        <ProFormText name=\"subtitle\" label=\"副标题\" />\n        <Form.Item label=\"封面图\">\n          <Form.Item name=\"cover_image\" noStyle>\n            <Input type=\"hidden\" />\n          </Form.Item>\n          <Upload\n            listType=\"picture-card\"\n            showUploadList={false}\n            beforeUpload={handleCoverUpload}\n            accept=\"image/*\"\n          >\n            {coverImageUrl ? (\n              <Image src={coverImageUrl} alt=\"cover\" style={{ width: '100%', height: '100%', objectFit: 'cover' }} preview={false} />\n            ) : (\n              <div>\n                {coverUploading ? <LoadingOutlined /> : <PlusOutlined />}\n                <div style={{ marginTop: 8 }}>上传封面</div>\n              </div>\n            )}\n          </Upload>\n          {coverImageUrl && (\n            <Button type=\"link\" size=\"small\" danger onClick={() => { setCoverImageUrl(''); form.setFieldsValue({ cover_image: '' }); }}>\n              删除封面\n            </Button>\n          )}\n        </Form.Item>\n        <ProFormSelect\n          name=\"activity_type\"\n          label=\"活动类型\"\n          options={[\n            { label: '义工招募', value: 'volunteer' },\n            { label: '流浪救助', value: 'rescue' },\n            { label: '爱心捐赠', value: 'donate' },\n            { label: '宠物领养', value: 'adopt' },\n          ]}\n          rules={[{ required: true }]}\n        />\n        <ProFormText name=\"location\" label=\"活动地点\" />\n        <ProFormDatePicker name=\"start_date\" label=\"开始日期\" />\n        <ProFormDatePicker name=\"end_date\" label=\"结束日期\" />\n        <ProFormText name=\"contact_name\" label=\"联系人\" />\n        <ProFormText name=\"contact_phone\" label=\"联系电话\" />\n        <ProFormText name=\"organizer\" label=\"主办方\" />\n        <Form.Item label=\"活动内容\" required>\n          <ReactQuill\n            theme=\"snow\"\n            value={content}\n            onChange={setContent}\n            modules={quillModules}\n            style={{ height: 300, marginBottom: 40 }}\n          />\n        </Form.Item>\n        <ProFormSelect\n          name=\"status\"\n          label=\"状态\"\n          options={[\n            { label: '草稿', value: 0 },\n            { label: '报名中', value: 1 },\n            { label: '进行中', value: 2 },\n            { label: '已结束', value: 3 },\n            { label: '已取消', value: 4 },\n          ]}\n        />\n      </ModalForm>\n    </PageContainer>\n  );\n}\n",
+      "__content": "import { PageContainer, ProTable, ModalForm, ProFormText, ProFormSelect, ProFormDigit, ProFormTextArea, ProFormDatePicker } from '@ant-design/pro-components';\nimport { Button, Tag, Image, message, Popconfirm, Space, Form, Upload, Input, Drawer, Table, Select } from 'antd';\nimport { PlusOutlined, EditOutlined, DeleteOutlined, LoadingOutlined, TeamOutlined, DownloadOutlined } from '@ant-design/icons';\nimport { useRef, useState } from 'react';\nimport { request } from '@umijs/max';\nimport dayjs from 'dayjs';\nimport ReactQuill from 'react-quill';\nimport 'react-quill/dist/quill.snow.css';\n\nconst typeMap: Record<string, { text: string; color: string }> = {\n  volunteer: { text: '义工招募', color: 'blue' },\n  rescue: { text: '流浪救助', color: 'orange' },\n  donate: { text: '爱心捐赠', color: 'red' },\n  adopt: { text: '宠物领养', color: 'green' },\n};\n\nconst statusMap: Record<number, { text: string; color: string }> = {\n  0: { text: '草稿', color: 'default' },\n  1: { text: '报名中', color: 'success' },\n  2: { text: '进行中', color: 'processing' },\n  3: { text: '已结束', color: 'error' },\n  4: { text: '已取消', color: 'warning' },\n};\n\nconst regStatusMap: Record<number, { text: string; color: string }> = {\n  0: { text: '待审核', color: 'default' },\n  1: { text: '已通过', color: 'success' },\n  2: { text: '已拒绝', color: 'error' },\n  3: { text: '已签到', color: 'blue' },\n};\n\nconst quillModules = {\n  toolbar: [\n    [{ header: [1, 2, 3, false] }],\n    ['bold', 'italic', 'underline', 'strike'],\n    [{ list: 'ordered' }, { list: 'bullet' }],\n    [{ indent: '-1' }, { indent: '+1' }],\n    [{ color: [] }, { background: [] }],\n    ['link', 'image'],\n    ['clean'],\n  ],\n};\n\nexport default function CharityManage() {\n  const tableRef = useRef<any>(null);\n  const regTableRef = useRef<any>(null);\n  const [modalVisible, setModalVisible] = useState(false);\n  const [editData, setEditData] = useState<any>(null);\n  const [content, setContent] = useState('');\n  const [coverImageUrl, setCoverImageUrl] = useState('');\n  const [coverUploading, setCoverUploading] = useState(false);\n  const [form] = Form.useForm();\n\n  // 报名人列表 Drawer\n  const [drawerVisible, setDrawerVisible] = useState(false);\n  const [currentActivity, setCurrentActivity] = useState<any>(null);\n  const [registrations, setRegistrations] = useState<any[]>([]);\n  const [regLoading, setRegLoading] = useState(false);\n  const [regTotal, setRegTotal] = useState(0);\n  const [regPage, setRegPage] = useState(1);\n  const [regPageSize, setRegPageSize] = useState(10);\n  const [regKeyword, setRegKeyword] = useState('');\n  const [regStatusFilter, setRegStatusFilter] = useState<number | undefined>(undefined);\n\n  const openModal = (record?: any) => {\n    setEditData(record || null);\n    setContent(record?.content || '');\n    setCoverImageUrl(record?.cover_image || '');\n    form.setFieldsValue(record || { status: 0, activity_type: 'adopt' });\n    setModalVisible(true);\n  };\n\n  const handleDelete = async (id: number) => {\n    try {\n      const res = await request('/api/v1/admin/charities/activities/' + id, { method: 'DELETE' });\n      if (res.code === 200) {\n        message.success('删除成功');\n        tableRef.current?.reload();\n      } else {\n        message.error(res.message || '删除失败');\n      }\n    } catch (error) {\n      message.error('删除失败');\n    }\n  };\n\n  const handleCoverUpload = async (file: File) => {\n    setCoverUploading(true);\n    try {\n      const formData = new FormData();\n      formData.append('file', file);\n      const token = localStorage.getItem('token');\n      const res = await fetch('/api/v1/files/upload/image', {\n        method: 'POST',\n        headers: {\n          ...(token ? { Authorization: `Bearer ${token}` } : {}),\n        },\n        body: formData,\n      });\n      const data = await res.json();\n      if (data.code === 200 && data.data?.url) {\n        const url = data.data.url.startsWith('http') ? data.data.url : `http://localhost:8081${data.data.url}`;\n        setCoverImageUrl(url);\n        form.setFieldsValue({ cover_image: url });\n        message.success('上传成功');\n      } else {\n        message.error(data.message || '上传失败');\n      }\n    } catch (error) {\n      message.error('上传失败');\n    } finally {\n      setCoverUploading(false);\n    }\n    return false;\n  };\n\n  const handleSubmit = async (values: any) => {\n    try {\n      const url = editData ? '/api/v1/admin/charities/activities/' + editData.id : '/api/v1/admin/charities/activities';\n      const method = editData ? 'PUT' : 'POST';\n      const data = { ...values, content };\n      if (data.start_date && data.start_date.format) {\n        data.start_date = data.start_date.format('YYYY-MM-DD');\n      }\n      if (data.end_date && data.end_date.format) {\n        data.end_date = data.end_date.format('YYYY-MM-DD');\n      }\n      const res = await request(url, {\n        method,\n        data,\n      });\n      if (res.code === 200) {\n        message.success(editData ? '更新成功' : '创建成功');\n        setModalVisible(false);\n        setEditData(null);\n        setContent('');\n        tableRef.current?.reload();\n        return true;\n      }\n      message.error(res.message || (editData ? '更新失败' : '创建失败'));\n      return false;\n    } catch (error) {\n      message.error(editData ? '更新失败' : '创建失败');\n      return false;\n    }\n  };\n\n  // 报名人管理\n  const openRegistrations = (record: any) => {\n    setCurrentActivity(record);\n    setDrawerVisible(true);\n    setRegPage(1);\n    setRegKeyword('');\n    setRegStatusFilter(undefined);\n    loadRegistrations(record.id, 1, 10, '', undefined);\n  };\n\n  const loadRegistrations = async (\n    activityId: number,\n    page: number,\n    pageSize: number,\n    keyword: string,\n    status?: number\n  ) => {\n    setRegLoading(true);\n    try {\n      const res = await request(`/api/v1/admin/charities/activities/${activityId}/registrations`, {\n        params: { page, page_size: pageSize, keyword: keyword || undefined, status },\n      });\n      if (res.code === 200) {\n        setRegistrations(res.data?.registrations || []);\n        setRegTotal(res.data?.total || 0);\n      } else {\n        message.error(res.message || '加载失败');\n      }\n    } catch (error) {\n      message.error('加载失败');\n    } finally {\n      setRegLoading(false);\n    }\n  };\n\n  const handleRegPageChange = (page: number, pageSize: number) => {\n    setRegPage(page);\n    setRegPageSize(pageSize);\n    if (currentActivity) {\n      loadRegistrations(currentActivity.id, page, pageSize, regKeyword, regStatusFilter);\n    }\n  };\n\n  const handleRegSearch = () => {\n    setRegPage(1);\n    if (currentActivity) {\n      loadRegistrations(currentActivity.id, 1, regPageSize, regKeyword, regStatusFilter);\n    }\n  };\n\n  const handleRegStatusChange = (status?: number) => {\n    setRegStatusFilter(status);\n    setRegPage(1);\n    if (currentActivity) {\n      loadRegistrations(currentActivity.id, 1, regPageSize, regKeyword, status);\n    }\n  };\n\n  const updateRegStatus = async (registrationId: number, status: number) => {\n    try {\n      const res = await request(\n        `/api/v1/admin/charities/activities/${currentActivity.id}/registrations/${registrationId}/status`,\n        { method: 'PUT', data: { status } }\n      );\n      if (res.code === 200) {\n        message.success('操作成功');\n        loadRegistrations(currentActivity.id, regPage, regPageSize, regKeyword, regStatusFilter);\n        tableRef.current?.reload();\n      } else {\n        message.error(res.message || '操作失败');\n      }\n    } catch (error) {\n      message.error('操作失败');\n    }\n  };\n\n  const handleExport = () => {\n    if (!currentActivity) return;\n    const token = localStorage.getItem('token');\n    let url = `/api/v1/admin/charities/activities/${currentActivity.id}/registrations/export`;\n    if (regStatusFilter !== undefined) {\n      url += `?status=${regStatusFilter}`;\n    }\n    fetch(url, {\n      headers: token ? { Authorization: `Bearer ${token}` } : {},\n    })\n      .then((res) => res.blob())\n      .then((blob) => {\n        const link = document.createElement('a');\n        link.href = URL.createObjectURL(blob);\n        link.download = `${currentActivity.title}_报名名单.xlsx`;\n        document.body.appendChild(link);\n        link.click();\n        document.body.removeChild(link);\n        message.success('导出成功');\n      })\n      .catch(() => message.error('导出失败'));\n  };\n\n  const columns = [\n    { title: 'ID', dataIndex: 'id', width: 60, search: false },\n    {\n      title: '封面',\n      dataIndex: 'cover_image',\n      width: 100,\n      search: false,\n      render: (url: string) =>\n        url ? <Image src={url} width={80} height={60} style={{ objectFit: 'cover' }} /> : <span style={{ color: '#999' }}>无</span>,\n    },\n    {\n      title: '标题',\n      dataIndex: 'title',\n      width: 250,\n      ellipsis: true,\n    },\n    {\n      title: '类型',\n      dataIndex: 'activity_type',\n      width: 100,\n      valueEnum: {\n        volunteer: { text: '义工招募' },\n        rescue: { text: '流浪救助' },\n        donate: { text: '爱心捐赠' },\n        adopt: { text: '宠物领养' },\n      },\n      render: (type: string) => {\n        const config = typeMap[type] || { text: type, color: 'default' };\n        return <Tag color={config.color}>{config.text}</Tag>;\n      },\n    },\n    {\n      title: '地点',\n      dataIndex: 'location',\n      width: 150,\n      ellipsis: true,\n    },\n    {\n      title: '开始日期',\n      dataIndex: 'start_date',\n      width: 120,\n      search: false,\n      render: (date: string) => (date ? dayjs(date).format('YYYY-MM-DD') : '-'),\n    },\n    {\n      title: '状态',\n      dataIndex: 'status',\n      width: 100,\n      valueEnum: {\n        0: { text: '草稿' },\n        1: { text: '报名中' },\n        2: { text: '进行中' },\n        3: { text: '已结束' },\n        4: { text: '已取消' },\n      },\n      render: (status: number) => {\n        const config = statusMap[status] || { text: '未知', color: 'default' };\n        return <Tag color={config.color}>{config.text}</Tag>;\n      },\n    },\n    {\n      title: '已报名',\n      dataIndex: 'current_participants',\n      width: 100,\n      search: false,\n      render: (count: number, record: any) => (\n        <span>{count}人{record.max_participants > 0 ? ` / ${record.max_participants}人` : ''}</span>\n      ),\n    },\n    {\n      title: '创建时间',\n      dataIndex: 'created_at',\n      width: 180,\n      search: false,\n      render: (date: string) => (date ? dayjs(date).format('YYYY-MM-DD HH:mm') : '-'),\n    },\n    {\n      title: '操作',\n      valueType: 'option',\n      width: 220,\n      fixed: 'right',\n      render: (_: any, record: any) => (\n        <Space size=\"small\">\n          <Button type=\"link\" size=\"small\" icon={<EditOutlined />} onClick={() => openModal(record)}>\n            编辑\n          </Button>\n          <Button type=\"link\" size=\"small\" icon={<TeamOutlined />} onClick={() => openRegistrations(record)}>\n            报名人\n          </Button>\n          <Popconfirm\n            title=\"确认删除\"\n            description=\"删除后无法恢复，是否继续？\"\n            onConfirm={() => handleDelete(record.id)}\n          >\n            <Button type=\"link\" danger size=\"small\" icon={<DeleteOutlined />}>\n              删除\n            </Button>\n          </Popconfirm>\n        </Space>\n      ),\n    },\n  ];\n\n  const regColumns = [\n    { title: 'ID', dataIndex: 'id', width: 60 },\n    { title: '姓名', dataIndex: 'name', width: 100 },\n    { title: '电话', dataIndex: 'phone', width: 120 },\n    { title: '参与人数', dataIndex: 'participant_count', width: 90 },\n    { title: '所在城市', dataIndex: 'city', width: 120, render: (v: string) => v || '-' },\n    { title: '备注', dataIndex: 'remark', width: 150, ellipsis: true, render: (v: string) => v || '-' },\n    { title: '紧急联系人', dataIndex: 'emergency_name', width: 120, render: (v: string) => v || '-' },\n    { title: '紧急电话', dataIndex: 'emergency_phone', width: 120, render: (v: string) => v || '-' },\n    {\n      title: '状态',\n      dataIndex: 'status',\n      width: 100,\n      render: (status: number) => {\n        const config = regStatusMap[status] || { text: '未知', color: 'default' };\n        return <Tag color={config.color}>{config.text}</Tag>;\n      },\n    },\n    {\n      title: '报名时间',\n      dataIndex: 'created_at',\n      width: 170,\n      render: (date: string) => (date ? dayjs(date).format('YYYY-MM-DD HH:mm') : '-'),\n    },\n    {\n      title: '操作',\n      width: 180,\n      render: (_: any, record: any) => (\n        <Space size=\"small\">\n          {record.status !== 1 && (\n            <Button type=\"link\" size=\"small\" onClick={() => updateRegStatus(record.id, 1)}>\n              通过\n            </Button>\n          )}\n          {record.status !== 2 && (\n            <Button type=\"link\" danger size=\"small\" onClick={() => updateRegStatus(record.id, 2)}>\n              拒绝\n            </Button>\n          )}\n          {record.status !== 3 && (\n            <Button type=\"link\" size=\"small\" style={{ color: '#1890ff' }} onClick={() => updateRegStatus(record.id, 3)}>\n              签到\n            </Button>\n          )}\n        </Space>\n      ),\n    },\n  ];\n\n  return (\n    <PageContainer title=\"公益管理\">\n      <ProTable\n        columns={columns}\n        actionRef={tableRef}\n        request={async (params) => {\n          const res = await request('/api/v1/admin/charities/activities', {\n            params: {\n              page: params.current,\n              page_size: params.pageSize,\n              activity_type: params.activity_type,\n              status: params.status,\n              keyword: params.title,\n            },\n          });\n          return { data: res.data?.activities || [], success: res.code === 200, total: res.data?.total || 0 };\n        }}\n        rowKey=\"id\"\n        search={{ labelWidth: 'auto' }}\n        pagination={{ pageSize: 10, showSizeChanger: true }}\n        scroll={{ x: 1500 }}\n        toolBarRender={() => [\n          <Button key=\"add\" type=\"primary\" icon={<PlusOutlined />} onClick={() => openModal()}>\n            新建活动\n          </Button>,\n        ]}\n      />\n      <ModalForm\n        title={editData ? '编辑公益活动' : '新建公益活动'}\n        open={modalVisible}\n        onOpenChange={setModalVisible}\n        onFinish={handleSubmit}\n        form={form}\n        width={900}\n        modalProps={{\n          destroyOnClose: true,\n          afterClose: () => {\n            setContent('');\n            setEditData(null);\n            setCoverImageUrl('');\n            form.resetFields();\n          },\n        }}\n      >\n        <ProFormText name=\"title\" label=\"标题\" rules={[{ required: true }]} />\n        <ProFormText name=\"subtitle\" label=\"副标题\" />\n        <Form.Item label=\"封面图\">\n          <Form.Item name=\"cover_image\" noStyle>\n            <Input type=\"hidden\" />\n          </Form.Item>\n          <Upload\n            listType=\"picture-card\"\n            showUploadList={false}\n            beforeUpload={handleCoverUpload}\n            accept=\"image/*\"\n          >\n            {coverImageUrl ? (\n              <Image src={coverImageUrl} alt=\"cover\" style={{ width: '100%', height: '100%', objectFit: 'cover' }} preview={false} />\n            ) : (\n              <div>\n                {coverUploading ? <LoadingOutlined /> : <PlusOutlined />}\n                <div style={{ marginTop: 8 }}>上传封面</div>\n              </div>\n            )}\n          </Upload>\n          {coverImageUrl && (\n            <Button type=\"link\" size=\"small\" danger onClick={() => { setCoverImageUrl(''); form.setFieldsValue({ cover_image: '' }); }}>\n              删除封面\n            </Button>\n          )}\n        </Form.Item>\n        <ProFormSelect\n          name=\"activity_type\"\n          label=\"活动类型\"\n          options={[\n            { label: '义工招募', value: 'volunteer' },\n            { label: '流浪救助', value: 'rescue' },\n            { label: '爱心捐赠', value: 'donate' },\n            { label: '宠物领养', value: 'adopt' },\n          ]}\n          rules={[{ required: true }]}\n        />\n        <ProFormText name=\"location\" label=\"活动地点\" />\n        <ProFormDatePicker name=\"start_date\" label=\"开始日期\" />\n        <ProFormDatePicker name=\"end_date\" label=\"结束日期\" />\n        <ProFormDigit name=\"max_participants\" label=\"最大人数\" min={0} extra=\"0表示不限\" />\n        <ProFormSelect\n          name=\"require_city\"\n          label=\"是否必填城市\"\n          options={[\n            { label: '否', value: 0 },\n            { label: '是', value: 1 },\n          ]}\n        />\n        <ProFormSelect\n          name=\"require_emergency\"\n          label=\"是否必填紧急联系人\"\n          options={[\n            { label: '否', value: 0 },\n            { label: '是', value: 1 },\n          ]}\n        />\n        <ProFormTextArea name=\"disclaimer\" label=\"免责条款内容\" fieldProps={{ rows: 4 }} />\n        <ProFormText name=\"contact_name\" label=\"联系人\" />\n        <ProFormText name=\"contact_phone\" label=\"联系电话\" />\n        <ProFormText name=\"organizer\" label=\"主办方\" />\n        <Form.Item label=\"活动内容\" required>\n          <ReactQuill\n            theme=\"snow\"\n            value={content}\n            onChange={setContent}\n            modules={quillModules}\n            style={{ height: 300, marginBottom: 40 }}\n          />\n        </Form.Item>\n        <ProFormSelect\n          name=\"status\"\n          label=\"状态\"\n          options={[\n            { label: '草稿', value: 0 },\n            { label: '报名中', value: 1 },\n            { label: '进行中', value: 2 },\n            { label: '已结束', value: 3 },\n            { label: '已取消', value: 4 },\n          ]}\n        />\n      </ModalForm>\n\n      <Drawer\n        title={`${currentActivity?.title || ''} - 报名人列表`}\n        width={1100}\n        open={drawerVisible}\n        onClose={() => setDrawerVisible(false)}\n        destroyOnClose\n      >\n        <div style={{ marginBottom: 16, display: 'flex', gap: 12, flexWrap: 'wrap' }}>\n          <Input.Search\n            placeholder=\"搜索姓名或电话\"\n            allowClear\n            style={{ width: 240 }}\n            value={regKeyword}\n            onChange={(e) => setRegKeyword(e.target.value)}\n            onSearch={handleRegSearch}\n          />\n          <Select\n            placeholder=\"状态筛选\"\n            style={{ width: 140 }}\n            value={regStatusFilter}\n            onChange={(val) => handleRegStatusChange(val)}\n            options={[\n              { label: '全部', value: undefined },\n              { label: '待审核', value: 0 },\n              { label: '已通过', value: 1 },\n              { label: '已拒绝', value: 2 },\n              { label: '已签到', value: 3 },\n            ]}\n            allowClear\n          />\n          <Button type=\"primary\" icon={<DownloadOutlined />} onClick={handleExport}>\n            导出Excel\n          </Button>\n        </div>\n        <Table\n          columns={regColumns}\n          dataSource={registrations}\n          rowKey=\"id\"\n          loading={regLoading}\n          pagination={{\n            current: regPage,\n            pageSize: regPageSize,\n            total: regTotal,\n            showSizeChanger: true,\n            onChange: handleRegPageChange,\n          }}\n          scroll={{ x: 1200 }}\n        />\n      </Drawer>\n    </PageContainer>\n  );\n}\n",
       "__isJSFile": true,
       "__absFile": "D:/projects/frontend/admin/src/pages/Charities/index.tsx"
     },
     "22": {
+      "name": "行程选配",
+      "path": "/addons",
+      "file": "@/pages/Addons/index.tsx",
+      "parentId": "ant-design-pro-layout",
+      "id": "22",
+      "absPath": "/addons",
+      "__content": "import {\n  PageContainer,\n  ProTable,\n  ModalForm,\n  ProFormText,\n  ProFormSelect,\n  ProFormDigit,\n  ProFormTextArea,\n  ProFormRadio,\n} from '@ant-design/pro-components';\nimport {\n  Button,\n  Tag,\n  message,\n  Popconfirm,\n  Space,\n  Form,\n  Input,\n  Upload,\n  Image,\n  Card,\n  Row,\n  Col,\n} from 'antd';\nimport {\n  PlusOutlined,\n  EditOutlined,\n  DeleteOutlined,\n  UploadOutlined,\n  MinusCircleOutlined,\n} from '@ant-design/icons';\nimport { useRef, useState, useEffect } from 'react';\nimport { request } from '@umijs/max';\nimport dayjs from 'dayjs';\n\nconst categoryMap: Record<string, { text: string; color: string }> = {\n  dog_ticket: { text: '狗狗票', color: 'blue' },\n  hotel: { text: '酒店', color: 'green' },\n  amusement: { text: '游乐项目', color: 'purple' },\n};\n\nconst statusMap: Record<number, { text: string; color: string }> = {\n  0: { text: '下架', color: 'default' },\n  1: { text: '上架', color: 'success' },\n};\n\n/* ---------- 酒店房型图片上传组件 ---------- */\nfunction RoomImageUploader({ value = [], onChange }: any) {\n  const images: string[] = value || [];\n  const handleUpload = (info: any) => {\n    if (info.file.status === 'done') {\n      const url = info.file.response?.data?.url;\n      if (url) {\n        const fullUrl = url.startsWith('http') ? url : `http://localhost:8081${url}`;\n        onChange?.([...images, fullUrl]);\n      }\n    }\n  };\n  const removeImage = (idx: number) => {\n    onChange?.(images.filter((_, i) => i !== idx));\n  };\n  return (\n    <div>\n      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>\n        {images.map((url: string, idx: number) => (\n          <div key={idx} style={{ position: 'relative', width: 80, height: 80 }}>\n            <Image\n              src={url}\n              width={80}\n              height={80}\n              style={{ objectFit: 'cover', borderRadius: 4 }}\n              preview={{ mask: '查看' }}\n            />\n            <Button\n              type=\"primary\"\n              danger\n              size=\"small\"\n              style={{ position: 'absolute', top: 0, right: 0, padding: '0 4px', minWidth: 20, height: 20 }}\n              onClick={() => removeImage(idx)}\n            >\n              ×\n            </Button>\n          </div>\n        ))}\n      </div>\n      <Upload\n        name=\"file\"\n        action=\"/api/v1/files/upload/image\"\n        headers={{ Authorization: `Bearer ${localStorage.getItem('token') || ''}` }}\n        onChange={handleUpload}\n        showUploadList={false}\n      >\n        <Button icon={<UploadOutlined />} size=\"small\">\n          上传图片\n        </Button>\n      </Upload>\n    </div>\n  );\n}\n\n/* ---------- 标签输入组件（逗号/回车分隔） ---------- */\nfunction TagInput({ value = [], onChange }: any) {\n  const [inputValue, setInputValue] = useState('');\n  const tags: string[] = value || [];\n  const addTag = () => {\n    const v = inputValue.trim();\n    if (v && !tags.includes(v)) {\n      onChange?.([...tags, v]);\n      setInputValue('');\n    }\n  };\n  const removeTag = (tag: string) => {\n    onChange?.(tags.filter((t) => t !== tag));\n  };\n  return (\n    <div>\n      <Space wrap style={{ marginBottom: 4 }}>\n        {tags.map((tag) => (\n          <Tag key={tag} closable onClose={() => removeTag(tag)}>\n            {tag}\n          </Tag>\n        ))}\n      </Space>\n      <Input\n        size=\"small\"\n        placeholder=\"输入后回车添加\"\n        value={inputValue}\n        onChange={(e) => setInputValue(e.target.value)}\n        onPressEnter={addTag}\n        onBlur={addTag}\n      />\n    </div>\n  );\n}\n\nexport default function AddonManage() {\n  const tableRef = useRef<any>(null);\n  const [modalVisible, setModalVisible] = useState(false);\n  const [editData, setEditData] = useState<any>(null);\n  const editDataRef = useRef<any>(null);\n  const [form] = Form.useForm();\n  const [routes, setRoutes] = useState<any[]>([]);\n\n  useEffect(() => {\n    loadRoutes();\n  }, []);\n\n  const loadRoutes = async () => {\n    try {\n      const res = await request('/api/v1/admin/routes', { params: { page: 1, page_size: 100 } });\n      const list = res.data?.routes || [];\n      setRoutes(list.map((r: any) => ({ label: r.name, value: r.id })));\n    } catch (err) {\n      console.error('加载路线列表失败:', err);\n    }\n  };\n\n  const openModal = (record?: any) => {\n    setEditData(record || null);\n    editDataRef.current = record || null;\n    setModalVisible(true);\n  };\n\n  const handleDelete = async (id: number) => {\n    try {\n      const res = await request('/api/v1/admin/addons/' + id, { method: 'DELETE' });\n      if (res.code === 200) {\n        message.success('删除成功');\n        tableRef.current?.reload();\n      } else {\n        message.error(res.message || '删除失败');\n      }\n    } catch {\n      message.error('删除失败');\n    }\n  };\n\n  const handleStatusChange = async (record: any, newStatus: number) => {\n    try {\n      const res = await request('/api/v1/admin/addons/' + record.id, {\n        method: 'PUT',\n        data: { ...record, status: newStatus },\n      });\n      if (res.code === 200) {\n        message.success('状态更新成功');\n        tableRef.current?.reload();\n      } else {\n        message.error(res.message || '更新失败');\n      }\n    } catch {\n      message.error('更新失败');\n    }\n  };\n\n  const handleSubmit = async (values: any) => {\n    try {\n      const url = editData ? '/api/v1/admin/addons/' + editData.id : '/api/v1/admin/addons';\n      const method = editData ? 'PUT' : 'POST';\n      const data = { ...values };\n\n      // 处理狗狗票选项\n      if (data.category === 'dog_ticket' && data.dog_ticket_options?.length > 0) {\n        data.extra_config = {\n          ...(data.extra_config || {}),\n          options: data.dog_ticket_options.filter((o: any) => o.name && o.price !== undefined),\n        };\n      }\n      delete data.dog_ticket_options;\n\n      // 处理酒店房型\n      if (data.category === 'hotel' && data.hotel_rooms?.length > 0) {\n        data.extra_config = {\n          ...(data.extra_config || {}),\n          rooms: data.hotel_rooms.filter((r: any) => r.name && r.price !== undefined),\n        };\n      }\n      delete data.hotel_rooms;\n\n      const res = await request(url, {\n        method,\n        data,\n      });\n      if (res.code === 200) {\n        message.success(editData ? '更新成功' : '创建成功');\n        setModalVisible(false);\n        setEditData(null);\n        editDataRef.current = null;\n        form.resetFields();\n        tableRef.current?.reload();\n        return true;\n      }\n      message.error(res.message || (editData ? '更新失败' : '创建失败'));\n      return false;\n    } catch {\n      message.error(editData ? '更新失败' : '创建失败');\n      return false;\n    }\n  };\n\n  const columns = [\n    { title: 'ID', dataIndex: 'id', width: 60, search: false },\n    {\n      title: '名称',\n      dataIndex: 'name',\n      width: 200,\n      ellipsis: true,\n    },\n    {\n      title: '分类',\n      dataIndex: 'category',\n      width: 100,\n      valueEnum: {\n        dog_ticket: { text: '狗狗票' },\n        hotel: { text: '酒店' },\n        amusement: { text: '游乐项目' },\n      },\n      render: (category: string) => {\n        const config = categoryMap[category] || { text: category, color: 'default' };\n        return <Tag color={config.color}>{config.text}</Tag>;\n      },\n    },\n    {\n      title: '关联线路',\n      dataIndex: 'route_id',\n      width: 150,\n      search: false,\n      render: (routeId: number) => {\n        const route = routes.find((r: any) => r.value === routeId);\n        return route?.label || routeId;\n      },\n    },\n    {\n      title: '价格',\n      dataIndex: 'price',\n      width: 100,\n      search: false,\n      render: (price: number) => `¥${price}`,\n    },\n    {\n      title: '库存',\n      dataIndex: 'stock',\n      width: 80,\n      search: false,\n    },\n    {\n      title: '已售',\n      dataIndex: 'sold',\n      width: 80,\n      search: false,\n    },\n    {\n      title: '限购',\n      dataIndex: 'limit_per_order',\n      width: 80,\n      search: false,\n      render: (v: number) => (v > 0 ? v : '不限'),\n    },\n    {\n      title: '必选',\n      dataIndex: 'is_required',\n      width: 80,\n      search: false,\n      render: (v: number) => (v === 1 ? <Tag color=\"red\">是</Tag> : <Tag>否</Tag>),\n    },\n    {\n      title: '排序',\n      dataIndex: 'sort_order',\n      width: 80,\n      search: false,\n    },\n    {\n      title: '状态',\n      dataIndex: 'status',\n      width: 90,\n      render: (_: any, record: any) => {\n        const config = statusMap[record.status] || { text: '未知', color: 'default' };\n        return <Tag color={config.color}>{config.text}</Tag>;\n      },\n    },\n    {\n      title: '创建时间',\n      dataIndex: 'created_at',\n      width: 180,\n      search: false,\n      render: (date: string) => (date ? dayjs(date).format('YYYY-MM-DD HH:mm') : '-'),\n    },\n    {\n      title: '操作',\n      valueType: 'option',\n      width: 200,\n      fixed: 'right',\n      render: (_: any, record: any) => (\n        <Space size=\"small\">\n          <Button type=\"link\" size=\"small\" icon={<EditOutlined />} onClick={() => openModal(record)}>\n            编辑\n          </Button>\n          {record.status !== 1 ? (\n            <Button type=\"link\" size=\"small\" onClick={() => handleStatusChange(record, 1)}>\n              上架\n            </Button>\n          ) : (\n            <Button type=\"link\" size=\"small\" danger onClick={() => handleStatusChange(record, 0)}>\n              下架\n            </Button>\n          )}\n          <Popconfirm\n            title=\"确认删除\"\n            description=\"删除后无法恢复，是否继续？\"\n            onConfirm={() => handleDelete(record.id)}\n          >\n            <Button type=\"link\" danger size=\"small\" icon={<DeleteOutlined />}>\n              删除\n            </Button>\n          </Popconfirm>\n        </Space>\n      ),\n    },\n  ];\n\n  return (\n    <PageContainer title=\"行程选配管理\">\n      <ProTable\n        columns={columns}\n        actionRef={tableRef}\n        request={async (params) => {\n          const res = await request('/api/v1/admin/addons', {\n            params: {\n              page: params.current,\n              page_size: params.pageSize,\n              category: params.category,\n              status: params.status,\n              keyword: params.name,\n            },\n          });\n          return { data: res.data?.addons || [], success: res.code === 200, total: res.data?.total || 0 };\n        }}\n        rowKey=\"id\"\n        search={{ labelWidth: 'auto' }}\n        pagination={{ pageSize: 10, showSizeChanger: true }}\n        scroll={{ x: 1300 }}\n        toolBarRender={() => [\n          <Button key=\"add\" type=\"primary\" icon={<PlusOutlined />} onClick={() => openModal()}>\n            新建选配\n          </Button>,\n        ]}\n      />\n      <ModalForm\n        title={editData ? '编辑行程选配' : '新建行程选配'}\n        open={modalVisible}\n        onOpenChange={(open) => {\n          setModalVisible(open);\n          if (open) {\n            setTimeout(() => {\n              const record = editDataRef.current;\n              if (record) {\n                const values: any = { ...record };\n                if (record.extra_config?.options) {\n                  values.dog_ticket_options = record.extra_config.options;\n                }\n                if (record.extra_config?.rooms) {\n                  values.hotel_rooms = record.extra_config.rooms;\n                }\n                form.setFieldsValue(values);\n              } else {\n                form.setFieldsValue({\n                  category: 'dog_ticket',\n                  status: 1,\n                  sort_order: 0,\n                  stock: 999,\n                  limit_per_order: 0,\n                  is_required: 0,\n                  need_info: 0,\n                  unit: '份',\n                });\n              }\n            }, 50);\n          }\n        }}\n        onFinish={handleSubmit}\n        form={form}\n        width={900}\n        modalProps={{\n          destroyOnClose: true,\n          afterClose: () => {\n            setEditData(null);\n            editDataRef.current = null;\n            form.resetFields();\n          },\n        }}\n      >\n        <ProFormSelect\n          name=\"route_id\"\n          label=\"关联线路\"\n          options={routes}\n          rules={[{ required: true, message: '请选择线路' }]}\n        />\n        <ProFormSelect\n          name=\"category\"\n          label=\"分类\"\n          options={[\n            { label: '狗狗票', value: 'dog_ticket' },\n            { label: '酒店', value: 'hotel' },\n            { label: '游乐项目', value: 'amusement' },\n          ]}\n          rules={[{ required: true }]}\n        />\n\n        {/* 狗狗票选项规格 */}\n        <Form.Item noStyle shouldUpdate>\n          {({ getFieldValue }) => {\n            const category = getFieldValue('category');\n            if (category !== 'dog_ticket') return null;\n            return (\n              <Form.Item label=\"狗狗票选项规格\">\n                <Form.List name=\"dog_ticket_options\">\n                  {(fields, { add, remove }) => (\n                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>\n                      {fields.map(({ key, name, ...restField }) => (\n                        <Space key={key} style={{ display: 'flex', marginBottom: 8 }} align=\"baseline\">\n                          <Form.Item\n                            {...restField}\n                            name={[name, 'name']}\n                            rules={[{ required: true, message: '请输入选项名称' }]}\n                            style={{ marginBottom: 0 }}\n                          >\n                            <Input placeholder=\"选项名称\" style={{ width: 160 }} />\n                          </Form.Item>\n                          <Form.Item\n                            {...restField}\n                            name={[name, 'price']}\n                            rules={[{ required: true, message: '请输入价格' }]}\n                            style={{ marginBottom: 0 }}\n                          >\n                            <Input type=\"number\" placeholder=\"价格\" style={{ width: 100 }} prefix=\"¥\" />\n                          </Form.Item>\n                          <Form.Item\n                            {...restField}\n                            name={[name, 'description']}\n                            style={{ marginBottom: 0 }}\n                          >\n                            <Input placeholder=\"说明（如适用犬型）\" style={{ width: 220 }} />\n                          </Form.Item>\n                          <Button type=\"link\" danger onClick={() => remove(name)}>\n                            删除\n                          </Button>\n                        </Space>\n                      ))}\n                      <Button type=\"dashed\" onClick={() => add()} block icon={<PlusOutlined />}>\n                        添加选项规格\n                      </Button>\n                    </div>\n                  )}\n                </Form.List>\n              </Form.Item>\n            );\n          }}\n        </Form.Item>\n\n        {/* 酒店房型配置 */}\n        <Form.Item noStyle shouldUpdate>\n          {({ getFieldValue }) => {\n            const category = getFieldValue('category');\n            if (category !== 'hotel') return null;\n            return (\n              <Form.Item label=\"酒店房型\">\n                <Form.List name=\"hotel_rooms\">\n                  {(fields, { add, remove }) => (\n                    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>\n                      {fields.map(({ key, name, ...restField }) => (\n                        <Card\n                          key={key}\n                          size=\"small\"\n                          title={`房型 ${name + 1}`}\n                          extra={\n                            <Button type=\"link\" danger size=\"small\" onClick={() => remove(name)}>\n                              删除\n                            </Button>\n                          }\n                        >\n                          <Row gutter={16}>\n                            <Col span={12}>\n                              <Form.Item\n                                {...restField}\n                                name={[name, 'name']}\n                                label=\"房型名称\"\n                                rules={[{ required: true, message: '请输入房型名称' }]}\n                              >\n                                <Input placeholder=\"如：涵香·私汤温馨大床房\" />\n                              </Form.Item>\n                            </Col>\n                            <Col span={12}>\n                              <Form.Item {...restField} name={[name, 'area']} label=\"面积\">\n                                <Input placeholder=\"如：35㎡\" />\n                              </Form.Item>\n                            </Col>\n                          </Row>\n                          <Row gutter={16}>\n                            <Col span={8}>\n                              <Form.Item {...restField} name={[name, 'window']} label=\"窗户\">\n                                <Input placeholder=\"如：有窗\" />\n                              </Form.Item>\n                            </Col>\n                            <Col span={8}>\n                              <Form.Item {...restField} name={[name, 'max_guests']} label=\"最多入住人数\">\n                                <Input type=\"number\" placeholder=\"如：2\" />\n                              </Form.Item>\n                            </Col>\n                            <Col span={8}>\n                              <Form.Item {...restField} name={[name, 'max_pets']} label=\"最多携宠数量\">\n                                <Input type=\"number\" placeholder=\"如：2\" />\n                              </Form.Item>\n                            </Col>\n                          </Row>\n                          <Row gutter={16}>\n                            <Col span={12}>\n                              <Form.Item {...restField} name={[name, 'bed_type']} label=\"床型\">\n                                <Input placeholder=\"如：2张单人床（2×1.5米）\" />\n                              </Form.Item>\n                            </Col>\n                            <Col span={12}>\n                              <Form.Item {...restField} name={[name, 'breakfast']} label=\"早餐\">\n                                <Input placeholder=\"如：含2份早餐\" />\n                              </Form.Item>\n                            </Col>\n                          </Row>\n                          <Row gutter={16}>\n                            <Col span={12}>\n                              <Form.Item {...restField} name={[name, 'pet_weight_limit']} label=\"携宠体重限制\">\n                                <Input placeholder=\"如：体重无限制\" />\n                              </Form.Item>\n                            </Col>\n                            <Col span={12}>\n                              <Form.Item\n                                {...restField}\n                                name={[name, 'stock']}\n                                label=\"库存\"\n                                rules={[{ required: true }]}\n                              >\n                                <Input type=\"number\" placeholder=\"如：2\" />\n                              </Form.Item>\n                            </Col>\n                          </Row>\n                          <Row gutter={16}>\n                            <Col span={8}>\n                              <Form.Item\n                                {...restField}\n                                name={[name, 'price']}\n                                label=\"售价\"\n                                rules={[{ required: true }]}\n                              >\n                                <Input type=\"number\" placeholder=\"如：382\" prefix=\"¥\" />\n                              </Form.Item>\n                            </Col>\n                            <Col span={8}>\n                              <Form.Item {...restField} name={[name, 'original_price']} label=\"原价\">\n                                <Input type=\"number\" placeholder=\"如：442\" prefix=\"¥\" />\n                              </Form.Item>\n                            </Col>\n                            <Col span={8}>\n                              <Form.Item {...restField} name={[name, 'filters']} label=\"过滤标签\">\n                                <TagInput />\n                              </Form.Item>\n                            </Col>\n                          </Row>\n                          <Row gutter={16}>\n                            <Col span={12}>\n                              <Form.Item {...restField} name={[name, 'tags']} label=\"房型标签\">\n                                <TagInput />\n                              </Form.Item>\n                            </Col>\n                            <Col span={12}>\n                              <Form.Item {...restField} name={[name, 'images']} label=\"房型图片\">\n                                <RoomImageUploader />\n                              </Form.Item>\n                            </Col>\n                          </Row>\n                          <Form.Item {...restField} name={[name, 'cancel_policy']} label=\"退订政策\">\n                            <Input.TextArea rows={2} placeholder=\"如：节假日不可取消，非节假日入住日前2天23:59点前可免费取消...\" />\n                          </Form.Item>\n                          <Form.Item {...restField} name={[name, 'checkin_notes']} label=\"入住必读\">\n                            <Input.TextArea rows={2} placeholder=\"如：订单需等酒店或供应商确认后生效...\" />\n                          </Form.Item>\n                        </Card>\n                      ))}\n                      <Button type=\"dashed\" onClick={() => add()} block icon={<PlusOutlined />}>\n                        添加房型\n                      </Button>\n                    </div>\n                  )}\n                </Form.List>\n              </Form.Item>\n            );\n          }}\n        </Form.Item>\n\n        <ProFormText name=\"name\" label=\"名称\" rules={[{ required: true }]} />\n        <ProFormDigit name=\"price\" label=\"售价\" min={0} precision={2} rules={[{ required: true }]} />\n        <ProFormText name=\"unit\" label=\"计价单位\" />\n        <ProFormTextArea name=\"description\" label=\"详细介绍\" />\n        <ProFormDigit name=\"stock\" label=\"库存\" min={0} />\n        <ProFormDigit name=\"limit_per_order\" label=\"单订单限购（0=不限）\" min={0} />\n        <ProFormDigit name=\"sort_order\" label=\"排序\" min={0} />\n        <ProFormRadio.Group\n          name=\"is_required\"\n          label=\"是否必选\"\n          options={[\n            { label: '否', value: 0 },\n            { label: '是', value: 1 },\n          ]}\n        />\n        <ProFormRadio.Group\n          name=\"need_info\"\n          label=\"是否需要填写资料\"\n          options={[\n            { label: '否', value: 0 },\n            { label: '是', value: 1 },\n          ]}\n        />\n        <ProFormRadio.Group\n          name=\"status\"\n          label=\"状态\"\n          options={[\n            { label: '下架', value: 0 },\n            { label: '上架', value: 1 },\n          ]}\n        />\n      </ModalForm>\n    </PageContainer>\n  );\n}\n",
+      "__isJSFile": true,
+      "__absFile": "D:/projects/frontend/admin/src/pages/Addons/index.tsx"
+    },
+    "23": {
       "name": "登录",
       "path": "/login",
       "layout": false,
       "file": "@/pages/Login/index.tsx",
-      "id": "22",
+      "id": "23",
       "absPath": "/login",
       "__content": "import { LoginForm, ProFormText } from '@ant-design/pro-components';\nimport { message, theme, Alert } from 'antd';\nimport { history, request } from '@umijs/max';\nimport { useState } from 'react';\n\nexport default function LoginPage() {\n  const [loading, setLoading] = useState(false);\n  const { token } = theme.useToken();\n\n  const handleSubmit = async (values: { username: string; password: string }) => {\n    setLoading(true);\n    try {\n      const res: any = await request('/api/v1/auth/admin/login', {\n        method: 'POST',\n        data: values,\n      });\n      if (res.code === 200 && res.data?.token) {\n        localStorage.setItem('token', res.data.token);\n        message.success('登录成功');\n        history.push('/home');\n        return;\n      }\n      message.error(res.message || '登录失败');\n    } catch (err: any) {\n      // 若后端接口尚未重启/不可用，开发环境允许使用 mock token 直接登录\n      if (values.username === 'admin' && values.password === 'admin123') {\n        localStorage.setItem('token', 'mock_token_admin_dev');\n        message.success('开发环境快速登录成功');\n        history.push('/home');\n      } else {\n        message.error('登录失败，请检查账号密码');\n      }\n    } finally {\n      setLoading(false);\n    }\n  };\n\n  return (\n    <div\n      style={{\n        backgroundColor: token.colorBgContainer,\n        height: '100vh',\n        display: 'flex',\n        alignItems: 'center',\n        justifyContent: 'center',\n      }}\n    >\n      <LoginForm\n        logo=\"https://img.alicdn.com/tfs/TB1YHEpwUT1gK0jSZFhXXaAtVXa-28-27.svg\"\n        title=\"尾巴旅行PetWay\"\n        subTitle=\"管理后台登录\"\n        onFinish={handleSubmit}\n        submitter={{\n          searchConfig: {\n            submitText: '登录',\n          },\n          submitButtonProps: {\n            loading,\n            size: 'large',\n            style: { width: '100%' },\n          },\n        }}\n      >\n        <Alert\n          message=\"开发环境账号: admin / 密码: admin123\"\n          type=\"info\"\n          showIcon\n          style={{ marginBottom: 24 }}\n        />\n        <ProFormText\n          name=\"username\"\n          fieldProps={{\n            size: 'large',\n          }}\n          placeholder=\"请输入管理员账号\"\n          rules={[{ required: true, message: '请输入管理员账号' }]}\n        />\n        <ProFormText.Password\n          name=\"password\"\n          fieldProps={{\n            size: 'large',\n          }}\n          placeholder=\"请输入密码\"\n          rules={[{ required: true, message: '请输入密码' }]}\n        />\n      </LoginForm>\n    </div>\n  );\n}\n",
       "__isJSFile": true,
@@ -3783,7 +3804,7 @@
   "faviconFiles": [],
   "port": 8000,
   "host": "0.0.0.0",
-  "ip": "192.168.80.1",
+  "ip": "192.168.31.44",
   "antd": {
     "pkgPath": "D:\\projects\\frontend\\admin\\node_modules\\antd",
     "version": "5.29.3"

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import Taro from '@tarojs/taro'
 import { View, Text, Input, Button, Image, Picker } from '@tarojs/components'
-import { getPet, createPet, updatePet } from '../../../utils/api'
+import { getPet, getPets, createPet, updatePet } from '../../../utils/api'
 import './index.scss'
 
 function calcAge(birthDate?: string) {
@@ -83,10 +83,11 @@ export default function PetEdit() {
       Taro.showToast({ title: '请选择宠物性别', icon: 'none' })
       return
     }
+    const birthDate = ageToBirthDate(pet.age)
     const payload: any = {
       name: pet.name,
       breed: pet.breed || undefined,
-      birth_date: ageToBirthDate(pet.age),
+      birth_date: birthDate,
       gender: pet.gender,
       weight: pet.weight ? Number(pet.weight) : undefined,
       is_default: pet.is_default ? 1 : 0,
@@ -97,6 +98,22 @@ export default function PetEdit() {
       if (pet.id) {
         await updatePet(pet.id, payload)
       } else {
+        // 重复校验：查询已有宠物列表
+        const petsRes = await getPets()
+        const existingPets = petsRes.data || []
+        const isDuplicate = existingPets.some((p: any) =>
+          p.name === pet.name &&
+          p.birth_date === birthDate &&
+          p.gender === pet.gender
+        )
+        if (isDuplicate) {
+          Taro.showModal({
+            title: '提示',
+            content: '宠物信息已存在，不可重复添加',
+            showCancel: false
+          })
+          return
+        }
         const res: any = await createPet(payload)
         if (res?.code !== 200) {
           throw new Error(res?.message || '保存失败')

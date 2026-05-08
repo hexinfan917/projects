@@ -23,7 +23,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from common.config import settings
 from common.redis_client import redis_client
 from common.middleware import setup_cors, RequestLogMiddleware
-from common.exceptions import APIException, api_exception_handler
+from common.exceptions import APIException, api_exception_handler, BadRequestException
 from common.logger import setup_logger
 from common.dependencies import get_current_user
 from common.database import get_db, AsyncSessionLocal
@@ -131,6 +131,8 @@ class CreateOrderRequest(BaseModel):
     insurance_price: float = 0
     equipment_price: float = 0
     discount_amount: float = 0
+    addons: List[dict] = []
+    addon_amount: float = 0
 
 @app.get("/health")
 async def health_check():
@@ -142,6 +144,7 @@ STATUS_MAP = {
     20: "待出行",
     30: "已取消",
     40: "退款中",
+    45: "退款驳回",
     50: "已退款",
     60: "已完成",
     70: "已评价"
@@ -192,12 +195,14 @@ async def get_orders(
             "contact": o.contact or {},
             "route_price": float(o.route_price),
             "insurance_price": float(o.insurance_price),
+            "addon_amount": float(o.addon_amount),
             "pay_amount": float(o.pay_amount),
             "status": o.status,
             "status_name": STATUS_MAP.get(o.status, "未知"),
             "pay_time": o.pay_time.isoformat() if o.pay_time else None,
             "order_time": o.created_at.isoformat(),
-            "created_at": o.created_at.isoformat()
+            "created_at": o.created_at.isoformat(),
+            "refund_reject_reason": o.refund_reject_reason
         })
     
     return success({
@@ -243,6 +248,8 @@ async def get_order_detail(
         "route_price": float(o.route_price),
         "insurance_price": float(o.insurance_price),
         "equipment_price": float(o.equipment_price),
+        "addon_amount": float(o.addon_amount),
+        "addons": o.addons or [],
         "total_amount": float(o.total_amount),
         "discount_amount": float(o.discount_amount),
         "pay_amount": float(o.pay_amount),
@@ -254,7 +261,8 @@ async def get_order_detail(
         "order_time": o.created_at.isoformat(),
         "created_at": o.created_at.isoformat(),
         "qrcode": o.qrcode,
-        "guide_info": o.guide_info or {}
+        "guide_info": o.guide_info or {},
+        "refund_reject_reason": o.refund_reject_reason
     }
     
     return success(order)
@@ -363,7 +371,8 @@ async def create_order(
     # 计算金额
     total_amount = (data.route_price + 
                    data.insurance_price + 
-                   data.equipment_price)
+                   data.equipment_price +
+                   data.addon_amount)
     pay_amount = max(0, total_amount - data.discount_amount)
     
     # 生成订单号
@@ -387,7 +396,7 @@ async def create_order(
     )
     
     if stock_result.rowcount == 0:
-        raise HTTPException(status_code=400, detail="该排期库存不足或已售罄，请选择其他日期")
+        raise BadRequestException("该排期库存不足或已售罄，请选择其他日期")
     
     # 创建订单
     order = Order(
@@ -405,6 +414,8 @@ async def create_order(
         route_price=data.route_price,
         insurance_price=data.insurance_price,
         equipment_price=data.equipment_price,
+        addon_amount=data.addon_amount,
+        addons=data.addons,
         total_amount=total_amount,
         discount_amount=data.discount_amount,
         pay_amount=pay_amount,
@@ -462,7 +473,7 @@ async def pay_order(
     
     logger.info(f"Pay order check: order_id={order_id}, status={order.status}, expected=10")
     if order.status != 10:  # 只能支付待支付订单
-        raise HTTPException(status_code=400, detail=f"订单状态不允许支付，当前状态:{order.status}")
+        raise BadRequestException(f"订单状态不允许支付，当前状态:{order.status}")
     
     # 模拟支付成功 - 更新订单状态
     from datetime import datetime
@@ -534,18 +545,43 @@ async def cancel_order(
 async def refund_order(
     order_id: int,
     data: dict,
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
 ):
-    """申请退款"""
-    refund_amount = data.get("amount", 199)
+    """用户申请退款"""
+    from app.models.order import Order
+    
+    user_id = current_user.get("user_id", 1)
     reason = data.get("reason", "")
     
-    logger.info(f"Refund request: order={order_id}, amount={refund_amount}, reason={reason}")
+    result = await db.execute(
+        select(Order).where(Order.id == order_id, Order.user_id == user_id)
+    )
+    order = result.scalar_one_or_none()
+    
+    if not order:
+        return {"code": 404, "message": "订单不存在", "data": None}
+    
+    # 只能对待出行或退款驳回的订单申请退款
+    if order.status not in [20, 45]:
+        return {"code": 400, "message": "当前订单状态不允许申请退款", "data": None}
+    
+    # 更新订单状态为退款中，清空之前的拒绝原因
+    order.status = 40
+    order.refund_amount = float(order.pay_amount)
+    order.refund_reason = reason
+    order.refund_reject_reason = None
+    order.updated_at = datetime.now()
+    
+    await db.commit()
+    
+    logger.info(f"User refund request: order={order_id}, amount={order.pay_amount}, reason={reason}")
     
     return success({
-        "refund_id": f"REF{datetime.now().strftime('%Y%m%d%H%M%S')}",
-        "refund_amount": refund_amount,
-        "status": "processing",
+        "order_id": order_id,
+        "refund_amount": float(order.pay_amount),
+        "status": 40,
+        "status_name": "退款中",
         "message": "退款申请已提交"
     })
 
@@ -579,7 +615,7 @@ async def get_order_stats(
             stats["untravel"] = count
         elif status == 60:
             stats["unevaluate"] = count
-        elif status in [40, 50]:
+        elif status in [40, 45, 50]:
             stats["refund"] += count
         stats["total"] += count
     
@@ -817,6 +853,7 @@ async def admin_get_order_detail(
             "pay_time": o.pay_time.isoformat() if o.pay_time else None,
             "created_at": o.created_at.isoformat() if o.created_at else None,
             "updated_at": o.updated_at.isoformat() if o.updated_at else None,
+            "refund_reject_reason": o.refund_reject_reason,
         }
         
         return success(order)
@@ -891,8 +928,8 @@ async def admin_get_refunds(
     try:
         from app.models.order import Order
         
-        # 查询退款中的订单(40)或已退款的订单(50)
-        query = select(Order).where(Order.status.in_([40, 50]))
+        # 查询退款中(40)、退款驳回(45)或已退款(50)的订单
+        query = select(Order).where(Order.status.in_([40, 45, 50]))
         
         if status:
             query = query.where(Order.status == status)
@@ -988,15 +1025,16 @@ async def admin_reject_refund(
         if order.status != 40:
             return {"code": 400, "message": "订单不是退款中状态", "data": None}
         
-        # 恢复到待出行状态(20)
-        order.status = 20
+        # 更新为退款驳回状态(45)，保留用户申请原因，单独记录拒绝原因
+        order.status = 45
         order.refund_amount = 0
-        order.refund_reason = f"拒绝原因: {data.get('reason', '无')}"
+        order.refund_reject_reason = data.get('reason', '')
         await db.commit()
         
         return success({
             "order_id": order_id,
-            "status": 20
+            "status": 45,
+            "status_name": "退款驳回"
         }, message="已拒绝退款申请")
     except Exception as e:
         logger.error(f"Error rejecting refund: {e}")
