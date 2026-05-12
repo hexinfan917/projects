@@ -64,7 +64,7 @@ export default function ProfileEdit() {
       })
       if (res.code === 200) {
         Taro.setStorageSync('user_info', res.data)
-        Taro.showToast({ title: '保存成功', icon: 'success' })
+        Taro.showToast({ title: '提交成功', icon: 'success' })
         setTimeout(() => Taro.navigateBack(), 1000)
       } else {
         Taro.showToast({ title: res.message || '保存失败', icon: 'none' })
@@ -75,11 +75,16 @@ export default function ProfileEdit() {
   }
 
   return (
-    <View className='profile-edit' style={{ paddingTop: '140rpx' }}>
-
-        <View className='page-back' onClick={() => Taro.navigateBack()}>
-          <Text className='page-back-icon'>←</Text>
+    <View className='profile-edit' style={{ paddingTop: '200rpx' }}>
+      <View className='custom-navbar'>
+        <View className='navbar-bg' />
+        <View className='navbar-content'>
+          <View className='page-back' onClick={() => Taro.navigateBack()}>
+            <Text className='page-back-icon'>←</Text>
+          </View>
+          <Text className='navbar-title'>完善个人信息</Text>
         </View>
+      </View>
       <View className='form-section'>
         <View className='avatar-row' onClick={handleChooseAvatar}>
           <Text className='label'>头像</Text>
@@ -119,7 +124,7 @@ export default function ProfileEdit() {
           <Input className='input' placeholder='请输入城市' value={user.city || ''} onInput={(e) => setUser({ ...user, city: e.detail.value })} />
         </View>
       </View>
-      <Button className='save-btn' onClick={handleSave}>保存</Button>
+      <Button className='save-btn' onClick={handleSave}>确认提交</Button>
     </View>
   )
 }

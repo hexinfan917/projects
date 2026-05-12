@@ -173,6 +173,8 @@ export default function UserList() {
       render: (gender: number) => (gender === 1 ? '男' : gender === 2 ? '女' : '未知'),
     },
     { title: '手机号', dataIndex: 'phone', width: 120 },
+    { title: '真实姓名', dataIndex: 'real_name', width: 120, search: false },
+    { title: '身份证', dataIndex: 'id_card', width: 180, search: false },
     {
       title: '会员等级',
       dataIndex: 'member_level',
@@ -324,6 +326,8 @@ export default function UserList() {
             <Descriptions.Item label="OpenID">{detailData.openid}</Descriptions.Item>
             <Descriptions.Item label="昵称">{detailData.nickname || '-'}</Descriptions.Item>
             <Descriptions.Item label="手机号">{detailData.phone || '-'}</Descriptions.Item>
+            <Descriptions.Item label="真实姓名">{detailData.real_name || '-'}</Descriptions.Item>
+            <Descriptions.Item label="身份证">{detailData.id_card || '-'}</Descriptions.Item>
             <Descriptions.Item label="性别">{detailData.gender === 1 ? '男' : detailData.gender === 2 ? '女' : '未知'}</Descriptions.Item>
             <Descriptions.Item label="生日">{detailData.birthday || '-'}</Descriptions.Item>
             <Descriptions.Item label="城市">{detailData.city || '-'}</Descriptions.Item>
@@ -341,6 +345,8 @@ export default function UserList() {
       <ModalForm title="编辑用户" open={editVisible} onOpenChange={setEditVisible} onFinish={handleUpdate} initialValues={editData}>
         <ProFormText name="nickname" label="昵称" placeholder="请输入昵称" />
         <ProFormText name="phone" label="手机号" placeholder="请输入手机号" rules={[{ pattern: /^1[3-9]\d{9}$/, message: '手机号格式错误' }]} />
+        <ProFormText name="real_name" label="真实姓名" placeholder="请输入真实姓名" />
+        <ProFormText name="id_card" label="身份证" placeholder="请输入身份证号" />
         <ProFormSelect name="member_level" label="会员等级" options={levelOptions} />
         <ProFormDigit name="member_points" label="积分" min={0} />
         <ProFormSelect name="status" label="状态" options={statusOptions} />

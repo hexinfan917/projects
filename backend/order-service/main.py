@@ -131,6 +131,7 @@ class CreateOrderRequest(BaseModel):
     insurance_price: float = 0
     equipment_price: float = 0
     discount_amount: float = 0
+    coupon_id: Optional[int] = None
     addons: List[dict] = []
     addon_amount: float = 0
 
@@ -365,6 +366,7 @@ async def create_order(
 ):
     """创建订单（校验库存并扣减）"""
     from app.models.order import Order
+    from app.models.coupon import UserCoupon
     
     user_id = current_user.get("user_id", 1)
     
@@ -373,7 +375,49 @@ async def create_order(
                    data.insurance_price + 
                    data.equipment_price +
                    data.addon_amount)
-    pay_amount = max(0, total_amount - data.discount_amount)
+    
+    # 处理优惠券
+    coupon_id = data.coupon_id
+    coupon_name = None
+    discount_amount = data.discount_amount or 0
+    
+    if coupon_id:
+        coupon_result = await db.execute(
+            select(UserCoupon).where(
+                UserCoupon.id == coupon_id,
+                UserCoupon.user_id == user_id,
+                UserCoupon.status == 1
+            )
+        )
+        coupon = coupon_result.scalar_one_or_none()
+        
+        if coupon:
+            # 校验有效期
+            now = datetime.now()
+            if coupon.valid_start_time <= now <= coupon.valid_end_time:
+                # 校验金额门槛
+                if float(coupon.min_amount) <= total_amount:
+                    # 校验适用范围
+                    applicable = True
+                    if coupon.applicable_type == 2 and coupon.applicable_ids:
+                        if data.route_id not in coupon.applicable_ids:
+                            applicable = False
+                    
+                    if applicable:
+                        discount_amount = calculate_discount(
+                            coupon.type, float(coupon.value), total_amount, float(coupon.max_discount or 0)
+                        )
+                        coupon_name = coupon.name
+                    else:
+                        coupon_id = None
+                else:
+                    coupon_id = None
+            else:
+                coupon_id = None
+        else:
+            coupon_id = None
+    
+    pay_amount = max(0.01, round(total_amount - discount_amount, 2))
     
     # 生成订单号
     order_no = generate_order_no()
@@ -417,7 +461,9 @@ async def create_order(
         addon_amount=data.addon_amount,
         addons=data.addons,
         total_amount=total_amount,
-        discount_amount=data.discount_amount,
+        discount_amount=discount_amount,
+        coupon_id=coupon_id,
+        coupon_name=coupon_name,
         pay_amount=pay_amount,
         status=10,
         qrcode=generate_verify_code(order_no)
@@ -481,6 +527,18 @@ async def pay_order(
     order.pay_time = datetime.now()
     order.pay_channel = "wechat"
     order.pay_trade_no = f"WX{datetime.now().strftime('%Y%m%d%H%M%S')}"
+    
+    # 核销优惠券
+    if order.coupon_id:
+        from app.models.coupon import UserCoupon
+        coupon_result = await db.execute(
+            select(UserCoupon).where(UserCoupon.id == order.coupon_id)
+        )
+        coupon = coupon_result.scalar_one_or_none()
+        if coupon:
+            coupon.status = 2  # 已使用
+            coupon.used_order_id = order.id
+            coupon.used_at = datetime.now()
     
     await db.flush()
     await db.commit()
@@ -1200,3 +1258,824 @@ async def admin_get_stats(
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("main:app", host="0.0.0.0", port=settings.app_port, reload=settings.debug)
+
+
+# ==================== 优惠券模块 ====================
+
+import random
+import string
+
+def generate_coupon_no() -> str:
+    """生成优惠券编号"""
+    return f"CP{datetime.now().strftime('%Y%m%d%H%M%S')}{''.join(random.choices(string.digits, k=4))}"
+
+def generate_member_order_no() -> str:
+    """生成会员订单编号"""
+    return f"MV{datetime.now().strftime('%Y%m%d%H%M%S')}{''.join(random.choices(string.digits, k=3))}"
+
+
+def calculate_discount(coupon_type: int, value: float, order_amount: float, max_discount: float = 0) -> float:
+    """计算优惠金额"""
+    if coupon_type == 1:  # 满减券
+        return min(value, order_amount)
+    elif coupon_type == 2:  # 折扣券
+        discount = order_amount * (1 - value)
+        if max_discount > 0:
+            discount = min(discount, max_discount)
+        return round(discount, 2)
+    elif coupon_type == 3:  # 立减券
+        return min(value, order_amount)
+    return 0
+
+
+@app.get("/api/v1/coupons")
+async def get_user_coupons(
+    status: Optional[int] = None,
+    page: int = 1,
+    page_size: int = 10,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """获取用户优惠券列表"""
+    from app.models.coupon import UserCoupon
+    
+    user_id = current_user.get("user_id", 1)
+    
+    query = select(UserCoupon).where(UserCoupon.user_id == user_id)
+    
+    if status:
+        query = query.where(UserCoupon.status == status)
+    
+    query = query.order_by(UserCoupon.created_at.desc())
+    
+    total_result = await db.execute(select(func.count()).select_from(query.subquery()))
+    total = total_result.scalar()
+    
+    query = query.offset((page - 1) * page_size).limit(page_size)
+    result = await db.execute(query)
+    coupons = result.scalars().all()
+    
+    now = datetime.now()
+    data = []
+    for c in coupons:
+        item = {
+            "id": c.id,
+            "coupon_no": c.coupon_no,
+            "name": c.name,
+            "type": c.type,
+            "type_text": {1: "满减券", 2: "折扣券", 3: "立减券"}.get(c.type, "未知"),
+            "value": float(c.value),
+            "min_amount": float(c.min_amount),
+            "valid_start_time": c.valid_start_time.isoformat() if c.valid_start_time else None,
+            "valid_end_time": c.valid_end_time.isoformat() if c.valid_end_time else None,
+            "status": c.status,
+            "status_text": {1: "未使用", 2: "已使用", 3: "已过期", 4: "已作废"}.get(c.status, "未知"),
+            "is_expired_soon": c.valid_end_time and (c.valid_end_time - now).days <= 3 if c.status == 1 else False,
+            "source_type": c.source_type,
+            "used_order_id": c.used_order_id,
+        }
+        data.append(item)
+    
+    return success({"list": data, "total": total, "page": page, "page_size": page_size})
+
+
+@app.get("/api/v1/coupons/claim-center")
+async def get_claim_center(
+    page: int = 1,
+    page_size: int = 20,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """获取领券中心列表"""
+    from app.models.coupon import CouponTemplate, UserCoupon
+    
+    user_id = current_user.get("user_id", 1)
+    now = datetime.now()
+    
+    query = select(CouponTemplate).where(
+        CouponTemplate.status == 1,
+        CouponTemplate.source_type == 1  # 仅展示通用券
+    ).where(
+        (CouponTemplate.valid_type == 1) | 
+        ((CouponTemplate.valid_type == 2) & (CouponTemplate.valid_end_time > now))
+    ).where(
+        (CouponTemplate.applicable_type != 4) | 
+        (
+            (CouponTemplate.applicable_type == 4) & 
+            CouponTemplate.applicable_ids.is_not(None) &
+            func.json_contains(CouponTemplate.applicable_ids, str(user_id))
+        )
+    ).order_by(CouponTemplate.created_at.desc())
+    
+    total_result = await db.execute(select(func.count()).select_from(query.subquery()))
+    total = total_result.scalar()
+    
+    query = query.offset((page - 1) * page_size).limit(page_size)
+    result = await db.execute(query)
+    templates = result.scalars().all()
+    
+    data = []
+    for t in templates:
+        # 查询已领取数量和用户已领取数量
+        claimed_count_result = await db.execute(
+            select(func.count()).where(UserCoupon.template_id == t.id)
+        )
+        claimed_count = claimed_count_result.scalar()
+        
+        user_claimed_count_result = await db.execute(
+            select(func.count()).where(
+                UserCoupon.template_id == t.id,
+                UserCoupon.user_id == user_id
+            )
+        )
+        user_claimed_count = user_claimed_count_result.scalar()
+        
+        can_claim = True
+        reason = None
+        if t.total_count > 0 and claimed_count >= t.total_count:
+            can_claim = False
+            reason = "已领完"
+        elif t.per_user_limit > 0 and user_claimed_count >= t.per_user_limit:
+            can_claim = False
+            reason = "已达到领取上限"
+        
+        data.append({
+            "template_id": t.id,
+            "name": t.name,
+            "type": t.type,
+            "value": float(t.value),
+            "min_amount": float(t.min_amount),
+            "description": t.description or f"{'满' + str(int(t.min_amount)) + '减' if t.type == 1 else ''}{float(t.value)}{'折' if t.type == 2 else '元'}",
+            "valid_type": t.valid_type,
+            "valid_days": t.valid_days,
+            "total_count": t.total_count,
+            "claimed_count": claimed_count,
+            "remaining_count": max(0, t.total_count - claimed_count) if t.total_count > 0 else None,
+            "per_user_limit": t.per_user_limit,
+            "user_claimed_count": user_claimed_count,
+            "can_claim": can_claim,
+            "cannot_claim_reason": reason,
+            "applicable_type": t.applicable_type,
+            "color": t.color,
+        })
+    
+    return success({"list": data, "total": total, "page": page, "page_size": page_size})
+
+
+@app.post("/api/v1/coupons/claim")
+async def claim_coupon(
+    data: dict,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """领取优惠券"""
+    from app.models.coupon import CouponTemplate, UserCoupon
+    
+    user_id = current_user.get("user_id", 1)
+    template_id = data.get("template_id")
+    
+    if not template_id:
+        return {"code": 400, "message": "缺少template_id", "data": None}
+    
+    # 查询模板
+    result = await db.execute(select(CouponTemplate).where(CouponTemplate.id == template_id))
+    template = result.scalar_one_or_none()
+    
+    if not template or template.status != 1:
+        return {"code": 400, "message": "优惠券不存在或已停用", "data": None}
+    
+    if template.source_type != 1:
+        return {"code": 400, "message": "该优惠券不支持主动领取", "data": None}
+    
+    now = datetime.now()
+    if template.valid_type == 2 and template.valid_end_time and template.valid_end_time <= now:
+        return {"code": 400, "message": "优惠券已过期", "data": None}
+    
+    # 检查库存
+    if template.total_count > 0:
+        claimed_count_result = await db.execute(
+            select(func.count()).where(UserCoupon.template_id == template_id)
+        )
+        claimed_count = claimed_count_result.scalar()
+        if claimed_count >= template.total_count:
+            return {"code": 400, "message": "优惠券已领完", "data": None}
+    
+    # 检查用户限领
+    if template.per_user_limit > 0:
+        user_claimed_count_result = await db.execute(
+            select(func.count()).where(
+                UserCoupon.template_id == template_id,
+                UserCoupon.user_id == user_id
+            )
+        )
+        user_claimed_count = user_claimed_count_result.scalar()
+        if user_claimed_count >= template.per_user_limit:
+            return {"code": 400, "message": "已达到领取上限", "data": None}
+    
+    # 检查适用范围
+    if template.applicable_type == 2 and template.applicable_ids:
+        # 指定路线，不做领取限制（在订单使用时校验）
+        pass
+    elif template.applicable_type == 3 and template.applicable_ids:
+        # 指定路线类型，不做领取限制（在订单使用时校验）
+        pass
+    elif template.applicable_type == 4 and template.applicable_ids:
+        # 指定用户，检查当前用户是否在列表中
+        if user_id not in template.applicable_ids:
+            return {"code": 403, "message": "您没有权限领取该优惠券", "data": None}
+    
+    # 计算有效期
+    if template.valid_type == 1:
+        valid_start = now
+        valid_end = now + timedelta(days=template.valid_days)
+    else:
+        valid_start = template.valid_start_time or now
+        valid_end = template.valid_end_time or (now + timedelta(days=7))
+    
+    # 创建用户优惠券
+    user_coupon = UserCoupon(
+        user_id=user_id,
+        template_id=template.id,
+        coupon_no=generate_coupon_no(),
+        name=template.name,
+        type=template.type,
+        value=template.value,
+        min_amount=template.min_amount,
+        max_discount=template.max_discount,
+        applicable_type=template.applicable_type,
+        applicable_ids=template.applicable_ids,
+        valid_start_time=valid_start,
+        valid_end_time=valid_end,
+        status=1,
+        source_type=1,
+        source_id=template.id,
+    )
+    db.add(user_coupon)
+    await db.flush()
+    await db.commit()
+    
+    return success({
+        "user_coupon_id": user_coupon.id,
+        "coupon_no": user_coupon.coupon_no,
+        "valid_end_time": valid_end.isoformat()
+    }, message="领取成功")
+
+
+@app.get("/api/v1/coupons/available-for-order")
+async def get_available_coupons_for_order(
+    route_id: int,
+    amount: float,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """获取订单可用优惠券"""
+    from app.models.coupon import UserCoupon
+    
+    user_id = current_user.get("user_id", 1)
+    now = datetime.now()
+    
+    result = await db.execute(
+        select(UserCoupon).where(
+            UserCoupon.user_id == user_id,
+            UserCoupon.status == 1,
+            UserCoupon.valid_start_time <= now,
+            UserCoupon.valid_end_time >= now
+        ).order_by(UserCoupon.value.desc())
+    )
+    coupons = result.scalars().all()
+    
+    available = []
+    unavailable = []
+    best_coupon_id = None
+    best_discount = 0
+    
+    # 查询当前路线的类型（用于路线类型校验）
+    route_type = None
+    try:
+        from app.models.route import Route
+        route_result = await db.execute(select(Route.route_type).where(Route.id == route_id))
+        route_type = route_result.scalar()
+    except Exception:
+        pass
+    
+    for c in coupons:
+        # 检查金额门槛
+        if c.min_amount > 0 and amount < float(c.min_amount):
+            unavailable.append({
+                "id": c.id,
+                "name": c.name,
+                "type": c.type,
+                "value": float(c.value),
+                "reason": f"订单金额未满{c.min_amount}元"
+            })
+            continue
+        
+        # 检查适用范围
+        if c.applicable_type == 2 and c.applicable_ids:
+            # 指定路线
+            if route_id not in (c.applicable_ids or []):
+                unavailable.append({
+                    "id": c.id,
+                    "name": c.name,
+                    "type": c.type,
+                    "value": float(c.value),
+                    "reason": "不适用当前路线"
+                })
+                continue
+        elif c.applicable_type == 3 and c.applicable_ids:
+            # 指定路线类型
+            if route_type is None or route_type not in (c.applicable_ids or []):
+                unavailable.append({
+                    "id": c.id,
+                    "name": c.name,
+                    "type": c.type,
+                    "value": float(c.value),
+                    "reason": "不适用当前路线类型"
+                })
+                continue
+        elif c.applicable_type == 4 and c.applicable_ids:
+            # 指定用户（理论上已过滤，兜底校验）
+            if user_id not in (c.applicable_ids or []):
+                unavailable.append({
+                    "id": c.id,
+                    "name": c.name,
+                    "type": c.type,
+                    "value": float(c.value),
+                    "reason": "不适用当前用户"
+                })
+                continue
+        
+        discount = calculate_discount(c.type, float(c.value), amount, float(c.max_discount or 0))
+        
+        item = {
+            "id": c.id,
+            "coupon_no": c.coupon_no,
+            "name": c.name,
+            "type": c.type,
+            "value": float(c.value),
+            "min_amount": float(c.min_amount),
+            "discount_amount": discount,
+            "valid_end_time": c.valid_end_time.isoformat() if c.valid_end_time else None,
+            "is_best": False,
+        }
+        available.append(item)
+        
+        if discount > best_discount:
+            best_discount = discount
+            best_coupon_id = c.id
+    
+    # 标记最优券
+    for item in available:
+        if item["id"] == best_coupon_id:
+            item["is_best"] = True
+    
+    return success({
+        "available": available,
+        "unavailable": unavailable,
+        "best_coupon_id": best_coupon_id
+    })
+
+
+@app.post("/api/v1/coupons/calculate")
+async def calculate_coupon_discount(
+    data: dict,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """计算优惠券优惠金额"""
+    from app.models.coupon import UserCoupon
+    
+    coupon_id = data.get("coupon_id")
+    amount = data.get("amount", 0)
+    
+    if not coupon_id:
+        return success({"original_amount": amount, "discount_amount": 0, "pay_amount": amount})
+    
+    user_id = current_user.get("user_id", 1)
+    
+    result = await db.execute(
+        select(UserCoupon).where(
+            UserCoupon.id == coupon_id,
+            UserCoupon.user_id == user_id,
+            UserCoupon.status == 1
+        )
+    )
+    coupon = result.scalar_one_or_none()
+    
+    if not coupon:
+        return {"code": 400, "message": "优惠券不存在或不可用", "data": None}
+    
+    discount = calculate_discount(coupon.type, float(coupon.value), amount, float(coupon.max_discount or 0))
+    
+    return success({
+        "original_amount": amount,
+        "discount_amount": discount,
+        "pay_amount": max(0.01, round(amount - discount, 2))
+    })
+
+
+# ==================== 管理后台：优惠券模板 ====================
+
+@app.get("/api/v1/admin/coupon-templates")
+async def admin_get_coupon_templates(
+    status: Optional[int] = None,
+    type: Optional[int] = None,
+    keyword: Optional[str] = None,
+    page: int = 1,
+    page_size: int = 10,
+    db: AsyncSession = Depends(get_db)
+):
+    """管理后台获取优惠券模板列表"""
+    from app.models.coupon import CouponTemplate, UserCoupon
+    
+    query = select(CouponTemplate)
+    
+    if status is not None:
+        query = query.where(CouponTemplate.status == status)
+    if type is not None:
+        query = query.where(CouponTemplate.type == type)
+    if keyword:
+        query = query.where(CouponTemplate.name.contains(keyword))
+    
+    query = query.order_by(CouponTemplate.created_at.desc())
+    
+    total_result = await db.execute(select(func.count()).select_from(query.subquery()))
+    total = total_result.scalar()
+    
+    query = query.offset((page - 1) * page_size).limit(page_size)
+    result = await db.execute(query)
+    templates = result.scalars().all()
+    
+    data = []
+    for t in templates:
+        claimed_count_result = await db.execute(
+            select(func.count()).where(UserCoupon.template_id == t.id)
+        )
+        used_count_result = await db.execute(
+            select(func.count()).where(
+                UserCoupon.template_id == t.id,
+                UserCoupon.status == 2
+            )
+        )
+        claimed_count = claimed_count_result.scalar()
+        used_count = used_count_result.scalar()
+        
+        data.append({
+            "id": t.id,
+            "name": t.name,
+            "type": t.type,
+            "type_text": {1: "满减券", 2: "折扣券", 3: "立减券"}.get(t.type, "未知"),
+            "value": float(t.value),
+            "min_amount": float(t.min_amount),
+            "max_discount": float(t.max_discount),
+            "status": t.status,
+            "total_count": t.total_count,
+            "claimed_count": claimed_count,
+            "used_count": used_count,
+            "usage_rate": f"{used_count / claimed_count * 100:.1f}%" if claimed_count > 0 else "0%",
+            "source_type": t.source_type,
+            "applicable_type": t.applicable_type,
+            "applicable_ids": t.applicable_ids,
+            "valid_type": t.valid_type,
+            "valid_days": t.valid_days,
+            "valid_start_time": t.valid_start_time.isoformat() if t.valid_start_time else None,
+            "valid_end_time": t.valid_end_time.isoformat() if t.valid_end_time else None,
+            "created_at": t.created_at.isoformat() if t.created_at else None,
+        })
+    
+    return success({"list": data, "total": total, "page": page, "page_size": page_size})
+
+
+@app.post("/api/v1/admin/coupon-templates")
+async def admin_create_coupon_template(
+    data: dict,
+    db: AsyncSession = Depends(get_db)
+):
+    """管理后台创建优惠券模板"""
+    from app.models.coupon import CouponTemplate
+    
+    template = CouponTemplate(
+        name=data.get("name"),
+        type=data.get("type"),
+        value=data.get("value"),
+        min_amount=data.get("min_amount", 0),
+        max_discount=data.get("max_discount", 0),
+        total_count=data.get("total_count", 0),
+        per_user_limit=data.get("per_user_limit", 1),
+        valid_type=data.get("valid_type", 1),
+        valid_days=data.get("valid_days", 7),
+        valid_start_time=data.get("valid_start_time"),
+        valid_end_time=data.get("valid_end_time"),
+        applicable_type=data.get("applicable_type", 1),
+        applicable_ids=data.get("applicable_ids"),
+        is_exclusive=data.get("is_exclusive", 0),
+        source_type=data.get("source_type", 1),
+        description=data.get("description"),
+        color=data.get("color", "#FF6B35"),
+        status=data.get("status", 1),
+    )
+    db.add(template)
+    await db.flush()
+    await db.commit()
+    
+    return success({"id": template.id, "name": template.name}, message="创建成功")
+
+
+@app.put("/api/v1/admin/coupon-templates/{template_id}")
+async def admin_update_coupon_template(
+    template_id: int,
+    data: dict,
+    db: AsyncSession = Depends(get_db)
+):
+    """管理后台更新优惠券模板"""
+    from app.models.coupon import CouponTemplate
+    
+    result = await db.execute(select(CouponTemplate).where(CouponTemplate.id == template_id))
+    template = result.scalar_one_or_none()
+    
+    if not template:
+        return {"code": 404, "message": "模板不存在", "data": None}
+    
+    allowed_fields = [
+        "name", "type", "value", "min_amount", "max_discount", "total_count",
+        "per_user_limit", "valid_type", "valid_days", "valid_start_time",
+        "valid_end_time", "applicable_type", "applicable_ids", "is_exclusive",
+        "source_type", "description", "color", "status"
+    ]
+    
+    for field in allowed_fields:
+        if field in data:
+            setattr(template, field, data[field])
+    
+    await db.commit()
+    return success({"id": template.id}, message="更新成功")
+
+
+@app.delete("/api/v1/admin/coupon-templates/{template_id}")
+async def admin_delete_coupon_template(
+    template_id: int,
+    db: AsyncSession = Depends(get_db)
+):
+    """管理后台删除优惠券模板（软删除：停用）"""
+    from app.models.coupon import CouponTemplate
+    
+    result = await db.execute(select(CouponTemplate).where(CouponTemplate.id == template_id))
+    template = result.scalar_one_or_none()
+    
+    if not template:
+        return {"code": 404, "message": "模板不存在", "data": None}
+    
+    template.status = 0
+    await db.commit()
+    return success(message="已停用")
+
+
+# ==================== 会员购买订单模块 ====================
+
+@app.post("/api/v1/member/orders")
+async def create_member_order(
+    data: dict,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """创建会员购买订单"""
+    from app.models.coupon import UserCoupon
+    
+    user_id = current_user.get("user_id", 1)
+    plan_id = data.get("plan_id")
+    
+    if not plan_id:
+        return {"code": 400, "message": "缺少plan_id", "data": None}
+    
+    # 查询套餐信息（通过 user-service 或本地查询）
+    # 由于跨服务，这里使用 SQL 直接查询（两个服务共享数据库）
+    plan_result = await db.execute(
+        text("SELECT * FROM member_plans WHERE id = :plan_id AND status = 1"),
+        {"plan_id": plan_id}
+    )
+    plan = plan_result.mappings().one_or_none()
+    
+    if not plan:
+        return {"code": 404, "message": "套餐不存在或已下架", "data": None}
+    
+    # 检查是否已有生效中会员
+    membership_result = await db.execute(
+        text("SELECT * FROM user_memberships WHERE user_id = :user_id AND status = 1"),
+        {"user_id": user_id}
+    )
+    existing_membership = membership_result.mappings().one_or_none()
+    
+    order_no = generate_member_order_no()
+    
+    # 创建订单
+    await db.execute(
+        text("""
+            INSERT INTO member_orders 
+            (order_no, user_id, plan_id, original_price, discount_amount, pay_amount, status, created_at, updated_at)
+            VALUES 
+            (:order_no, :user_id, :plan_id, :original_price, :discount_amount, :pay_amount, 10, NOW(), NOW())
+        """),
+        {
+            "order_no": order_no,
+            "user_id": user_id,
+            "plan_id": plan_id,
+            "original_price": plan["original_price"],
+            "discount_amount": float(plan["original_price"]) - float(plan["sale_price"]),
+            "pay_amount": plan["sale_price"],
+        }
+    )
+    await db.commit()
+    
+    # 获取订单ID
+    order_result = await db.execute(
+        text("SELECT id FROM member_orders WHERE order_no = :order_no"),
+        {"order_no": order_no}
+    )
+    order_id = order_result.scalar()
+    
+    return success({
+        "order_id": order_id,
+        "order_no": order_no,
+        "plan_name": plan["name"],
+        "pay_amount": float(plan["sale_price"]),
+        "has_existing_membership": existing_membership is not None,
+    })
+
+
+@app.get("/api/v1/member/orders/{order_id}")
+async def get_member_order(
+    order_id: int,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """查询会员购买订单"""
+    user_id = current_user.get("user_id", 1)
+    
+    order_result = await db.execute(
+        text("SELECT * FROM member_orders WHERE id = :order_id AND user_id = :user_id"),
+        {"order_id": order_id, "user_id": user_id}
+    )
+    order = order_result.mappings().one_or_none()
+    
+    if not order:
+        return {"code": 404, "message": "订单不存在", "data": None}
+    
+    # 查询已发放的消费券
+    coupon_result = await db.execute(
+        text("""
+            SELECT id, name, status, valid_end_time FROM user_coupons 
+            WHERE user_id = :user_id AND source_type = 2 AND source_id = :order_id
+        """),
+        {"user_id": user_id, "order_id": order_id}
+    )
+    coupons = [dict(row) for row in coupon_result.mappings().all()]
+    
+    return success({
+        "order_id": order["id"],
+        "order_no": order["order_no"],
+        "status": order["status"],
+        "plan_name": None,  # 可补充查询
+        "pay_amount": float(order["pay_amount"]),
+        "pay_time": order["pay_time"].isoformat() if order["pay_time"] else None,
+        "issued_coupons": coupons,
+    })
+
+
+@app.post("/api/v1/member/orders/{order_id}/pay")
+async def pay_member_order(
+    order_id: int,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """会员订单支付（模拟支付成功）"""
+    user_id = current_user.get("user_id", 1)
+    now = datetime.now()
+    
+    # 查询订单
+    order_result = await db.execute(
+        text("SELECT * FROM member_orders WHERE id = :order_id AND user_id = :user_id"),
+        {"order_id": order_id, "user_id": user_id}
+    )
+    order = order_result.mappings().one_or_none()
+    
+    if not order:
+        return {"code": 404, "message": "订单不存在", "data": None}
+    
+    if order["status"] != 10:
+        return {"code": 400, "message": "订单状态不允许支付", "data": None}
+    
+    # 查询套餐
+    plan_result = await db.execute(
+        text("SELECT * FROM member_plans WHERE id = :plan_id"),
+        {"plan_id": order["plan_id"]}
+    )
+    plan = plan_result.mappings().one_or_none()
+    
+    # 更新订单状态
+    await db.execute(
+        text("""
+            UPDATE member_orders 
+            SET status = 20, pay_time = NOW(), pay_channel = 'wechat', pay_trade_no = :trade_no, updated_at = NOW()
+            WHERE id = :order_id
+        """),
+        {"order_id": order_id, "trade_no": f"WX{now.strftime('%Y%m%d%H%M%S')}"}
+    )
+    
+    # 检查是否已有生效会员，如果有则续期
+    membership_result = await db.execute(
+        text("SELECT * FROM user_memberships WHERE user_id = :user_id AND status = 1"),
+        {"user_id": user_id}
+    )
+    existing = membership_result.mappings().one_or_none()
+    
+    if existing:
+        # 续期：在原有结束日期上增加
+        new_end = existing["end_date"] + timedelta(days=plan["duration_days"])
+        await db.execute(
+            text("""
+                UPDATE user_memberships 
+                SET end_date = :end_date, order_id = :order_id, pay_amount = :pay_amount, 
+                    benefit_snapshot = :benefit_snapshot, updated_at = NOW()
+                WHERE id = :membership_id
+            """),
+            {
+                "end_date": new_end,
+                "order_id": order_id,
+                "pay_amount": order["pay_amount"],
+                "benefit_snapshot": json.dumps(json.loads(plan["benefit_config"]) if isinstance(plan.get("benefit_config"), str) else (plan["benefit_config"] if plan else {})),
+                "membership_id": existing["id"],
+            }
+        )
+    else:
+        # 新建会员
+        await db.execute(
+            text("""
+                INSERT INTO user_memberships 
+                (user_id, plan_id, status, start_date, end_date, order_id, pay_amount, benefit_snapshot, created_at, updated_at)
+                VALUES 
+                (:user_id, :plan_id, 1, :start_date, :end_date, :order_id, :pay_amount, :benefit_snapshot, NOW(), NOW())
+            """),
+            {
+                "user_id": user_id,
+                "plan_id": order["plan_id"],
+                "start_date": date.today(),
+                "end_date": date.today() + timedelta(days=plan["duration_days"] if plan else 30),
+                "order_id": order_id,
+                "pay_amount": order["pay_amount"],
+                "benefit_snapshot": json.dumps(json.loads(plan["benefit_config"]) if isinstance(plan.get("benefit_config"), str) else (plan["benefit_config"] if plan else {})),
+            }
+        )
+    
+    # 发放消费券
+    if plan and plan["coupon_package"]:
+        coupon_package = plan["coupon_package"]
+        if isinstance(coupon_package, str):
+            coupon_package = json.loads(coupon_package)
+        
+        templates = coupon_package.get("templates", [])
+        for item in templates:
+            template_result = await db.execute(
+                text("SELECT * FROM coupon_templates WHERE id = :template_id"),
+                {"template_id": item["template_id"]}
+            )
+            template = template_result.mappings().one_or_none()
+            if not template:
+                continue
+            
+            valid_days = item.get("valid_days", 30)
+            for _ in range(item.get("count", 1)):
+                await db.execute(
+                    text("""
+                        INSERT INTO user_coupons 
+                        (user_id, template_id, coupon_no, name, type, value, min_amount, max_discount,
+                         applicable_type, applicable_ids, valid_start_time, valid_end_time, status, source_type, source_id, created_at)
+                        VALUES 
+                        (:user_id, :template_id, :coupon_no, :name, :type, :value, :min_amount, :max_discount,
+                         :applicable_type, :applicable_ids, :valid_start, :valid_end, 1, 2, :source_id, NOW())
+                    """),
+                    {
+                        "user_id": user_id,
+                        "template_id": template["id"],
+                        "coupon_no": generate_coupon_no(),
+                        "name": template["name"],
+                        "type": template["type"],
+                        "value": template["value"],
+                        "min_amount": template["min_amount"],
+                        "max_discount": template["max_discount"],
+                        "applicable_type": template["applicable_type"],
+                        "applicable_ids": json.dumps(template["applicable_ids"]) if template["applicable_ids"] else None,
+                        "valid_start": now,
+                        "valid_end": now + timedelta(days=valid_days),
+                        "source_id": order_id,
+                    }
+                )
+    
+    await db.commit()
+    
+    return success({
+        "order_id": order_id,
+        "status": 20,
+        "message": "支付成功"
+    })
+
+

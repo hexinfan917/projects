@@ -389,3 +389,147 @@
   color: #b02500;
   font-weight: 600;
 }
+
+
+/* 已开通会员卡片 */
+.vip-member-card {
+  background: linear-gradient(135deg, #FFF8E7 0%, #F5E6C8 50%, #E8D5A3 100%);
+  padding: 40rpx;
+  .vip-member-badge {
+    display: inline-block;
+    background: #8B6914;
+    color: #fff;
+    font-size: 22rpx;
+    padding: 6rpx 20rpx;
+    border-radius: 8rpx;
+    margin-bottom: 20rpx;
+  }
+  .vip-member-main {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    .vip-member-left {
+      .vip-member-title {
+        font-size: 44rpx;
+        font-weight: 800;
+        color: #8B4513;
+        display: block;
+        margin-bottom: 20rpx;
+      }
+      .vip-member-price {
+        font-size: 28rpx;
+        color: #8B4513;
+        display: block;
+        margin-bottom: 8rpx;
+      }
+      .vip-member-time {
+        font-size: 24rpx;
+        color: #A0825A;
+        display: block;
+      }
+    }
+    .vip-member-right {
+      width: 100rpx;
+      height: 100rpx;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #D4AF37 0%, #C9A96E 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4rpx 16rpx rgba(180, 150, 80, 0.3);
+      .vip-member-icon {
+        font-size: 36rpx;
+        font-weight: 700;
+        color: #fff;
+      }
+    }
+  }
+}
+
+/* VIP会员入口卡片 */
+.vip-card {
+  margin: 0 24rpx 24rpx;
+  border-radius: 24rpx;
+  overflow: hidden;
+  box-shadow: 0 8rpx 32rpx rgba(0,0,0,0.08);
+  .vip-card-top {
+    background: linear-gradient(135deg, #FFF8E7 0%, #F5E6C8 50%, #E8D5A3 100%);
+    padding: 28rpx 32rpx;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    .vip-title-wrap {
+      display: flex;
+      align-items: baseline;
+      .vip-title {
+        font-size: 52rpx;
+        font-weight: 800;
+        color: #8B4513;
+        letter-spacing: 4rpx;
+      }
+      .vip-subtitle {
+        font-size: 32rpx;
+        font-weight: 600;
+        color: #8B4513;
+        margin-left: 8rpx;
+      }
+    }
+    .vip-tags {
+      display: flex;
+      gap: 12rpx;
+      .vip-tag {
+        background: rgba(139,69,19,0.12);
+        color: #8B4513;
+        font-size: 26rpx;
+        padding: 8rpx 16rpx;
+        border-radius: 24rpx;
+        font-weight: 500;
+      }
+      .vip-tag-primary {
+        background: #8B4513;
+        color: #fff;
+        font-weight: 600;
+      }
+    }
+  }
+  .vip-card-bottom {
+    background: linear-gradient(135deg, #FFF8E7 0%, #F5E6C8 50%, #E8D5A3 100%);
+    padding: 24rpx 32rpx;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    .vip-icons {
+      display: flex;
+      gap: 16rpx;
+      .vip-icon-item {
+        width: 56rpx;
+        height: 56rpx;
+        border: 2rpx solid rgba(139,69,19,0.3);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        .vip-icon-text {
+          font-size: 26rpx;
+          color: #8B4513;
+          font-weight: 600;
+        }
+      }
+    }
+    .vip-desc {
+      text-align: right;
+      .vip-desc-price {
+        font-size: 30rpx;
+        color: #8B4513;
+        font-weight: 600;
+        display: block;
+      }
+      .vip-desc-save {
+        font-size: 26rpx;
+        color: #A0825A;
+        margin-top: 4rpx;
+        display: block;
+      }
+    }
+  }
+}

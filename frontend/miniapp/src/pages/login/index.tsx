@@ -14,6 +14,13 @@ export default function Login() {
       Taro.setStorageSync('user_info', data.data.user)
       Taro.showToast({ title: '登录成功', icon: 'success' })
       setTimeout(() => {
+        // 检查是否有 redirect 参数
+        const router = Taro.getCurrentInstance().router
+        const redirect = router?.params?.redirect as string
+        if (redirect) {
+          Taro.navigateTo({ url: redirect })
+          return
+        }
         const pages = Taro.getCurrentPages()
         if (pages.length > 1) {
           Taro.navigateBack()

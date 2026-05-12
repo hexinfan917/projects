@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import Taro, { useDidShow } from '@tarojs/taro'
 import { View, Text, Image } from '@tarojs/components'
 const logoIcon = '/assets/toplogo.png'
-import { getUserProfile, setActiveTab } from '../../utils/api'
+import { getUserProfile, setActiveTab, getMemberCenter, getUserCoupons } from '../../utils/api'
 import './index.scss'
 
 const ICON_MAP: Record<string, string> = {
@@ -23,13 +23,15 @@ const ICON_MAP: Record<string, string> = {
 }
 
 const SERVICES = [
-  { label: '优惠券', count: 5 },
+  { label: '优惠券', path: '/pages/coupons/list/index' },
   { label: '收藏夹', count: 12 },
   { label: '浏览足迹' },
   { label: '地址管理' },
 ]
 
 const MORE = [
+  { label: '会员中心', path: '/pages/member/center/index' },
+  { label: '优惠券', path: '/pages/coupons/list/index' },
   { label: '出行人管理', path: '/pages/profile/travelers/index' },
   { label: '我的足迹', path: '/pages/profile/footprint/index' },
   { label: '联系客服', action: 'service' },
@@ -50,6 +52,8 @@ const showDeveloping = () => {
 export default function Profile() {
   const [user, setUser] = useState<any>(null)
   const [serviceVisible, setServiceVisible] = useState(false)
+  const [memberInfo, setMemberInfo] = useState<any>(null)
+  const [couponCount, setCouponCount] = useState(0)
 
   const loadUser = () => {
     const token = Taro.getStorageSync('access_token')
@@ -63,9 +67,34 @@ export default function Profile() {
     })
   }
 
+  const loadMemberInfo = async () => {
+    try {
+      const res = await getMemberCenter()
+      console.log('getMemberCenter response:', res)
+      // 兼容两种返回结构：{ code, data } 或 { is_member, member_info, ... }
+      const data = res.data || res
+      setMemberInfo(data)
+    } catch (e) {
+      console.error('loadMemberInfo failed:', e)
+    }
+  }
+
+  const loadCouponCount = async () => {
+    try {
+      const res = await getUserCoupons({ status: 1, page_size: 1 })
+      if (res.code === 200) {
+        setCouponCount(res.data?.total || 0)
+      }
+    } catch (e) {
+      // ignore
+    }
+  }
+
   useDidShow(() => {
     setActiveTab(3, 'pages/profile/index')
     loadUser()
+    loadMemberInfo()
+    loadCouponCount()
   })
 
   useEffect(() => {
@@ -171,6 +200,60 @@ export default function Profile() {
           </View>
         )}
       </View>
+
+      {/* 会员入口 */}
+      {user && (
+        <View 
+          className='vip-card'
+          onClick={() => Taro.navigateTo({ url: '/pages/member/center/index' })}
+        >
+          {memberInfo?.is_member || !!memberInfo?.member_info ? (
+            <View className='vip-member-card'>
+              <Text className='vip-member-badge'>生效中</Text>
+              <View className='vip-member-main'>
+                <View className='vip-member-left'>
+                  <Text className='vip-member-title'>尾巴旅行会员</Text>
+                  <Text className='vip-member-time'>购买时间：{memberInfo.member_info?.start_date?.split('T')[0] || '-'}</Text>
+                </View>
+                <View className='vip-member-right'>
+                  <Text className='vip-member-icon'>VIP</Text>
+                </View>
+              </View>
+            </View>
+          ) : (
+            <>
+              {/* 上半部分 */}
+              <View className='vip-card-top'>
+                <View className='vip-title-wrap'>
+                  <Text className='vip-title'>VIP</Text>
+                  <Text className='vip-subtitle'>会员</Text>
+                </View>
+                <View className='vip-tags'>
+                  <Text className='vip-tag'>享专属优惠</Text>
+                  <Text className='vip-tag vip-tag-primary'>立即开通 ›</Text>
+                </View>
+              </View>
+              {/* 下半部分 */}
+              <View className='vip-card-bottom'>
+                <View className='vip-icons'>
+                  <View className='vip-icon-item'>
+                    <Text className='vip-icon-text'>%</Text>
+                  </View>
+                  <View className='vip-icon-item'>
+                    <Text className='vip-icon-text'>⚡</Text>
+                  </View>
+                  <View className='vip-icon-item'>
+                    <Text className='vip-icon-text'>¥</Text>
+                  </View>
+                </View>
+                <View className='vip-desc'>
+                  <Text className='vip-desc-price'>¥39.9/年，开通年度会员</Text>
+                </View>
+              </View>
+            </>
+          )}
+        </View>
+      )}
 
       <View className='card'>
         <View className='card-header'>

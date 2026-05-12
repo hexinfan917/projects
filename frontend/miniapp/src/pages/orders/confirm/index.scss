@@ -418,7 +418,7 @@
 .addon-tab {
   padding: 12rpx 28rpx;
   border-radius: 32rpx;
-  font-size: 28rpx;
+  font-size: 30rpx;
   color: #666;
   background: #F0FDF4;
   transition: all 0.2s;
@@ -590,6 +590,11 @@
   flex-direction: column;
 }
 
+.bottom-price-label {
+  font-size: 24rpx;
+  color: #999;
+}
+
 .bottom-price-main {
   font-size: 36rpx;
   color: #ff4d4f;
@@ -600,6 +605,76 @@
   font-size: 24rpx;
   color: #999;
   margin-top: 4rpx;
+}
+
+/* 价格明细弹窗 */
+.price-detail-modal {
+  position: relative;
+  background: #fff;
+  border-radius: 24rpx 24rpx 0 0;
+  padding: 28rpx 30rpx 40rpx;
+  z-index: 1001;
+  max-height: 70vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.price-detail-body {
+  padding-top: 10rpx;
+}
+
+.price-detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18rpx 0;
+  &.sub {
+    padding: 10rpx 0;
+    .price-detail-name {
+      color: #999;
+      font-size: 30rpx;
+    }
+    .price-detail-value {
+      color: #999;
+      font-size: 30rpx;
+      font-weight: 600;
+    }
+  }
+  &.discount {
+    .price-detail-value {
+      color: #ff4d4f;
+    }
+  }
+  &.total {
+    padding: 24rpx 0;
+    .price-detail-name {
+      font-size: 36rpx;
+      font-weight: 600;
+      color: #333;
+    }
+    .price-detail-value {
+      font-size: 42rpx;
+      font-weight: 600;
+      color: #333;
+    }
+  }
+}
+
+.price-detail-name {
+  font-size: 30rpx;
+  color: #666;
+}
+
+.price-detail-value {
+  font-size: 32rpx;
+  color: #333;
+  font-weight: 600;
+}
+
+.price-detail-divider {
+  height: 1rpx;
+  background: #e5e5e5;
+  margin: 10rpx 0;
 }
 
 /* 酒店房型行 */
@@ -894,7 +969,7 @@
 
 .room-modal-info-label-confirm {
   width: 180rpx;
-  font-size: 34rpx;
+  font-size: 36rpx;
   color: #333;
   font-weight: 600;
   flex-shrink: 0;
@@ -905,4 +980,33 @@
   font-size: 34rpx;
   color: #666;
   line-height: 1.5;
+}
+
+
+// 优惠券选择样式
+.coupon-select-row {
+  display: flex;
+  align-items: center;
+  padding: 20rpx 0;
+  border-bottom: 1rpx solid #f3f4f6;
+  .coupon-select-name {
+    flex: 1;
+    font-size: 28rpx;
+    color: #1f2937;
+  }
+  .coupon-select-discount {
+    font-size: 28rpx;
+    color: #FF6B35;
+    font-weight: 600;
+    margin-right: 12rpx;
+  }
+  .coupon-select-placeholder {
+    flex: 1;
+    font-size: 28rpx;
+    color: #9CA3AF;
+  }
+  .coupon-select-arrow {
+    font-size: 32rpx;
+    color: #9CA3AF;
+  }
 }

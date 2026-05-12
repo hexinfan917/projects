@@ -22,6 +22,8 @@ class RouteResponse(BaseModel):
     min_participants: int
     max_participants: int
     base_price: float
+    extra_person_price: Optional[float] = 0
+    extra_pet_price: Optional[float] = 0
     rating: float
     review_count: int
     distance: Optional[int]
@@ -74,6 +76,8 @@ class RouteDetailResponse(BaseModel):
     min_participants: int
     max_participants: int
     base_price: float
+    extra_person_price: Optional[float] = 0
+    extra_pet_price: Optional[float] = 0
     rating: float
     review_count: int
     suitable_breeds: Optional[List[str]]

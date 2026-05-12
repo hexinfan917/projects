@@ -21,6 +21,8 @@ from common.redis_client import redis_client
 from common.middleware import setup_cors, RequestLogMiddleware, ExceptionMiddleware
 from common.exceptions import APIException, api_exception_handler, general_exception_handler
 from common.logger import setup_logger
+from common.dependencies import get_current_user, get_optional_user
+from common.response import success
 
 from app.routers import user, pet, auth, traveler
 
@@ -141,7 +143,10 @@ async def admin_get_users(
                 "nickname": u.nickname or '未设置昵称',
                 "avatar": u.avatar,
                 "phone": u.phone or '-',
+                "real_name": u.real_name or '-',
+                "id_card": u.id_card or '-',
                 "gender": u.gender,
+                "birthday": u.birthday.isoformat() if u.birthday else None,
                 "member_level": u.member_level,
                 "member_points": u.member_points,
                 "status": u.status,
@@ -187,6 +192,8 @@ async def admin_get_user_detail(
             "nickname": u.nickname,
             "avatar": u.avatar,
             "phone": u.phone,
+            "real_name": u.real_name,
+            "id_card": u.id_card,
             "gender": u.gender,
             "birthday": u.birthday.isoformat() if u.birthday else None,
             "city": u.city,
@@ -222,7 +229,7 @@ async def admin_update_user(
             return {"code": 404, "message": "用户不存在", "data": None}
         
         # 可更新的字段
-        allowed_fields = ['nickname', 'phone', 'gender', 'birthday', 'city', 
+        allowed_fields = ['nickname', 'phone', 'real_name', 'id_card', 'gender', 'birthday', 'city', 
                           'member_level', 'member_points', 'status', 'avatar']
         
         for field in allowed_fields:
@@ -733,3 +740,509 @@ if __name__ == "__main__":
         port=settings.app_port,
         reload=settings.debug,
     )
+
+
+# ==================== 会员中心模块 ====================
+
+@app.get("/api/v1/member/center")
+async def get_member_center(
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """获取会员中心信息"""
+    from app.models.member import MemberPlan, UserMembership
+    
+    user_id = current_user.get("user_id", 1) if current_user else None
+    
+    # 查询当前会员状态
+    membership_result = await db.execute(
+        select(UserMembership).where(
+            UserMembership.user_id == user_id,
+            UserMembership.status == 1
+        )
+    )
+    membership = membership_result.scalar_one_or_none()
+    
+    # 查询套餐列表
+    plan_result = await db.execute(
+        select(MemberPlan).where(MemberPlan.status == 1).order_by(MemberPlan.sort_order.asc())
+    )
+    plans = plan_result.scalars().all()
+    
+    plan_list = []
+    for p in plans:
+        benefit_config = p.benefit_config or {}
+        coupon_package = p.coupon_package or {}
+        
+        benefits = benefit_config.get("items", [])
+        if not benefits:
+            # 生成默认权益展示
+            benefits = []
+            if benefit_config.get("discount_rate"):
+                rate = benefit_config["discount_rate"]
+                benefits.append({"icon": "discount", "title": f"全场{int(rate*10)}折"})
+            if coupon_package.get("total_value"):
+                benefits.append({"icon": "coupon", "title": f"赠¥{coupon_package['total_value']}券包"})
+        
+        plan_list.append({
+            "id": p.id,
+            "name": p.name,
+            "subtitle": p.subtitle,
+            "original_price": float(p.original_price),
+            "sale_price": float(p.sale_price),
+            "duration_days": p.duration_days,
+            "tag": p.tag,
+            "color": p.color,
+            "is_recommend": p.is_recommend == 1,
+            "benefits": benefits,
+            "coupon_package": {
+                "total_value": coupon_package.get("total_value", 0),
+                "desc": coupon_package.get("desc", ""),
+            }
+        })
+    
+    member_info = None
+    if membership:
+        from datetime import date
+        remaining_days = (membership.end_date - date.today()).days
+        benefit_snapshot = membership.benefit_snapshot or {}
+        if isinstance(benefit_snapshot, str):
+            try:
+                benefit_snapshot = json.loads(benefit_snapshot)
+            except:
+                benefit_snapshot = {}
+        benefits = benefit_snapshot.get("items", [])
+        
+        member_info = {
+            "plan_id": membership.plan_id,
+            "start_date": membership.start_date.isoformat(),
+            "end_date": membership.end_date.isoformat(),
+            "remaining_days": max(0, remaining_days),
+            "benefits": benefits,
+        }
+    
+    return success({
+        "is_member": membership is not None,
+        "member_info": member_info,
+        "plans": plan_list,
+    })
+
+
+@app.get("/api/v1/member/plans")
+async def get_member_plans(
+    db: AsyncSession = Depends(get_db)
+):
+    """获取会员套餐列表（公开）"""
+    from app.models.member import MemberPlan
+    
+    result = await db.execute(
+        select(MemberPlan).where(MemberPlan.status == 1).order_by(MemberPlan.sort_order.asc())
+    )
+    plans = result.scalars().all()
+    
+    data = []
+    for p in plans:
+        data.append({
+            "id": p.id,
+            "name": p.name,
+            "subtitle": p.subtitle,
+            "original_price": float(p.original_price),
+            "sale_price": float(p.sale_price),
+            "duration_days": p.duration_days,
+            "tag": p.tag,
+            "color": p.color,
+            "is_recommend": p.is_recommend == 1,
+            "benefit_config": p.benefit_config,
+            "coupon_package": p.coupon_package,
+        })
+    
+    return success({"list": data})
+
+
+@app.get("/api/v1/member/coupons")
+async def get_member_coupons(
+    status: Optional[int] = None,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """获取会员消费券列表"""
+    from sqlalchemy import text
+    
+    user_id = current_user.get("user_id", 1)
+    
+    sql = """
+        SELECT id, name, type, value, min_amount, valid_end_time, status, source_type
+        FROM user_coupons
+        WHERE user_id = :user_id AND source_type IN (2, 3)
+    """
+    params = {"user_id": user_id}
+    
+    if status:
+        sql += " AND status = :status"
+        params["status"] = status
+    
+    sql += " ORDER BY created_at DESC"
+    
+    result = await db.execute(text(sql), params)
+    rows = result.mappings().all()
+    
+    total_value = 0
+    coupons = []
+    for row in rows:
+        if row["status"] == 1:
+            total_value += float(row["value"])
+        coupons.append({
+            "id": row["id"],
+            "name": row["name"],
+            "type": row["type"],
+            "value": float(row["value"]),
+            "min_amount": float(row["min_amount"]),
+            "valid_end_time": row["valid_end_time"].isoformat() if row["valid_end_time"] else None,
+            "status": row["status"],
+            "source_type": row["source_type"],
+        })
+    
+    return success({
+        "list": coupons,
+        "total": len(coupons),
+        "total_value": total_value,
+    })
+
+
+# ==================== 弹窗模块 ====================
+
+@app.get("/api/v1/popups/member-activity")
+async def get_member_popup(
+    current_user: Optional[dict] = Depends(get_optional_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """获取会员活动弹窗配置"""
+    from app.models.popup import PopupConfig, UserPopupLog
+    from app.models.member import UserMembership
+    from datetime import datetime, date
+    
+    user_id = current_user.get("user_id") if current_user else None
+    now = datetime.now()
+    
+    # 查询启用的弹窗
+    result = await db.execute(
+        select(PopupConfig).where(
+            PopupConfig.type == "member_activity",
+            PopupConfig.status == 1,
+        ).where(
+            (PopupConfig.start_time.is_(None)) | (PopupConfig.start_time <= now)
+        ).where(
+            (PopupConfig.end_time.is_(None)) | (PopupConfig.end_time >= now)
+        )
+    )
+    popup = result.scalars().first()
+    
+    if not popup:
+        return success({"should_show": False})
+    
+    # 如果用户已是会员，不显示弹窗
+    if user_id is not None:
+        member_result = await db.execute(
+            select(UserMembership).where(
+                UserMembership.user_id == user_id,
+                UserMembership.status == 1,
+                UserMembership.end_date >= date.today()
+            )
+        )
+        if member_result.scalar_one_or_none():
+            return success({"should_show": False})
+    
+    # 检查是否已交互过（首次进入策略：点击主按钮、关闭或点击蒙层都算已交互）
+    if popup.trigger_type == 1 and user_id is not None:
+        log_result = await db.execute(
+            select(UserPopupLog).where(
+                UserPopupLog.user_id == user_id,
+                UserPopupLog.popup_id == popup.id,
+                UserPopupLog.action.in_([2, 3, 4])  # 点击主按钮、关闭或点击蒙层
+            )
+        )
+        if log_result.scalar_one_or_none():
+            return success({"should_show": False})
+    
+    content = popup.content or {}
+    
+    return success({
+        "should_show": True,
+        "popup": {
+            "id": popup.id,
+            "title": popup.title,
+            "subtitle": popup.subtitle,
+            "image": popup.image,
+            "content": content,
+            "primary_btn_text": popup.primary_btn_text,
+            "primary_btn_color": popup.primary_btn_color,
+            "close_btn_text": popup.close_btn_text,
+            "trigger_type": popup.trigger_type,
+            "target_plan_id": popup.target_plan_id,
+            "target_page": popup.target_page,
+        }
+    })
+
+
+@app.post("/api/v1/popups/{popup_id}/log")
+async def log_popup_action(
+    popup_id: int,
+    data: dict,
+    current_user: Optional[dict] = Depends(get_optional_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """记录弹窗操作"""
+    from app.models.popup import UserPopupLog
+    
+    user_id = current_user.get("user_id") if current_user else None
+    action = data.get("action", 1)
+    
+    log = UserPopupLog(
+        user_id=user_id,
+        popup_id=popup_id,
+        action=action,
+    )
+    db.add(log)
+    await db.commit()
+    
+    return success(message="记录成功")
+
+
+# ==================== 管理后台：会员套餐 ====================
+
+@app.get("/api/v1/admin/member-plans")
+async def admin_get_member_plans(
+    status: Optional[int] = None,
+    db: AsyncSession = Depends(get_db)
+):
+    """管理后台获取会员套餐列表"""
+    from app.models.member import MemberPlan
+    
+    query = select(MemberPlan).order_by(MemberPlan.sort_order.asc())
+    if status is not None:
+        query = query.where(MemberPlan.status == status)
+    
+    result = await db.execute(query)
+    plans = result.scalars().all()
+    
+    data = []
+    for p in plans:
+        data.append({
+            "id": p.id,
+            "name": p.name,
+            "subtitle": p.subtitle,
+            "original_price": float(p.original_price),
+            "sale_price": float(p.sale_price),
+            "duration_days": p.duration_days,
+            "tag": p.tag,
+            "color": p.color,
+            "is_recommend": p.is_recommend,
+            "status": p.status,
+            "sort_order": p.sort_order,
+            "benefit_config": p.benefit_config,
+            "coupon_package": p.coupon_package,
+            "created_at": p.created_at.isoformat() if p.created_at else None,
+        })
+    
+    return success({"list": data})
+
+
+@app.post("/api/v1/admin/member-plans")
+async def admin_create_member_plan(
+    data: dict,
+    db: AsyncSession = Depends(get_db)
+):
+    """管理后台创建会员套餐"""
+    from app.models.member import MemberPlan
+    
+    plan = MemberPlan(
+        name=data.get("name"),
+        subtitle=data.get("subtitle"),
+        original_price=data.get("original_price"),
+        sale_price=data.get("sale_price"),
+        duration_days=data.get("duration_days"),
+        benefit_config=data.get("benefit_config", {}),
+        coupon_package=data.get("coupon_package", {}),
+        sort_order=data.get("sort_order", 0),
+        tag=data.get("tag"),
+        color=data.get("color", "#FF6B35"),
+        is_recommend=data.get("is_recommend", 0),
+        status=data.get("status", 1),
+    )
+    db.add(plan)
+    await db.flush()
+    await db.commit()
+    
+    return success({"id": plan.id}, message="创建成功")
+
+
+@app.put("/api/v1/admin/member-plans/{plan_id}")
+async def admin_update_member_plan(
+    plan_id: int,
+    data: dict,
+    db: AsyncSession = Depends(get_db)
+):
+    """管理后台更新会员套餐"""
+    from app.models.member import MemberPlan
+    
+    result = await db.execute(select(MemberPlan).where(MemberPlan.id == plan_id))
+    plan = result.scalar_one_or_none()
+    
+    if not plan:
+        return {"code": 404, "message": "套餐不存在", "data": None}
+    
+    allowed_fields = [
+        "name", "subtitle", "original_price", "sale_price", "duration_days",
+        "benefit_config", "coupon_package", "sort_order", "tag", "color",
+        "is_recommend", "status"
+    ]
+    
+    for field in allowed_fields:
+        if field in data:
+            setattr(plan, field, data[field])
+    
+    await db.commit()
+    return success({"id": plan.id}, message="更新成功")
+
+
+@app.delete("/api/v1/admin/member-plans/{plan_id}")
+async def admin_delete_member_plan(
+    plan_id: int,
+    db: AsyncSession = Depends(get_db)
+):
+    """管理后台删除会员套餐（软删除）"""
+    from app.models.member import MemberPlan
+    
+    result = await db.execute(select(MemberPlan).where(MemberPlan.id == plan_id))
+    plan = result.scalar_one_or_none()
+    
+    if not plan:
+        return {"code": 404, "message": "套餐不存在", "data": None}
+    
+    plan.status = 0
+    await db.commit()
+    return success(message="已下架")
+
+
+# ==================== 管理后台：弹窗配置 ====================
+
+@app.get("/api/v1/admin/popups")
+async def admin_get_popups(
+    type: Optional[str] = None,
+    db: AsyncSession = Depends(get_db)
+):
+    """管理后台获取弹窗配置列表"""
+    from app.models.popup import PopupConfig
+    
+    query = select(PopupConfig).order_by(PopupConfig.created_at.desc())
+    if type:
+        query = query.where(PopupConfig.type == type)
+    
+    result = await db.execute(query)
+    popups = result.scalars().all()
+    
+    data = []
+    for p in popups:
+        data.append({
+            "id": p.id,
+            "type": p.type,
+            "title": p.title,
+            "subtitle": p.subtitle,
+            "image": p.image,
+            "content": p.content,
+            "primary_btn_text": p.primary_btn_text,
+            "primary_btn_color": p.primary_btn_color,
+            "close_btn_text": p.close_btn_text,
+            "status": p.status,
+            "trigger_type": p.trigger_type,
+            "show_duration_seconds": p.show_duration_seconds,
+            "target_plan_id": p.target_plan_id,
+            "target_page": p.target_page,
+            "start_time": p.start_time.isoformat() if p.start_time else None,
+            "end_time": p.end_time.isoformat() if p.end_time else None,
+            "created_at": p.created_at.isoformat() if p.created_at else None,
+        })
+    
+    return success({"list": data})
+
+
+@app.post("/api/v1/admin/popups")
+async def admin_create_popup(
+    data: dict,
+    db: AsyncSession = Depends(get_db)
+):
+    """管理后台创建弹窗配置"""
+    from app.models.popup import PopupConfig
+    
+    popup = PopupConfig(
+        type=data.get("type", "member_activity"),
+        title=data.get("title"),
+        subtitle=data.get("subtitle"),
+        image=data.get("image"),
+        content=data.get("content"),
+        primary_btn_text=data.get("primary_btn_text", "立即开通"),
+        primary_btn_color=data.get("primary_btn_color", "#FF6B35"),
+        close_btn_text=data.get("close_btn_text", "暂不开通"),
+        trigger_type=data.get("trigger_type", 1),
+        show_duration_seconds=data.get("show_duration_seconds", 0),
+        target_plan_id=data.get("target_plan_id"),
+        target_page=data.get("target_page"),
+        status=data.get("status", 1),
+        start_time=data.get("start_time"),
+        end_time=data.get("end_time"),
+    )
+    db.add(popup)
+    await db.flush()
+    await db.commit()
+    
+    return success({"id": popup.id}, message="创建成功")
+
+
+@app.put("/api/v1/admin/popups/{popup_id}")
+async def admin_update_popup(
+    popup_id: int,
+    data: dict,
+    db: AsyncSession = Depends(get_db)
+):
+    """管理后台更新弹窗配置"""
+    from app.models.popup import PopupConfig
+    
+    result = await db.execute(select(PopupConfig).where(PopupConfig.id == popup_id))
+    popup = result.scalar_one_or_none()
+    
+    if not popup:
+        return {"code": 404, "message": "弹窗不存在", "data": None}
+    
+    allowed_fields = [
+        "type", "title", "subtitle", "image", "content", "primary_btn_text",
+        "primary_btn_color", "close_btn_text", "trigger_type", "show_duration_seconds",
+        "target_plan_id", "target_page", "status", "start_time", "end_time"
+    ]
+    
+    for field in allowed_fields:
+        if field in data:
+            setattr(popup, field, data[field])
+    
+    await db.commit()
+    return success({"id": popup.id}, message="更新成功")
+
+
+@app.delete("/api/v1/admin/popups/{popup_id}")
+async def admin_delete_popup(
+    popup_id: int,
+    db: AsyncSession = Depends(get_db)
+):
+    """管理后台删除弹窗配置"""
+    from app.models.popup import PopupConfig
+    
+    result = await db.execute(select(PopupConfig).where(PopupConfig.id == popup_id))
+    popup = result.scalar_one_or_none()
+    
+    if not popup:
+        return {"code": 404, "message": "弹窗不存在", "data": None}
+    
+    popup.status = 0
+    await db.commit()
+    return success(message="已停用")
+
+

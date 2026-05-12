@@ -11,6 +11,8 @@ class UserBase(BaseModel):
     nickname: Optional[str] = Field(None, max_length=50, description="昵称")
     avatar: Optional[str] = Field(None, max_length=500, description="头像URL")
     phone: Optional[str] = Field(None, max_length=20, description="手机号")
+    real_name: Optional[str] = Field(None, max_length=50, description="真实姓名")
+    id_card: Optional[str] = Field(None, max_length=18, description="身份证号")
     gender: int = Field(default=0, ge=0, le=2, description="0未知 1男 2女")
     birthday: Optional[date] = Field(None, description="生日")
     city: Optional[str] = Field(None, max_length=50, description="城市")

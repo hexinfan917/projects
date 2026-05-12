@@ -1,6 +1,6 @@
 import Taro, { eventCenter } from '@tarojs/taro'
 
-const BASE_URL = 'http://localhost:8081'
+export const BASE_URL = 'http://localhost:8081'
 
 export function setActiveTab(index: number, expectedRoute: string) {
   const pages = Taro.getCurrentPages()
@@ -24,19 +24,14 @@ export async function request(path: string, options: any = {}) {
       }
     })
 
-    // 统一状态码拦截
+    // 统一状态码拦截：401 静默清除 token，不弹窗，由各页面按需处理
     if (res.statusCode === 401) {
-      if (!options.skipAuthModal) {
+      const pages = Taro.getCurrentPages()
+      const currentRoute = pages[pages.length - 1]?.route || ''
+      const isLoginPage = currentRoute.includes('login')
+      if (!isLoginPage) {
         Taro.removeStorageSync('access_token')
         Taro.removeStorageSync('user_info')
-        Taro.showModal({
-          title: '登录已过期',
-          content: '请重新登录',
-          showCancel: false,
-          success: () => {
-            Taro.navigateTo({ url: '/pages/login/index' })
-          }
-        })
       }
       throw new Error('Unauthorized')
     }
@@ -241,6 +236,61 @@ export function getCharityRegisterStatus(activityId: number) {
 // 行程选配
 export function getRouteAddons(routeId: number, category?: string) {
   return request(`/api/v1/routes/${routeId}/addons`, { data: category ? { category } : {}, skipAuthModal: true })
+}
+
+// 优惠券
+export function getUserCoupons(params?: any) {
+  return request('/api/v1/coupons', { data: params })
+}
+
+export function getClaimCenter(params?: any) {
+  return request('/api/v1/coupons/claim-center', { data: params })
+}
+
+export function claimCoupon(templateId: number) {
+  return request('/api/v1/coupons/claim', { method: 'POST', data: { template_id: templateId } })
+}
+
+export function getAvailableCoupons(params?: any) {
+  return request('/api/v1/coupons/available-for-order', { data: params })
+}
+
+export function calculateCoupon(data: any) {
+  return request('/api/v1/coupons/calculate', { method: 'POST', data })
+}
+
+// 会员中心
+export function getMemberCenter() {
+  return request('/api/v1/member/center')
+}
+
+export function getMemberPlans() {
+  return request('/api/v1/member/plans')
+}
+
+export function getMemberCoupons(params?: any) {
+  return request('/api/v1/member/coupons', { data: params })
+}
+
+export function createMemberOrder(planId: number) {
+  return request('/api/v1/member/orders', { method: 'POST', data: { plan_id: planId } })
+}
+
+export function getMemberOrder(orderId: number) {
+  return request(`/api/v1/member/orders/${orderId}`)
+}
+
+export function payMemberOrder(orderId: number) {
+  return request(`/api/v1/member/orders/${orderId}/pay`, { method: 'POST' })
+}
+
+// 弹窗
+export function getMemberPopup() {
+  return request('/api/v1/popups/member-activity')
+}
+
+export function logPopupAction(popupId: number, action: number) {
+  return request(`/api/v1/popups/${popupId}/log`, { method: 'POST', data: { action } })
 }
 
 // 上传

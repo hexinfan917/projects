@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import Taro, { useDidShow } from '@tarojs/taro'
-import { setActiveTab, getRoutes, getCharityActivities, getReviews, getBanners } from '../../utils/api'
+import { setActiveTab, getRoutes, getCharityActivities, getReviews, getBanners, getMemberPopup, logPopupAction, BASE_URL } from '../../utils/api'
 import { View, Text, Swiper, SwiperItem, Image, ScrollView, Input } from '@tarojs/components'
 const logoIcon = '/assets/toplogo.png'
 
@@ -14,15 +14,58 @@ export default function Index() {
   const [charities, setCharities] = useState([])
   const [loading, setLoading] = useState(true)
   const [searchKeyword, setSearchKeyword] = useState('')
+  const [popupVisible, setPopupVisible] = useState(false)
+  const [popupData, setPopupData] = useState<any>(null)
 
   useDidShow(() => {
     loadHomeData()
     setActiveTab(0, 'pages/index/index')
+    loadPopup()
     // 延迟清空搜索框，确保页面完全显示后生效
     setTimeout(() => {
       setSearchKeyword('')
     }, 50)
   })
+
+  const loadPopup = async () => {
+    // 当前小程序生命周期内已关闭过则不再弹
+    if (Taro.getStorageSync('home_popup_dismissed')) return
+    try {
+      const res = await getMemberPopup()
+      if (res.code === 200 && res.data?.should_show) {
+        const popup = res.data.popup
+        setPopupData(popup)
+        setPopupVisible(true)
+        if (popup?.id) {
+          logPopupAction(popup.id, 1)
+        }
+      }
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
+  const handlePopupClose = () => {
+    setPopupVisible(false)
+    Taro.setStorageSync('home_popup_dismissed', true)
+    if (popupData?.id) {
+      logPopupAction(popupData.id, 3)
+    }
+  }
+
+  const handlePopupOpen = () => {
+    setPopupVisible(false)
+    if (popupData?.id) {
+      logPopupAction(popupData.id, 2)
+    }
+    const token = Taro.getStorageSync('access_token')
+    const targetUrl = popupData?.target_page || '/pages/member/center/index'
+    if (!token) {
+      Taro.navigateTo({ url: `/pages/login/index?redirect=${encodeURIComponent(targetUrl)}` })
+      return
+    }
+    Taro.navigateTo({ url: targetUrl })
+  }
 
   useEffect(() => {
     loadHomeData()
@@ -257,6 +300,44 @@ export default function Index() {
           </View>
         </View>
       </ScrollView>
+
+      {/* 会员活动弹窗 */}
+      {popupVisible && popupData && (
+        <View className='member-popup-wrap'>
+          <View className='member-popup-mask' onClick={handlePopupClose} />
+          <View className='member-popup-content'>
+            <Text className='member-popup-close' onClick={handlePopupClose}>✕</Text>
+            <Image className='member-popup-poster' src={popupData.image ? (popupData.image.startsWith('http') ? popupData.image : `${BASE_URL}${popupData.image}`) : '/assets/images/member.jpg'} mode='widthFix' />
+            {popupData.title && <Text className='member-popup-title'>{popupData.title}</Text>}
+            {popupData.subtitle && <Text className='member-popup-subtitle'>{popupData.subtitle}</Text>}
+            {popupData.content?.benefits?.length > 0 && (
+              <View className='member-popup-benefits'>
+                {popupData.content.benefits.map((b: string, i: number) => (
+                  <Text key={i} className='member-popup-benefit'>• {b}</Text>
+                ))}
+              </View>
+            )}
+            {popupData.content?.price_display && (
+              <View className='member-popup-price-row'>
+                <Text className='member-popup-price'>{popupData.content.price_display}</Text>
+                {popupData.content.original_price && <Text className='member-popup-original'>{popupData.content.original_price}</Text>}
+              </View>
+            )}
+            <View className='member-popup-footer'>
+              <View 
+                className='member-popup-btn' 
+                style={{ backgroundColor: popupData.primary_btn_color || '#FF6B35' }}
+                onClick={handlePopupOpen}
+              >
+                <Text className='member-popup-btn-text'>{popupData.primary_btn_text || '立即开通'}</Text>
+              </View>
+              {popupData.close_btn_text && (
+                <Text className='member-popup-close-text' onClick={handlePopupClose}>{popupData.close_btn_text}</Text>
+              )}
+            </View>
+          </View>
+        </View>
+      )}
     </View>
   )
 }

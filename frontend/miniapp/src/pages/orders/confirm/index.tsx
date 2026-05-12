@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import Taro, { useDidShow } from '@tarojs/taro'
 import { View, Text, Image, Swiper, SwiperItem, ScrollView } from '@tarojs/components'
-import { getRouteDetail, getRouteSchedules, getPets, getTravelers, createOrder, getRouteAddons } from '../../../utils/api'
+import { getRouteDetail, getRouteSchedules, getPets, getTravelers, createOrder, getRouteAddons, getAvailableCoupons, calculateCoupon } from '../../../utils/api'
 import './index.scss'
 
 const GENDER_MAP: any = { 0: '母', 1: '公' }
@@ -122,6 +122,13 @@ export default function OrderConfirm() {
   // 酒店房型数量：{ addonId: { roomName: quantity } }
   const [addonRoomQuantities, setAddonRoomQuantities] = useState<Record<number, Record<string, number>>>({})
   const [selectedRoom, setSelectedRoom] = useState<any>(null)
+
+  // 优惠券
+  const [availableCoupons, setAvailableCoupons] = useState<any[]>([])
+  const [selectedCouponId, setSelectedCouponId] = useState<number | null>(null)
+  const [couponDiscount, setCouponDiscount] = useState(0)
+  const [showCouponModal, setShowCouponModal] = useState(false)
+  const [showPriceDetail, setShowPriceDetail] = useState(false)
 
   useEffect(() => {
     const instance = Taro.getCurrentInstance()
@@ -435,7 +442,8 @@ export default function OrderConfirm() {
         route_price: schedule.price || route.base_price || 0,
         insurance_price: insurancePrice,
         equipment_price: 0,
-        discount_amount: 0,
+        discount_amount: couponDiscount,
+        coupon_id: selectedCouponId,
         addons: selectedAddons,
         addon_amount: addonTotal
       })
@@ -455,6 +463,8 @@ export default function OrderConfirm() {
   const selectedTravelers = travelers.filter(t => selectedTravelerIds.includes(t.id))
   const selectedPets = pets.filter(p => selectedPetIds.includes(p.id))
   const unitPrice = schedule?.price || route?.base_price || 0
+  const extraPersonPrice = route?.extra_person_price || 0
+  const extraPetPrice = route?.extra_pet_price || 0
   const petInsuranceTotal = 15 * selectedPetIds.length
   const personInsuranceTotal = 10 * selectedTravelers.length
   // 行程选配合计
@@ -480,8 +490,54 @@ export default function OrderConfirm() {
     const qty = addonQuantities[a.id] || 0
     return sum + a.price * qty
   }, 0)
-  const total = unitPrice * selectedTravelers.length + petInsuranceTotal + personInsuranceTotal + addonTotal
+  // 新价格逻辑：基础价(1人1宠) + 加人 + 加宠；未配置增量时回退到老逻辑
+  const useNewPricing = extraPersonPrice > 0 || extraPetPrice > 0
+  const routePrice = useNewPricing
+    ? unitPrice + Math.max(0, selectedTravelers.length - 1) * extraPersonPrice + Math.max(0, selectedPetIds.length - 1) * extraPetPrice
+    : unitPrice * selectedTravelers.length
+  const total = routePrice + petInsuranceTotal + personInsuranceTotal + addonTotal
   const canSubmit = selectedTravelers.length > 0 && selectedPetIds.length > 0
+
+  // 加载可用优惠券
+  useEffect(() => {
+    if (!route?.id || total <= 0) return
+    const loadCoupons = async () => {
+      try {
+        const res = await getAvailableCoupons({ route_id: route.id, amount: total })
+        if (res.code === 200) {
+          setAvailableCoupons(res.data?.available || [])
+          // 如果有最优券且未手动选择，自动选中
+          if (res.data?.best_coupon_id && !selectedCouponId) {
+            setSelectedCouponId(res.data.best_coupon_id)
+            const best = res.data.available?.find((c: any) => c.id === res.data.best_coupon_id)
+            if (best) setCouponDiscount(best.discount_amount)
+          }
+        }
+      } catch (e) {
+        console.error(e)
+      }
+    }
+    loadCoupons()
+  }, [route?.id, total, selectedTravelers.length, selectedPetIds.length])
+
+  // 选择优惠券时重新计算优惠
+  const handleSelectCoupon = (couponId: number | null) => {
+    setSelectedCouponId(couponId)
+    if (!couponId) {
+      setCouponDiscount(0)
+      setShowCouponModal(false)
+      return
+    }
+    const coupon = availableCoupons.find((c: any) => c.id === couponId)
+    if (coupon) {
+      setCouponDiscount(coupon.discount_amount)
+    }
+    setShowCouponModal(false)
+  }
+
+  const finalTotal = selectedTravelers.length === 0
+    ? unitPrice
+    : Math.max(0, Math.round((total - couponDiscount) * 100) / 100)
 
   return (
     <View className='order-confirm' style={{ paddingTop: '140rpx' }}>
@@ -726,17 +782,104 @@ export default function OrderConfirm() {
         <Text className='insurance-tip'>投保须知：按出行人与宠物数量自动计算，不可取消</Text>
       </View>
 
+      {/* 优惠券选择 */}
+      <View className='section-block'>
+        <Text className='section-label'>【优惠券】</Text>
+        <View className='coupon-select-row' onClick={() => setShowCouponModal(true)}>
+          {selectedCouponId && couponDiscount > 0 ? (
+            <>
+              <Text className='coupon-select-name'>
+                {availableCoupons.find((c: any) => c.id === selectedCouponId)?.name || '优惠券'}
+              </Text>
+              <Text className='coupon-select-discount'>-¥{couponDiscount}</Text>
+            </>
+          ) : (
+            <Text className='coupon-select-placeholder'>
+              {availableCoupons.length > 0 ? `${availableCoupons.length}张可用` : '暂无可用优惠券'}
+            </Text>
+          )}
+          <Text className='coupon-select-arrow'>›</Text>
+        </View>
+      </View>
+
       {/* 底部固定栏 */}
       <View className='bottom-bar'>
-        <View className='bottom-price-wrap'>
-          <Text className='bottom-price-main'>实付：¥{total}</Text>
-          <Text className='bottom-price-detail'>
-            基础¥{unitPrice * selectedTravelers.length} + 保险¥{petInsuranceTotal + personInsuranceTotal}
-            {addonTotal > 0 ? ` + 选配¥${addonTotal}` : ''}
-          </Text>
+        <View className='bottom-price-wrap' onClick={() => setShowPriceDetail(true)}>
+          <Text className='bottom-price-label'>价格明细</Text>
+          <Text className='bottom-price-main'>¥{finalTotal}</Text>
         </View>
         <View className={`bottom-submit ${canSubmit ? 'active' : 'disabled'}`} onClick={handleSubmit}>提交订单</View>
       </View>
+
+      {/* 价格明细弹窗 */}
+      {showPriceDetail && (
+        <View className='traveler-modal-wrap' onClick={() => setShowPriceDetail(false)}>
+          <View className='modal-mask' />
+          <View className='price-detail-modal' onClick={(e) => e.stopPropagation()}>
+            <View className='modal-header'>
+              <Text className='modal-title'>价格明细</Text>
+              <Text className='modal-close' onClick={() => setShowPriceDetail(false)}>✕</Text>
+            </View>
+            <View className='price-detail-body'>
+              {/* 基础价 */}
+              <View className='price-detail-row'>
+                <Text className='price-detail-name'>
+                  基础价（1人1宠）
+                </Text>
+                <Text className='price-detail-value'>¥{unitPrice}</Text>
+              </View>
+              {/* 加人 */}
+              {useNewPricing && selectedTravelers.length > 1 && (
+                <View className='price-detail-row sub'>
+                  <Text className='price-detail-name'>　增加{selectedTravelers.length - 1}人</Text>
+                  <Text className='price-detail-value'>¥{(selectedTravelers.length - 1) * extraPersonPrice}</Text>
+                </View>
+              )}
+              {/* 加宠 */}
+              {useNewPricing && selectedPetIds.length > 1 && (
+                <View className='price-detail-row sub'>
+                  <Text className='price-detail-name'>　增加{selectedPetIds.length - 1}宠</Text>
+                  <Text className='price-detail-value'>¥{(selectedPetIds.length - 1) * extraPetPrice}</Text>
+                </View>
+              )}
+              {/* 保险 */}
+              {petInsuranceTotal > 0 && (
+                <View className='price-detail-row'>
+                  <Text className='price-detail-name'>宠物意外险（{selectedPetIds.length}份）</Text>
+                  <Text className='price-detail-value'>¥{petInsuranceTotal}</Text>
+                </View>
+              )}
+              {personInsuranceTotal > 0 && (
+                <View className='price-detail-row'>
+                  <Text className='price-detail-name'>人身意外险（{selectedTravelers.length}份）</Text>
+                  <Text className='price-detail-value'>¥{personInsuranceTotal}</Text>
+                </View>
+              )}
+              {/* 选配 */}
+              {addonTotal > 0 && (
+                <View className='price-detail-row'>
+                  <Text className='price-detail-name'>行程选配</Text>
+                  <Text className='price-detail-value'>¥{addonTotal}</Text>
+                </View>
+              )}
+              {/* 优惠券 */}
+              {couponDiscount > 0 && (
+                <View className='price-detail-row discount'>
+                  <Text className='price-detail-name'>优惠券</Text>
+                  <Text className='price-detail-value'>-¥{couponDiscount}</Text>
+                </View>
+              )}
+              {/* 分割线 */}
+              <View className='price-detail-divider' />
+              {/* 合计 */}
+              <View className='price-detail-row total'>
+                <Text className='price-detail-name'>合计</Text>
+                <Text className='price-detail-value'>¥{finalTotal}</Text>
+              </View>
+            </View>
+          </View>
+        </View>
+      )}
 
       {/* 出行人选择弹窗 */}
       {showTravelerModal && (
@@ -775,6 +918,46 @@ export default function OrderConfirm() {
 
       {/* 酒店房型详情弹窗 */}
       <HotelRoomModal room={selectedRoom} visible={!!selectedRoom} onClose={() => setSelectedRoom(null)} />
+
+      {/* 优惠券选择弹窗 */}
+      {showCouponModal && (
+        <View className='traveler-modal-wrap'>
+          <View className='modal-mask' onClick={() => setShowCouponModal(false)} />
+          <View className='traveler-modal'>
+            <View className='modal-header'>
+              <Text className='modal-title'>选择优惠券</Text>
+              <Text className='modal-close' onClick={() => setShowCouponModal(false)}>✕</Text>
+            </View>
+            <View className='modal-body'>
+              <View className='modal-item' onClick={() => handleSelectCoupon(null)}>
+                <View className='modal-item-info'>
+                  <Text className='modal-item-name'>不使用优惠券</Text>
+                </View>
+                {!selectedCouponId && <View className='check-circle checked' />}
+              </View>
+              {availableCoupons.map((c: any) => (
+                <View key={c.id} className='modal-item' onClick={() => handleSelectCoupon(c.id)}>
+                  <View className='modal-item-info'>
+                    <Text className='modal-item-name'>{c.name}</Text>
+                    <Text className='modal-item-sub'>
+                      优惠¥{c.discount_amount} · {c.min_amount > 0 ? `满${c.min_amount}可用` : '无门槛'}
+                    </Text>
+                  </View>
+                  {selectedCouponId === c.id && <View className='check-circle checked' />}
+                </View>
+              ))}
+              {availableCoupons.length === 0 && (
+                <View className='modal-empty'>
+                  <Text className='empty-tip'>暂无可用优惠券</Text>
+                </View>
+              )}
+            </View>
+            <View className='modal-footer'>
+              <View className='modal-confirm' onClick={() => setShowCouponModal(false)}>确定</View>
+            </View>
+          </View>
+        </View>
+      )}
 
       {/* 宠物选择弹窗 */}
       {showPetModal && (

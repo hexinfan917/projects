@@ -33,6 +33,9 @@ class Order(Base):
     insurance_price: Mapped[float] = mapped_column(DECIMAL(10, 2), default=0, comment="保险费用")
     equipment_price: Mapped[float] = mapped_column(DECIMAL(10, 2), default=0, comment="装备租赁费")
     discount_amount: Mapped[float] = mapped_column(DECIMAL(10, 2), default=0, comment="优惠金额")
+    coupon_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, comment="使用的优惠券ID")
+    coupon_name: Mapped[Optional[str]] = mapped_column(String(100), nullable=True, comment="优惠券名称")
+    member_discount_amount: Mapped[float] = mapped_column(DECIMAL(10, 2), default=0, comment="会员折扣金额")
     total_amount: Mapped[float] = mapped_column(DECIMAL(10, 2), comment="订单总金额")
     pay_amount: Mapped[float] = mapped_column(DECIMAL(10, 2), comment="实付金额")
     

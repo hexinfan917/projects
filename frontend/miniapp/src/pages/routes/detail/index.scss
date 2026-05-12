@@ -116,8 +116,15 @@
   padding: 20rpx 30rpx;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   box-shadow: 0 -4rpx 16rpx rgba(0,0,0,0.05);
+}
+
+.footer-left {
+  position: absolute;
+  left: 30rpx;
+  top: 50%;
+  transform: translateY(-50%);
 }
 
 .footer-price {
@@ -132,6 +139,7 @@
   font-size: 30rpx;
   padding: 0 48rpx;
   border-radius: 40rpx;
+  margin: 0;
 }
 
 /* 日历弹窗 */

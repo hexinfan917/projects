@@ -116,11 +116,7 @@ export default defineConfig({
       path: '/banners',
       component: './Banners',
     },
-    {
-      name: '狗狗回顾',
-      path: '/reviews',
-      component: './Reviews',
-    },
+
     {
       name: '公益管理',
       path: '/charities',
@@ -130,6 +126,27 @@ export default defineConfig({
       name: '行程选配',
       path: '/addons',
       component: './Addons',
+    },
+    {
+      name: '会员管理',
+      path: '/member',
+      routes: [
+        {
+          name: '会员套餐',
+          path: '/member/plans',
+          component: './MemberPlans/List',
+        },
+        {
+          name: '弹窗配置',
+          path: '/member/popups',
+          component: './PopupConfigs/List',
+        },
+      ],
+    },
+    {
+      name: '优惠券管理',
+      path: '/coupons',
+      component: './Coupons/List',
     },
     {
       name: '登录',

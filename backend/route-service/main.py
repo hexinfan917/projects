@@ -112,7 +112,8 @@ async def get_routes(
                 Route.id, Route.route_no, Route.name, Route.route_type,
                 Route.title, Route.subtitle, Route.cover_image, Route.description,
                 Route.duration, Route.difficulty, Route.min_participants,
-                Route.max_participants, Route.base_price, Route.highlights,
+                Route.max_participants, Route.base_price, Route.extra_person_price,
+                Route.extra_pet_price, Route.highlights,
                 Route.created_at
             )
         )
@@ -194,7 +195,8 @@ async def get_routes(
                         Route.id, Route.route_no, Route.name, Route.route_type,
                         Route.title, Route.subtitle, Route.cover_image, Route.description,
                         Route.duration, Route.difficulty, Route.min_participants,
-                        Route.max_participants, Route.base_price, Route.highlights,
+                        Route.max_participants, Route.base_price, Route.extra_person_price,
+                        Route.extra_pet_price, Route.highlights,
                         Route.created_at
                     )
                 )
@@ -241,6 +243,8 @@ async def get_routes(
                 "min_participants": r.min_participants,
                 "max_participants": r.max_participants,
                 "base_price": float(r.base_price) if r.base_price else 0,
+                "extra_person_price": float(r.extra_person_price) if r.extra_person_price else 0,
+                "extra_pet_price": float(r.extra_pet_price) if r.extra_pet_price else 0,
                 "rating": avg_rating,
                 "review_count": review_count,
                 "distance": None,  # 暂无距离字段
@@ -349,6 +353,8 @@ async def get_route_detail(
             "min_participants": r.min_participants,
             "max_participants": r.max_participants,
             "base_price": float(r.base_price) if r.base_price else 0,
+            "extra_person_price": float(r.extra_person_price) if r.extra_person_price else 0,
+            "extra_pet_price": float(r.extra_pet_price) if r.extra_pet_price else 0,
             "rating": avg_rating,
             "review_count": review_count,
             "suitable_breeds": r.suitable_breeds or [],
@@ -565,6 +571,8 @@ class RouteCreateUpdate(BaseModel):
     min_participants: int = 4
     max_participants: int = 12
     base_price: float
+    extra_person_price: Optional[float] = 0
+    extra_pet_price: Optional[float] = 0
     safety_video_url: Optional[str] = None
     safety_video_duration: int = 180
     is_safety_required: int = 1
@@ -573,12 +581,12 @@ class RouteCreateUpdate(BaseModel):
 
 class ScheduleCreateUpdate(BaseModel):
     """排期创建/更新请求"""
-    schedule_date: str
+    schedule_date: Optional[str] = None
     start_time: Optional[str] = "09:00"
     end_time: Optional[str] = "17:00"
     price: Optional[float] = None
-    stock: int = 12
-    status: int = 1
+    stock: Optional[int] = None
+    status: Optional[int] = None
     guide_id: Optional[int] = None
     trainer_id: Optional[int] = None
 
@@ -676,6 +684,8 @@ async def admin_create_route(
             min_participants=data.min_participants,
             max_participants=data.max_participants,
             base_price=data.base_price,
+            extra_person_price=data.extra_person_price,
+            extra_pet_price=data.extra_pet_price,
             safety_video_url=data.safety_video_url,
             safety_video_duration=data.safety_video_duration,
             is_safety_required=data.is_safety_required,
@@ -788,7 +798,8 @@ async def admin_get_routes(
         # 列表只加载必要字段避免 sort memory 溢出
         load_only_cols = load_only(
             Route.id, Route.route_no, Route.name, Route.route_type,
-            Route.cover_image, Route.base_price, Route.duration,
+            Route.cover_image, Route.base_price, Route.extra_person_price,
+            Route.extra_pet_price, Route.duration,
             Route.min_participants, Route.max_participants,
             Route.is_hot, Route.status, Route.created_at, Route.updated_at
         )
@@ -906,6 +917,8 @@ async def admin_get_route_detail(
             "min_participants": r.min_participants,
             "max_participants": r.max_participants,
             "base_price": float(r.base_price) if r.base_price else 0,
+            "extra_person_price": float(r.extra_person_price) if r.extra_person_price else 0,
+            "extra_pet_price": float(r.extra_pet_price) if r.extra_pet_price else 0,
             "safety_video_url": r.safety_video_url,
             "safety_video_duration": r.safety_video_duration,
             "is_safety_required": r.is_safety_required,

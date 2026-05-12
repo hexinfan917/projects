@@ -19,6 +19,8 @@ class User(Base):
     nickname: Mapped[Optional[str]] = mapped_column(String(50), nullable=True, comment="昵称")
     avatar: Mapped[Optional[str]] = mapped_column(String(500), nullable=True, comment="头像URL")
     phone: Mapped[Optional[str]] = mapped_column(String(20), nullable=True, comment="手机号")
+    real_name: Mapped[Optional[str]] = mapped_column(String(50), nullable=True, comment="真实姓名")
+    id_card: Mapped[Optional[str]] = mapped_column(String(18), nullable=True, comment="身份证号")
     gender: Mapped[int] = mapped_column(Integer, default=0, comment="0未知 1男 2女")
     birthday: Mapped[Optional[datetime]] = mapped_column(Date, nullable=True, comment="生日")
     city: Mapped[Optional[str]] = mapped_column(String(50), nullable=True, comment="城市")

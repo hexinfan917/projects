@@ -33,7 +33,7 @@
     "enableEngineNative": false,
     "useIsolateContext": true,
     "userConfirmedBundleSwitch": false,
-    "packNpmManually": false,
+    "packNpmManually": true,
     "packNpmRelationList": [],
     "minifyWXSS": true,
     "disableUseStrict": false,

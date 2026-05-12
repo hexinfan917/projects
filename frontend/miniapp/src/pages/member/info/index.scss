@@ -1,0 +1,133 @@
+.member-info-page {
+  min-height: 100vh;
+  background: #f5f7f5;
+  padding-bottom: 60rpx;
+}
+
+.custom-navbar {
+  position: relative;
+  height: 200rpx;
+  .navbar-bg {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: linear-gradient(135deg, #22C55E 0%, #4ADE80 100%);
+    border-radius: 0 0 40rpx 40rpx;
+  }
+  .navbar-content {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    padding: 0 30rpx;
+    box-sizing: border-box;
+    .page-back {
+      position: absolute;
+      left: 30rpx;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 60rpx;
+      height: 60rpx;
+      display: flex;
+      align-items: center;
+      z-index: 2;
+      .page-back-icon {
+        color: #fff;
+        font-size: 48rpx;
+      }
+    }
+    .navbar-title {
+      color: #fff;
+      font-size: 36rpx;
+      font-weight: 600;
+    }
+  }
+}
+
+.info-header {
+  padding: 60rpx 40rpx 40rpx;
+  .info-welcome {
+    font-size: 40rpx;
+    color: #1f2937;
+    display: block;
+    margin-bottom: 8rpx;
+  }
+  .info-brand {
+    font-size: 48rpx;
+    font-weight: 700;
+    color: #8B4513;
+    display: block;
+    margin-bottom: 16rpx;
+  }
+  .info-tip {
+    font-size: 30rpx;
+    color: #9CA3AF;
+    display: block;
+  }
+}
+
+.info-form {
+  margin: 0 30rpx;
+  background: #fff;
+  border-radius: 20rpx;
+  padding: 20rpx 30rpx;
+  .form-item {
+    display: flex;
+    align-items: center;
+    padding: 30rpx 0;
+    border-bottom: 1rpx solid #f0f0f0;
+    &:last-child {
+      border-bottom: none;
+    }
+    .form-label {
+      width: 140rpx;
+      font-size: 34rpx;
+      color: #1f2937;
+      font-weight: 500;
+      flex-shrink: 0;
+    }
+    .form-input {
+      flex: 1;
+      font-size: 30rpx;
+      color: #1f2937;
+    }
+    .form-picker {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      .form-picker-value {
+        font-size: 30rpx;
+        color: #1f2937;
+      }
+      .form-picker-placeholder {
+        font-size: 30rpx;
+        color: #c0c0c0;
+      }
+      .form-picker-arrow {
+        font-size: 32rpx;
+        color: #c0c0c0;
+      }
+    }
+  }
+}
+
+.info-submit-wrap {
+  margin: 60rpx 30rpx 0;
+  .info-submit {
+    background: #8B4513;
+    color: #fff;
+    font-size: 32rpx;
+    font-weight: 600;
+    border-radius: 44rpx;
+    height: 96rpx;
+    line-height: 96rpx;
+    border: none;
+    &.disabled {
+      opacity: 0.6;
+    }
+    &::after {
+      border: none;
+    }
+  }
+}

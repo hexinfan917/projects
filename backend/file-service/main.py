@@ -163,7 +163,8 @@ async def save_upload_file(upload_file: UploadFile, folder: str = "") -> dict:
             logger.error(f"Failed to save file: {e}")
             raise HTTPException(status_code=500, detail="文件保存失败")
         
-        file_url = f"/api/v1/files/static/{object_key}"
+        base_url = os.getenv("FILE_PUBLIC_BASE_URL", "http://localhost:8081")
+        file_url = f"{base_url}/api/v1/files/static/{object_key}"
     
     upload_file.file.close()
     

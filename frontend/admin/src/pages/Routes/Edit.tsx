@@ -88,6 +88,8 @@ export default function RouteEdit() {
         form.setFieldsValue({
           ...data,
           base_price: Number(data.base_price),
+          extra_person_price: Number(data.extra_person_price || 0),
+          extra_pet_price: Number(data.extra_pet_price || 0),
         });
         setGallery(data.gallery || []);
         setHighlights(data.highlights || []);
@@ -231,6 +233,9 @@ export default function RouteEdit() {
 
   // 批量添加排期
   const [batchModalVisible, setBatchModalVisible] = useState(false);
+  const [editingScheduleId, setEditingScheduleId] = useState<number | null>(null);
+  const [editingPrice, setEditingPrice] = useState<number | null>(null);
+  const [editingStock, setEditingStock] = useState<number | null>(null);
   const handleBatchAddSchedules = async (values: any) => {
     try {
       const { start_date, end_date, start_time, end_time, price, stock, week_days } = values;
@@ -326,6 +331,24 @@ export default function RouteEdit() {
     }
   };
 
+  // 更新排期价格和库存
+  const updateSchedule = async (scheduleId: number, updates: { price?: number; stock?: number }) => {
+    try {
+      const res = await request(`/api/v1/admin/schedules/${scheduleId}`, {
+        method: 'PUT',
+        data: updates,
+      });
+      if (res.code === 200) {
+        message.success('排期更新成功');
+        await fetchSchedules();
+      } else {
+        message.error(res.message || '更新失败');
+      }
+    } catch (error: any) {
+      message.error(error?.message || '更新排期失败');
+    }
+  };
+
   // 排期表格列
   const scheduleColumns = [
     {
@@ -342,12 +365,88 @@ export default function RouteEdit() {
       title: '价格',
       dataIndex: 'price',
       key: 'price',
-      render: (price: number) => price ? `¥${price}` : '-',
+      render: (price: number, record: any) => {
+        if (editingScheduleId === record.id && editingPrice !== null) {
+          return (
+            <InputNumber
+              autoFocus
+              value={editingPrice}
+              min={0}
+              precision={2}
+              prefix="¥"
+              style={{ width: 100 }}
+              onChange={(val) => setEditingPrice(val)}
+              onBlur={() => {
+                if (editingPrice !== price) {
+                  updateSchedule(record.id, { price: editingPrice || 0 });
+                }
+                setEditingScheduleId(null);
+                setEditingPrice(null);
+              }}
+              onPressEnter={() => {
+                if (editingPrice !== price) {
+                  updateSchedule(record.id, { price: editingPrice || 0 });
+                }
+                setEditingScheduleId(null);
+                setEditingPrice(null);
+              }}
+            />
+          );
+        }
+        return (
+          <span
+            style={{ cursor: 'pointer', color: '#1890ff' }}
+            onClick={() => {
+              setEditingScheduleId(record.id);
+              setEditingPrice(price || 0);
+            }}
+          >
+            {price ? `¥${price}` : '-'}
+          </span>
+        );
+      },
     },
     {
       title: '库存',
       key: 'stock',
-      render: (record: any) => `${record.stock - record.sold}/${record.stock}`,
+      render: (record: any) => {
+        if (editingScheduleId === record.id && editingStock !== null) {
+          return (
+            <InputNumber
+              autoFocus
+              value={editingStock}
+              min={0}
+              style={{ width: 80 }}
+              onChange={(val) => setEditingStock(val)}
+              onBlur={() => {
+                if (editingStock !== record.stock) {
+                  updateSchedule(record.id, { stock: editingStock || 0 });
+                }
+                setEditingScheduleId(null);
+                setEditingStock(null);
+              }}
+              onPressEnter={() => {
+                if (editingStock !== record.stock) {
+                  updateSchedule(record.id, { stock: editingStock || 0 });
+                }
+                setEditingScheduleId(null);
+                setEditingStock(null);
+              }}
+            />
+          );
+        }
+        return (
+          <span
+            style={{ cursor: 'pointer', color: '#1890ff' }}
+            onClick={() => {
+              setEditingScheduleId(record.id);
+              setEditingStock(record.stock || 0);
+            }}
+          >
+            {record.stock - record.sold}/{record.stock}
+          </span>
+        );
+      },
     },
     {
       title: '状态',
@@ -401,6 +500,8 @@ export default function RouteEdit() {
                 min_participants: 4,
                 max_participants: 12,
                 base_price: 0,
+                extra_person_price: 0,
+                extra_pet_price: 0,
               }}
             >
               <Row gutter={24}>
@@ -479,7 +580,7 @@ export default function RouteEdit() {
                 <Col span={8}>
                   <Form.Item
                     name="base_price"
-                    label="基础价格"
+                    label="基础价格(1人1宠)"
                     rules={[{ required: true, message: '请输入基础价格' }]}
                   >
                     <InputNumber
@@ -491,6 +592,25 @@ export default function RouteEdit() {
                     />
                   </Form.Item>
                 </Col>
+                <Col span={8}>
+                  <Form.Item
+                    name="extra_person_price"
+                    label="增加一人价格"
+                  >
+                    <InputNumber style={{ width: '100%' }} min={0} precision={2} prefix="¥" placeholder="0" />
+                  </Form.Item>
+                </Col>
+                <Col span={8}>
+                  <Form.Item
+                    name="extra_pet_price"
+                    label="增加一宠价格"
+                  >
+                    <InputNumber style={{ width: '100%' }} min={0} precision={2} prefix="¥" placeholder="0" />
+                  </Form.Item>
+                </Col>
+              </Row>
+
+              <Row gutter={24}>
                 <Col span={8}>
                   <Form.Item
                     name="min_participants"

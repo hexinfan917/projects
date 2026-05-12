@@ -31,7 +31,13 @@ export default defineAppConfig({
     'pages/reviews/detail/index',
     'pages/charities/list/index',
     'pages/charities/detail/index',
-    'pages/charities/enroll/index'
+    'pages/charities/enroll/index',
+    'pages/member/center/index',
+    'pages/member/info/index',
+    'pages/member/pay/index',
+    'pages/member/coupons/index',
+    'pages/coupons/center/index',
+    'pages/coupons/list/index'
   ],
   window: {
     backgroundTextStyle: 'light',

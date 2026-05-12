@@ -1,6 +1,6 @@
 import { PageContainer, ProTable, ModalForm, ProFormText, ProFormSelect, ProFormDigit } from '@ant-design/pro-components';
-import { Button, Tag, Image, message, Popconfirm, Space, Form } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined, VerticalAlignTopOutlined, VerticalAlignBottomOutlined } from '@ant-design/icons';
+import { Button, Tag, Image, message, Popconfirm, Space, Form, Upload, Input } from 'antd';
+import { PlusOutlined, EditOutlined, DeleteOutlined, VerticalAlignTopOutlined, VerticalAlignBottomOutlined, LoadingOutlined, UploadOutlined } from '@ant-design/icons';
 import { useRef, useState } from 'react';
 import { request } from '@umijs/max';
 import dayjs from 'dayjs';
@@ -37,12 +37,28 @@ export default function ArticleManage() {
   const [modalVisible, setModalVisible] = useState(false);
   const [editData, setEditData] = useState<any>(null);
   const [content, setContent] = useState('');
+  const [coverImageUrl, setCoverImageUrl] = useState('');
+  const [coverUploading, setCoverUploading] = useState(false);
+  const [gallery, setGallery] = useState<string[]>([]);
+  const [category, setCategory] = useState<string>('travel');
   const [form] = Form.useForm();
 
   const openModal = (record?: any) => {
     setEditData(record || null);
     setContent(record?.content || '');
-    form.setFieldsValue(record || { status: 0, is_top: 0, sort_order: 0 });
+    setCoverImageUrl(record?.cover_image || '');
+    let galleryUrls: string[] = [];
+    if (record?.images) {
+      try {
+        galleryUrls = typeof record.images === 'string' ? JSON.parse(record.images) : record.images;
+      } catch (e) {
+        console.error('Failed to parse images:', record.images, e);
+      }
+    }
+    setGallery(galleryUrls);
+    const cat = record?.category || 'travel';
+    setCategory(cat);
+    form.setFieldsValue(record || { status: 0, is_top: 0, sort_order: 0, category: 'travel' });
     setModalVisible(true);
   };
 
@@ -77,19 +93,90 @@ export default function ArticleManage() {
     }
   };
 
+  const handleCoverUpload = async (file: File) => {
+    setCoverUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const token = localStorage.getItem('token');
+      const res = await fetch('/api/v1/files/upload/image', {
+        method: 'POST',
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: formData,
+      });
+      const data = await res.json();
+      if (data.code === 200 && data.data?.url) {
+        setCoverImageUrl(data.data.url);
+        form.setFieldsValue({ cover_image: data.data.url });
+        message.success('上传成功');
+      } else {
+        message.error(data.message || '上传失败');
+      }
+    } catch (error) {
+      message.error('上传失败');
+    } finally {
+      setCoverUploading(false);
+    }
+    return false;
+  };
+
+  const handleGalleryUpload = (url: string) => {
+    setGallery(prev => [...prev, url]);
+  };
+
+  const removeGalleryImage = (index: number) => {
+    setGallery(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const galleryUploadProps = {
+    name: 'file',
+    action: '/api/v1/files/upload/image',
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
+    },
+    onChange(info: any) {
+      if (info.file.status === 'done') {
+        const url = info.file.response?.data?.url;
+        if (url) {
+          message.success(`${info.file.name} 上传成功`);
+          handleGalleryUpload(url);
+        } else {
+          message.error('上传成功但无法获取图片地址');
+        }
+      } else if (info.file.status === 'error') {
+        message.error(`${info.file.name} 上传失败`);
+      }
+    },
+  };
+
   const handleSubmit = async (values: any) => {
     try {
       const url = editData ? '/api/v1/admin/articles/' + editData.id : '/api/v1/admin/articles';
       const method = editData ? 'PUT' : 'POST';
+      const submitContent = content && content.trim() !== '<p><br></p>' ? content : '';
+      const allValues = form.getFieldsValue(true);
+      const submitData = {
+        ...allValues,
+        content: submitContent,
+        is_top: allValues.is_top === '' || allValues.is_top === undefined ? 0 : Number(allValues.is_top),
+        sort_order: allValues.sort_order === '' || allValues.sort_order === undefined ? 0 : Number(allValues.sort_order),
+        participants: allValues.participants === '' || allValues.participants === undefined ? 0 : Number(allValues.participants),
+        status: allValues.status === '' || allValues.status === undefined ? 0 : Number(allValues.status),
+        images: gallery.length > 0 ? JSON.stringify(gallery) : null,
+      };
       const res = await request(url, {
         method,
-        data: { ...values, content },
+        data: submitData,
       });
       if (res.code === 200) {
         message.success(editData ? '更新成功' : '创建成功');
         setModalVisible(false);
         setEditData(null);
         setContent('');
+        setCoverImageUrl('');
+        setGallery([]);
         tableRef.current?.reload();
         return true;
       }
@@ -225,13 +312,36 @@ export default function ArticleManage() {
           afterClose: () => {
             setContent('');
             setEditData(null);
+            setCoverImageUrl('');
+            setGallery([]);
             form.resetFields();
           },
         }}
       >
         <ProFormText name="title" label="标题" rules={[{ required: true }]} />
         <ProFormText name="subtitle" label="副标题" />
-        <ProFormText name="cover_image" label="封面图URL" />
+
+        <Form.Item label="封面图" required>
+          <Form.Item name="cover_image" noStyle rules={[{ required: true, message: '请上传封面图' }]}>
+            <Input type="hidden" />
+          </Form.Item>
+          <Upload listType="picture-card" showUploadList={false} beforeUpload={handleCoverUpload} accept="image/*">
+            {coverImageUrl ? (
+              <Image src={coverImageUrl} alt="cover" style={{ width: '100%', height: '100%', objectFit: 'cover' }} preview={false} />
+            ) : (
+              <div>
+                {coverUploading ? <LoadingOutlined /> : <PlusOutlined />}
+                <div style={{ marginTop: 8 }}>上传封面</div>
+              </div>
+            )}
+          </Upload>
+          {coverImageUrl && (
+            <Button type="link" size="small" danger onClick={() => { setCoverImageUrl(''); form.setFieldsValue({ cover_image: '' }); }}>
+              删除封面
+            </Button>
+          )}
+        </Form.Item>
+
         <ProFormSelect
           name="category"
           label="分类"
@@ -242,8 +352,49 @@ export default function ArticleManage() {
             { label: '回顾', value: 'review' },
           ]}
           rules={[{ required: true }]}
+          fieldProps={{
+            onChange: (value: string) => setCategory(value),
+          }}
         />
+
+        {category === 'review' && (
+          <>
+            <ProFormText name="location" label="活动地点" />
+            <ProFormText name="event_date" label="活动日期" placeholder="如：2024.06.15" />
+            <ProFormDigit name="participants" label="参与狗狗数量" min={0} initialValue={0} />
+          </>
+        )}
+
         <ProFormText name="summary" label="摘要" />
+
+        {category === 'review' && (
+          <Form.Item label="图集">
+            <div style={{ marginBottom: 16 }}>
+              <Upload {...galleryUploadProps} showUploadList={false}>
+                <Button icon={<UploadOutlined />}>上传图片</Button>
+              </Upload>
+              <span style={{ marginLeft: 8, color: '#999' }}>或直接输入图片URL：</span>
+              <Input
+                style={{ width: 300, marginLeft: 8 }}
+                placeholder="输入图片URL"
+                onPressEnter={(e: any) => {
+                  if (e.target.value) { handleGalleryUpload(e.target.value); e.target.value = ''; }
+                }}
+              />
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16 }}>
+              {gallery.map((url, index) => (
+                <div key={index} style={{ position: 'relative', width: 200, height: 150 }}>
+                  <img src={url} alt={`图集${index + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 8 }} />
+                  <Button type="primary" danger size="small" icon={<DeleteOutlined />}
+                    style={{ position: 'absolute', top: 8, right: 8 }}
+                    onClick={() => removeGalleryImage(index)}>删除</Button>
+                </div>
+              ))}
+            </div>
+          </Form.Item>
+        )}
+
         <Form.Item label="内容" required>
           <ReactQuill
             theme="snow"

@@ -103,6 +103,15 @@ SERVICE_ROUTES = {
     "/api/v1/charities": "http://localhost:8009",
     "/api/v1/admin/charities": "http://localhost:8009",
     "/api/v1/charity": "http://localhost:8009",
+    "/api/v1/coupons": "http://localhost:8003",
+    "/api/v1/admin/coupon-templates": "http://localhost:8003",
+    "/api/v1/member/orders": "http://localhost:8003",
+    "/api/v1/member/plans": "http://localhost:8001",
+    "/api/v1/member/center": "http://localhost:8001",
+    "/api/v1/member/coupons": "http://localhost:8001",
+    "/api/v1/popups": "http://localhost:8001",
+    "/api/v1/admin/member-plans": "http://localhost:8001",
+    "/api/v1/admin/popups": "http://localhost:8001",
 }
 
 @asynccontextmanager
