@@ -1,4 +1,4 @@
-# 犬兜行后端服务管理脚本
+# 尾巴旅行后端服务管理脚本
 param(
     [Parameter(Mandatory=$true)]
     [ValidateSet("start", "stop", "restart", "status")]

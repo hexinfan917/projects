@@ -1,9 +1,9 @@
-# 犬兜行后端服务停止脚本
+# 尾巴旅行后端服务停止脚本
 # 使用方式: .\stop-backend.ps1
 # 功能: 停止所有Python后端服务进程
 
 Write-Host "========================================" -ForegroundColor Yellow
-Write-Host "  犬兜行后端服务停止脚本" -ForegroundColor Yellow
+Write-Host "  尾巴旅行后端服务停止脚本" -ForegroundColor Yellow
 Write-Host "========================================" -ForegroundColor Yellow
 Write-Host ""
 

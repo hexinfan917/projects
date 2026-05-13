@@ -79,7 +79,7 @@ export default function Index() {
       if (bannerRes.code === 200 && bannerRes.data?.banners) {
         setBanners(bannerRes.data.banners.map((b: any) => ({
           id: b.id,
-          image: b.image_url ? (b.image_url.startsWith('http') ? b.image_url : `http://localhost:8081${b.image_url}`) : '',
+          image: b.image_url ? (b.image_url.startsWith('http') ? b.image_url : `https://tailtravel.westilt.com${b.image_url}`) : '',
           link_url: b.link_url || '',
         })))
       } else {
@@ -108,7 +108,7 @@ export default function Index() {
           date: a.event_date || '',
           location: a.location || '',
           participants: a.participants || 0,
-          image: a.cover_image ? (a.cover_image.startsWith('http') ? a.cover_image : `http://localhost:8081${a.cover_image}`) : 'https://via.placeholder.com/700x380/CCCCCC/FFFFFF?text=No+Image',
+          image: a.cover_image ? (a.cover_image.startsWith('http') ? a.cover_image : `https://tailtravel.westilt.com${a.cover_image}`) : 'https://via.placeholder.com/700x380/CCCCCC/FFFFFF?text=No+Image',
         })))
       }
 

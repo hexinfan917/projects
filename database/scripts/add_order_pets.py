@@ -1,6 +1,6 @@
 import pymysql
 
-conn = pymysql.connect(host='localhost', port=3306, user='root', password='root', database='quandouxing', charset='utf8mb4')
+conn = pymysql.connect(host='localhost', port=3306, user='root', password='root', database='petway', charset='utf8mb4')
 cursor = conn.cursor()
 try:
     cursor.execute("ALTER TABLE orders ADD COLUMN pets JSON NULL COMMENT '宠物信息' AFTER participants;")

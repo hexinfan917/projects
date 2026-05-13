@@ -1,13 +1,13 @@
 @echo off
 chcp 65001 >nul
-title 犬兜行后端服务
+title 尾巴旅行后端服务
 
 set "PROJECT_ROOT=%~dp0"
 set "BACKEND_DIR=%PROJECT_ROOT%backend"
 set "VENV_PYTHON=%BACKEND_DIR%\venv\Scripts\python.exe"
 
 echo ========================================
-echo   犬兜行后端服务启动
+echo   尾巴旅行后端服务启动
 echo ========================================
 echo.
 

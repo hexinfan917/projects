@@ -1,4 +1,4 @@
-# 犬兜行项目 Makefile
+# 尾巴旅行项目 Makefile
 
 .PHONY: help install dev build test clean docker-up docker-down
 

@@ -1,4 +1,4 @@
-# 犬兜行后端服务管理脚本
+# 尾巴旅行后端服务管理脚本
 # 使用方式: .\backend-manage.ps1 [命令]
 # 命令: start, stop, restart, status
 
@@ -43,7 +43,7 @@ function Stop-AllServices {
 }
 
 Write-Host "========================================" -ForegroundColor Cyan
-Write-Host "  犬兜行后端服务管理" -ForegroundColor Cyan
+Write-Host "  尾巴旅行后端服务管理" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
 

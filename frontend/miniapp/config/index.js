@@ -1,5 +1,5 @@
 const config = {
-  projectName: 'quandouxing-miniapp',
+  projectName: 'petway-miniapp',
   date: '2026-4-9',
   designWidth: 750,
   deviceRatio: {

@@ -8,7 +8,7 @@ from pathlib import Path
 
 
 def setup_logger(
-    name: str = "quandouxing",
+    name: str = "petway",
     level: str = "INFO",
     log_dir: str = "logs"
 ) -> logging.Logger:

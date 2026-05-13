@@ -5,7 +5,7 @@ import { getRouteDetail, getRouteSchedules } from '../../../utils/api'
 import './index.scss'
 
 const WEEK_DAYS = ['日', '一', '二', '三', '四', '五', '六']
-const FILE_BASE_URL = 'http://localhost:8081'
+const FILE_BASE_URL = 'https://tailtravel.westilt.com'
 
 /** 处理富文本中的图片：补全相对路径 + 自适应样式 */
 function processRichText(html: string): string {
@@ -141,12 +141,12 @@ export default function RouteDetail() {
       </View>
       <ScrollView className='detail-scroll' scrollY>
         {images.length === 1 ? (
-          <Image className='cover-image' src={images[0].startsWith('http') ? images[0] : `http://localhost:8081${images[0]}`} mode='aspectFill' />
+          <Image className='cover-image' src={images[0].startsWith('http') ? images[0] : `https://tailtravel.westilt.com${images[0]}`} mode='aspectFill' />
         ) : (
           <Swiper className='cover-swiper' indicatorDots autoplay interval={4000}>
             {images.map((img: string, idx: number) => (
               <SwiperItem key={idx}>
-                <Image className='cover-image' src={img.startsWith('http') ? img : `http://localhost:8081${img}`} mode='aspectFill' />
+                <Image className='cover-image' src={img.startsWith('http') ? img : `https://tailtravel.westilt.com${img}`} mode='aspectFill' />
               </SwiperItem>
             ))}
           </Swiper>

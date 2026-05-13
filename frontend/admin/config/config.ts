@@ -7,7 +7,7 @@ export default defineConfig({
   initialState: {},
   request: {},
   layout: {
-    title: '犬兜行管理后台',
+    title: '尾巴旅行管理后台',
     logo: '/logo.png',
   },
   proxy: {

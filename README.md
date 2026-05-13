@@ -1,8 +1,8 @@
-# 犬兜行 - 宠物友好型出行平台
+# 尾巴旅行 - 宠物友好型出行平台
 
 ![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
 
-犬兜行是一个专注于宠物友好型出行的服务平台，为宠物主人提供携宠出行的一站式解决方案。
+尾巴旅行是一个专注于宠物友好型出行的服务平台，为宠物主人提供携宠出行的一站式解决方案。
 
 ## 🚀 快速启动
 
@@ -64,7 +64,7 @@ python main.py
 ## 📁 项目结构
 
 ```
-quandouxing/
+petway/
 ├── backend/                    # Python FastAPI 微服务
 │   ├── common/                 # 公共模块
 │   ├── gateway/               # API网关 (8000)
@@ -163,7 +163,7 @@ DB_HOST=localhost
 DB_PORT=3306
 DB_USER=root
 DB_PASSWORD=your_password
-DB_NAME=quandouxing
+DB_NAME=petway
 
 # Redis
 REDIS_HOST=localhost
@@ -182,10 +182,10 @@ WECHAT_APPSECRET=your_appsecret
 
 ```bash
 # 1. 克隆项目
-git clone https://github.com/your-org/quandouxing.git
+git clone https://github.com/your-org/petway.git
 
 # 2. 初始化项目
-cd quandouxing
+cd petway
 .\init-project.ps1
 
 # 3. 启动开发环境
@@ -198,4 +198,4 @@ cd quandouxing
 
 ---
 
-**犬兜行** - 让爱宠陪伴每一次旅行 🐕✈️
+**尾巴旅行** - 让爱宠陪伴每一次旅行 🐕✈️

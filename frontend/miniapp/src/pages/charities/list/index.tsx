@@ -26,7 +26,7 @@ export default function CharityList() {
           date: a.start_date || '',
           location: a.location || '',
           status: a.status_name || '报名中',
-          image: a.cover_image ? (a.cover_image.startsWith('http') ? a.cover_image : `http://localhost:8081${a.cover_image}`) : '',
+          image: a.cover_image ? (a.cover_image.startsWith('http') ? a.cover_image : `https://tailtravel.westilt.com${a.cover_image}`) : '',
         }))
         if (p === 1) {
           setList(items)

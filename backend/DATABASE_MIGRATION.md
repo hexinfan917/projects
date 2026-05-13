@@ -95,7 +95,7 @@ DATABASE__HOST=localhost
 DATABASE__PORT=3306
 DATABASE__USERNAME=root
 DATABASE__PASSWORD=root
-DATABASE__DATABASE=quandouxing
+DATABASE__DATABASE=petway
 ```
 
 ## 故障排查
@@ -103,7 +103,7 @@ DATABASE__DATABASE=quandouxing
 ### 1. 数据库连接失败
 - 检查 MySQL 是否启动
 - 检查 `.env` 中的数据库密码是否正确
-- 确保 `quandouxing` 数据库已创建
+- 确保 `petway` 数据库已创建
 
 ### 2. 表不存在
 运行初始化脚本：

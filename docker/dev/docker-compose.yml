@@ -4,12 +4,12 @@ services:
   # MySQL数据库
   mysql:
     image: mysql:8.0
-    container_name: quandouxing-mysql
+    container_name: petway-mysql
     environment:
       MYSQL_ROOT_PASSWORD: root123
-      MYSQL_DATABASE: quandouxing
-      MYSQL_USER: quandouxing
-      MYSQL_PASSWORD: quandouxing123
+      MYSQL_DATABASE: petway
+      MYSQL_USER: petway
+      MYSQL_PASSWORD: petway123
     ports:
       - "3306:3306"
     volumes:
@@ -24,7 +24,7 @@ services:
   # Redis缓存
   redis:
     image: redis:7-alpine
-    container_name: quandouxing-redis
+    container_name: petway-redis
     ports:
       - "6379:6379"
     volumes:
@@ -38,11 +38,11 @@ services:
       dockerfile: docker/Dockerfile.service
       args:
         SERVICE_NAME: user-service
-    container_name: quandouxing-user-service
+    container_name: petway-user-service
     environment:
       - SERVICE_NAME=user-service
       - DB_HOST=mysql
-      - DB_PASSWORD=quandouxing123
+      - DB_PASSWORD=petway123
       - REDIS_HOST=redis
     ports:
       - "8001:8000"
@@ -63,11 +63,11 @@ services:
       dockerfile: docker/Dockerfile.service
       args:
         SERVICE_NAME: route-service
-    container_name: quandouxing-route-service
+    container_name: petway-route-service
     environment:
       - SERVICE_NAME=route-service
       - DB_HOST=mysql
-      - DB_PASSWORD=quandouxing123
+      - DB_PASSWORD=petway123
       - REDIS_HOST=redis
     ports:
       - "8002:8000"
@@ -88,11 +88,11 @@ services:
       dockerfile: docker/Dockerfile.service
       args:
         SERVICE_NAME: order-service
-    container_name: quandouxing-order-service
+    container_name: petway-order-service
     environment:
       - SERVICE_NAME=order-service
       - DB_HOST=mysql
-      - DB_PASSWORD=quandouxing123
+      - DB_PASSWORD=petway123
       - REDIS_HOST=redis
     ports:
       - "8003:8000"
@@ -113,11 +113,11 @@ services:
       dockerfile: docker/Dockerfile.service
       args:
         SERVICE_NAME: gateway
-    container_name: quandouxing-gateway
+    container_name: petway-gateway
     environment:
       - SERVICE_NAME=gateway
       - DB_HOST=mysql
-      - DB_PASSWORD=quandouxing123
+      - DB_PASSWORD=petway123
       - REDIS_HOST=redis
     ports:
       - "8000:8000"

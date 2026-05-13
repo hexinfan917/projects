@@ -1,10 +1,10 @@
-# 犬兜行 - 测试用例 V5.0
+# 尾巴旅行 - 测试用例 V5.0
 
 ## 一、测试概述
 
 | 项目 | 内容 |
 |:---|:---|
-| 产品名称 | 犬兜行小程序 |
+| 产品名称 | 尾巴旅行小程序 |
 | 版本 | V5.0 |
 | 测试类型 | 功能测试、接口测试、性能测试、兼容性测试、安全测试 |
 | 测试环境 | 微信小程序环境、iOS/Android真机 |
@@ -825,11 +825,11 @@
 
 | 环境 | 地址 | 用途 |
 |:---|:---|:---|
-| 开发环境 | dev.quandouxing.com | 开发自测 |
-| 测试环境 | test.quandouxing.com | 功能/接口/安全测试 |
-| 性能环境 | perf.quandouxing.com | 性能/压力测试 |
-| 预发布环境 | staging.quandouxing.com | 回归/UAT测试 |
-| 生产环境 | quandouxing.com | 线上灰度/全量 |
+| 开发环境 | dev.petway.com | 开发自测 |
+| 测试环境 | test.petway.com | 功能/接口/安全测试 |
+| 性能环境 | perf.petway.com | 性能/压力测试 |
+| 预发布环境 | staging.petway.com | 回归/UAT测试 |
+| 生产环境 | petway.com | 线上灰度/全量 |
 
 ---
 

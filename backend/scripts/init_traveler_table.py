@@ -17,7 +17,7 @@ async def init_traveler_table():
         # 检查表是否存在
         result = await conn.execute(text("""
             SELECT COUNT(*) FROM information_schema.tables 
-            WHERE table_schema = 'quandouxing' AND table_name = 'travelers'
+            WHERE table_schema = 'petway' AND table_name = 'travelers'
         """))
         exists = result.scalar() > 0
         

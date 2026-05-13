@@ -1,4 +1,4 @@
-# 犬兜行 - 启动所有后端服务
+# 尾巴旅行 - 启动所有后端服务
 # 使用方式: 右键选择"使用 PowerShell 运行"
 
 $ErrorActionPreference = "Continue"

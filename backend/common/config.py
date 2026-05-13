@@ -16,7 +16,7 @@ class DatabaseConfig(BaseSettings):
     port: int = 3306
     username: str = "root"
     password: str = "root"
-    database: str = "quandouxing"
+    database: str = "petway"
     charset: str = "utf8mb4"
     
     @property
@@ -58,7 +58,7 @@ class OSSConfig(BaseSettings):
 class Settings(BaseSettings):
     """全局配置"""
     # 服务配置
-    app_name: str = "quandouxing-service"
+    app_name: str = "petway-service"
     app_port: int = 8000
     debug: bool = False
     

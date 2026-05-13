@@ -34,7 +34,7 @@ settings.app_port = 8003
 logger = setup_logger("order-service")
 
 # 核销密钥（应与环境变量或配置中心同步）
-VERIFY_SECRET = os.getenv("ORDER_VERIFY_SECRET", "quandouxing-verify-secret-2024")
+VERIFY_SECRET = os.getenv("ORDER_VERIFY_SECRET", "petway-verify-secret-2024")
 
 
 def generate_verify_code(order_no: str) -> str:

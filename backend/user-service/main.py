@@ -53,7 +53,7 @@ async def lifespan(app: FastAPI):
 # 创建FastAPI应用
 app = FastAPI(
     title="用户服务",
-    description="犬兜行 - 用户注册/登录/档案/会员服务",
+    description="尾巴旅行 - 用户注册/登录/档案/会员服务",
     version="1.0.0",
     lifespan=lifespan,
 )

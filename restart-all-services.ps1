@@ -1,10 +1,10 @@
-# 犬兜行项目 - 一键终止并重启所有后端服务
+# 尾巴旅行项目 - 一键终止并重启所有后端服务
 # 使用说明: 在 PowerShell 中运行 .\restart-all-services.ps1
 
 $ErrorActionPreference = "Stop"
 
 Write-Host "========================================" -ForegroundColor Cyan
-Write-Host "  犬兜行项目 - 重启所有后端服务" -ForegroundColor Cyan
+Write-Host "  尾巴旅行项目 - 重启所有后端服务" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
 

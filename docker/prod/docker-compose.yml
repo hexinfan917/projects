@@ -3,10 +3,10 @@ version: '3.8'
 services:
   mysql:
     image: mysql:8.0
-    container_name: quandouxing-mysql
+    container_name: petway-mysql
     environment:
       MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
-      MYSQL_DATABASE: quandouxing
+      MYSQL_DATABASE: petway
       MYSQL_USER: ${DB_USER}
       MYSQL_PASSWORD: ${DB_PASSWORD}
     volumes:
@@ -14,21 +14,26 @@ services:
     command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4
     restart: always
     networks:
-      - quandouxing-network
+      - petway-network
 
   redis:
     image: redis:7-alpine
-    container_name: quandouxing-redis
+    container_name: petway-redis
     volumes:
       - redis_data:/data
     command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
     restart: always
     networks:
-      - quandouxing-network
+      - petway-network
 
   user-service:
-    image: quandouxing/user-service:latest
-    container_name: quandouxing-user-service
+    build:
+      context: ../..
+      dockerfile: docker/Dockerfile.service
+      args:
+        SERVICE_NAME: user-service
+    image: petway/user-service:latest
+    container_name: petway-user-service
     environment:
       - DB_HOST=mysql
       - DB_PASSWORD=${DB_PASSWORD}
@@ -37,11 +42,16 @@ services:
       - JWT_SECRET=${JWT_SECRET}
     restart: always
     networks:
-      - quandouxing-network
+      - petway-network
 
   route-service:
-    image: quandouxing/route-service:latest
-    container_name: quandouxing-route-service
+    build:
+      context: ../..
+      dockerfile: docker/Dockerfile.service
+      args:
+        SERVICE_NAME: route-service
+    image: petway/route-service:latest
+    container_name: petway-route-service
     environment:
       - DB_HOST=mysql
       - DB_PASSWORD=${DB_PASSWORD}
@@ -49,11 +59,16 @@ services:
       - REDIS_PASSWORD=${REDIS_PASSWORD}
     restart: always
     networks:
-      - quandouxing-network
+      - petway-network
 
   order-service:
-    image: quandouxing/order-service:latest
-    container_name: quandouxing-order-service
+    build:
+      context: ../..
+      dockerfile: docker/Dockerfile.service
+      args:
+        SERVICE_NAME: order-service
+    image: petway/order-service:latest
+    container_name: petway-order-service
     environment:
       - DB_HOST=mysql
       - DB_PASSWORD=${DB_PASSWORD}
@@ -61,11 +76,16 @@ services:
       - REDIS_PASSWORD=${REDIS_PASSWORD}
     restart: always
     networks:
-      - quandouxing-network
+      - petway-network
 
   gateway:
-    image: quandouxing/gateway:latest
-    container_name: quandouxing-gateway
+    build:
+      context: ../..
+      dockerfile: docker/Dockerfile.service
+      args:
+        SERVICE_NAME: gateway
+    image: petway/gateway:latest
+    container_name: petway-gateway
     ports:
       - "80:8000"
     environment:
@@ -77,12 +97,12 @@ services:
       - order-service
     restart: always
     networks:
-      - quandouxing-network
+      - petway-network
 
 volumes:
   mysql_data:
   redis_data:
 
 networks:
-  quandouxing-network:
+  petway-network:
     driver: bridge

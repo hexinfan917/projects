@@ -1,10 +1,10 @@
-# 犬兜行开发环境一键启动脚本
+# 尾巴旅行开发环境一键启动脚本
 # 同时启动后端服务和前端小程序开发服务器
 
 $ProjectRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 
 Write-Host "========================================" -ForegroundColor Cyan
-Write-Host "  犬兜行开发环境启动" -ForegroundColor Cyan
+Write-Host "  尾巴旅行开发环境启动" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
 

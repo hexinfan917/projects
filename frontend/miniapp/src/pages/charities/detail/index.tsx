@@ -79,7 +79,7 @@ export default function CharityDetail() {
 
   if (!detail) return null
 
-  const coverImage = detail.cover_image ? (detail.cover_image.startsWith('http') ? detail.cover_image : `http://localhost:8081${detail.cover_image}`) : ''
+  const coverImage = detail.cover_image ? (detail.cover_image.startsWith('http') ? detail.cover_image : `https://tailtravel.westilt.com${detail.cover_image}`) : ''
   const statusMap: Record<string, string> = {
     '1': '报名中',
     '2': '进行中',
@@ -99,7 +99,7 @@ export default function CharityDetail() {
   }
   galleryImages = galleryImages.filter((url: string) => url !== detail.cover_image)
 
-  const getFullImageUrl = (url: string) => url.startsWith('http') ? url : `http://localhost:8081${url}`
+  const getFullImageUrl = (url: string) => url.startsWith('http') ? url : `https://tailtravel.westilt.com${url}`
 
   // 处理 RichText 内容中的图片，使其自适应宽度
   const processedContent = detail.content

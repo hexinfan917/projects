@@ -2,7 +2,7 @@
 # 使用说明: 修改 $MiniProgramPath 变量为你的小程序项目路径，然后运行此脚本
 
 param(
-    [string]$MiniProgramPath = "",  # 小程序项目路径，如 "C:\projects\quandouxing-miniapp"
+    [string]$MiniProgramPath = "",  # 小程序项目路径，如 "C:\projects\petway-miniapp"
     [string]$OldPort = "8080",       # 原端口
     [string]$NewPort = "8084"        # 新端口
 )
@@ -15,11 +15,11 @@ Write-Host ""
 # 如果没有提供路径，尝试常见路径
 if (-not $MiniProgramPath) {
     $possiblePaths = @(
-        "C:\projects\quandouxing-miniapp",
-        "D:\projects\quandouxing-miniapp",
-        "C:\Users\$env:USERNAME\Documents\quandouxing-miniapp",
-        "C:\Users\$env:USERNAME\Desktop\quandouxing-miniapp",
-        "$PSScriptRoot\..\quandouxing-miniapp",
+        "C:\projects\petway-miniapp",
+        "D:\projects\petway-miniapp",
+        "C:\Users\$env:USERNAME\Documents\petway-miniapp",
+        "C:\Users\$env:USERNAME\Desktop\petway-miniapp",
+        "$PSScriptRoot\..\petway-miniapp",
         "$PSScriptRoot\frontend\miniprogram"
     )
     
@@ -36,7 +36,7 @@ if (-not $MiniProgramPath -or -not (Test-Path $MiniProgramPath)) {
     Write-Host "错误: 未找到小程序项目" -ForegroundColor Red
     Write-Host ""
     Write-Host "请提供小程序项目路径，例如:" -ForegroundColor Yellow
-    Write-Host "  .\update-miniprogram-api.ps1 -MiniProgramPath \"C:\\projects\\quandouxing-miniapp\"" -ForegroundColor White
+    Write-Host "  .\update-miniprogram-api.ps1 -MiniProgramPath \"C:\\projects\\petway-miniapp\"" -ForegroundColor White
     Write-Host ""
     exit 1
 }

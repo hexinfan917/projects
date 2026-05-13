@@ -27,7 +27,7 @@ async def init_route_richtext():
             # 检查字段是否已存在
             result = await conn.execute(text(f"""
                 SELECT COUNT(*) FROM information_schema.columns 
-                WHERE table_schema = 'quandouxing' 
+                WHERE table_schema = 'petway' 
                 AND table_name = 'routes' 
                 AND column_name = '{col_name}'
             """))

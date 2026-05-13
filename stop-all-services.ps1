@@ -1,8 +1,8 @@
-# 犬兜行项目 - 停止所有服务
+# 尾巴旅行项目 - 停止所有服务
 # 使用说明: 在 PowerShell 中运行 .\stop-all-services.ps1
 
 Write-Host "========================================" -ForegroundColor Red
-Write-Host "  犬兜行项目 - 停止所有服务" -ForegroundColor Red
+Write-Host "  尾巴旅行项目 - 停止所有服务" -ForegroundColor Red
 Write-Host "========================================" -ForegroundColor Red
 Write-Host ""
 

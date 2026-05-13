@@ -1,7 +1,7 @@
-# 犬兜行 - Windows PowerShell 项目初始化脚本
+# 尾巴旅行 - Windows PowerShell 项目初始化脚本
 
 Write-Host "========================================" -ForegroundColor Green
-Write-Host "  犬兜行项目初始化 (Windows)" -ForegroundColor Green
+Write-Host "  尾巴旅行项目初始化 (Windows)" -ForegroundColor Green
 Write-Host "========================================" -ForegroundColor Green
 
 $projectRoot = $PSScriptRoot

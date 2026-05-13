@@ -4,7 +4,7 @@ import { View, Text, Input, Button, Image } from '@tarojs/components'
 import { getUserProfile, updateUserProfile, uploadFile } from '../../../utils/api'
 import './index.scss'
 
-const BASE_URL = 'http://localhost:8081'
+const BASE_URL = 'https://tailtravel.westilt.com'
 
 function fullImageUrl(url?: string) {
   if (!url) return ''

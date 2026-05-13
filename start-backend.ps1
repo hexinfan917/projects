@@ -1,4 +1,4 @@
-# 犬兜行后端服务一键启动脚本
+# 尾巴旅行后端服务一键启动脚本
 param(
     [string]$Service = "all"
 )
@@ -19,7 +19,7 @@ $Red = "Red"
 $Cyan = "Cyan"
 
 Write-Host "========================================" -ForegroundColor $Cyan
-Write-Host "  犬兜行后端服务启动脚本" -ForegroundColor $Cyan
+Write-Host "  尾巴旅行后端服务启动脚本" -ForegroundColor $Cyan
 Write-Host "========================================" -ForegroundColor $Cyan
 Write-Host ""
 

@@ -51,7 +51,7 @@ def start_service(service):
 def main():
     """主函数"""
     print("=" * 60)
-    print("犬兜行 - 后端服务启动工具")
+    print("尾巴旅行 - 后端服务启动工具")
     print("=" * 60)
     
     # 检查服务状态

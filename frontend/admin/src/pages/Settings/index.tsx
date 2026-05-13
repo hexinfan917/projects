@@ -63,7 +63,7 @@ export default function Settings() {
           layout="vertical"
           onFinish={handleSave}
           initialValues={{
-            site_name: '犬兜行',
+            site_name: '尾巴旅行',
             site_description: '带宠出行，探索世界',
           }}
         >

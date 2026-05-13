@@ -1,6 +1,6 @@
 import pymysql
 
-conn = pymysql.connect(host='localhost', port=3306, user='root', password='root', database='quandouxing', charset='utf8mb4')
+conn = pymysql.connect(host='localhost', port=3306, user='root', password='root', database='petway', charset='utf8mb4')
 cursor = conn.cursor()
 
 cursor.execute("ALTER TABLE orders ADD COLUMN coupon_id BIGINT UNSIGNED DEFAULT NULL COMMENT '使用的优惠券ID' AFTER pay_amount")

@@ -11,7 +11,7 @@
 ### 1. 找到小程序 API 配置文件
 通常位于：
 ```
-quandouxing-miniapp/
+petway-miniapp/
   ├── utils/api.js
   ├── utils/request.js
   ├── config.js

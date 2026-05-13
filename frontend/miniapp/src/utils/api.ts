@@ -1,6 +1,6 @@
 import Taro, { eventCenter } from '@tarojs/taro'
 
-export const BASE_URL = 'http://localhost:8081'
+export const BASE_URL = 'https://tailtravel.westilt.com'
 
 export function setActiveTab(index: number, expectedRoute: string) {
   const pages = Taro.getCurrentPages()

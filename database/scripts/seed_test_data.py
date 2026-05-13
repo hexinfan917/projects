@@ -1,7 +1,7 @@
 import pymysql
 import json
 
-conn = pymysql.connect(host='localhost', port=3306, user='root', password='root', database='quandouxing', charset='utf8mb4')
+conn = pymysql.connect(host='localhost', port=3306, user='root', password='root', database='petway', charset='utf8mb4')
 cursor = conn.cursor()
 
 # 1. 插入优惠券模板（用于会员购买赠送）

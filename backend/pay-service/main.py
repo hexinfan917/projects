@@ -232,7 +232,7 @@ async def create_payment(
     """
     order_no = data.get("order_no")
     amount = data.get("amount")
-    description = data.get("description", "犬兜行-订单支付")
+    description = data.get("description", "尾巴旅行-订单支付")
     method = data.get("method", "mock")
     openid = data.get("openid", current_user.get("openid", ""))
     
