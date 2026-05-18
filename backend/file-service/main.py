@@ -15,8 +15,8 @@ from pydantic import BaseModel
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from fastapi import FastAPI, File, UploadFile, HTTPException, Depends
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi import FastAPI, File, UploadFile, HTTPException, Depends, Query
+from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
 from common.config import settings
@@ -54,8 +54,9 @@ except Exception as e:
     logger.error(f"OSS init failed: {e}, using local storage")
 
 # 上传配置
-UPLOAD_DIR = Path(__file__).parent / "uploads"
-UPLOAD_DIR.mkdir(exist_ok=True)
+UPLOAD_DIR = Path(os.getenv("UPLOAD_DIR", str(Path(__file__).parent / "uploads")))
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+logger.info(f"File upload directory: {UPLOAD_DIR}")
 
 # 允许的文件类型
 ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/gif", "image/webp", "image/jpg"}
@@ -163,8 +164,8 @@ async def save_upload_file(upload_file: UploadFile, folder: str = "") -> dict:
             logger.error(f"Failed to save file: {e}")
             raise HTTPException(status_code=500, detail="文件保存失败")
         
-        base_url = os.getenv("FILE_PUBLIC_BASE_URL", "http://localhost:8081")
-        file_url = f"{base_url}/api/v1/files/static/{object_key}"
+        # 返回相对路径，前端根据当前域名自动拼接，适配任何部署环境
+        file_url = f"/api/v1/files/static/{object_key}"
     
     upload_file.file.close()
     
@@ -347,16 +348,8 @@ async def upload_video(file: UploadFile = File(...)):
     return success(result)
 
 
-@app.get("/api/v1/files/static/{folder}/{date}/{filename}")
-async def serve_file(folder: str, date: str, filename: str):
-    """提供文件访问"""
-    file_path = UPLOAD_DIR / folder / date / filename
-    
-    if not file_path.exists():
-        raise HTTPException(status_code=404, detail="文件不存在")
-    
-    # 根据扩展名确定 content_type
-    ext = Path(filename).suffix.lower()
+def _get_content_type(ext: str) -> str:
+    """根据扩展名确定 content_type"""
     content_type_map = {
         ".jpg": "image/jpeg",
         ".jpeg": "image/jpeg",
@@ -366,9 +359,69 @@ async def serve_file(folder: str, date: str, filename: str):
         ".mp4": "video/mp4",
         ".mov": "video/quicktime",
     }
-    content_type = content_type_map.get(ext, "application/octet-stream")
+    return content_type_map.get(ext, "application/octet-stream")
+
+
+@app.get("/api/v1/files/static/{folder}/{date}/{filename}")
+async def serve_file(
+    folder: str,
+    date: str,
+    filename: str,
+    w: int = Query(None, ge=1, le=1920, description="最大宽度(px)"),
+    q: int = Query(None, ge=1, le=100, description="JPEG质量(1-100)")
+):
+    """提供文件访问，支持图片动态压缩 (w=宽度, q=质量)"""
+    file_path = UPLOAD_DIR / folder / date / filename
     
-    return FileResponse(str(file_path), media_type=content_type)
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="文件不存在")
+    
+    ext = Path(filename).suffix.lower()
+    content_type = _get_content_type(ext)
+    
+    # 无压缩参数或非图片文件，直接返回原文件
+    if (w is None and q is None) or ext not in {".jpg", ".jpeg", ".png", ".webp"}:
+        return FileResponse(str(file_path), media_type=content_type)
+    
+    # 构建缩略图缓存路径
+    cache_dir = UPLOAD_DIR / ".thumb" / folder / date
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    cache_name = f"{Path(filename).stem}_w{w or 0}_q{q or 85}.jpg"
+    cache_path = cache_dir / cache_name
+    
+    # 缓存命中直接返回
+    if cache_path.exists():
+        return FileResponse(str(cache_path), media_type="image/jpeg")
+    
+    try:
+        from PIL import Image
+        
+        with Image.open(file_path) as img:
+            # 按宽度等比缩放
+            if w and img.width > w:
+                ratio = w / img.width
+                new_height = int(img.height * ratio)
+                img = img.resize((w, new_height), Image.LANCZOS)
+            
+            # 统一转 RGB (处理 PNG透明通道、P模式等)
+            if img.mode in ("RGBA", "P"):
+                # 透明背景转白色背景
+                background = Image.new("RGB", img.size, (255, 255, 255))
+                if img.mode == "P":
+                    img = img.convert("RGBA")
+                background.paste(img, mask=img.split()[3])
+                img = background
+            elif img.mode != "RGB":
+                img = img.convert("RGB")
+            
+            quality = q or 75
+            img.save(cache_path, format="JPEG", quality=quality, optimize=True)
+        
+        return FileResponse(str(cache_path), media_type="image/jpeg")
+    
+    except Exception as e:
+        logger.warning(f"图片压缩失败，返回原图: {e}")
+        return FileResponse(str(file_path), media_type=content_type)
 
 
 @app.delete("/api/v1/files/{folder}/{date}/{filename}")

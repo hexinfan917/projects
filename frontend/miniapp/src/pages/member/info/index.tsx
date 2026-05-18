@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import Taro from '@tarojs/taro'
-import { View, Text, Input, Button } from '@tarojs/components'
+import { View, Text, Input, Button , Image } from '@tarojs/components'
 import { updateUserProfile } from '../../../utils/api'
 import './index.scss'
 
@@ -69,7 +69,7 @@ export default function MemberInfo() {
               Taro.redirectTo({ url: '/pages/member/center/index' })
             }
           }}>
-            <Text className='page-back-icon'>←</Text>
+            <Image className='page-back-icon' src='/assets/icons/return.png' mode='aspectFit' />
           </View>
           <Text className='navbar-title'>完善个人信息</Text>
         </View>

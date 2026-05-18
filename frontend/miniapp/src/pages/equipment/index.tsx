@@ -19,7 +19,7 @@ export default function Equipment() {
     <View className='equipment-page' style={{ paddingTop: '140rpx' }}>
 
         <View className='page-back' onClick={() => Taro.navigateBack()}>
-          <Text className='page-back-icon'>←</Text>
+          <Image className='page-back-icon' src='/assets/icons/return.png' mode='aspectFit' />
         </View>
       <ScrollView className='cat-scroll' scrollX>
         {CATEGORIES.map(c => (

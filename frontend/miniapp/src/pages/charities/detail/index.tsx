@@ -79,7 +79,7 @@ export default function CharityDetail() {
 
   if (!detail) return null
 
-  const coverImage = detail.cover_image ? (detail.cover_image.startsWith('http') ? detail.cover_image : `https://tailtravel.westilt.com${detail.cover_image}`) : ''
+  const coverImage = detail.cover_image ? (detail.cover_image.startsWith('http') ? detail.cover_image : `https://tailtravel.westilt.com${detail.cover_image}`) + '?w=750&q=75' : ''
   const statusMap: Record<string, string> = {
     '1': '报名中',
     '2': '进行中',
@@ -99,7 +99,7 @@ export default function CharityDetail() {
   }
   galleryImages = galleryImages.filter((url: string) => url !== detail.cover_image)
 
-  const getFullImageUrl = (url: string) => url.startsWith('http') ? url : `https://tailtravel.westilt.com${url}`
+  const getFullImageUrl = (url: string) => url.startsWith('http') ? url + '?w=800&q=75' : `https://tailtravel.westilt.com${url}?w=800&q=75`
 
   // 处理 RichText 内容中的图片，使其自适应宽度
   const processedContent = detail.content
@@ -146,7 +146,7 @@ export default function CharityDetail() {
         {/* Cover 图片 */}
         <View className='cover-wrap'>
           <View className='detail-back' onClick={() => Taro.navigateBack()}>
-            <Text className='detail-back-icon'>←</Text>
+            <Image className='detail-back-icon' src='/assets/icons/return.png' mode='aspectFit' />
           </View>
           {coverImage && (
             <Image className='detail-cover' src={coverImage} mode='aspectFill' />
@@ -181,6 +181,7 @@ export default function CharityDetail() {
                     className='gallery-image'
                     src={getFullImageUrl(url)}
                     mode='aspectFill'
+                    lazyLoad
                     onClick={() => {
                       Taro.previewImage({
                         current: getFullImageUrl(url),

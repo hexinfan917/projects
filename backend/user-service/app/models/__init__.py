@@ -5,5 +5,12 @@ from .setting import SystemSetting
 from .operation_log import OperationLog
 from .member import MemberPlan, UserMembership, MemberOrder
 from .popup import PopupConfig, UserPopupLog
+from .admin_user import AdminUser
+from .admin_role import AdminRole, admin_role_menus
+from .admin_menu import AdminMenu
 
-__all__ = ["User", "PetProfile", "Traveler", "SystemSetting", "OperationLog", "MemberPlan", "UserMembership", "MemberOrder", "PopupConfig", "UserPopupLog"]
+__all__ = [
+    "User", "PetProfile", "Traveler", "SystemSetting", "OperationLog",
+    "MemberPlan", "UserMembership", "MemberOrder", "PopupConfig", "UserPopupLog",
+    "AdminUser", "AdminRole", "admin_role_menus", "AdminMenu",
+]

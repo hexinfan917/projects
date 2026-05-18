@@ -97,7 +97,7 @@ export default function BannerManage() {
         requestType: 'form',
       });
       if (res.code === 200 && res.data?.url) {
-        const url = res.data.url.startsWith('http') ? res.data.url : `http://localhost:8081${res.data.url}`;
+        const url = res.data.url;
         setImageUrl(url);
         message.success('上传成功');
       } else {

@@ -37,7 +37,11 @@ export default defineAppConfig({
     'pages/member/pay/index',
     'pages/member/coupons/index',
     'pages/coupons/center/index',
-    'pages/coupons/list/index'
+    'pages/coupons/list/index',
+    'pages/coupons/detail/index',
+    'pages/agreements/detail/index',
+    // 'pages/community/detail/index',
+    // 'pages/map/detail/index'
   ],
   window: {
     backgroundTextStyle: 'light',

@@ -122,6 +122,13 @@
       color: #9CA3AF;
       display: block;
     }
+    .coupon-no {
+      font-size: 20rpx;
+      color: #3B82F6;
+      display: block;
+      margin-top: 4rpx;
+      font-family: monospace;
+    }
     .expire-soon {
       position: absolute;
       right: 24rpx;
@@ -131,6 +138,19 @@
       background: rgba(239,68,68,0.1);
       padding: 2rpx 10rpx;
       border-radius: 6rpx;
+    }
+    .use-btn {
+      position: absolute;
+      right: 24rpx;
+      bottom: 24rpx;
+      background: linear-gradient(135deg, #22C55E 0%, #4ADE80 100%);
+      padding: 8rpx 24rpx;
+      border-radius: 28rpx;
+      .use-btn-text {
+        font-size: 24rpx;
+        color: #fff;
+        font-weight: 500;
+      }
     }
   }
 }

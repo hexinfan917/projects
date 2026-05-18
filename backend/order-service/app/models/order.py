@@ -44,6 +44,7 @@ class Order(Base):
     pay_time: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True, comment="支付时间")
     pay_channel: Mapped[Optional[str]] = mapped_column(String(20), nullable=True, comment="支付渠道")
     pay_trade_no: Mapped[Optional[str]] = mapped_column(String(64), nullable=True, comment="第三方支付流水号")
+    pay_transaction_id: Mapped[Optional[str]] = mapped_column(String(64), nullable=True, comment="微信支付单号")
     
     # 退款信息
     refund_amount: Mapped[float] = mapped_column(DECIMAL(10, 2), default=0, comment="退款金额")

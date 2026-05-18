@@ -29,6 +29,7 @@ const config = {
     enable: false
   },
   mini: {
+    enableSourceMap: false,
     postcss: {
       pxtransform: {
         enable: true,

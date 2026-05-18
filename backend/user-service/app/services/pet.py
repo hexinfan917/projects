@@ -75,6 +75,11 @@ class PetService:
         
         # 删除不需要的字段
         data.pop('breed_type', None)
+
+        # 将 None 的可选字段替换为空字符串，避免数据库 NOT NULL 报错
+        for field in ['breed', 'avatar', 'health_notes']:
+            if update_data.get(field) is None:
+                update_data[field] = ''
         
         # 如果设置为默认，先将其他宠物设为非默认
         if is_default == 1:
@@ -139,6 +144,11 @@ class PetService:
         
         # 删除不需要的字段
         update_data.pop('breed_type', None)
+
+        # 将 None 的可选字段替换为空字符串，避免数据库 NOT NULL 报错
+        for field in ['breed', 'avatar', 'health_notes']:
+            if update_data.get(field) is None:
+                update_data[field] = ''
         
         # 如果设置为默认，先将其他宠物设为非默认
         if update_data.get('is_default') == 1 and pet.is_default != 1:

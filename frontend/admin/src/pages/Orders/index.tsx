@@ -1,5 +1,5 @@
 import { PageContainer, ProTable, ModalForm, ProFormSelect, ProFormTextArea } from '@ant-design/pro-components';
-import { Button, Tag, Modal, Descriptions, message, Image, Card, Row, Col, Divider } from 'antd';
+import { Button, Tag, Modal, Descriptions, message, Image, Card, Row, Col, Divider, Table } from 'antd';
 import { EyeOutlined, ExportOutlined, MoneyCollectOutlined } from '@ant-design/icons';
 import { useRef, useState } from 'react';
 import { request } from '@umijs/max';
@@ -31,6 +31,10 @@ export default function OrderList() {
   const [refundModalVisible, setRefundModalVisible] = useState(false);
   const [currentOrder, setCurrentOrder] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+
+  // 从 URL 获取 order_no 参数（会员列表跳转过来时携带）
+  const urlParams = new URLSearchParams(window.location.search);
+  const orderNoFromUrl = urlParams.get('order_no');
 
   const handleViewDetail = async (record: any) => {
     try {
@@ -221,6 +225,7 @@ export default function OrderList() {
               page_size: params.pageSize,
               status: params.status,
               keyword: params.route_name,
+              order_no: orderNoFromUrl || undefined,
             },
           });
           return {
@@ -266,6 +271,7 @@ export default function OrderList() {
                     <Descriptions.Item label="用户ID">{currentOrder.user_id}</Descriptions.Item>
                     <Descriptions.Item label="支付时间">{currentOrder.pay_time ? dayjs(currentOrder.pay_time).format('YYYY-MM-DD HH:mm:ss') : '-'}</Descriptions.Item>
                     <Descriptions.Item label="支付方式">{currentOrder.pay_channel || '-'}</Descriptions.Item>
+                    <Descriptions.Item label="微信支付单号">{currentOrder.pay_transaction_id || '-'}</Descriptions.Item>
                   </Descriptions>
                 </Col>
               </Row>
@@ -274,8 +280,12 @@ export default function OrderList() {
             <Card title="路线信息" size="small" style={{ marginBottom: 16 }}>
               <Row gutter={16}>
                 <Col span={8}>
-                  {currentOrder.route_cover && (
-                    <Image src={currentOrder.route_cover} style={{ width: '100%', borderRadius: 4 }} />
+                  {currentOrder.route_cover ? (
+                    <Image src={currentOrder.route_cover} style={{ width: '100%', borderRadius: 4, maxHeight: 160, objectFit: 'cover' }} />
+                  ) : (
+                    <div style={{ width: '100%', height: 120, background: '#f0f0f0', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#999' }}>
+                      暂无封面图
+                    </div>
                   )}
                 </Col>
                 <Col span={16}>
@@ -293,31 +303,64 @@ export default function OrderList() {
               <Descriptions column={2} size="small">
                 <Descriptions.Item label="路线单价">¥{currentOrder.route_price?.toFixed(2)}</Descriptions.Item>
                 <Descriptions.Item label="保险费用">¥{currentOrder.insurance_price?.toFixed(2)}</Descriptions.Item>
+                <Descriptions.Item label="装备费用">¥{currentOrder.equipment_price?.toFixed(2)}</Descriptions.Item>
+                <Descriptions.Item label="选装费用">¥{currentOrder.addon_amount?.toFixed(2)}</Descriptions.Item>
                 <Descriptions.Item label="优惠金额">-¥{currentOrder.discount_amount?.toFixed(2)}</Descriptions.Item>
-                <Descriptions.Item label="实付金额">
+                <Descriptions.Item label="订单总额">
+                  <span>¥{currentOrder.total_amount?.toFixed(2)}</span>
+                </Descriptions.Item>
+                <Descriptions.Item label="实付金额" span={2}>
                   <span style={{ color: '#cf1322', fontSize: 16, fontWeight: 'bold' }}>¥{currentOrder.pay_amount?.toFixed(2)}</span>
                 </Descriptions.Item>
               </Descriptions>
             </Card>
 
-            {currentOrder.participants && (
-              <Card title="出行人信息" size="small" style={{ marginBottom: 16 }}>
-                {(currentOrder.participants || []).map((p: any, idx: number) => (
-                  <div key={idx} style={{ marginBottom: 8 }}>
-                    <Tag color="blue">{p.name}</Tag>
-                    <span style={{ marginLeft: 8 }}>{p.phone}</span>
-                    {p.id_card && <span style={{ marginLeft: 8, color: '#999' }}>身份证: {p.id_card}</span>}
-                  </div>
-                ))}
+            {/* 出行人信息（同行人） */}
+            {currentOrder.participants && currentOrder.participants.length > 0 && (
+              <Card title="出行人信息（同行人）" size="small" style={{ marginBottom: 16 }}>
+                <Table
+                  size="small"
+                  pagination={false}
+                  bordered
+                  dataSource={currentOrder.participants}
+                  columns={[
+                    { title: '姓名', dataIndex: 'name', key: 'name' },
+                    { title: '手机号', dataIndex: 'phone', key: 'phone', render: (v: string) => v || '-' },
+                    { title: '身份证号', dataIndex: 'id_card', key: 'id_card', render: (v: string) => v || '-' },
+                    { title: '性别', dataIndex: 'gender', key: 'gender', render: (v: number) => v === 1 ? '男' : v === 2 ? '女' : '未知' },
+                  ]}
+                  rowKey={(record: any, idx: number) => record.id || idx}
+                />
               </Card>
             )}
 
+            {/* 联系人信息（默认出行人） */}
             {currentOrder.contact && (
-              <Card title="联系人信息" size="small">
+              <Card title="联系人信息（默认出行人）" size="small" style={{ marginBottom: 16 }}>
                 <Descriptions column={2} size="small">
-                  <Descriptions.Item label="姓名">{currentOrder.contact.name}</Descriptions.Item>
-                  <Descriptions.Item label="手机">{currentOrder.contact.phone}</Descriptions.Item>
+                  <Descriptions.Item label="姓名">{currentOrder.contact.name || '-'}</Descriptions.Item>
+                  <Descriptions.Item label="手机">{currentOrder.contact.phone || '-'}</Descriptions.Item>
+                  <Descriptions.Item label="身份证号">{currentOrder.contact.id_card || '-'}</Descriptions.Item>
                 </Descriptions>
+              </Card>
+            )}
+
+            {/* 宠物信息 */}
+            {currentOrder.pets && currentOrder.pets.length > 0 && (
+              <Card title="宠物信息" size="small" style={{ marginBottom: 16 }}>
+                <Table
+                  size="small"
+                  pagination={false}
+                  bordered
+                  dataSource={currentOrder.pets}
+                  columns={[
+                    { title: '宠物名', dataIndex: 'name', key: 'name' },
+                    { title: '品种', dataIndex: 'breed', key: 'breed', render: (v: string) => v || '-' },
+                    { title: '性别', dataIndex: 'gender', key: 'gender', render: (v: number) => v === 1 ? '公' : v === 2 ? '母' : '未知' },
+                    { title: '体重(kg)', dataIndex: 'weight', key: 'weight', render: (v: number) => v ? v.toFixed(1) : '-' },
+                  ]}
+                  rowKey={(record: any, idx: number) => record.id || idx}
+                />
               </Card>
             )}
           </>

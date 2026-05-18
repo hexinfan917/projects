@@ -42,6 +42,7 @@ class Route(Base):
     is_safety_required: Mapped[int] = mapped_column(Integer, default=1, comment="是否强制观看")
     is_hot: Mapped[int] = mapped_column(Integer, default=0, comment="0非热门 1热门")
     status: Mapped[int] = mapped_column(Integer, default=1, comment="0下架 1上架")
+    sort_order: Mapped[int] = mapped_column(Integer, default=0, comment="排序值，越小越靠前")
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())
     

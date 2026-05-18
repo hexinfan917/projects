@@ -14,7 +14,7 @@ class CouponTemplate(Base):
     
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(100), nullable=False, comment="优惠券名称")
-    type: Mapped[int] = mapped_column(Integer, nullable=False, comment="1满减券 2折扣券 3立减券")
+    type: Mapped[int] = mapped_column(Integer, nullable=False, comment="1满减券 2折扣券 3立减券 4礼品券")
     value: Mapped[float] = mapped_column(DECIMAL(10, 2), nullable=False, comment="优惠值")
     min_amount: Mapped[float] = mapped_column(DECIMAL(10, 2), default=0, comment="最低订单金额门槛")
     max_discount: Mapped[float] = mapped_column(DECIMAL(10, 2), default=0, comment="折扣券最高优惠金额")
@@ -44,7 +44,7 @@ class UserCoupon(Base):
     template_id: Mapped[int] = mapped_column(Integer, nullable=False, comment="模板ID")
     coupon_no: Mapped[str] = mapped_column(String(32), unique=True, nullable=False, comment="券编号")
     name: Mapped[str] = mapped_column(String(100), nullable=False, comment="券名称")
-    type: Mapped[int] = mapped_column(Integer, nullable=False, comment="1满减券 2折扣券 3立减券")
+    type: Mapped[int] = mapped_column(Integer, nullable=False, comment="1满减券 2折扣券 3立减券 4礼品券")
     value: Mapped[float] = mapped_column(DECIMAL(10, 2), nullable=False)
     min_amount: Mapped[float] = mapped_column(DECIMAL(10, 2), default=0)
     max_discount: Mapped[float] = mapped_column(DECIMAL(10, 2), default=0)
@@ -57,4 +57,5 @@ class UserCoupon(Base):
     used_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True, comment="使用时间")
     source_type: Mapped[int] = mapped_column(Integer, default=1, comment="来源类型")
     source_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, comment="来源业务ID")
+    description: Mapped[Optional[str]] = mapped_column(String(500), nullable=True, comment="使用说明（冗余模板描述）")
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())

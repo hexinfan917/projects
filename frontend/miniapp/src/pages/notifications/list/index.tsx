@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import Taro, { useDidShow } from '@tarojs/taro'
-import { View, Text, ScrollView } from '@tarojs/components'
+import { View, Text, ScrollView , Image } from '@tarojs/components'
 import { getNotifications, markNotificationRead, markAllNotificationsRead } from '../../../utils/api'
 import './index.scss'
 
@@ -80,7 +80,7 @@ export default function NotificationList() {
     <View className='notification-page' style={{ paddingTop: '140rpx' }}>
 
         <View className='page-back' onClick={() => Taro.navigateBack()}>
-          <Text className='page-back-icon'>←</Text>
+          <Image className='page-back-icon' src='/assets/icons/return.png' mode='aspectFit' />
         </View>
       <View className='notification-header'>
         <Text className='header-title'>消息通知</Text>

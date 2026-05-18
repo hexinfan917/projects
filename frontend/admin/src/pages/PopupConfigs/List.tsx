@@ -78,7 +78,7 @@ export default function PopupConfigList() {
 
   const handleSubmit = async (values: any) => {
     try {
-      const payload = {
+      const payload: any = {
         ...values,
         content: {
           benefits: values.content_benefits || [],
@@ -86,9 +86,15 @@ export default function PopupConfigList() {
           original_price: values.content_original_price || '',
         },
       };
-      delete (payload as any).content_benefits;
-      delete (payload as any).content_price_display;
-      delete (payload as any).content_original_price;
+      delete payload.content_benefits;
+      delete payload.content_price_display;
+      delete payload.content_original_price;
+      if (payload.start_time) {
+        payload.start_time = dayjs(payload.start_time).format('YYYY-MM-DD HH:mm:ss');
+      }
+      if (payload.end_time) {
+        payload.end_time = dayjs(payload.end_time).format('YYYY-MM-DD HH:mm:ss');
+      }
       const url = editData ? '/api/v1/admin/popups/' + editData.id : '/api/v1/admin/popups';
       const method = editData ? 'PUT' : 'POST';
       const res = await request(url, { method, data: payload });
@@ -188,7 +194,7 @@ export default function PopupConfigList() {
         width={700}
       >
         <ProFormText name="type" label="弹窗类型" rules={[{ required: true }]} initialValue="member_activity" />
-        <ProFormText name="title" label="标题" />
+        <ProFormText name="title" label="标题" rules={[{ required: true, message: '请输入标题' }]} />
         <ProFormText name="subtitle" label="副标题" />
         <ProFormText name="image" hidden />
         <Form.Item label="主图" shouldUpdate={(prev, next) => prev.image !== next.image}>

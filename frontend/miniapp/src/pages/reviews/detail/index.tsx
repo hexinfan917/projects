@@ -48,7 +48,7 @@ export default function ReviewDetail() {
 
   if (!detail) return null
 
-  const coverImage = detail.cover_image ? (detail.cover_image.startsWith('http') ? detail.cover_image : `https://tailtravel.westilt.com${detail.cover_image}`) : ''
+  const coverImage = detail.cover_image ? (detail.cover_image.startsWith('http') ? detail.cover_image : `https://tailtravel.westilt.com${detail.cover_image}`) + '?w=750&q=75' : ''
   
   // 解析图集
   let galleryImages: string[] = []
@@ -62,7 +62,7 @@ export default function ReviewDetail() {
   // 过滤掉封面图（避免重复显示）
   galleryImages = galleryImages.filter((url: string) => url !== detail.cover_image)
   
-  const getFullImageUrl = (url: string) => url.startsWith('http') ? url : `https://tailtravel.westilt.com${url}`
+  const getFullImageUrl = (url: string) => url.startsWith('http') ? url + '?w=800&q=75' : `https://tailtravel.westilt.com${url}?w=800&q=75`
 
   // 处理 RichText 内容中的图片，使其自适应宽度
   const processedContent = detail.content
@@ -91,7 +91,7 @@ export default function ReviewDetail() {
   return (
     <View className='review-detail-page'>
       <View className='page-back' onClick={() => Taro.navigateBack()}>
-        <Text className='page-back-icon'>←</Text>
+        <Image className='page-back-icon' src='/assets/icons/return.png' mode='aspectFit' />
       </View>
       <ScrollView className='scroll-container' scrollY>
         {coverImage && (
@@ -117,6 +117,7 @@ export default function ReviewDetail() {
                     className='gallery-image'
                     src={getFullImageUrl(url)}
                     mode='aspectFill'
+                    lazyLoad
                     onClick={() => {
                       Taro.previewImage({
                         current: getFullImageUrl(url),

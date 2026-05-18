@@ -2,8 +2,15 @@ import { useEffect, useState } from 'react'
 import Taro, { useDidShow } from '@tarojs/taro'
 import { View, Text, Image, Button } from '@tarojs/components'
 const logoIcon = '/assets/toplogo.png'
-import { getPets, deletePet, setActiveTab } from '../../../utils/api'
+import { getPets, deletePet, setActiveTab, compressImageUrl } from '../../../utils/api'
 import './index.scss'
+
+const BASE_URL = 'https://tailtravel.westilt.com'
+
+function fullImageUrl(url?: string) {
+  if (!url) return ''
+  return compressImageUrl(url, 200)
+}
 
 const GENDER_MAP: any = { 0: '母', 1: '公' }
 
@@ -91,7 +98,7 @@ export default function Pets() {
       </View>
       {pets.map(pet => (
         <View key={pet.id} className='pet-card'>
-          <Image className='pet-avatar' src={pet.avatar || 'https://via.placeholder.com/120'} mode='aspectFill' />
+          <Image className='pet-avatar' src={fullImageUrl(pet.avatar) || 'https://via.placeholder.com/120'} mode='aspectFill' />
           <View className='pet-info'>
             <View className='pet-header'>
               <Text className='pet-name'>{pet.name}</Text>

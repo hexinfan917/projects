@@ -2,10 +2,11 @@ import { useEffect, useState } from 'react'
 import Taro, { useDidShow } from '@tarojs/taro'
 import { View, Text, Image } from '@tarojs/components'
 const logoIcon = '/assets/toplogo.png'
-import { getUserProfile, setActiveTab, getMemberCenter, getUserCoupons } from '../../utils/api'
+import { getUserProfile, setActiveTab, getMemberCenter, getUserCoupons, compressImageUrl } from '../../utils/api'
 import './index.scss'
 
 const ICON_MAP: Record<string, string> = {
+  '会员中心': '/assets/icons/profile/vip.png',
   '优惠券': '/assets/icons/profile/coupon.png',
   '收藏夹': '/assets/icons/profile/favorite.png',
   '浏览足迹': '/assets/icons/profile/footprint.png',
@@ -57,11 +58,13 @@ export default function Profile() {
 
   const loadUser = () => {
     const token = Taro.getStorageSync('access_token')
+    console.log('[Profile] loadUser token=', token ? 'exists(' + token.substring(0, 10) + '...)' : 'missing')
     if (!token) {
       setUser(null)
       return
     }
-    getUserProfile().then(res => setUser(res.data)).catch(() => {
+    getUserProfile().then(res => setUser(res.data)).catch((err) => {
+      console.error('[Profile] getUserProfile failed:', err)
       const cache = Taro.getStorageSync('user_info')
       if (cache) setUser(cache)
     })
@@ -165,7 +168,7 @@ export default function Profile() {
       <View className='user-header'>
         <View className='user-top'>
           {user?.avatar ? (
-            <Image className='avatar' src={user.avatar} mode='aspectFill' style={{ width: '120rpx', height: '120rpx' }} />
+            <Image className='avatar' src={compressImageUrl(user.avatar, 200)} mode='aspectFill' style={{ width: '120rpx', height: '120rpx' }} />
           ) : (
             <View className='avatar avatar-placeholder'>
               <Image className='avatar-icon-img' src={ICON_MAP['默认头像']} mode='aspectFit' />
@@ -193,9 +196,6 @@ export default function Profile() {
           <View className='user-actions'>
             <View className='action-btn' onClick={() => Taro.navigateTo({ url: '/pages/profile/edit/index' })}>
               <Text className='action-btn-text'>编辑资料</Text>
-            </View>
-            <View className='action-btn' onClick={() => Taro.navigateTo({ url: '/pages/notifications/list/index' })}>
-              <Text className='action-btn-text'>消息通知</Text>
             </View>
           </View>
         )}

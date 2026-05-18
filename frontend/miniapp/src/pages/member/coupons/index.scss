@@ -95,6 +95,9 @@
       font-size: 48rpx;
       font-weight: 700;
       color: #fff;
+      &.gift {
+        font-size: 40rpx;
+      }
     }
     .coupon-type {
       font-size: 24rpx;
@@ -105,6 +108,7 @@
   .coupon-right {
     flex: 1;
     padding: 24rpx;
+    position: relative;
     .coupon-name {
       font-size: 30rpx;
       font-weight: 600;
@@ -131,6 +135,19 @@
       border-radius: 6rpx;
       margin-top: 8rpx;
       display: inline-block;
+    }
+    .use-btn {
+      position: absolute;
+      right: 24rpx;
+      bottom: 24rpx;
+      background: linear-gradient(135deg, #22C55E 0%, #4ADE80 100%);
+      padding: 8rpx 24rpx;
+      border-radius: 28rpx;
+      .use-btn-text {
+        font-size: 24rpx;
+        color: #fff;
+        font-weight: 500;
+      }
     }
   }
 }

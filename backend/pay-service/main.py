@@ -18,8 +18,8 @@ import uuid
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from fastapi import FastAPI, Depends, Header, HTTPException, BackgroundTasks
-from fastapi.responses import JSONResponse
+from fastapi import FastAPI, Depends, Header, HTTPException, BackgroundTasks, Request
+from fastapi.responses import JSONResponse, PlainTextResponse
 from contextlib import asynccontextmanager
 import httpx
 from common.config import settings
@@ -120,17 +120,25 @@ def build_wechat_pay_params(prepay_id: str, appid: str, key: str) -> dict:
     }
 
 
+def dict_to_xml(data: dict) -> str:
+    """将字典转换为微信支付 XML 格式"""
+    xml = ['<xml>']
+    for k, v in data.items():
+        xml.append(f'<{k}><![CDATA[{v}]]></{k}>')
+    xml.append('</xml>')
+    return ''.join(xml)
+
+
+def xml_to_dict(xml_str: str) -> dict:
+    """将微信支付 XML 响应解析为字典"""
+    import xml.etree.ElementTree as ET
+    root = ET.fromstring(xml_str)
+    return {child.tag: child.text for child in root}
+
+
 async def call_wechat_unified_order(params: dict) -> dict:
     """
-    调用微信支付统一下单接口
-    
-    实际项目中需要:
-    1. 将参数转换为 XML 格式
-    2. 发送 POST 请求到微信 API
-    3. 解析返回的 XML
-    4. 获取 prepay_id
-    
-    这里使用模拟实现
+    调用微信支付统一下单接口 (V2)
     """
     config = WECHAT_PAY_CONFIG
     
@@ -145,23 +153,37 @@ async def call_wechat_unified_order(params: dict) -> dict:
             "mock": True
         }
     
-    # TODO: 实现真实的微信支付 API 调用
-    # url = "https://api.mch.weixin.qq.com/pay/unifiedorder"
-    # if config["sandbox"]:
-    #     url = "https://api.mch.weixin.qq.com/sandboxnew/pay/unifiedorder"
+    url = "https://api.mch.weixin.qq.com/pay/unifiedorder"
+    if config["sandbox"]:
+        url = "https://api.mch.weixin.qq.com/sandboxnew/pay/unifiedorder"
     
-    # async with httpx.AsyncClient() as client:
-    #     response = await client.post(url, data=xml_data)
-    #     result = parse_xml(response.text)
+    xml_data = dict_to_xml(params)
     
-    # 模拟返回
-    return {
-        "return_code": "SUCCESS",
-        "result_code": "SUCCESS",
-        "prepay_id": f"wx{generate_nonce_str(20)}",
-        "trade_type": "JSAPI",
-        "mock": True
-    }
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                url, 
+                data=xml_data, 
+                headers={"Content-Type": "application/xml"},
+                timeout=30.0
+            )
+            result = xml_to_dict(response.text)
+            
+            logger.info(f"WeChat unified order response: {result}")
+            
+            return {
+                "return_code": result.get("return_code"),
+                "return_msg": result.get("return_msg"),
+                "result_code": result.get("result_code"),
+                "prepay_id": result.get("prepay_id"),
+                "trade_type": result.get("trade_type"),
+                "err_code": result.get("err_code"),
+                "err_code_des": result.get("err_code_des"),
+                "mock": False
+            }
+    except Exception as e:
+        logger.error(f"WeChat unified order failed: {e}")
+        raise HTTPException(status_code=500, detail=f"微信支付统一下单请求失败: {str(e)}")
 
 
 async def verify_wechat_notify(data: dict, api_key: str) -> bool:
@@ -289,6 +311,7 @@ async def create_payment(
             raise HTTPException(status_code=500, detail=f"微信支付下单失败: {wx_result.get('err_code_des', '未知错误')}")
     else:
         # 模拟支付
+        is_mock = True
         logger.info(f"Using mock payment for order: {order_no}")
         pay_params = {
             "appId": "mock_appid",
@@ -324,18 +347,30 @@ async def create_payment(
     return success({
         "pay_order_no": pay_order_no,
         "pay_params": pay_params,
-        "mock": pay_params.get("mock", False)
+        "mock": is_mock
     })
 
 
 @app.post("/api/v1/pay/notify")
-async def pay_notify(data: dict, background_tasks: BackgroundTasks):
+async def pay_notify(request: Request, background_tasks: BackgroundTasks):
     """
     微信支付回调通知
     
     处理微信支付结果通知，更新订单状态
+    微信发送的是 XML 格式数据
     """
-    logger.info(f"Pay notify received: {data}")
+    body = await request.body()
+    body_str = body.decode('utf-8')
+    logger.info(f"Pay notify raw body: {body_str}")
+    
+    # 解析 XML
+    try:
+        data = xml_to_dict(body_str)
+    except Exception as e:
+        logger.error(f"Failed to parse notify XML: {e}, body: {body_str}")
+        return PlainTextResponse("<xml><return_code><![CDATA[FAIL]]></return_code><return_msg><![CDATA[Invalid XML]]></return_msg></xml>", status_code=200)
+    
+    logger.info(f"Pay notify parsed: {data}")
     
     config = WECHAT_PAY_CONFIG
     
@@ -343,7 +378,7 @@ async def pay_notify(data: dict, background_tasks: BackgroundTasks):
     if config["apikey"] and not data.get("mock"):
         if not await verify_wechat_notify(data.copy(), config["apikey"]):
             logger.error("Invalid notify sign")
-            return {"code": "FAIL", "message": "Invalid sign"}
+            return PlainTextResponse("<xml><return_code><![CDATA[FAIL]]></return_code><return_msg><![CDATA[Invalid sign]]></return_msg></xml>", status_code=200)
     
     # 获取订单信息
     out_trade_no = data.get("out_trade_no")
@@ -356,8 +391,8 @@ async def pay_notify(data: dict, background_tasks: BackgroundTasks):
     else:
         logger.warning(f"Payment failed for order: {out_trade_no}")
     
-    # 返回成功响应给微信
-    return {"code": "SUCCESS", "message": "OK"}
+    # 返回成功响应给微信（必须返回 XML）
+    return PlainTextResponse("<xml><return_code><![CDATA[SUCCESS]]></return_code><return_msg><![CDATA[OK]]></return_msg></xml>", status_code=200)
 
 
 async def notify_order_service(order_no: str, transaction_id: str, pay_channel: str = "wechat") -> bool:

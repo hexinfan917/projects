@@ -87,7 +87,6 @@ export default function ReviewManage() {
   }).current;
 
   const openModal = (record?: any) => {
-    console.log('[Modal] Opening modal, record:', record);
     setEditData(record || null);
     setContent(record?.content || '');
     setCoverImageUrl(record?.cover_image || '');
@@ -95,7 +94,6 @@ export default function ReviewManage() {
     if (record?.images) {
       try {
         galleryUrls = typeof record.images === 'string' ? JSON.parse(record.images) : record.images;
-        console.log('[Modal] Parsed gallery URLs:', galleryUrls);
       } catch (e) {
         console.error('[Modal] Failed to parse images:', record.images, e);
       }
@@ -167,20 +165,16 @@ export default function ReviewManage() {
 
   // 添加图集图片（使用函数式更新避免 stale closure）
   const handleGalleryUpload = (url: string) => {
-    console.log('[Gallery] Adding URL:', url);
     setGallery(prev => {
       const newGallery = [...prev, url];
-      console.log('[Gallery] New gallery state:', newGallery);
       return newGallery;
     });
   };
 
   // 删除图集图片
   const removeGalleryImage = (index: number) => {
-    console.log('[Gallery] Removing index:', index);
     setGallery(prev => {
       const newGallery = prev.filter((_, i) => i !== index);
-      console.log('[Gallery] After remove:', newGallery);
       return newGallery;
     });
   };
@@ -193,10 +187,8 @@ export default function ReviewManage() {
       Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
     },
     onChange(info: any) {
-      console.log('[Upload] onChange status:', info.file.status, 'response:', info.file.response);
       if (info.file.status === 'done') {
         const url = info.file.response?.data?.url;
-        console.log('[Upload] Extracted URL:', url);
         if (url) {
           message.success(`${info.file.name} 上传成功`);
           handleGalleryUpload(url);
@@ -229,8 +221,6 @@ export default function ReviewManage() {
         status: allValues.status === '' || allValues.status === undefined ? 0 : Number(allValues.status),
         images: gallery.length > 0 ? JSON.stringify(gallery) : null,
       };
-      console.log('[Submit] Gallery state before submit:', gallery);
-      console.log('[Submit] Submit data:', submitData);
       const res = await request(url, {
         method,
         data: submitData,
@@ -262,7 +252,7 @@ export default function ReviewManage() {
       search: false,
       render: (url: string) => {
         if (!url) return <span style={{ color: '#999' }}>无</span>;
-        const fullUrl = url.startsWith('http') ? url : `http://localhost:8081${url}`;
+        const fullUrl = url;
         return <Image src={fullUrl} width={80} height={60} style={{ objectFit: 'cover' }} />;
       },
     },

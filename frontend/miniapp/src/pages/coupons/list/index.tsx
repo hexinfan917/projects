@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import Taro, { useDidShow } from '@tarojs/taro'
-import { View, Text } from '@tarojs/components'
+import { View, Text , Image } from '@tarojs/components'
 import { getUserCoupons } from '../../../utils/api'
 import './index.scss'
 
@@ -10,7 +10,7 @@ const STATUS_TABS = [
   { label: '已过期', value: 3 },
 ]
 
-const TYPE_TEXT: Record<number, string> = { 1: '满减券', 2: '折扣券', 3: '立减券' }
+const TYPE_TEXT: Record<number, string> = { 1: '满减券', 2: '折扣券', 3: '立减券', 4: '礼品券' }
 
 export default function CouponList() {
   const [tab, setTab] = useState(1)
@@ -39,12 +39,10 @@ export default function CouponList() {
     <View className='coupon-list-page'>
       <View className='custom-navbar'>
         <View className='page-back' onClick={() => Taro.navigateBack()}>
-          <Text className='page-back-icon'>←</Text>
+          <Image className='page-back-icon' src='/assets/icons/return.png' mode='aspectFit' />
         </View>
         <Text className='navbar-title'>我的优惠券</Text>
-        <View className='nav-right' onClick={() => Taro.navigateTo({ url: '/pages/coupons/center/index' })}>
-          <Text className='nav-right-text'>去领券</Text>
-        </View>
+
       </View>
 
       <View className='tab-bar'>
@@ -66,20 +64,41 @@ export default function CouponList() {
           </View>
         )}
         {list.map((item: any) => (
-          <View key={item.id} className={`coupon-card ${item.status !== 1 ? 'disabled' : ''}`}>
+          <View
+            key={item.id}
+            className={`coupon-card ${item.status !== 1 ? 'disabled' : ''}`}
+            onClick={() => {
+              if (item.type === 4) {
+                Taro.navigateTo({
+                  url: `/pages/coupons/detail/index?data=${encodeURIComponent(JSON.stringify(item))}`
+                })
+              }
+            }}
+          >
             <View className='coupon-left'>
               <Text className='coupon-value'>
-                {item.type === 2 ? `${item.value}折` : `¥${item.value}`}
+                {item.type === 4 ? '礼品' : (item.type === 2 ? `${item.value}折` : `¥${item.value}`)}
               </Text>
               <Text className='coupon-type'>{TYPE_TEXT[item.type] || '优惠券'}</Text>
             </View>
             <View className='coupon-right'>
               <Text className='coupon-name'>{item.name}</Text>
               <Text className='coupon-desc'>
-                {item.min_amount > 0 ? `满${item.min_amount}元可用` : '无门槛'}
+                {item.type === 4
+                  ? (item.description || '点击查看详情')
+                  : (item.min_amount > 0 ? `满${item.min_amount}元可用` : '无门槛')
+                }
               </Text>
               <Text className='coupon-valid'>有效期至 {formatDate(item.valid_end_time)}</Text>
-              {item.is_expired_soon && (
+              {item.coupon_no && item.type !== 4 && (
+                <Text className='coupon-no'>券码: {item.coupon_no}</Text>
+              )}
+              {item.type === 4 && item.status === 1 && (
+                <View className='use-btn'>
+                  <Text className='use-btn-text'>去使用</Text>
+                </View>
+              )}
+              {item.is_expired_soon && item.type !== 4 && (
                 <Text className='expire-soon'>即将过期</Text>
               )}
             </View>

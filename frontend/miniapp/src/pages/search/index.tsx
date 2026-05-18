@@ -20,7 +20,7 @@ export default function Search() {
           id: r.id,
           name: r.name,
           price: r.base_price || r.price || 0,
-          cover_image: r.cover_image || '',
+          cover_image: r.cover_image ? (r.cover_image.startsWith('http') ? r.cover_image : `https://tailtravel.westilt.com${r.cover_image}`) + '?w=400&q=75' : '',
           type_name: r.route_type_name || r.type_name || '',
         })))
         if (!res.data.routes.length) {
@@ -54,7 +54,7 @@ export default function Search() {
   return (
     <View className='search-page' style={{ paddingTop: '140rpx' }}>
       <View className='page-back' onClick={() => Taro.navigateBack()}>
-        <Text className='page-back-icon'>←</Text>
+        <Image className='page-back-icon' src='/assets/icons/return.png' mode='aspectFit' />
       </View>
 
       {keyword && (

@@ -1,7 +1,7 @@
 """
 认证路由
 """
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Body
 from sqlalchemy.ext.asyncio import AsyncSession
 from common.database import get_db
 from common.response import success, error
@@ -52,7 +52,7 @@ async def admin_login(login_data: dict):
         
         now = datetime.utcnow()
         payload = {
-            "user_id": 0,
+            "user_id": 1,
             "openid": "admin",
             "role": "admin",
             "type": "access",
@@ -95,28 +95,32 @@ async def logout():
 
 @router.post("/test/login", response_model=WechatLoginResponse)
 async def test_login(
+    data: dict = Body(default={}),
     db: AsyncSession = Depends(get_db)
 ):
     """
     测试登录（开发环境专用）
-    直接返回固定测试用户的登录态
+    支持传入 test_id 切换不同测试用户
     """
     from sqlalchemy import select
     from app.models.user import User
     from app.services.wechat import WechatService
     
     wechat_service = WechatService()
-    openid = "test_openid_default"
+    test_id = (data or {}).get("test_id", "")
+    openid = f"test_openid_{test_id}" if test_id else "test_openid_default"
     
     result = await db.execute(select(User).where(User.openid == openid))
     user = result.scalar_one_or_none()
     
+    is_new_user = False
     if not user:
+        is_new_user = True
         user = User(
             openid=openid,
-            nickname="测试用户",
+            nickname=f"测试用户{test_id}" if test_id else "测试用户",
             avatar="",
-            phone="13800138000",
+            phone=f"138001380{test_id}"[-4:] if test_id else "13800138000",
             status=1,
         )
         db.add(user)
@@ -127,7 +131,7 @@ async def test_login(
     
     return success({
         **tokens,
-        "is_new_user": False,
+        "is_new_user": is_new_user,
         "user": {
             "id": user.id,
             "nickname": user.nickname,

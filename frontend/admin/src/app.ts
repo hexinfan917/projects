@@ -1,5 +1,7 @@
 // 运行时配置
 import { RequestConfig, history } from '@umijs/max';
+import React from 'react';
+import LogoutButton from '@/components/LogoutButton';
 
 // 全局初始化数据配置
 export async function getInitialState(): Promise<{
@@ -28,6 +30,9 @@ export const layout = () => {
     },
     rightRender: () => {
       return null;
+    },
+    menuFooterRender: () => {
+      return React.createElement(LogoutButton);
     },
     onPageChange: () => {
       const { location } = history;

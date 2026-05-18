@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import Taro from '@tarojs/taro'
 import { View, Text, Textarea, Button, Image } from '@tarojs/components'
-import { getOrderDetail, evaluateOrder } from '../../../utils/api'
+import { getOrderDetail, evaluateOrder, uploadFile, compressImageUrl } from '../../../utils/api'
 import './index.scss'
 
 const TAGS = ['风景优美', '领队专业', '宠物友好', '餐饮满意', '行程安排合理', '性价比高']
@@ -32,8 +32,18 @@ export default function OrderEvaluate() {
   const uploadImage = async () => {
     try {
       const res = await Taro.chooseImage({ count: 1, sizeType: ['compressed'], sourceType: ['album', 'camera'] })
-      setImages([...images, res.tempFilePaths[0]])
+      const tempPath = res.tempFilePaths[0]
+      Taro.showLoading({ title: '上传中...' })
+      const uploadRes: any = await uploadFile(tempPath)
+      const data = JSON.parse(uploadRes.data)
+      Taro.hideLoading()
+      if (data.code === 200 && data.data?.url) {
+        setImages([...images, data.data.url])
+      } else {
+        Taro.showToast({ title: '上传失败', icon: 'none' })
+      }
     } catch (err) {
+      Taro.hideLoading()
       // ignore
     }
   }
@@ -56,7 +66,7 @@ export default function OrderEvaluate() {
     <View className='evaluate-page' style={{ paddingTop: '140rpx' }}>
 
         <View className='page-back' onClick={() => Taro.navigateBack()}>
-          <Text className='page-back-icon'>←</Text>
+          <Image className='page-back-icon' src='/assets/icons/return.png' mode='aspectFit' />
         </View>
       <View className='card'>
         <Text className='card-title'>订单评价</Text>
@@ -101,7 +111,7 @@ export default function OrderEvaluate() {
         <Text className='label'>上传图片</Text>
         <View className='image-list'>
           {images.map((img, idx) => (
-            <Image key={idx} className='preview-img' src={img} mode='aspectFill' />
+            <Image key={idx} className='preview-img' src={compressImageUrl(img, 400)} mode='aspectFill' />
           ))}
           <View className='upload-btn' onClick={uploadImage}>+</View>
         </View>

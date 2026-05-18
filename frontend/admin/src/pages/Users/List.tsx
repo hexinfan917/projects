@@ -41,6 +41,10 @@ export default function UserList() {
   const [petLoadingMap, setPetLoadingMap] = useState<Record<number, boolean>>({});
   const [petDataMap, setPetDataMap] = useState<Record<number, any[]>>({});
 
+  // 用户宠物列表弹窗
+  const [userPetsVisible, setUserPetsVisible] = useState(false);
+  const [currentUserPetsId, setCurrentUserPetsId] = useState<number | null>(null);
+
   const handleViewDetail = async (id: number) => {
     try {
       const res = await request('/api/v1/admin/users/' + id);
@@ -170,35 +174,58 @@ export default function UserList() {
       dataIndex: 'gender',
       width: 80,
       search: false,
-      render: (gender: number) => (gender === 1 ? '男' : gender === 2 ? '女' : '未知'),
+      render: (gender: number) => (gender === 1 ? '男' : gender === 2 ? '女' : '未填写'),
     },
     { title: '手机号', dataIndex: 'phone', width: 120 },
     { title: '真实姓名', dataIndex: 'real_name', width: 120, search: false },
     { title: '身份证', dataIndex: 'id_card', width: 180, search: false },
     {
-      title: '会员等级',
-      dataIndex: 'member_level',
+      title: '是否会员',
+      dataIndex: 'is_member',
       width: 100,
-      valueEnum: { 0: { text: '新手上路' }, 1: { text: '爱好者' }, 2: { text: '资深' }, 3: { text: '大使' } },
-      render: (level: number) => {
-        const map: any = { 0: { text: '新手上路', color: 'default' }, 1: { text: '爱好者', color: 'green' }, 2: { text: '资深', color: 'blue' }, 3: { text: '大使', color: 'purple' } };
-        return <Tag color={map[level]?.color}>{map[level]?.text}</Tag>;
+      valueType: 'select',
+      fieldProps: {
+        options: [
+          { label: '是', value: 1 },
+          { label: '否', value: 0 },
+        ],
       },
+      render: (_: any, record: any) => (
+        <Tag color={record.is_member ? 'success' : 'default'}>
+          {record.is_member ? '是' : '否'}
+        </Tag>
+      ),
     },
-    { title: '积分', dataIndex: 'member_points', width: 100, search: false },
     {
       title: '宠物数量',
       dataIndex: 'pet_count',
       width: 100,
       search: false,
-      render: (count: number) => <Tag color={count > 0 ? 'green' : 'default'}>{count || 0}</Tag>,
+      render: (count: number, record: any) => (
+        <Tag
+          color={count > 0 ? 'green' : 'default'}
+          style={{ cursor: count > 0 ? 'pointer' : 'default' }}
+          onClick={() => {
+            if (count > 0) {
+              loadPets(record.id);
+              setCurrentUserPetsId(record.id);
+              setUserPetsVisible(true);
+            }
+          }}
+        >
+          {count || 0}
+        </Tag>
+      ),
     },
     {
       title: '状态',
       dataIndex: 'status',
       width: 80,
       valueEnum: { 0: { text: '禁用' }, 1: { text: '正常' } },
-      render: (status: number) => <Tag color={status === 1 ? 'success' : 'error'}>{status === 1 ? '正常' : '禁用'}</Tag>,
+      render: (_: any, record: any) => {
+        const status = record.status;
+        return <Tag color={status === 1 ? 'success' : 'error'}>{status === 1 ? '正常' : '禁用'}</Tag>;
+      },
     },
     {
       title: '注册时间',
@@ -260,13 +287,6 @@ export default function UserList() {
     },
   ];
 
-  const levelOptions = [
-    { label: '新手上路', value: 0 },
-    { label: '爱好者', value: 1 },
-    { label: '资深', value: 2 },
-    { label: '大使', value: 3 },
-  ];
-
   const statusOptions = [
     { label: '禁用', value: 0 },
     { label: '正常', value: 1 },
@@ -279,7 +299,14 @@ export default function UserList() {
         actionRef={tableRef}
         request={async (params) => {
           const res = await request('/api/v1/admin/users', {
-            params: { page: params.current, page_size: params.pageSize, keyword: params.nickname || params.phone, status: params.status },
+            params: {
+              page: params.current,
+              page_size: params.pageSize,
+              keyword: params.nickname,
+              phone: params.phone,
+              is_member: params.is_member,
+              status: params.status,
+            },
           });
           return { data: res.data?.users || [], success: res.code === 200, total: res.data?.total || 0 };
         }}
@@ -328,11 +355,10 @@ export default function UserList() {
             <Descriptions.Item label="手机号">{detailData.phone || '-'}</Descriptions.Item>
             <Descriptions.Item label="真实姓名">{detailData.real_name || '-'}</Descriptions.Item>
             <Descriptions.Item label="身份证">{detailData.id_card || '-'}</Descriptions.Item>
-            <Descriptions.Item label="性别">{detailData.gender === 1 ? '男' : detailData.gender === 2 ? '女' : '未知'}</Descriptions.Item>
+            <Descriptions.Item label="性别">{detailData.gender === 1 ? '男' : detailData.gender === 2 ? '女' : '未填写'}</Descriptions.Item>
             <Descriptions.Item label="生日">{detailData.birthday || '-'}</Descriptions.Item>
             <Descriptions.Item label="城市">{detailData.city || '-'}</Descriptions.Item>
-            <Descriptions.Item label="会员等级">{['新手上路', '爱好者', '资深', '大使'][detailData.member_level || 0]}</Descriptions.Item>
-            <Descriptions.Item label="积分">{detailData.member_points || 0}</Descriptions.Item>
+            <Descriptions.Item label="是否会员">{detailData.is_member ? '是' : '否'}</Descriptions.Item>
             <Descriptions.Item label="状态"><Tag color={detailData.status === 1 ? 'success' : 'error'}>{detailData.status === 1 ? '正常' : '禁用'}</Tag></Descriptions.Item>
             <Descriptions.Item label="注册时间">{detailData.created_at ? dayjs(detailData.created_at).format('YYYY-MM-DD HH:mm:ss') : '-'}</Descriptions.Item>
             <Descriptions.Item label="宠物数量">
@@ -347,8 +373,7 @@ export default function UserList() {
         <ProFormText name="phone" label="手机号" placeholder="请输入手机号" rules={[{ pattern: /^1[3-9]\d{9}$/, message: '手机号格式错误' }]} />
         <ProFormText name="real_name" label="真实姓名" placeholder="请输入真实姓名" />
         <ProFormText name="id_card" label="身份证" placeholder="请输入身份证号" />
-        <ProFormSelect name="member_level" label="会员等级" options={levelOptions} />
-        <ProFormDigit name="member_points" label="积分" min={0} />
+
         <ProFormSelect name="status" label="状态" options={statusOptions} />
       </ModalForm>
 
@@ -405,6 +430,30 @@ export default function UserList() {
         <ProFormDatePicker name="vaccine_date" label="疫苗日期" />
         <ProFormSelect name="is_default" label="是否默认" options={[{ label: '否', value: 0 }, { label: '是', value: 1 }]} />
       </ModalForm>
+
+      <Drawer
+        title="宠物信息"
+        width={800}
+        open={userPetsVisible}
+        onClose={() => setUserPetsVisible(false)}
+      >
+        {currentUserPetsId && (
+          <>
+            <div style={{ marginBottom: 12, fontWeight: 'bold' }}>
+              用户ID: {currentUserPetsId}，共 {petDataMap[currentUserPetsId]?.length || 0} 只宠物
+            </div>
+            <Table
+              columns={petColumns}
+              dataSource={petDataMap[currentUserPetsId] || []}
+              rowKey="id"
+              loading={petLoadingMap[currentUserPetsId]}
+              pagination={false}
+              size="small"
+              bordered
+            />
+          </>
+        )}
+      </Drawer>
     </PageContainer>
   );
 }

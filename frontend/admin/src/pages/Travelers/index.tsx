@@ -88,7 +88,7 @@ export default function TravelerManage() {
         1: { text: '男' },
         2: { text: '女' },
       },
-      render: (gender: number) => genderMap[gender] || '-',
+      render: (_: any, record: any) => genderMap[record.gender] || '-',
     },
     {
       title: '生日',

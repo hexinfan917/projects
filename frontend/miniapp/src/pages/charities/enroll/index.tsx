@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import Taro from '@tarojs/taro'
-import { View, Text, Input, Textarea, Picker, Checkbox } from '@tarojs/components'
+import { View, Text, Input, Textarea, Picker, Checkbox , Image } from '@tarojs/components'
 import { getCharityActivityDetail, registerCharityActivity } from '../../../utils/api'
 import './index.scss'
 
@@ -123,7 +123,7 @@ export default function CharityEnroll() {
       <View className='status-bar-placeholder' />
       <View className='page-header'>
         <View className='page-back' onClick={() => Taro.navigateBack()}>
-          <Text className='page-back-icon'>←</Text>
+          <Image className='page-back-icon' src='/assets/icons/return.png' mode='aspectFit' />
         </View>
         <Text className='page-title'>活动报名</Text>
       </View>

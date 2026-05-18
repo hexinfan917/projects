@@ -56,3 +56,11 @@ class UserService:
             "city": user.city,
             "member_level": user.member_level,
         }
+    
+    async def delete_account(self, user_id: int, db: AsyncSession) -> User:
+        """注销账号（软删除：将状态设为0）"""
+        user = await self.get_user_by_id(user_id, db)
+        user.status = 0
+        await db.commit()
+        await db.refresh(user)
+        return user

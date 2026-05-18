@@ -215,7 +215,8 @@ export default function ArticleManage() {
       dataIndex: 'category',
       width: 100,
       valueEnum: { travel: { text: '旅行' }, guide: { text: '攻略' }, story: { text: '故事' }, review: { text: '回顾' } },
-      render: (category: string) => {
+      render: (_: any, record: any) => {
+        const category = record.category;
         const config = categoryMap[category] || { text: category, color: 'default' };
         return <Tag color={config.color}>{config.text}</Tag>;
       },
@@ -227,7 +228,8 @@ export default function ArticleManage() {
       dataIndex: 'status',
       width: 100,
       valueEnum: { 0: { text: '草稿' }, 1: { text: '已发布' }, 2: { text: '已下架' } },
-      render: (status: number) => {
+      render: (_: any, record: any) => {
+        const status = record.status;
         const config = statusMap[status] || { text: '未知', color: 'default' };
         return <Tag color={config.color}>{config.text}</Tag>;
       },

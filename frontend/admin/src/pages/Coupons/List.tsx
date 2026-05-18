@@ -1,4 +1,4 @@
-import { PageContainer, ProTable, ModalForm, ProFormText, ProFormSelect, ProFormDigit, ProFormRadio, ProFormDateTimePicker, ProFormTextArea } from '@ant-design/pro-components';
+import { PageContainer, ProTable, ModalForm, ProFormText, ProFormSelect, ProFormDigit, ProFormRadio, ProFormDateTimePicker, ProFormTextArea, ProFormDependency } from '@ant-design/pro-components';
 import { Button, Tag, message, Popconfirm, Space } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useRef, useState, useEffect } from 'react';
@@ -9,6 +9,7 @@ const typeMap: Record<number, { text: string; color: string }> = {
   1: { text: '满减券', color: 'blue' },
   2: { text: '折扣券', color: 'purple' },
   3: { text: '立减券', color: 'green' },
+  4: { text: '礼品券', color: 'orange' },
 };
 
 const statusMap: Record<number, { text: string; color: string }> = {
@@ -28,15 +29,16 @@ export default function CouponTemplateList() {
   const [editData, setEditData] = useState<any>(null);
   const formRef = useRef<any>(null);
   const [applicableType, setApplicableType] = useState<number>(1);
+  const [couponType, setCouponType] = useState<number>(1);
   const [routeList, setRouteList] = useState<any[]>([]);
   const [routeTypeList, setRouteTypeList] = useState<any[]>([]);
   const [userOptions, setUserOptions] = useState<any[]>([]);
 
   useEffect(() => {
-    request('/api/v1/routes', { params: { page: 1, page_size: 100 } })
+    request('/api/v1/admin/routes', { params: { page: 1, page_size: 100 } })
       .then(res => { if (res.code === 200) setRouteList(res.data?.routes || []); })
       .catch(() => {});
-    request('/api/v1/routes/types')
+    request('/api/v1/admin/route-types')
       .then(res => { if (res.code === 200) setRouteTypeList(res.data || []); })
       .catch(() => {});
   }, []);
@@ -46,6 +48,8 @@ export default function CouponTemplateList() {
     setModalVisible(true);
     const type = record?.applicable_type || 1;
     setApplicableType(type);
+    const ct = record?.type || 1;
+    setCouponType(ct);
     let userOpts: any[] = [];
     // 编辑时如果是指定用户，加载已选用户信息
     if (type === 4 && record?.applicable_ids?.length > 0) {
@@ -82,10 +86,16 @@ export default function CouponTemplateList() {
 
   const handleSubmit = async (values: any) => {
     try {
-      const payload = {
+      const payload: any = {
         ...values,
         applicable_ids: Array.isArray(values.applicable_ids) ? values.applicable_ids : (values.applicable_ids ? JSON.parse(values.applicable_ids) : []),
       };
+      // 礼品券默认值处理
+      if (payload.type === 4) {
+        payload.value = 0;
+        payload.min_amount = 0;
+        payload.max_discount = 0;
+      }
       const url = editData ? '/api/v1/admin/coupon-templates/' + editData.id : '/api/v1/admin/coupon-templates';
       const method = editData ? 'PUT' : 'POST';
       const res = await request(url, { method, data: payload });
@@ -112,7 +122,7 @@ export default function CouponTemplateList() {
       title: '类型',
       dataIndex: 'type',
       width: 100,
-      valueEnum: { 1: { text: '满减券' }, 2: { text: '折扣券' }, 3: { text: '立减券' } },
+      valueEnum: { 1: { text: '满减券' }, 2: { text: '折扣券' }, 3: { text: '立减券' }, 4: { text: '礼品券' } },
       render: (_: any, record: any) => <Tag color={typeMap[record.type]?.color}>{typeMap[record.type]?.text}</Tag>,
     },
     {
@@ -236,15 +246,28 @@ export default function CouponTemplateList() {
           name="type"
           label="类型"
           rules={[{ required: true }]}
+          fieldProps={{
+            onChange: (value: number) => setCouponType(value),
+          }}
           options={[
             { label: '满减券', value: 1 },
             { label: '折扣券', value: 2 },
             { label: '立减券', value: 3 },
+            { label: '礼品券', value: 4 },
           ]}
         />
-        <ProFormDigit name="value" label="优惠值" rules={[{ required: true }]} min={0} step={0.01} tooltip="满减/立减填金额，折扣填0-1之间小数" />
-        <ProFormDigit name="min_amount" label="最低门槛金额" min={0} initialValue={0} tooltip="0表示无门槛" />
-        <ProFormDigit name="max_discount" label="折扣券最高优惠上限" min={0} initialValue={0} tooltip="仅折扣券有效，0表示不限制" />
+        <ProFormDependency name={['type']}>
+          {({ type }) => {
+            if (type === 4) return null;
+            return (
+              <>
+                <ProFormDigit name="value" label="优惠值" rules={[{ required: true }]} min={0} step={0.01} tooltip="满减/立减填金额，折扣填0-1之间小数" />
+                <ProFormDigit name="min_amount" label="最低门槛金额" min={0} initialValue={0} tooltip="0表示无门槛" />
+                <ProFormDigit name="max_discount" label="折扣券最高优惠上限" min={0} initialValue={0} tooltip="仅折扣券有效，0表示不限制" />
+              </>
+            );
+          }}
+        </ProFormDependency>
         <ProFormDigit name="total_count" label="发放总量" min={0} initialValue={0} tooltip="0表示不限量" />
         <ProFormDigit name="per_user_limit" label="每人限领" min={0} initialValue={1} tooltip="0表示不限" />
 
@@ -324,6 +347,12 @@ export default function CouponTemplateList() {
           />
         )}
 
+        <ProFormTextArea
+          name="description"
+          label="使用说明"
+          placeholder="请输入券的使用说明，礼品券可填写具体礼品内容"
+          fieldProps={{ rows: 3 }}
+        />
         <ProFormRadio.Group
           name="status"
           label="状态"

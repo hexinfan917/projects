@@ -28,6 +28,7 @@ class RouteResponse(BaseModel):
     review_count: int
     distance: Optional[int]
     tags: Optional[List[str]]
+    sort_order: int = 0
     
     class Config:
         from_attributes = True

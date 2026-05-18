@@ -144,6 +144,29 @@
   border: none;
 }
 
+.test-login-btn {
+  width: 100%;
+  height: 112rpx;
+  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+  color: #fff;
+  font-size: 36rpx;
+  font-weight: 700;
+  border-radius: 48rpx;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24rpx;
+  box-shadow: 0 24rpx 80rpx rgba(34, 197, 94, 0.15);
+  line-height: 112rpx;
+  padding: 0;
+  margin: 0;
+}
+
+.test-login-btn::after {
+  border: none;
+}
+
 .btn-icon {
   font-size: 40rpx;
   line-height: 1;

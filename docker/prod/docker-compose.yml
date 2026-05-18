@@ -40,6 +40,8 @@ services:
       - REDIS_HOST=redis
       - REDIS_PASSWORD=${REDIS_PASSWORD}
       - JWT_SECRET=${JWT_SECRET}
+      - WECHAT_APPID=${WECHAT_APPID}
+      - WECHAT_APPSECRET=${WECHAT_APPSECRET}
     restart: always
     networks:
       - petway-network
@@ -57,6 +59,8 @@ services:
       - DB_PASSWORD=${DB_PASSWORD}
       - REDIS_HOST=redis
       - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - JWT_SECRET=${JWT_SECRET}
+      - FILE_SERVICE_URL=http://petway-file-service:8000
     restart: always
     networks:
       - petway-network
@@ -74,6 +78,125 @@ services:
       - DB_PASSWORD=${DB_PASSWORD}
       - REDIS_HOST=redis
       - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - JWT_SECRET=${JWT_SECRET}
+      - PAY_SERVICE_URL=http://petway-pay-service:8000
+    restart: always
+    networks:
+      - petway-network
+
+  content-service:
+    build:
+      context: ../..
+      dockerfile: docker/Dockerfile.service
+      args:
+        SERVICE_NAME: content-service
+    image: petway/content-service:latest
+    container_name: petway-content-service
+    environment:
+      - DB_HOST=mysql
+      - DB_PASSWORD=${DB_PASSWORD}
+      - REDIS_HOST=redis
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - JWT_SECRET=${JWT_SECRET}
+    restart: always
+    networks:
+      - petway-network
+
+  map-service:
+    build:
+      context: ../..
+      dockerfile: docker/Dockerfile.service
+      args:
+        SERVICE_NAME: map-service
+    image: petway/map-service:latest
+    container_name: petway-map-service
+    environment:
+      - DB_HOST=mysql
+      - DB_PASSWORD=${DB_PASSWORD}
+      - REDIS_HOST=redis
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - JWT_SECRET=${JWT_SECRET}
+    restart: always
+    networks:
+      - petway-network
+
+  message-service:
+    build:
+      context: ../..
+      dockerfile: docker/Dockerfile.service
+      args:
+        SERVICE_NAME: message-service
+    image: petway/message-service:latest
+    container_name: petway-message-service
+    environment:
+      - DB_HOST=mysql
+      - DB_PASSWORD=${DB_PASSWORD}
+      - REDIS_HOST=redis
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - JWT_SECRET=${JWT_SECRET}
+    restart: always
+    networks:
+      - petway-network
+
+  file-service:
+    build:
+      context: ../..
+      dockerfile: docker/Dockerfile.service
+      args:
+        SERVICE_NAME: file-service
+    image: petway/file-service:latest
+    container_name: petway-file-service
+    environment:
+      - DB_HOST=mysql
+      - DB_PASSWORD=${DB_PASSWORD}
+      - REDIS_HOST=redis
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - JWT_SECRET=${JWT_SECRET}
+      - UPLOAD_DIR=/app/uploads
+    volumes:
+      - /opt/petway/backend/file-service/uploads:/app/uploads
+    restart: always
+    networks:
+      - petway-network
+
+  pay-service:
+    build:
+      context: ../..
+      dockerfile: docker/Dockerfile.service
+      args:
+        SERVICE_NAME: pay-service
+    image: petway/pay-service:latest
+    container_name: petway-pay-service
+    environment:
+      - DB_HOST=mysql
+      - DB_PASSWORD=${DB_PASSWORD}
+      - REDIS_HOST=redis
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - JWT_SECRET=${JWT_SECRET}
+      - ORDER_SERVICE_URL=http://petway-order-service:8000
+      - WECHAT_APPID=${WECHAT_APPID}
+      - WECHAT_MCHID=${WECHAT_MCHID}
+      - WECHAT_APIKEY=${WECHAT_APIKEY}
+      - WECHAT_NOTIFY_URL=https://tailtravel.westilt.com/api/v1/pay/notify
+      - WECHAT_PAY_SANDBOX=${WECHAT_PAY_SANDBOX:-false}
+    restart: always
+    networks:
+      - petway-network
+
+  charity-service:
+    build:
+      context: ../..
+      dockerfile: docker/Dockerfile.service
+      args:
+        SERVICE_NAME: charity-service
+    image: petway/charity-service:latest
+    container_name: petway-charity-service
+    environment:
+      - DB_HOST=mysql
+      - DB_PASSWORD=${DB_PASSWORD}
+      - REDIS_HOST=redis
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - JWT_SECRET=${JWT_SECRET}
     restart: always
     networks:
       - petway-network
@@ -87,14 +210,21 @@ services:
     image: petway/gateway:latest
     container_name: petway-gateway
     ports:
-      - "80:8000"
+      - "8000:8000"
     environment:
+      - DOCKER_MODE=true
       - REDIS_HOST=redis
       - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - JWT_SECRET=${JWT_SECRET}
     depends_on:
       - user-service
       - route-service
       - order-service
+      - content-service
+      - map-service
+      - message-service
+      - file-service
+      - charity-service
     restart: always
     networks:
       - petway-network

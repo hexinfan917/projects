@@ -1,17 +1,66 @@
 """
 出行人服务
 """
+import re
 from typing import List
 from datetime import datetime
 from sqlalchemy import select, and_, update
 from sqlalchemy.ext.asyncio import AsyncSession
-from common.exceptions import NotFoundException
+from common.exceptions import NotFoundException, APIException
 from common.logger import setup_logger
 
 from app.models.traveler import Traveler
 from app.schemas.traveler import TravelerCreate, TravelerUpdate
 
 logger = setup_logger("traveler-service")
+
+
+def validate_phone(phone: str) -> bool:
+    """校验手机号格式"""
+    return bool(re.match(r'^1[3-9]\d{9}$', phone))
+
+
+def validate_id_card(id_card: str) -> bool:
+    """校验身份证号格式（含校验码）"""
+    if not id_card or len(id_card) != 18:
+        return False
+    if not re.match(r'^\d{17}[\dXx]$', id_card):
+        return False
+    weights = [7, 9, 10, 5, 8, 4, 2, 1, 6, 3, 7, 9, 10, 5, 8, 4, 2]
+    check_codes = ['1', '0', 'X', '9', '8', '7', '6', '5', '4', '3', '2']
+    total = sum(int(id_card[i]) * weights[i] for i in range(17))
+    return check_codes[total % 11] == id_card[17].upper()
+
+
+def validate_name(name: str) -> bool:
+    """校验姓名格式"""
+    if not name or len(name) < 2 or len(name) > 20:
+        return False
+    return bool(re.match(r'^[\u4e00-\u9fa5a-zA-Z·•]+$', name))
+
+
+def validate_traveler_data(data: dict, is_create: bool = True):
+    """统一校验出行人数据"""
+    name = data.get('name')
+    if is_create or name is not None:
+        if not name:
+            raise APIException(message="姓名不能为空", code=400)
+        if not validate_name(name):
+            raise APIException(message="姓名仅限2-20位中文/英文/·", code=400)
+
+    phone = data.get('phone')
+    if is_create or phone is not None:
+        if not phone:
+            raise APIException(message="手机号不能为空", code=400)
+        if not validate_phone(phone):
+            raise APIException(message="手机号格式不正确", code=400)
+
+    id_card = data.get('id_card')
+    if is_create or id_card is not None:
+        if not id_card:
+            raise APIException(message="身份证号不能为空", code=400)
+        if not validate_id_card(id_card):
+            raise APIException(message="身份证号格式不正确", code=400)
 
 
 class TravelerService:
@@ -52,6 +101,9 @@ class TravelerService:
     ) -> Traveler:
         """创建出行人"""
         data = traveler_data.model_dump()
+        
+        # 字段格式校验
+        validate_traveler_data(data, is_create=True)
         
         # 检查身份证号是否已存在（同一用户下）
         id_card = data.get('id_card')
@@ -110,6 +162,9 @@ class TravelerService:
         traveler = await self.get_traveler(traveler_id, user_id, db)
         
         update_data = traveler_data.model_dump(exclude_unset=True)
+        
+        # 字段格式校验（只校验传入的字段）
+        validate_traveler_data(update_data, is_create=False)
         
         # 处理日期转换
         birthday_str = update_data.get('birthday')

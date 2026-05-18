@@ -12,10 +12,10 @@ class DatabaseConfig(BaseSettings):
     """数据库配置"""
     model_config = {"env_prefix": "DATABASE__"}
     
-    host: str = "localhost"
-    port: int = 3306
-    username: str = "root"
-    password: str = "root"
+    host: str = os.getenv("DB_HOST", "localhost")
+    port: int = int(os.getenv("DB_PORT", "3306"))
+    username: str = os.getenv("DB_USER", "root")
+    password: str = os.getenv("DB_PASSWORD", "root")
     database: str = "petway"
     charset: str = "utf8mb4"
     
@@ -26,21 +26,22 @@ class DatabaseConfig(BaseSettings):
 
 class RedisConfig(BaseSettings):
     """Redis配置"""
-    host: str = "localhost"
-    port: int = 6379
-    password: Optional[str] = None
+    host: str = os.getenv("REDIS_HOST", "localhost")
+    port: int = int(os.getenv("REDIS_PORT", "6379"))
+    password: Optional[str] = os.getenv("REDIS_PASSWORD", None)
     db: int = 0
 
 
 class JWTConfig(BaseSettings):
     """JWT配置"""
-    secret: str = "your-secret-key"
+    secret: str = os.getenv("JWT_SECRET") or "petway-jwt-secret-2024"
     expire: int = 7200  # 2小时
     algorithm: str = "HS256"
 
 
 class WechatConfig(BaseSettings):
     """微信配置"""
+    model_config = {"env_prefix": "WECHAT_"}
     appid: str = ""
     appsecret: str = ""
     mchid: Optional[str] = None  # 商户号

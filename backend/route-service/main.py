@@ -152,7 +152,7 @@ async def get_routes(
         elif sort_by == "rating":
             query = query.order_by(Route.id)  # 暂无rating字段
         else:
-            query = query.order_by(Route.created_at.desc())
+            query = query.order_by(Route.sort_order.asc(), Route.created_at.desc())
         
         # 先查询筛选后的总数
         count_query = select(func.count(Route.id)).where(Route.status == 1)
@@ -439,8 +439,8 @@ async def get_route_schedules(
                 "id": s.id,
                 "route_id": s.route_id,
                 "schedule_date": s.schedule_date.isoformat() if s.schedule_date else "",
-                "start_time": s.start_time or "09:00",
-                "end_time": s.end_time or "17:00",
+                "start_time": _format_time(s.start_time) or "09:00",
+                "end_time": _format_time(s.end_time) or "17:00",
                 "price": float(s.price) if s.price else 0,
                 "stock": s.stock or 0,
                 "sold": s.sold or 0,
@@ -578,6 +578,7 @@ class RouteCreateUpdate(BaseModel):
     is_safety_required: int = 1
     is_hot: int = 0
     status: int = 1
+    sort_order: Optional[int] = None
 
 class ScheduleCreateUpdate(BaseModel):
     """排期创建/更新请求"""
@@ -589,6 +590,20 @@ class ScheduleCreateUpdate(BaseModel):
     status: Optional[int] = None
     guide_id: Optional[int] = None
     trainer_id: Optional[int] = None
+
+
+def _format_time(time_val) -> str:
+    """将 TIME/timedelta 转换为 HH:MM 字符串"""
+    if time_val is None:
+        return ""
+    if isinstance(time_val, str):
+        return time_val
+    if hasattr(time_val, "total_seconds"):  # timedelta
+        seconds = int(time_val.total_seconds())
+        hours = seconds // 3600
+        minutes = (seconds % 3600) // 60
+        return f"{hours:02d}:{minutes:02d}"
+    return str(time_val)
 
 
 async def _process_rich_text(content: str) -> str:
@@ -690,7 +705,8 @@ async def admin_create_route(
             safety_video_duration=data.safety_video_duration,
             is_safety_required=data.is_safety_required,
             is_hot=data.is_hot,
-            status=data.status
+            status=data.status,
+            sort_order=data.sort_order if data.sort_order is not None else 0
         )
         
         db.add(route)
@@ -731,7 +747,7 @@ async def admin_update_route(
             if update_data.get(rich_field):
                 update_data[rich_field] = await _process_rich_text(update_data[rich_field])
         for field, value in update_data.items():
-            if value is not None or field in ['subtitle', 'title', 'description', 'is_hot', 'status', 'content_modules']:  # 允许清空这些字段
+            if value is not None or field in ['subtitle', 'title', 'description', 'is_hot', 'status', 'content_modules', 'sort_order']:  # 允许清空这些字段
                 setattr(route, field, value)
         
         await db.commit()
@@ -782,6 +798,7 @@ async def admin_delete_route(
 @app.get("/api/v1/admin/routes")
 async def admin_get_routes(
     keyword: Optional[str] = None,
+    route_no: Optional[str] = None,
     route_type: Optional[int] = None,
     status: Optional[int] = None,
     is_hot: Optional[int] = None,
@@ -817,6 +834,9 @@ async def admin_get_routes(
                 Route.name.contains(keyword) | Route.route_no.contains(keyword)
             )
         
+        if route_no:
+            query = query.where(Route.route_no == route_no)
+        
         if route_type:
             query = query.where(Route.route_type == route_type)
         
@@ -833,13 +853,15 @@ async def admin_get_routes(
             count_query = count_query.where(
                 Route.name.contains(keyword) | Route.route_no.contains(keyword)
             )
+        if route_no:
+            count_query = count_query.where(Route.route_no == route_no)
         if route_type:
             count_query = count_query.where(Route.route_type == route_type)
         total_result = await db.execute(count_query)
         total = total_result.scalar() or 0
         
         # 分页
-        query = query.order_by(Route.created_at.desc())
+        query = query.order_by(Route.sort_order.asc(), Route.created_at.desc())
         query = query.offset((page - 1) * page_size).limit(page_size)
         
         result = await db.execute(query)
@@ -861,6 +883,7 @@ async def admin_get_routes(
                 "max_participants": r.max_participants,
                 "is_hot": r.is_hot,
                 "status": r.status,
+                "sort_order": r.sort_order,
                 "created_at": r.created_at.isoformat() if r.created_at else None,
                 "updated_at": r.updated_at.isoformat() if r.updated_at else None
             })
@@ -924,6 +947,7 @@ async def admin_get_route_detail(
             "is_safety_required": r.is_safety_required,
             "is_hot": r.is_hot,
             "status": r.status,
+            "sort_order": r.sort_order,
             "created_at": r.created_at.isoformat() if r.created_at else None,
             "updated_at": r.updated_at.isoformat() if r.updated_at else None
         }
@@ -1103,8 +1127,8 @@ async def admin_get_all_schedules(
                 "route_id": s.route_id,
                 "route_name": route_name,
                 "schedule_date": s.schedule_date.isoformat() if s.schedule_date else "",
-                "start_time": s.start_time or "09:00",
-                "end_time": s.end_time or "17:00",
+                "start_time": _format_time(s.start_time) or "09:00",
+                "end_time": _format_time(s.end_time) or "17:00",
                 "price": float(s.price) if s.price else 0,
                 "stock": s.stock or 0,
                 "sold": s.sold or 0,
@@ -1155,8 +1179,8 @@ async def admin_get_schedules(
                 "id": s.id,
                 "route_id": s.route_id,
                 "schedule_date": s.schedule_date.isoformat() if s.schedule_date else "",
-                "start_time": s.start_time or "09:00",
-                "end_time": s.end_time or "17:00",
+                "start_time": _format_time(s.start_time) or "09:00",
+                "end_time": _format_time(s.end_time) or "17:00",
                 "price": float(s.price) if s.price else 0,
                 "stock": s.stock or 0,
                 "sold": s.sold or 0,

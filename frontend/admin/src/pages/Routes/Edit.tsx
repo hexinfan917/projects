@@ -1,5 +1,5 @@
 import { PageContainer } from '@ant-design/pro-components';
-import { Card, Form, Input, Select, InputNumber, Radio, Button, Space, Upload, message, Row, Col, DatePicker, TimePicker, Table, Popconfirm, Tabs, Modal } from 'antd';
+import { Card, Form, Input, Select, InputNumber, Radio, Button, Space, Upload, message, Row, Col, DatePicker, TimePicker, Table, Popconfirm, Tabs, Modal, Spin } from 'antd';
 import { UploadOutlined, PlusOutlined, DeleteOutlined, SaveOutlined } from '@ant-design/icons';
 import { useState, useEffect } from 'react';
 import { request, useParams, history } from '@umijs/max';
@@ -112,10 +112,8 @@ export default function RouteEdit() {
   const fetchSchedules = async () => {
     try {
       const res = await request(`/api/v1/admin/routes/${id}/schedules`);
-      console.log('获取排期响应:', res);
       if (res.code === 200 && res.data) {
         setSchedules(res.data.schedules || []);
-        console.log('排期列表已更新:', res.data.schedules?.length || 0, '条');
       }
     } catch (error) {
       console.error('获取排期失败', error);
@@ -222,7 +220,7 @@ export default function RouteEdit() {
         const url = info.file.response?.data?.url;
         if (url) {
           message.success(`${info.file.name} 上传成功`);
-          const fullUrl = url.startsWith('http') ? url : `http://localhost:8081${url}`;
+          const fullUrl = url;
           handleGalleryUpload(fullUrl);
         }
       } else if (info.file.status === 'error') {
@@ -303,18 +301,15 @@ export default function RouteEdit() {
 
   // 删除排期
   const deleteSchedule = async (scheduleId: number) => {
-    console.log('开始删除排期:', scheduleId);
     try {
       const res = await request(`/api/v1/admin/schedules/${scheduleId}`, {
         method: 'DELETE',
       });
-      console.log('删除排期响应:', res);
       if (res.code === 200) {
         message.success('排期删除成功');
         // 立即从本地状态移除
         setSchedules(prev => {
           const newSchedules = prev.filter(s => s.id !== scheduleId);
-          console.log('本地状态已更新:', newSchedules.length, '条');
           return newSchedules;
         });
         // 延迟刷新确保后端同步
@@ -489,7 +484,8 @@ export default function RouteEdit() {
     >
       <Tabs activeKey={activeTab} onChange={setActiveTab}>
         <Tabs.TabPane tab="基本信息" key="basic">
-          <Card loading={loading}>
+          <Card>
+            <Spin spinning={loading}>
             <Form
               form={form}
               layout="vertical"
@@ -650,6 +646,14 @@ export default function RouteEdit() {
                 </Radio.Group>
               </Form.Item>
 
+              <Form.Item
+                name="sort_order"
+                label="排序"
+                tooltip="数值越小排序越靠前"
+              >
+                <InputNumber style={{ width: '100%' }} min={0} placeholder="请输入排序值" />
+              </Form.Item>
+
               <Form.Item label="封面图片">
                 <Form.Item name="cover_image" noStyle>
                   <Input placeholder="图片URL" style={{ marginBottom: 8 }} />
@@ -662,7 +666,7 @@ export default function RouteEdit() {
                     if (info.file.status === 'done') {
                       const url = info.file.response?.data?.url;
                       if (url) {
-                        const fullUrl = url.startsWith('http') ? url : `http://localhost:8081${url}`;
+                        const fullUrl = url;
                         form.setFieldValue('cover_image', fullUrl);
                       }
                     }
@@ -736,6 +740,7 @@ export default function RouteEdit() {
                 </Form.Item>
               </Form.Item>
             </Form>
+            </Spin>
           </Card>
         </Tabs.TabPane>
 

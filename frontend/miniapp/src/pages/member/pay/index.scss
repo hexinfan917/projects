@@ -7,6 +7,8 @@
 .custom-navbar {
   position: relative;
   height: 200rpx;
+  padding-top: 0;
+  box-sizing: content-box;
   .navbar-bg {
     position: absolute;
     top: 0; left: 0; right: 0; bottom: 0;

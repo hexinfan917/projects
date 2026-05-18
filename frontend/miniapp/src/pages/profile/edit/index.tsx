@@ -1,14 +1,14 @@
 import { useEffect, useState } from 'react'
 import Taro from '@tarojs/taro'
 import { View, Text, Input, Button, Image } from '@tarojs/components'
-import { getUserProfile, updateUserProfile, uploadFile } from '../../../utils/api'
+import { getUserProfile, updateUserProfile, uploadFile, compressImageUrl } from '../../../utils/api'
 import './index.scss'
 
 const BASE_URL = 'https://tailtravel.westilt.com'
 
 function fullImageUrl(url?: string) {
   if (!url) return ''
-  return url.startsWith('http') ? url : `${BASE_URL}${url}`
+  return compressImageUrl(url, 200)
 }
 
 const GENDER_OPTIONS = [
@@ -80,7 +80,7 @@ export default function ProfileEdit() {
         <View className='navbar-bg' />
         <View className='navbar-content'>
           <View className='page-back' onClick={() => Taro.navigateBack()}>
-            <Text className='page-back-icon'>←</Text>
+            <Image className='page-back-icon' src='/assets/icons/return.png' mode='aspectFit' />
           </View>
           <Text className='navbar-title'>完善个人信息</Text>
         </View>

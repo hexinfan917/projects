@@ -48,8 +48,8 @@ export default function EvaluationManage() {
         2: { text: '2星' },
         1: { text: '1星' },
       },
-      render: (rating: number) => (
-        <Rate disabled defaultValue={rating} style={{ fontSize: 14 }} />
+      render: (_: any, record: any) => (
+        <Rate disabled defaultValue={record.rating} style={{ fontSize: 14 }} />
       ),
     },
     {

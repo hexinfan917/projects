@@ -1,11 +1,14 @@
 import { PageContainer, ProTable } from '@ant-design/pro-components';
-import { Button, Tag, Space, Popconfirm, message } from 'antd';
+import { Button, Tag, Space, Popconfirm, message, InputNumber } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, CalendarOutlined } from '@ant-design/icons';
 import { useRef, useState, useEffect } from 'react';
 import { request, history } from '@umijs/max';
+import dayjs from 'dayjs';
 
 export default function RouteList() {
   const tableRef = useRef<any>(null);
+  const [editingSortId, setEditingSortId] = useState<number | null>(null);
+  const [editingSortValue, setEditingSortValue] = useState<number | null>(null);
   const [routeTypeEnum, setRouteTypeEnum] = useState<Record<string, { text: string }>>({
     1: { text: '山野厨房' },
     2: { text: '海边度假' },
@@ -32,6 +35,70 @@ export default function RouteList() {
       dataIndex: 'id',
       search: false,
       width: 60,
+    },
+    {
+      title: '排序',
+      dataIndex: 'sort_order',
+      search: false,
+      width: 80,
+      render: (_: any, record: any) => {
+        if (editingSortId === record.id) {
+          return (
+            <InputNumber
+              autoFocus
+              value={editingSortValue}
+              min={0}
+              style={{ width: 70 }}
+              onChange={(val) => setEditingSortValue(val)}
+              onBlur={() => {
+                if (editingSortValue !== null && editingSortValue !== record.sort_order) {
+                  request(`/api/v1/admin/routes/${record.id}`, {
+                    method: 'PUT',
+                    data: { sort_order: editingSortValue },
+                  }).then((res: any) => {
+                    if (res.code === 200) {
+                      message.success('排序更新成功');
+                      tableRef.current?.reload();
+                    } else {
+                      message.error(res.message || '更新失败');
+                    }
+                  }).catch(() => message.error('更新失败'));
+                }
+                setEditingSortId(null);
+                setEditingSortValue(null);
+              }}
+              onPressEnter={() => {
+                if (editingSortValue !== null && editingSortValue !== record.sort_order) {
+                  request(`/api/v1/admin/routes/${record.id}`, {
+                    method: 'PUT',
+                    data: { sort_order: editingSortValue },
+                  }).then((res: any) => {
+                    if (res.code === 200) {
+                      message.success('排序更新成功');
+                      tableRef.current?.reload();
+                    } else {
+                      message.error(res.message || '更新失败');
+                    }
+                  }).catch(() => message.error('更新失败'));
+                }
+                setEditingSortId(null);
+                setEditingSortValue(null);
+              }}
+            />
+          );
+        }
+        return (
+          <span
+            style={{ cursor: 'pointer', color: '#1890ff' }}
+            onClick={() => {
+              setEditingSortId(record.id);
+              setEditingSortValue(record.sort_order ?? 0);
+            }}
+          >
+            {record.sort_order ?? 0}
+          </span>
+        );
+      },
     },
     {
       title: '路线编号',
@@ -106,6 +173,7 @@ export default function RouteList() {
       dataIndex: 'created_at',
       search: false,
       width: 180,
+      render: (date: string) => (date ? dayjs(date).format('YYYY-MM-DD HH:mm') : '-'),
     },
     {
       title: '操作',
@@ -182,6 +250,7 @@ export default function RouteList() {
               page: params.current,
               page_size: params.pageSize,
               keyword: params.name,
+              route_no: params.route_no,
               route_type: params.route_type,
               status: params.status,
             },

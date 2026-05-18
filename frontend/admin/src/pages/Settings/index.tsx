@@ -2,7 +2,8 @@ import { PageContainer } from '@ant-design/pro-components';
 import { Card, Form, Input, Button, message, Tabs, Switch, Space, Divider } from 'antd';
 import { useState, useEffect } from 'react';
 import { request } from '@umijs/max';
-import { SaveOutlined, ReloadOutlined } from '@ant-design/icons';
+import { SaveOutlined, ReloadOutlined, LogoutOutlined } from '@ant-design/icons';
+import { history } from '@umijs/max';
 
 const { TabPane } = Tabs;
 
@@ -168,6 +169,9 @@ export default function Settings() {
               </Button>
               <Button icon={<ReloadOutlined />} onClick={fetchSettings}>
                 刷新
+              </Button>
+              <Button danger icon={<LogoutOutlined />} onClick={() => { localStorage.removeItem('token'); history.push('/login'); }}>
+                退出登录
               </Button>
             </Space>
           </Form.Item>

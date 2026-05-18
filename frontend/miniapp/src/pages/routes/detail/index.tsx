@@ -19,7 +19,8 @@ function processRichText(html: string): string {
       const src = srcMatch[1]
       if (src && !src.startsWith('http')) {
         const fullSrc = `${FILE_BASE_URL}${src.startsWith('/') ? '' : '/'}${src}`
-        newAttrs = newAttrs.replace(srcMatch[0], `src="${fullSrc}"`)
+        const compressSrc = fullSrc + '?w=800&q=75'
+        newAttrs = newAttrs.replace(srcMatch[0], `src="${compressSrc}"`)
       }
     }
 
@@ -39,6 +40,11 @@ function processRichText(html: string): string {
       newAttrs = newAttrs.replace(/style\s*=\s*"[^"]*"/i, `style="${styleValue};max-width:100%;height:auto;display:block;"`)
     } else {
       newAttrs += ' style="max-width:100%;height:auto;display:block;"'
+    }
+
+    // 4. 添加懒加载属性
+    if (!newAttrs.includes('loading=')) {
+      newAttrs += ' loading="lazy"'
     }
 
     return `<img${newAttrs}>`
@@ -137,16 +143,28 @@ export default function RouteDetail() {
   return (
     <View className='route-detail' style={{ paddingTop: '140rpx' }}>
       <View className='page-back' onClick={() => Taro.navigateBack()}>
-        <Text className='page-back-icon'>←</Text>
+        <Image className='page-back-icon' src='/assets/icons/return.png' mode='aspectFit' />
       </View>
       <ScrollView className='detail-scroll' scrollY>
         {images.length === 1 ? (
-          <Image className='cover-image' src={images[0].startsWith('http') ? images[0] : `https://tailtravel.westilt.com${images[0]}`} mode='aspectFill' />
+          <Image
+            className='cover-image'
+            src={(images[0].startsWith('http') ? images[0] : `https://tailtravel.westilt.com${images[0]}`) + '?w=750&q=75'}
+            mode='aspectFill'
+            lazyLoad
+            onError={() => console.warn('封面图加载失败:', images[0])}
+          />
         ) : (
           <Swiper className='cover-swiper' indicatorDots autoplay interval={4000}>
             {images.map((img: string, idx: number) => (
               <SwiperItem key={idx}>
-                <Image className='cover-image' src={img.startsWith('http') ? img : `https://tailtravel.westilt.com${img}`} mode='aspectFill' />
+                <Image
+                  className='cover-image'
+                  src={(img.startsWith('http') ? img : `https://tailtravel.westilt.com${img}`) + '?w=750&q=75'}
+                  mode='aspectFill'
+                  lazyLoad
+                  onError={() => console.warn('轮播图加载失败:', img)}
+                />
               </SwiperItem>
             ))}
           </Swiper>

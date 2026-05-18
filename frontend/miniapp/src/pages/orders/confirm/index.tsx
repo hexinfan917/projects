@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import Taro, { useDidShow } from '@tarojs/taro'
 import { View, Text, Image, Swiper, SwiperItem, ScrollView } from '@tarojs/components'
-import { getRouteDetail, getRouteSchedules, getPets, getTravelers, createOrder, getRouteAddons, getAvailableCoupons, calculateCoupon } from '../../../utils/api'
+import { getRouteDetail, getRouteSchedules, getPets, getTravelers, createOrder, getRouteAddons, getAvailableCoupons, calculateCoupon, getAgreements, compressImageUrl } from '../../../utils/api'
 import './index.scss'
 
 const GENDER_MAP: any = { 0: '母', 1: '公' }
@@ -29,7 +29,7 @@ function maskIdCard(idCard?: string) {
 /* ---------- 酒店房型详情弹窗 ---------- */
 function HotelRoomModal({ room, visible, onClose }: any) {
   if (!visible || !room) return null
-  const images = room.images?.length > 0 ? room.images : ['https://via.placeholder.com/750x420']
+  const images = room.images?.length > 0 ? room.images.map((url: string) => compressImageUrl(url, 750)) : ['https://via.placeholder.com/750x420']
   return (
     <View className='room-modal-confirm' onClick={onClose}>
       <View className='room-modal-mask-confirm' />
@@ -129,6 +129,8 @@ export default function OrderConfirm() {
   const [couponDiscount, setCouponDiscount] = useState(0)
   const [showCouponModal, setShowCouponModal] = useState(false)
   const [showPriceDetail, setShowPriceDetail] = useState(false)
+  const [agreements, setAgreements] = useState<any[]>([])
+  const [agreed, setAgreed] = useState(false)
 
   useEffect(() => {
     const instance = Taro.getCurrentInstance()
@@ -137,7 +139,26 @@ export default function OrderConfirm() {
     if (routeId) {
       loadRouteData(Number(routeId), Number(scheduleId))
     }
+    loadAgreements()
   }, [])
+
+  const loadAgreements = async () => {
+    try {
+      const res = await getAgreements()
+      if (res.code === 200) {
+        const list = res.data?.list || []
+        // 订单提交页只显示与订单相关的协议，排除用户协议和隐私政策
+        const filtered = list.filter((a: any) => a.type !== 'user_agreement' && a.type !== 'privacy_policy')
+        setAgreements(filtered)
+      }
+    } catch (e: any) {
+      // 接口未就绪时静默处理，不影响下单流程
+      if (e?.statusCode !== 404 && !e?.message?.includes('Not Found')) {
+        console.error('load agreements error', e)
+      }
+      setAgreements([])
+    }
+  }
 
   useDidShow(() => {
     loadTravelers()
@@ -361,6 +382,10 @@ export default function OrderConfirm() {
       Taro.showToast({ title: '路线或排期信息加载失败', icon: 'none' })
       return
     }
+    if (agreements.length > 0 && !agreed) {
+      Taro.showToast({ title: '请先阅读并同意相关协议', icon: 'none' })
+      return
+    }
     try {
       const contact = selectedTravelers[0]
       const participants = selectedTravelers.slice(1)
@@ -496,7 +521,7 @@ export default function OrderConfirm() {
     ? unitPrice + Math.max(0, selectedTravelers.length - 1) * extraPersonPrice + Math.max(0, selectedPetIds.length - 1) * extraPetPrice
     : unitPrice * selectedTravelers.length
   const total = routePrice + petInsuranceTotal + personInsuranceTotal + addonTotal
-  const canSubmit = selectedTravelers.length > 0 && selectedPetIds.length > 0
+  const canSubmit = selectedTravelers.length > 0 && selectedPetIds.length > 0 && (agreements.length === 0 || agreed)
 
   // 加载可用优惠券
   useEffect(() => {
@@ -543,7 +568,7 @@ export default function OrderConfirm() {
     <View className='order-confirm' style={{ paddingTop: '140rpx' }}>
 
         <View className='page-back' onClick={() => Taro.navigateBack()}>
-          <Text className='page-back-icon'>←</Text>
+          <Image className='page-back-icon' src='/assets/icons/return.png' mode='aspectFit' />
         </View>
       {/* 橙色头部栏 */}
       <View className='order-header'>
@@ -592,7 +617,7 @@ export default function OrderConfirm() {
         </View>
         {selectedPets.map(pet => (
           <View key={pet.id} className='info-card pet-card active' onClick={() => togglePet(pet.id)}>
-            <Image className='pet-avatar-small' src={pet.avatar || 'https://via.placeholder.com/120'} mode='aspectFill' />
+            <Image className='pet-avatar-small' src={compressImageUrl(pet.avatar, 200) || 'https://via.placeholder.com/120'} mode='aspectFill' />
             <View className='info-main'>
               <Text className='info-name'>
                 {pet.name}
@@ -679,7 +704,7 @@ export default function OrderConfirm() {
                       {addon.extra_config.rooms.map((room: any, idx: number) => {
                         const qty = roomQtyMap[room.name] || 0
                         const roomLimit = room.stock || limit
-                        const imgUrl = room.images?.[0] || 'https://via.placeholder.com/200x150'
+                        const imgUrl = room.images?.[0] ? compressImageUrl(room.images[0], 400) : 'https://via.placeholder.com/200x150'
                         return (
                           <View key={idx} className='hotel-room-card-confirm'>
                             <View className='hotel-room-top-confirm' onClick={() => setSelectedRoom(room)}>
@@ -801,6 +826,34 @@ export default function OrderConfirm() {
           <Text className='coupon-select-arrow'>›</Text>
         </View>
       </View>
+
+      {/* 协议勾选 */}
+      {agreements.length > 0 && (
+        <View className='agreement-section'>
+          <View className='agreement-checkbox' onClick={() => setAgreed(!agreed)}>
+            <View className={`agreement-check ${agreed ? 'checked' : ''}`}>
+              {agreed && <Text className='agreement-check-icon'>✓</Text>}
+            </View>
+            <Text className='agreement-text'>
+              已阅读并同意
+              {agreements.map((a: any, idx: number) => (
+                <Text key={a.id}>
+                  <Text
+                    className='agreement-link'
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      Taro.navigateTo({ url: `/pages/agreements/detail/index?id=${a.id}` })
+                    }}
+                  >
+                    {a.title}
+                  </Text>
+                  {idx < agreements.length - 1 && '、'}
+                </Text>
+              ))}
+            </Text>
+          </View>
+        </View>
+      )}
 
       {/* 底部固定栏 */}
       <View className='bottom-bar'>

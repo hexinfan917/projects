@@ -1,6 +1,7 @@
 import { defineConfig } from '@umijs/max';
 
 export default defineConfig({
+  publicPath: '/admin/',
   antd: {},
   access: {},
   model: {},
@@ -139,7 +140,27 @@ export default defineConfig({
     {
       name: '优惠券管理',
       path: '/coupons',
-      component: './Coupons/List',
+      routes: [
+        {
+          path: '/coupons',
+          redirect: '/coupons/list',
+        },
+        {
+          name: '优惠券模板',
+          path: '/coupons/list',
+          component: './Coupons/List',
+        },
+        {
+          name: '核销记录',
+          path: '/coupons/use-records',
+          component: './Coupons/UseRecords',
+        },
+      ],
+    },
+    {
+      name: '协议管理',
+      path: '/agreements',
+      component: './Agreements',
     },
     {
       name: '系统设置',

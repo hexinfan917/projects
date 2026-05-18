@@ -199,9 +199,8 @@
 
 .plan-scroll-wrap {
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
   gap: 20rpx;
-  overflow-x: auto;
   padding-bottom: 10rpx;
 }
 

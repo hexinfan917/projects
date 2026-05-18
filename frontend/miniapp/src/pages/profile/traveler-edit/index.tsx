@@ -1,8 +1,37 @@
 import { useEffect, useState } from 'react'
 import Taro from '@tarojs/taro'
-import { View, Text, Input, Button } from '@tarojs/components'
+import { View, Text, Input, Button , Image } from '@tarojs/components'
 import { getTravelers, createTraveler, updateTraveler } from '../../../utils/api'
 import './index.scss'
+
+/** 校验手机号 */
+const isValidPhone = (phone: string): boolean => {
+  return /^1[3-9]\d{9}$/.test(phone)
+}
+
+/** 校验身份证号 */
+const isValidIdCard = (idCard: string): boolean => {
+  if (!idCard || idCard.length !== 18) return false
+  // 基本格式：前17位数字，最后一位数字或X
+  if (!/^\d{17}[\dXx]$/.test(idCard)) return false
+  // 校验码验证
+  const weights = [7, 9, 10, 5, 8, 4, 2, 1, 6, 3, 7, 9, 10, 5, 8, 4, 2]
+  const checkCodes = ['1', '0', 'X', '9', '8', '7', '6', '5', '4', '3', '2']
+  let sum = 0
+  for (let i = 0; i < 17; i++) {
+    sum += parseInt(idCard[i], 10) * weights[i]
+  }
+  const calcCheck = checkCodes[sum % 11]
+  const actualCheck = idCard[17].toUpperCase()
+  return calcCheck === actualCheck
+}
+
+/** 校验姓名 */
+const isValidName = (name: string): boolean => {
+  // 允许中文、英文、·、•，长度2-20
+  if (!name || name.length < 2 || name.length > 20) return false
+  return /^[\u4e00-\u9fa5a-zA-Z·•]+$/.test(name)
+}
 
 export default function TravelerEdit() {
   const [form, setForm] = useState<any>({ name: '', phone: '', id_card: '', gender: 0, is_default: 0 })
@@ -28,10 +57,36 @@ export default function TravelerEdit() {
   }, [])
 
   const handleSave = async () => {
-    if (!form.name || !form.phone || !form.id_card) {
-      Taro.showToast({ title: '请填写完整信息', icon: 'none' })
+    // 姓名校验
+    if (!form.name) {
+      Taro.showToast({ title: '请输入姓名', icon: 'none' })
       return
     }
+    if (!isValidName(form.name)) {
+      Taro.showToast({ title: '姓名仅限2-20位中文/英文/·', icon: 'none' })
+      return
+    }
+
+    // 手机号校验
+    if (!form.phone) {
+      Taro.showToast({ title: '请输入手机号', icon: 'none' })
+      return
+    }
+    if (!isValidPhone(form.phone)) {
+      Taro.showToast({ title: '手机号格式不正确', icon: 'none' })
+      return
+    }
+
+    // 身份证校验
+    if (!form.id_card) {
+      Taro.showToast({ title: '请输入身份证号', icon: 'none' })
+      return
+    }
+    if (!isValidIdCard(form.id_card)) {
+      Taro.showToast({ title: '身份证号格式不正确', icon: 'none' })
+      return
+    }
+
     try {
       if (form.id) {
         const res: any = await updateTraveler(form.id, form)
@@ -58,7 +113,7 @@ export default function TravelerEdit() {
     <View className='traveler-edit' style={{ paddingTop: '140rpx' }}>
 
         <View className='page-back' onClick={() => Taro.navigateBack()}>
-          <Text className='page-back-icon'>←</Text>
+          <Image className='page-back-icon' src='/assets/icons/return.png' mode='aspectFit' />
         </View>
       <View className='form-section'>
         <View className='input-row'>

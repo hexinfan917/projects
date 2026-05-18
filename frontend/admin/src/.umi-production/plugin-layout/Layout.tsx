@@ -105,7 +105,7 @@ const formatMessage = undefined;
     <ProLayout
       route={route}
       location={location}
-      title={userConfig.title || 'quandouxing-admin'}
+      title={userConfig.title || 'petway-admin'}
       navTheme="dark"
       siderWidth={256}
       onMenuHeaderClick={(e) => {

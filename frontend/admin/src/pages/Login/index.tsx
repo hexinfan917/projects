@@ -22,14 +22,7 @@ export default function LoginPage() {
       }
       message.error(res.message || '登录失败');
     } catch (err: any) {
-      // 若后端接口尚未重启/不可用，开发环境允许使用 mock token 直接登录
-      if (values.username === 'admin' && values.password === 'admin123') {
-        localStorage.setItem('token', 'mock_token_admin_dev');
-        message.success('开发环境快速登录成功');
-        history.push('/home');
-      } else {
-        message.error('登录失败，请检查账号密码');
-      }
+      message.error('登录失败，请检查账号密码');
     } finally {
       setLoading(false);
     }
@@ -62,7 +55,7 @@ export default function LoginPage() {
         }}
       >
         <Alert
-          message="开发环境账号: admin / 密码: admin123"
+          message="请输入管理员账号和密码"
           type="info"
           showIcon
           style={{ marginBottom: 24 }}

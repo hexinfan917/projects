@@ -37,7 +37,7 @@ export default function Footprint() {
     <View className='footprint-page' style={{ paddingTop: '140rpx' }}>
 
         <View className='page-back' onClick={() => Taro.navigateBack()}>
-          <Text className='page-back-icon'>←</Text>
+          <Image className='page-back-icon' src='/assets/icons/return.png' mode='aspectFit' />
         </View>
       <View className='search-bar'>
         <Text className='search-icon'>🔍</Text>
@@ -53,7 +53,7 @@ export default function Footprint() {
       <ScrollView className='footprint-list' scrollY>
         {filtered.map(item => (
           <View key={item.id} className='footprint-card' onClick={() => goDetail(item.id)}>
-            <Image className='footprint-image' src={item.cover_image} mode='aspectFill' />
+            <Image className='footprint-image' src={item.cover_image ? (item.cover_image.startsWith('http') ? item.cover_image : `https://tailtravel.westilt.com${item.cover_image}`) + '?w=400&q=75' : ''} mode='aspectFill' />
             <View className='footprint-info'>
               <Text className='footprint-name'>{item.name}</Text>
               {item.subtitle ? <Text className='footprint-subtitle'>{item.subtitle}</Text> : null}

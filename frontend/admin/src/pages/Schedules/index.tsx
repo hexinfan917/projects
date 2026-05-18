@@ -33,9 +33,13 @@ export default function ScheduleManage() {
   // 获取日历数据
   const fetchCalendarData = async () => {
     if (!selectedRoute) return;
-    const res = await request(`/api/v1/admin/routes/${selectedRoute}/schedules`);
-    if (res.code === 200) {
-      setCalendarData(res.data || []);
+    try {
+      const res = await request(`/api/v1/admin/routes/${selectedRoute}/schedules`);
+      if (res.code === 200) {
+        setCalendarData(res.data || []);
+      }
+    } catch (error) {
+      message.error('获取日历数据失败');
     }
   };
 
@@ -70,10 +74,13 @@ export default function ScheduleManage() {
         ? `/api/v1/admin/schedules/${editData.id}` 
         : `/api/v1/admin/routes/${values.route_id}/schedules`;
       const method = editData ? 'PUT' : 'POST';
-      
+      const submitData = {
+        ...values,
+        schedule_date: values.schedule_date ? dayjs(values.schedule_date).format('YYYY-MM-DD') : values.schedule_date,
+      };
       const res = await request(url, {
         method,
-        data: values,
+        data: submitData,
       });
       
       if (res.code === 200) {
@@ -128,7 +135,7 @@ export default function ScheduleManage() {
       title: '库存',
       width: 100,
       search: false,
-      render: (record: any) => `${record.stock}/${record.stock + record.sold}`,
+      render: (record: any) => `${record.sold}/${record.stock}`,
     },
     {
       title: '已售',
@@ -146,11 +153,15 @@ export default function ScheduleManage() {
         2: { text: '已满' },
         3: { text: '已结束' },
       },
-      render: (status: number) => (
-        <Tag color={statusMap[status]?.color || 'default'}>
-          {statusMap[status]?.text || '未知'}
-        </Tag>
-      ),
+      render: (_: any, record: any) => {
+        const status = record.status;
+        const config = statusMap[status] || { text: '未知', color: 'default' };
+        return (
+          <Tag color={config.color}>
+            {config.text}
+          </Tag>
+        );
+      },
     },
     {
       title: '操作',

@@ -1,4 +1,4 @@
-import { View, Text } from '@tarojs/components'
+import { View, Text , Image } from '@tarojs/components'
 import Taro from '@tarojs/taro'
 import './index.scss'
 
@@ -7,7 +7,7 @@ export default function Privacy() {
     <View className='privacy-page' style={{ paddingTop: '140rpx' }}>
 
         <View className='page-back' onClick={() => Taro.navigateBack()}>
-          <Text className='page-back-icon'>←</Text>
+          <Image className='page-back-icon' src='/assets/icons/return.png' mode='aspectFit' />
         </View>
       <View className='content-section'>
         <Text className='title'>隐私政策</Text>

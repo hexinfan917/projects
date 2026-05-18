@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react'
 import Taro from '@tarojs/taro'
-import { View, Text, Input, Button } from '@tarojs/components'
+import { View, Text, Input, Button , Image } from '@tarojs/components'
+import { deleteAccount } from '../../../utils/api'
 import './index.scss'
 
 export default function Security() {
   const [phone, setPhone] = useState('')
-  const [modalType, setModalType] = useState<'phone' | 'password' | null>(null)
+  const [modalType, setModalType] = useState<'phone' | 'password' | 'delete' | null>(null)
   const [newPhone, setNewPhone] = useState('')
   const [code, setCode] = useState('')
   const [oldPassword, setOldPassword] = useState('')
@@ -72,11 +73,28 @@ export default function Security() {
     setNewPassword('')
   }
 
+  const handleDeleteAccount = async () => {
+    try {
+      const res: any = await deleteAccount()
+      if (res.code === 200) {
+        Taro.showToast({ title: '账号已注销', icon: 'success' })
+        Taro.clearStorage()
+        setTimeout(() => {
+          Taro.reLaunch({ url: '/pages/login/index' })
+        }, 1500)
+      } else {
+        Taro.showToast({ title: res.message || '注销失败', icon: 'none' })
+      }
+    } catch (err: any) {
+      Taro.showToast({ title: err.message || '注销失败', icon: 'none' })
+    }
+  }
+
   return (
     <View className='security-page' style={{ paddingTop: '140rpx' }}>
 
         <View className='page-back' onClick={() => Taro.navigateBack()}>
-          <Text className='page-back-icon'>←</Text>
+          <Image className='page-back-icon' src='/assets/icons/return.png' mode='aspectFit' />
         </View>
       <View className='info-section'>
         <View className='info-item'>
@@ -91,11 +109,29 @@ export default function Security() {
           <Text className='info-label'>修改密码</Text>
           <Text className='info-arrow'>{'>'}</Text>
         </View>
+        <View className='info-item danger' onClick={() => setModalType('delete')}>
+          <Text className='info-label danger-text'>注销账号</Text>
+          <Text className='info-arrow'>{'>'}</Text>
+        </View>
       </View>
 
       <View className='tip-section'>
         <Text className='tip-text'>提示：更换手机号需要验证身份，修改密码需要原密码验证。如忘记原密码，请联系客服处理。</Text>
       </View>
+
+      {/* 注销账号弹窗 */}
+      {modalType === 'delete' && (
+        <View className='modal-overlay' onClick={() => setModalType(null)}>
+          <View className='modal-content' onClick={(e) => e.stopPropagation()}>
+            <Text className='modal-title' style={{ color: '#EF4444' }}>注销账号</Text>
+            <Text className='tip-text' style={{ textAlign: 'center', marginBottom: '32rpx' }}>
+              注销后账号将无法恢复，所有数据将被清除。是否确认注销？
+            </Text>
+            <Button className='submit-btn' style={{ background: '#EF4444' }} onClick={handleDeleteAccount}>确认注销</Button>
+            <Button className='cancel-btn' onClick={() => setModalType(null)}>取消</Button>
+          </View>
+        </View>
+      )}
 
       {/* 更换手机号弹窗 */}
       {modalType === 'phone' && (

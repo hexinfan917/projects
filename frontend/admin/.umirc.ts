@@ -1,6 +1,8 @@
 import { defineConfig } from '@umijs/max';
 
 export default defineConfig({
+  publicPath: '/admin/',
+  base: '/admin/',
   antd: {},
   access: {},
   model: {},
@@ -97,6 +99,27 @@ export default defineConfig({
       component: './Finance',
     },
     {
+      name: '系统管理',
+      path: '/system',
+      routes: [
+        {
+          name: '管理员管理',
+          path: '/system/admins',
+          component: './AdminUsers',
+        },
+        {
+          name: '角色管理',
+          path: '/system/roles',
+          component: './Roles',
+        },
+        {
+          name: '菜单管理',
+          path: '/system/menus',
+          component: './Menus',
+        },
+      ],
+    },
+    {
       name: '系统设置',
       path: '/settings',
       component: './Settings',
@@ -110,6 +133,11 @@ export default defineConfig({
       name: '内容管理',
       path: '/articles',
       component: './Articles',
+    },
+    {
+      name: '狗狗回顾',
+      path: '/reviews',
+      component: './Reviews',
     },
     {
       name: '首页轮播',
@@ -132,6 +160,11 @@ export default defineConfig({
       path: '/member',
       routes: [
         {
+          name: '会员列表',
+          path: '/member/list',
+          component: './MemberShips/List',
+        },
+        {
           name: '会员套餐',
           path: '/member/plans',
           component: './MemberPlans/List',
@@ -147,6 +180,11 @@ export default defineConfig({
       name: '优惠券管理',
       path: '/coupons',
       component: './Coupons/List',
+    },
+    {
+      name: '协议管理',
+      path: '/agreements',
+      component: './Agreements',
     },
     {
       name: '登录',

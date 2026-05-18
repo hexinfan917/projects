@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import Taro, { useDidShow } from '@tarojs/taro'
-import { View, Text, Input, ScrollView } from '@tarojs/components'
+import { View, Text, Input, ScrollView , Image } from '@tarojs/components'
 import { getPOIs, getNearbyPOIs, setActiveTab } from '../../utils/api'
 import './index.scss'
 
@@ -104,7 +104,7 @@ export default function MapPage() {
     <View className='map-page' style={{ paddingTop: '140rpx' }}>
 
         <View className='page-back' onClick={() => Taro.navigateBack()}>
-          <Text className='page-back-icon'>←</Text>
+          <Image className='page-back-icon' src='/assets/icons/return.png' mode='aspectFit' />
         </View>
       <View className='map-search-bar'>
         <Input

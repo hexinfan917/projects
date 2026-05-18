@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import Taro from '@tarojs/taro'
-import { View, Text, Button, Textarea } from '@tarojs/components'
+import { View, Text, Button, Textarea , Image } from '@tarojs/components'
 import { getOrderDetail, refundOrder } from '../../../utils/api'
 import './index.scss'
 
@@ -56,7 +56,7 @@ export default function RefundPage() {
     return (
       <View className='refund-page' style={{ paddingTop: '140rpx' }}>
         <View className='page-back' onClick={() => Taro.navigateBack()}>
-          <Text className='page-back-icon'>←</Text>
+          <Image className='page-back-icon' src='/assets/icons/return.png' mode='aspectFit' />
         </View>
         <Text className='loading-text'>加载中...</Text>
       </View>
@@ -66,7 +66,7 @@ export default function RefundPage() {
   return (
     <View className='refund-page' style={{ paddingTop: '140rpx' }}>
       <View className='page-back' onClick={() => Taro.navigateBack()}>
-        <Text className='page-back-icon'>←</Text>
+        <Image className='page-back-icon' src='/assets/icons/return.png' mode='aspectFit' />
       </View>
 
       <View className='refund-header'>

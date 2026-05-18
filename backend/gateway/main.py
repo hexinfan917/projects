@@ -4,6 +4,7 @@ API网关 - API Gateway
 职责: 统一入口/路由转发/鉴权/限流
 """
 import sys
+import os
 import jwt
 import re
 from pathlib import Path
@@ -19,7 +20,7 @@ from common.logger import setup_logger
 import httpx
 
 settings.app_name = "api-gateway"
-settings.app_port = 8081
+settings.app_port = 8000
 logger = setup_logger("gateway")
 
 # JWT 配置
@@ -41,6 +42,8 @@ PUBLIC_PATHS = [
     r"^/api/v1/contents/articles/\d+$",
     r"^/api/v1/contents/articles/\d+/like$",
     r"^/api/v1/contents/banners$",
+    r"^/api/v1/agreements$",
+    r"^/api/v1/agreements/\d+$",
     r"^/api/v1/charities/activities$",
     r"^/api/v1/charities/activities/\d+$",
     r"^/api/v1/pay/notify$",
@@ -70,7 +73,22 @@ def verify_token(token: str) -> dict:
 
 # 服务路由配置
 # 注意：较长的路径（如 /api/v1/admin/routes）必须排在较短的（如 /api/v1/routes）之前
-SERVICE_ROUTES = {
+
+# Docker 容器名称映射（生产环境）
+DOCKER_SERVICE_MAP = {
+    8001: "petway-user-service",
+    8003: "petway-order-service",
+    8004: "petway-map-service",
+    8005: "petway-content-service",
+    8006: "petway-pay-service",
+    8007: "petway-message-service",
+    8008: "petway-file-service",
+    8009: "petway-charity-service",
+    8033: "petway-route-service",
+}
+
+# 本地开发路由配置
+LOCAL_SERVICE_ROUTES = {
     "/api/v1/user": "http://localhost:8001",
     "/api/v1/pets": "http://localhost:8001",
     "/api/v1/auth": "http://localhost:8001",
@@ -95,6 +113,8 @@ SERVICE_ROUTES = {
     "/api/v1/contents/banners": "http://localhost:8005",
     "/api/v1/admin/articles": "http://localhost:8005",
     "/api/v1/admin/banners": "http://localhost:8005",
+    "/api/v1/admin/agreements": "http://localhost:8005",
+    "/api/v1/agreements": "http://localhost:8005",
     "/api/v1/pay": "http://localhost:8006",
     "/api/v1/notifications": "http://localhost:8007",
     "/api/v1/admin/notifications": "http://localhost:8007",
@@ -105,6 +125,7 @@ SERVICE_ROUTES = {
     "/api/v1/charity": "http://localhost:8009",
     "/api/v1/coupons": "http://localhost:8003",
     "/api/v1/admin/coupon-templates": "http://localhost:8003",
+    "/api/v1/admin/user-coupons": "http://localhost:8003",
     "/api/v1/member/orders": "http://localhost:8003",
     "/api/v1/member/plans": "http://localhost:8001",
     "/api/v1/member/center": "http://localhost:8001",
@@ -112,7 +133,34 @@ SERVICE_ROUTES = {
     "/api/v1/popups": "http://localhost:8001",
     "/api/v1/admin/member-plans": "http://localhost:8001",
     "/api/v1/admin/popups": "http://localhost:8001",
+    "/api/v1/admin/memberships": "http://localhost:8001",
+    "/api/v1/admin/member-orders": "http://localhost:8001",
 }
+
+
+def _build_docker_routes():
+    """将本地路由配置转换为 Docker 容器名路由配置"""
+    import re as _re
+    docker_routes = {}
+    for path, url in LOCAL_SERVICE_ROUTES.items():
+        match = _re.search(r':(\d+)', url)
+        if match:
+            port = int(match.group(1))
+            container = DOCKER_SERVICE_MAP.get(port)
+            if container:
+                docker_routes[path] = f"http://{container}:8000"
+            else:
+                docker_routes[path] = url
+        else:
+            docker_routes[path] = url
+    return docker_routes
+
+
+# 根据环境变量选择路由配置
+_is_docker = os.environ.get("DOCKER_MODE", "").lower() in ("true", "1", "yes")
+SERVICE_ROUTES = _build_docker_routes() if _is_docker else LOCAL_SERVICE_ROUTES
+
+logger.info(f"Gateway mode: {'DOCKER' if _is_docker else 'LOCAL'}, routes loaded: {len(SERVICE_ROUTES)}")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):

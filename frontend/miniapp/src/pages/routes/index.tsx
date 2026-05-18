@@ -52,7 +52,7 @@ export default function Routes() {
       if (kw) params.keyword = kw
       if (activeCategory) params.route_type = parseInt(activeCategory, 10)
       const res = await getRoutes(params)
-      const list = (res.data?.routes || []).map((r: any) => ({ ...r, price: r.base_price || 0 }))
+      const list = (res.data?.routes || []).map((r: any) => ({ ...r, price: r.base_price || 0, cover_image: r.cover_image ? (r.cover_image.startsWith('http') ? r.cover_image : `https://tailtravel.westilt.com${r.cover_image}`) + '?w=400&q=75' : '' }))
       setRoutes(prev => refresh ? list : [...prev, ...list])
       setNoMore(list.length < pageSize)
       if (!refresh) setPage(currentPage + 1)

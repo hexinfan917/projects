@@ -1,5 +1,5 @@
 import Taro from '@tarojs/taro'
-import { View, Text } from '@tarojs/components'
+import { View, Text , Image } from '@tarojs/components'
 import './index.scss'
 
 const WECHAT_ID = 'Petway_'
@@ -22,7 +22,7 @@ export default function About() {
     <View className='about-page' style={{ paddingTop: '140rpx' }}>
 
         <View className='page-back' onClick={() => Taro.navigateBack()}>
-          <Text className='page-back-icon'>←</Text>
+          <Image className='page-back-icon' src='/assets/icons/return.png' mode='aspectFit' />
         </View>
       <View className='brand-section'>
         <View className='logo'>🐾</View>
@@ -32,10 +32,6 @@ export default function About() {
       </View>
 
       <View className='info-section'>
-        <View className='info-item'>
-          <Text className='info-label'>官方网站</Text>
-          <Text className='info-value'>www.petway.travel</Text>
-        </View>
         <View className='info-item'>
           <Text className='info-label'>客服微信</Text>
           <View className='info-value' onClick={copyWechat}>

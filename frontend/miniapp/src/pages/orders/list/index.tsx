@@ -154,7 +154,7 @@ export default function OrderList() {
     <View className='order-list' style={{ paddingTop: '140rpx' }}>
 
         <View className='page-back' onClick={() => Taro.navigateBack()}>
-          <Text className='page-back-icon'>←</Text>
+          <Image className='page-back-icon' src='/assets/icons/return.png' mode='aspectFit' />
         </View>
       <View className='tabs'>
         {TABS.map(tab => (

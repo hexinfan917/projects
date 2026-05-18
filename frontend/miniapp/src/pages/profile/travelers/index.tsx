@@ -1,8 +1,30 @@
 import { useEffect, useState } from 'react'
 import Taro, { useDidShow } from '@tarojs/taro'
-import { View, Text, Button } from '@tarojs/components'
+import { View, Text, Button , Image } from '@tarojs/components'
 import { getTravelers, deleteTraveler } from '../../../utils/api'
 import './index.scss'
+
+/** 姓名脱敏 */
+const maskName = (name: string): string => {
+  if (!name) return '-'
+  const len = name.length
+  if (len === 1) return name
+  if (len === 2) return name[0] + '*'
+  // 3字及以上：保留首字和尾字，中间用**代替
+  return name[0] + '*'.repeat(Math.min(len - 2, 2)) + name[len - 1]
+}
+
+/** 身份证脱敏 */
+const maskIdCard = (idCard: string) => {
+  if (!idCard || idCard.length < 8) return idCard
+  return idCard.slice(0, 4) + '********' + idCard.slice(-4)
+}
+
+/** 手机号脱敏 */
+const maskPhone = (phone: string) => {
+  if (!phone || phone.length !== 11) return phone
+  return phone.slice(0, 3) + '****' + phone.slice(-4)
+}
 
 export default function Travelers() {
   const [list, setList] = useState<any[]>([])
@@ -17,11 +39,6 @@ export default function Travelers() {
 
   const loadTravelers = () => {
     getTravelers().then(res => setList(res.data || []))
-  }
-
-  const maskIdCard = (idCard: string) => {
-    if (!idCard || idCard.length < 8) return idCard
-    return idCard.slice(0, 4) + '********' + idCard.slice(-4)
   }
 
   const handleDelete = (id: number) => {
@@ -42,13 +59,13 @@ export default function Travelers() {
     <View className='travelers-page' style={{ paddingTop: '140rpx' }}>
 
         <View className='page-back' onClick={() => Taro.navigateBack()}>
-          <Text className='page-back-icon'>←</Text>
+          <Image className='page-back-icon' src='/assets/icons/return.png' mode='aspectFit' />
         </View>
       {list.map(item => (
         <View key={item.id} className='traveler-card'>
           <View className='traveler-header'>
-            <Text className='traveler-name'>{item.name}</Text>
-            <Text className='traveler-phone'>{item.phone}</Text>
+            <Text className='traveler-name'>{maskName(item.name)}</Text>
+            <Text className='traveler-phone'>{maskPhone(item.phone)}</Text>
           </View>
           <Text className='traveler-idcard'>身份证: {maskIdCard(item.id_card)}</Text>
           <View className='traveler-actions'>

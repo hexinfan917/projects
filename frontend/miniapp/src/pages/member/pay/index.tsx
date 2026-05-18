@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import Taro from '@tarojs/taro'
-import { View, Text } from '@tarojs/components'
+import { View, Text , Image } from '@tarojs/components'
 import { getMemberPlans, createMemberOrder, payMemberOrder } from '../../../utils/api'
 import './index.scss'
 
@@ -32,7 +32,8 @@ export default function MemberPay() {
     try {
       const res = await getMemberPlans()
       if (res.code === 200) {
-        const p = res.data?.find((item: any) => item.id === planId)
+        const list = res.data?.list || res.data || []
+        const p = list.find((item: any) => String(item.id) === String(planId))
         if (p) {
           setPlan(p)
         } else {
@@ -57,14 +58,53 @@ export default function MemberPay() {
       const orderId = orderRes.data.order_id
 
       const payRes = await payMemberOrder(orderId)
-      if (payRes.code === 200) {
-        Taro.showToast({ title: '支付成功', icon: 'success' })
+      if (payRes.code !== 200) {
+        Taro.showToast({ title: payRes.message || '支付下单失败', icon: 'none' })
+        setLoading(false)
+        return
+      }
+
+      const payData = payRes.data
+      if (!payData || !payData.pay_params) {
+        Taro.showToast({ title: '获取支付参数失败', icon: 'none' })
+        setLoading(false)
+        return
+      }
+
+      // Mock 模式直接跳过真实支付（未配置微信支付时）
+      if (payData.mock) {
+        Taro.showToast({ title: '模拟支付成功', icon: 'success' })
         setTimeout(() => {
           Taro.redirectTo({ url: '/pages/member/center/index?payment_success=1' })
         }, 1200)
-      } else {
-        Taro.showToast({ title: payRes.message || '支付失败', icon: 'none' })
+        setLoading(false)
+        return
       }
+
+      const params = payData.pay_params
+
+      // 调用微信支付
+      Taro.requestPayment({
+        timeStamp: params.timeStamp,
+        nonceStr: params.nonceStr,
+        package: params.package,
+        signType: params.signType || 'MD5',
+        paySign: params.paySign,
+        success: () => {
+          Taro.showToast({ title: '支付成功', icon: 'success' })
+          setTimeout(() => {
+            Taro.redirectTo({ url: '/pages/member/center/index?payment_success=1' })
+          }, 1200)
+        },
+        fail: (err: any) => {
+          console.error('支付失败:', err)
+          const isCancel = err.errMsg?.includes('cancel')
+          Taro.showToast({ title: isCancel ? '已取消支付' : '支付失败', icon: 'none' })
+          setTimeout(() => {
+            Taro.redirectTo({ url: '/pages/member/center/index' })
+          }, 1000)
+        }
+      })
     } catch (e: any) {
       Taro.showToast({ title: e.message || '请求失败', icon: 'none' })
     } finally {
@@ -87,7 +127,7 @@ export default function MemberPay() {
         <View className='navbar-bg' />
         <View className='navbar-content'>
           <View className='page-back' onClick={handleBack}>
-            <Text className='page-back-icon'>←</Text>
+            <Image className='page-back-icon' src='/assets/icons/return.png' mode='aspectFit' />
           </View>
           <Text className='navbar-title'>确认订单</Text>
         </View>
@@ -98,7 +138,7 @@ export default function MemberPay() {
           <Text className='plan-info-name'>{plan?.name || '会员套餐'}</Text>
           <Text className='plan-info-duration'>{plan?.duration_days || 365}天有效期</Text>
           <View className='plan-info-price-row'>
-            <Text className='plan-info-price'>¥{plan?.sale_price || '39.90'}</Text>
+            <Text className='plan-info-price'>¥{plan?.sale_price || '--'}</Text>
             {plan?.original_price > plan?.sale_price && (
               <Text className='plan-info-original'>¥{plan?.original_price}</Text>
             )}
@@ -132,7 +172,7 @@ export default function MemberPay() {
       <View className='pay-bottom-bar'>
         <View className='pay-bottom-price-wrap'>
           <Text className='pay-bottom-label'>实付金额</Text>
-          <Text className='pay-bottom-price'>¥{plan?.sale_price || '39.90'}</Text>
+          <Text className='pay-bottom-price'>¥{plan?.sale_price || '--'}</Text>
         </View>
         <View className={`pay-bottom-btn ${loading ? 'disabled' : ''}`} onClick={handlePay}>
           {loading ? '支付中...' : '确认支付'}

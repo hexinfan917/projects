@@ -106,6 +106,157 @@ services:
       - ../../backend/order-service:/app/service
     command: python -m uvicorn service.main:app --host 0.0.0.0 --port 8000 --reload
 
+  # 支付服务
+  pay-service:
+    build:
+      context: ../..
+      dockerfile: docker/Dockerfile.service
+      args:
+        SERVICE_NAME: pay-service
+    container_name: petway-pay-service
+    environment:
+      - SERVICE_NAME=pay-service
+      - DB_HOST=mysql
+      - DB_PASSWORD=petway123
+      - REDIS_HOST=redis
+    ports:
+      - "8006:8000"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    volumes:
+      - ../../backend/common:/app/common
+      - ../../backend/pay-service:/app/service
+    command: python -m uvicorn service.main:app --host 0.0.0.0 --port 8000 --reload
+
+  # 内容服务
+  content-service:
+    build:
+      context: ../..
+      dockerfile: docker/Dockerfile.service
+      args:
+        SERVICE_NAME: content-service
+    container_name: petway-content-service
+    environment:
+      - SERVICE_NAME=content-service
+      - DB_HOST=mysql
+      - DB_PASSWORD=petway123
+      - REDIS_HOST=redis
+    ports:
+      - "8005:8000"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    volumes:
+      - ../../backend/common:/app/common
+      - ../../backend/content-service:/app/service
+    command: python -m uvicorn service.main:app --host 0.0.0.0 --port 8000 --reload
+
+  # 地图服务
+  map-service:
+    build:
+      context: ../..
+      dockerfile: docker/Dockerfile.service
+      args:
+        SERVICE_NAME: map-service
+    container_name: petway-map-service
+    environment:
+      - SERVICE_NAME=map-service
+      - DB_HOST=mysql
+      - DB_PASSWORD=petway123
+      - REDIS_HOST=redis
+    ports:
+      - "8004:8000"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    volumes:
+      - ../../backend/common:/app/common
+      - ../../backend/map-service:/app/service
+    command: python -m uvicorn service.main:app --host 0.0.0.0 --port 8000 --reload
+
+  # 消息服务
+  message-service:
+    build:
+      context: ../..
+      dockerfile: docker/Dockerfile.service
+      args:
+        SERVICE_NAME: message-service
+    container_name: petway-message-service
+    environment:
+      - SERVICE_NAME=message-service
+      - DB_HOST=mysql
+      - DB_PASSWORD=petway123
+      - REDIS_HOST=redis
+    ports:
+      - "8007:8000"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    volumes:
+      - ../../backend/common:/app/common
+      - ../../backend/message-service:/app/service
+    command: python -m uvicorn service.main:app --host 0.0.0.0 --port 8000 --reload
+
+  # 文件服务
+  file-service:
+    build:
+      context: ../..
+      dockerfile: docker/Dockerfile.service
+      args:
+        SERVICE_NAME: file-service
+    container_name: petway-file-service
+    environment:
+      - SERVICE_NAME=file-service
+      - DB_HOST=mysql
+      - DB_PASSWORD=petway123
+      - REDIS_HOST=redis
+    ports:
+      - "8008:8000"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    volumes:
+      - ../../backend/common:/app/common
+      - ../../backend/file-service:/app/service
+      - file_uploads:/app/uploads
+    command: python -m uvicorn service.main:app --host 0.0.0.0 --port 8000 --reload
+
+  # 公益服务
+  charity-service:
+    build:
+      context: ../..
+      dockerfile: docker/Dockerfile.service
+      args:
+        SERVICE_NAME: charity-service
+    container_name: petway-charity-service
+    environment:
+      - SERVICE_NAME=charity-service
+      - DB_HOST=mysql
+      - DB_PASSWORD=petway123
+      - REDIS_HOST=redis
+    ports:
+      - "8009:8000"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    volumes:
+      - ../../backend/common:/app/common
+      - ../../backend/charity-service:/app/service
+    command: python -m uvicorn service.main:app --host 0.0.0.0 --port 8000 --reload
+
   # API网关
   gateway:
     build:
@@ -119,12 +270,20 @@ services:
       - DB_HOST=mysql
       - DB_PASSWORD=petway123
       - REDIS_HOST=redis
+      - REDIS_PASSWORD=petway123
+      - JWT_SECRET=petway_jwt_secret_key_2024_change_me_at_least_32_chars
     ports:
       - "8000:8000"
     depends_on:
       - user-service
       - route-service
       - order-service
+      - pay-service
+      - content-service
+      - map-service
+      - message-service
+      - file-service
+      - charity-service
     volumes:
       - ../../backend/common:/app/common
       - ../../backend/gateway:/app/service
@@ -133,3 +292,4 @@ services:
 volumes:
   mysql_data:
   redis_data:
+  file_uploads:

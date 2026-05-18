@@ -1,8 +1,15 @@
 import { useEffect, useState } from 'react'
 import Taro from '@tarojs/taro'
 import { View, Text, Input, Button, Image, Picker } from '@tarojs/components'
-import { getPet, getPets, createPet, updatePet } from '../../../utils/api'
+import { getPet, getPets, createPet, updatePet, uploadFile, compressImageUrl } from '../../../utils/api'
 import './index.scss'
+
+const BASE_URL = 'https://tailtravel.westilt.com'
+
+function fullImageUrl(url?: string) {
+  if (!url) return ''
+  return compressImageUrl(url, 200)
+}
 
 function calcAge(birthDate?: string) {
   if (!birthDate) return ''
@@ -59,15 +66,24 @@ export default function PetEdit() {
     setPet({ ...pet, vaccine_date: e.detail.value })
   }
 
-  const chooseAvatar = () => {
-    Taro.chooseImage({
-      count: 1,
-      sizeType: ['compressed'],
-      sourceType: ['album', 'camera'],
-      success: (res) => {
-        setPet({ ...pet, avatar: res.tempFilePaths[0] })
+  const chooseAvatar = async () => {
+    try {
+      const res = await Taro.chooseImage({ count: 1, sizeType: ['compressed'], sourceType: ['album', 'camera'] })
+      const tempPath = res.tempFilePaths[0]
+      Taro.showLoading({ title: '上传中...' })
+      const uploadRes: any = await uploadFile(tempPath)
+      const data = JSON.parse(uploadRes.data)
+      if (data.code === 200 && data.data?.url) {
+        const url = fullImageUrl(data.data.url)
+        setPet({ ...pet, avatar: url })
+      } else {
+        Taro.showToast({ title: '上传失败', icon: 'none' })
       }
-    })
+      Taro.hideLoading()
+    } catch (err) {
+      Taro.hideLoading()
+      Taro.showToast({ title: '上传失败', icon: 'none' })
+    }
   }
 
   const handleSave = async () => {
@@ -137,7 +153,7 @@ export default function PetEdit() {
     <View className='pet-edit-page' style={{ paddingTop: '140rpx' }}>
 
         <View className='page-back' onClick={() => Taro.navigateBack()}>
-          <Text className='page-back-icon'>←</Text>
+          <Image className='page-back-icon' src='/assets/icons/return.png' mode='aspectFit' />
         </View>
       <View className='pet-edit-modal'>
         <Text className='modal-title'>{pet.id ? '编辑宠物' : '添加宠物'}</Text>
@@ -147,7 +163,7 @@ export default function PetEdit() {
           <Text className='form-label'>宠物图片</Text>
           <View className='avatar-upload' onClick={chooseAvatar}>
             {pet.avatar ? (
-              <Image className='avatar-img' src={pet.avatar} mode='aspectFill' />
+              <Image className='avatar-img' src={fullImageUrl(pet.avatar)} mode='aspectFill' />
             ) : (
               <Text className='avatar-placeholder'>+</Text>
             )}

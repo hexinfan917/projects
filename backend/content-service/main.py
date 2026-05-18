@@ -24,6 +24,7 @@ from common.response import success
 # 导入所有模型，确保 init_db() 能创建所有表
 from app.models.article import Article
 from app.models.banner import Banner
+from app.models.agreement import Agreement
 
 settings.app_name = "content-service"
 settings.app_port = 8005
@@ -540,6 +541,210 @@ async def get_banners(db: AsyncSession = Depends(get_db)):
         return success({"banners": banners})
     except Exception as e:
         logger.error(f"Error getting banners: {e}")
+        return {"code": 500, "message": f"查询失败: {str(e)}", "data": None}
+
+
+# ==================== 协议管理模块 ====================
+
+@app.get("/api/v1/admin/agreements")
+async def admin_get_agreements(
+    type: Optional[str] = None,
+    status: Optional[int] = None,
+    keyword: Optional[str] = None,
+    page: int = 1,
+    page_size: int = 10,
+    db: AsyncSession = Depends(get_db)
+):
+    """管理后台获取协议列表"""
+    try:
+        query = select(Agreement).order_by(Agreement.sort_order.asc(), Agreement.created_at.desc())
+        
+        if type:
+            query = query.where(Agreement.type == type)
+        if status is not None:
+            query = query.where(Agreement.status == status)
+        if keyword:
+            query = query.where(Agreement.title.contains(keyword))
+        
+        total_result = await db.execute(select(func.count()).select_from(query.subquery()))
+        total = total_result.scalar()
+        
+        query = query.offset((page - 1) * page_size).limit(page_size)
+        result = await db.execute(query)
+        agreements = result.scalars().all()
+        
+        data = []
+        for a in agreements:
+            data.append({
+                "id": a.id,
+                "title": a.title,
+                "type": a.type,
+                "content": a.content,
+                "sort_order": a.sort_order,
+                "status": a.status,
+                "created_at": a.created_at.isoformat() if a.created_at else None,
+                "updated_at": a.updated_at.isoformat() if a.updated_at else None,
+            })
+        
+        return success({"list": data, "total": total, "page": page, "page_size": page_size})
+    except Exception as e:
+        logger.error(f"Error getting agreements: {e}")
+        return {"code": 500, "message": f"查询失败: {str(e)}", "data": None}
+
+
+@app.get("/api/v1/admin/agreements/{agreement_id}")
+async def admin_get_agreement_detail(
+    agreement_id: int,
+    db: AsyncSession = Depends(get_db)
+):
+    """管理后台获取协议详情"""
+    try:
+        result = await db.execute(select(Agreement).where(Agreement.id == agreement_id))
+        a = result.scalar_one_or_none()
+        
+        if not a:
+            return {"code": 404, "message": "协议不存在", "data": None}
+        
+        return success({
+            "id": a.id,
+            "title": a.title,
+            "type": a.type,
+            "content": a.content,
+            "sort_order": a.sort_order,
+            "status": a.status,
+            "created_at": a.created_at.isoformat() if a.created_at else None,
+            "updated_at": a.updated_at.isoformat() if a.updated_at else None,
+        })
+    except Exception as e:
+        logger.error(f"Error getting agreement: {e}")
+        return {"code": 500, "message": f"查询失败: {str(e)}", "data": None}
+
+
+@app.post("/api/v1/admin/agreements")
+async def admin_create_agreement(
+    data: dict,
+    db: AsyncSession = Depends(get_db)
+):
+    """管理后台创建协议"""
+    try:
+        agreement = Agreement(
+            title=data.get("title"),
+            type=data.get("type", "other"),
+            content=data.get("content", ""),
+            sort_order=data.get("sort_order", 0),
+            status=data.get("status", 1),
+        )
+        db.add(agreement)
+        await db.flush()
+        await db.commit()
+        
+        return success({"id": agreement.id, "title": agreement.title}, message="创建成功")
+    except Exception as e:
+        logger.error(f"Error creating agreement: {e}")
+        return {"code": 500, "message": f"创建失败: {str(e)}", "data": None}
+
+
+@app.put("/api/v1/admin/agreements/{agreement_id}")
+async def admin_update_agreement(
+    agreement_id: int,
+    data: dict,
+    db: AsyncSession = Depends(get_db)
+):
+    """管理后台更新协议"""
+    try:
+        result = await db.execute(select(Agreement).where(Agreement.id == agreement_id))
+        agreement = result.scalar_one_or_none()
+        
+        if not agreement:
+            return {"code": 404, "message": "协议不存在", "data": None}
+        
+        allowed_fields = ["title", "type", "content", "sort_order", "status"]
+        for field in allowed_fields:
+            if field in data:
+                setattr(agreement, field, data[field])
+        
+        await db.commit()
+        return success({"id": agreement.id}, message="更新成功")
+    except Exception as e:
+        logger.error(f"Error updating agreement: {e}")
+        return {"code": 500, "message": f"更新失败: {str(e)}", "data": None}
+
+
+@app.delete("/api/v1/admin/agreements/{agreement_id}")
+async def admin_delete_agreement(
+    agreement_id: int,
+    db: AsyncSession = Depends(get_db)
+):
+    """管理后台删除协议（软删除：设为禁用）"""
+    try:
+        result = await db.execute(select(Agreement).where(Agreement.id == agreement_id))
+        agreement = result.scalar_one_or_none()
+        
+        if not agreement:
+            return {"code": 404, "message": "协议不存在", "data": None}
+        
+        agreement.status = 0
+        await db.commit()
+        
+        return success(None, message="已停用")
+    except Exception as e:
+        logger.error(f"Error deleting agreement: {e}")
+        return {"code": 500, "message": f"操作失败: {str(e)}", "data": None}
+
+
+@app.get("/api/v1/agreements")
+async def get_agreements(
+    type: Optional[str] = None,
+    db: AsyncSession = Depends(get_db)
+):
+    """小程序端获取协议列表（仅返回启用的）"""
+    try:
+        query = select(Agreement).where(Agreement.status == 1).order_by(Agreement.sort_order.asc())
+        
+        if type:
+            query = query.where(Agreement.type == type)
+        
+        result = await db.execute(query)
+        agreements = result.scalars().all()
+        
+        data = []
+        for a in agreements:
+            data.append({
+                "id": a.id,
+                "title": a.title,
+                "type": a.type,
+                "sort_order": a.sort_order,
+            })
+        
+        return success({"list": data})
+    except Exception as e:
+        logger.error(f"Error getting agreements: {e}")
+        return {"code": 500, "message": f"查询失败: {str(e)}", "data": None}
+
+
+@app.get("/api/v1/agreements/{agreement_id}")
+async def get_agreement_detail(
+    agreement_id: int,
+    db: AsyncSession = Depends(get_db)
+):
+    """小程序端获取协议详情（仅返回启用的）"""
+    try:
+        result = await db.execute(
+            select(Agreement).where(Agreement.id == agreement_id, Agreement.status == 1)
+        )
+        a = result.scalar_one_or_none()
+        
+        if not a:
+            return {"code": 404, "message": "协议不存在或已停用", "data": None}
+        
+        return success({
+            "id": a.id,
+            "title": a.title,
+            "type": a.type,
+            "content": a.content,
+        })
+    except Exception as e:
+        logger.error(f"Error getting agreement: {e}")
         return {"code": 500, "message": f"查询失败: {str(e)}", "data": None}
 
 

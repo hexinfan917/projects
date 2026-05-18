@@ -51,7 +51,7 @@ function RoomImageUploader({ value = [], onChange }: any) {
     if (info.file.status === 'done') {
       const url = info.file.response?.data?.url;
       if (url) {
-        const fullUrl = url.startsWith('http') ? url : `http://localhost:8081${url}`;
+        const fullUrl = url;
         onChange?.([...images, fullUrl]);
       }
     }
@@ -254,7 +254,8 @@ export default function AddonManage() {
         hotel: { text: '酒店' },
         amusement: { text: '游乐项目' },
       },
-      render: (category: string) => {
+      render: (_: any, record: any) => {
+        const category = record.category;
         const config = categoryMap[category] || { text: category, color: 'default' };
         return <Tag color={config.color}>{config.text}</Tag>;
       },

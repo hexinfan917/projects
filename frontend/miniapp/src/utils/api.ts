@@ -2,6 +2,18 @@ import Taro, { eventCenter } from '@tarojs/taro'
 
 export const BASE_URL = 'https://tailtravel.westilt.com'
 
+/** 补全图片 URL 并添加压缩参数 */
+export function compressImageUrl(url?: string, width?: number): string {
+  if (!url) return ''
+  const fullUrl = url.startsWith('http') ? url : `${BASE_URL}${url}`
+  const w = width || 800
+  return `${fullUrl}?w=${w}&q=75`
+}
+
+export async function deleteAccount() {
+  return request('/api/v1/user/account', { method: 'DELETE' })
+}
+
 export function setActiveTab(index: number, expectedRoute: string) {
   const pages = Taro.getCurrentPages()
   const currentRoute = (pages[pages.length - 1]?.route || '').replace(/\.html$/, '')
@@ -12,28 +24,35 @@ export function setActiveTab(index: number, expectedRoute: string) {
 
 export async function request(path: string, options: any = {}) {
   const token = Taro.getStorageSync('access_token') || ''
+  const headers: any = {
+    'Content-Type': 'application/json',
+    'Authorization': token ? `Bearer ${token}` : '',
+    ...options.header
+  }
+  console.log(`[Request] ${options.method || 'GET'} ${path} token=${token ? 'yes(' + token.substring(0, 10) + '...)' : 'no'} authHeader=${headers.Authorization || 'empty'}`)
   try {
     const res: any = await Taro.request({
       url: `${BASE_URL}${path}`,
       method: options.method || 'GET',
       data: options.data || {},
-      header: {
-        'Content-Type': 'application/json',
-        'Authorization': token ? `Bearer ${token}` : '',
-        ...options.header
-      }
+      header: headers
     })
+
+    console.log(`[Request] ${path} response status=${res.statusCode}`, res.data)
 
     // 统一状态码拦截：401 静默清除 token，不弹窗，由各页面按需处理
     if (res.statusCode === 401) {
       const pages = Taro.getCurrentPages()
       const currentRoute = pages[pages.length - 1]?.route || ''
       const isLoginPage = currentRoute.includes('login')
+      console.warn(`[Request] 401 on ${path}, currentRoute=${currentRoute}, isLoginPage=${isLoginPage}, willClearToken=${!isLoginPage}`)
       if (!isLoginPage) {
         Taro.removeStorageSync('access_token')
         Taro.removeStorageSync('user_info')
       }
-      throw new Error('Unauthorized')
+      const err: any = new Error('Unauthorized')
+      err.statusCode = 401
+      throw err
     }
 
     if (!res.statusCode || res.statusCode <= 0) {
@@ -63,8 +82,8 @@ export function login(code: string) {
   return request('/api/v1/auth/wechat/login', { method: 'POST', data: { code } })
 }
 
-export function testLogin() {
-  return request('/api/v1/auth/test/login', { method: 'POST' })
+export function testLogin(testId?: string) {
+  return request('/api/v1/auth/test/login', { method: 'POST', data: { test_id: testId || '' } })
 }
 
 export function getUserProfile() {
@@ -257,6 +276,19 @@ export function getAvailableCoupons(params?: any) {
 
 export function calculateCoupon(data: any) {
   return request('/api/v1/coupons/calculate', { method: 'POST', data })
+}
+
+export function useCoupon(couponId: number) {
+  return request(`/api/v1/coupons/${couponId}/use`, { method: 'POST' })
+}
+
+// 协议/文档
+export function getAgreements(params?: any) {
+  return request('/api/v1/agreements', { data: params, skipAuthModal: true })
+}
+
+export function getAgreementDetail(id: number) {
+  return request(`/api/v1/agreements/${id}`, { skipAuthModal: true })
 }
 
 // 会员中心

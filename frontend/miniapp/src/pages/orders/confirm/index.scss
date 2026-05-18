@@ -1010,3 +1010,49 @@
     color: #9CA3AF;
   }
 }
+
+/* 协议勾选区域 */
+.agreement-section {
+  background: #fff;
+  margin: 24rpx 28rpx;
+  border-radius: 18rpx;
+  padding: 28rpx;
+}
+
+.agreement-checkbox {
+  display: flex;
+  align-items: flex-start;
+}
+
+.agreement-check {
+  width: 36rpx;
+  height: 36rpx;
+  border: 2rpx solid #d1d5db;
+  border-radius: 8rpx;
+  margin-right: 16rpx;
+  margin-top: 4rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  &.checked {
+    background: #22C55E;
+    border-color: #22C55E;
+  }
+}
+
+.agreement-check-icon {
+  font-size: 24rpx;
+  color: #fff;
+}
+
+.agreement-text {
+  font-size: 26rpx;
+  color: #6b7280;
+  line-height: 1.5;
+}
+
+.agreement-link {
+  color: #22C55E;
+  text-decoration: underline;
+}

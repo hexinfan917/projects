@@ -87,6 +87,8 @@ async def health_check():
 @app.get("/api/v1/admin/users")
 async def admin_get_users(
     keyword: Optional[str] = None,
+    phone: Optional[str] = None,
+    is_member: Optional[int] = None,
     status: Optional[int] = None,
     page: int = 1,
     page_size: int = 10,
@@ -97,9 +99,11 @@ async def admin_get_users(
         from app.models.user import User
         from sqlalchemy import or_
         
+        from sqlalchemy import exists
+        
         query = select(User)
         
-        # 搜索条件
+        # 搜索条件 - 通用关键词
         if keyword:
             query = query.where(
                 or_(
@@ -109,9 +113,31 @@ async def admin_get_users(
                 )
             )
         
+        # 手机号精准筛选
+        if phone:
+            query = query.where(User.phone == phone)
+        
         # 状态筛选
         if status is not None:
             query = query.where(User.status == status)
+        
+        # 会员状态筛选（SQL级别）
+        from app.models.member import UserMembership
+        if is_member is not None:
+            if is_member:
+                query = query.where(
+                    exists().where(
+                        UserMembership.user_id == User.id,
+                        UserMembership.status == 1
+                    )
+                )
+            else:
+                query = query.where(
+                    ~exists().where(
+                        UserMembership.user_id == User.id,
+                        UserMembership.status == 1
+                    )
+                )
         
         # 按创建时间倒序
         query = query.order_by(User.created_at.desc())
@@ -135,8 +161,28 @@ async def admin_get_users(
         )
         pet_count_map = {uid: c for uid, c in pet_count_result.all()}
         
+        # 批量查询会员状态
+        member_result = await db.execute(
+            select(UserMembership.user_id)
+            .where(UserMembership.user_id.in_(user_ids), UserMembership.status == 1)
+        )
+        member_user_ids = {row[0] for row in member_result.all()}
+        
+        # 批量查询默认出行人身份证
+        from app.models.traveler import Traveler
+        traveler_result = await db.execute(
+            select(Traveler.user_id, Traveler.id_card)
+            .where(Traveler.user_id.in_(user_ids), Traveler.is_default == 1, Traveler.status == 1)
+        )
+        traveler_id_card_map = {row[0]: row[1] for row in traveler_result.all()}
+        
         users = []
         for u in users_db:
+            user_is_member = u.id in member_user_ids
+            
+            # 身份证优先从users表取，如无则取默认出行人
+            id_card = u.id_card or traveler_id_card_map.get(u.id) or '-'
+            
             users.append({
                 "id": u.id,
                 "openid": u.openid,
@@ -144,11 +190,10 @@ async def admin_get_users(
                 "avatar": u.avatar,
                 "phone": u.phone or '-',
                 "real_name": u.real_name or '-',
-                "id_card": u.id_card or '-',
+                "id_card": id_card,
                 "gender": u.gender,
                 "birthday": u.birthday.isoformat() if u.birthday else None,
-                "member_level": u.member_level,
-                "member_points": u.member_points,
+                "is_member": user_is_member,
                 "status": u.status,
                 "pet_count": pet_count_map.get(u.id, 0),
                 "created_at": u.created_at.isoformat() if u.created_at else None,
@@ -186,6 +231,31 @@ async def admin_get_user_detail(
         if not u:
             return {"code": 404, "message": "用户不存在", "data": None}
         
+        # 查询宠物数量
+        from app.models.pet import PetProfile
+        pet_count_result = await db.execute(
+            select(func.count(PetProfile.id))
+            .where(PetProfile.user_id == user_id, PetProfile.status == 1)
+        )
+        pet_count = pet_count_result.scalar() or 0
+        
+        # 查询会员状态
+        from app.models.member import UserMembership
+        member_result = await db.execute(
+            select(UserMembership)
+            .where(UserMembership.user_id == user_id, UserMembership.status == 1)
+        )
+        membership = member_result.scalar_one_or_none()
+        
+        # 查询默认出行人身份证
+        from app.models.traveler import Traveler
+        traveler_result = await db.execute(
+            select(Traveler.id_card)
+            .where(Traveler.user_id == user_id, Traveler.is_default == 1, Traveler.status == 1)
+        )
+        traveler_id_card = traveler_result.scalar_one_or_none()
+        id_card = u.id_card or traveler_id_card or '-'
+        
         user = {
             "id": u.id,
             "openid": u.openid,
@@ -193,13 +263,15 @@ async def admin_get_user_detail(
             "avatar": u.avatar,
             "phone": u.phone,
             "real_name": u.real_name,
-            "id_card": u.id_card,
+            "id_card": id_card,
             "gender": u.gender,
             "birthday": u.birthday.isoformat() if u.birthday else None,
             "city": u.city,
             "member_level": u.member_level,
             "member_points": u.member_points,
+            "is_member": membership is not None,
             "status": u.status,
+            "pet_count": pet_count,
             "created_at": u.created_at.isoformat() if u.created_at else None,
             "updated_at": u.updated_at.isoformat() if u.updated_at else None,
         }
@@ -212,7 +284,6 @@ async def admin_get_user_detail(
         return {"code": 500, "message": f"查询失败: {str(e)}", "data": None}
 
 
-@app.put("/api/v1/admin/users/{user_id}")
 async def admin_update_user(
     user_id: int,
     user_data: dict,
@@ -818,6 +889,7 @@ async def get_member_center(
             "start_date": membership.start_date.isoformat(),
             "end_date": membership.end_date.isoformat(),
             "remaining_days": max(0, remaining_days),
+            "pay_amount": float(membership.pay_amount),
             "benefits": benefits,
         }
     
@@ -871,7 +943,7 @@ async def get_member_coupons(
     user_id = current_user.get("user_id", 1)
     
     sql = """
-        SELECT id, name, type, value, min_amount, valid_end_time, status, source_type
+        SELECT id, coupon_no, name, type, value, min_amount, valid_start_time, valid_end_time, status, source_type, description
         FROM user_coupons
         WHERE user_id = :user_id AND source_type IN (2, 3)
     """
@@ -889,17 +961,22 @@ async def get_member_coupons(
     total_value = 0
     coupons = []
     for row in rows:
-        if row["status"] == 1:
+        if row["status"] == 1 and row["type"] != 4:
             total_value += float(row["value"])
         coupons.append({
             "id": row["id"],
+            "coupon_no": row["coupon_no"],
             "name": row["name"],
             "type": row["type"],
+            "type_text": {1: "满减券", 2: "折扣券", 3: "立减券", 4: "礼品券"}.get(row["type"], "未知"),
             "value": float(row["value"]),
             "min_amount": float(row["min_amount"]),
+            "valid_start_time": row["valid_start_time"].isoformat() if row["valid_start_time"] else None,
             "valid_end_time": row["valid_end_time"].isoformat() if row["valid_end_time"] else None,
             "status": row["status"],
+            "status_text": {1: "未使用", 2: "已使用", 3: "已过期", 4: "已作废"}.get(row["status"], "未知"),
             "source_type": row["source_type"],
+            "description": row["description"],
         })
     
     return success({
@@ -1110,20 +1187,198 @@ async def admin_delete_member_plan(
     plan_id: int,
     db: AsyncSession = Depends(get_db)
 ):
-    """管理后台删除会员套餐（软删除）"""
+
     from app.models.member import MemberPlan
-    
+
     result = await db.execute(select(MemberPlan).where(MemberPlan.id == plan_id))
     plan = result.scalar_one_or_none()
-    
+
     if not plan:
         return {"code": 404, "message": "套餐不存在", "data": None}
-    
+
     plan.status = 0
     await db.commit()
     return success(message="已下架")
 
+# ==================== 管理后台：会员列表 ====================
 
+@app.get("/api/v1/admin/memberships")
+async def admin_get_memberships(
+    keyword: Optional[str] = None,
+    status: Optional[int] = None,
+    plan_id: Optional[int] = None,
+    page: int = 1,
+    page_size: int = 10,
+    db: AsyncSession = Depends(get_db)
+):
+    """管理后台获取会员订阅列表"""
+    from app.models.member import UserMembership, MemberPlan
+    from app.models.user import User
+    from sqlalchemy import func, text
+
+    # Build base query with joins
+    base_query = select(
+        UserMembership,
+        User.nickname,
+        User.phone,
+        User.avatar,
+        MemberPlan.name.label("plan_name"),
+        MemberPlan.coupon_package.label("plan_coupon_package")
+    ).join(User, UserMembership.user_id == User.id, isouter=True
+    ).join(MemberPlan, UserMembership.plan_id == MemberPlan.id, isouter=True
+    ).order_by(UserMembership.created_at.desc())
+
+    if status is not None:
+        base_query = base_query.where(UserMembership.status == status)
+    if plan_id is not None:
+        base_query = base_query.where(UserMembership.plan_id == plan_id)
+    if keyword:
+        keyword_filter = (User.nickname.contains(keyword)) | (User.phone.contains(keyword))
+        if keyword.isdigit():
+            keyword_filter = keyword_filter | (UserMembership.user_id == int(keyword))
+        base_query = base_query.where(keyword_filter)
+
+    # Count total - 从 base_query 的子查询计数，确保过滤条件一致
+    count_query = select(func.count()).select_from(base_query.subquery())
+
+    count_result = await db.execute(count_query)
+    total = count_result.scalar() or 0
+
+    # Paginate
+    offset = (page - 1) * page_size
+    base_query = base_query.offset(offset).limit(page_size)
+
+    result = await db.execute(base_query)
+    rows = result.all()
+
+    # 批量查询订单信息
+    membership_ids = [row[0].id for row in rows]
+    user_ids = list({row[0].user_id for row in rows})
+    order_data = {}
+    if membership_ids:
+        order_result = await db.execute(
+            text("SELECT id, order_no, pay_channel FROM member_orders WHERE id IN :ids"),
+            {"ids": tuple(membership_ids) if len(membership_ids) > 1 else (membership_ids[0], membership_ids[0])}
+        )
+        for row in order_result.mappings().all():
+            order_data[row["id"]] = {"order_no": row["order_no"], "pay_channel": row["pay_channel"]}
+
+    # 批量查询每个用户已使用的会员优惠券数量
+    used_coupon_counts = {}
+    if user_ids:
+        used_result = await db.execute(
+            text("""
+                SELECT user_id, COUNT(*) as cnt 
+                FROM user_coupons 
+                WHERE user_id IN :user_ids AND source_type = 2 AND used_order_id IS NOT NULL
+                GROUP BY user_id
+            """),
+            {"user_ids": tuple(user_ids) if len(user_ids) > 1 else (user_ids[0], user_ids[0])}
+        )
+        for row in used_result.mappings().all():
+            used_coupon_counts[row["user_id"]] = row["cnt"]
+
+    # 批量查询每个用户使用优惠券的订单
+    order_coupon_data = {}
+    if user_ids:
+        order_coupon_result = await db.execute(
+            text("""
+                SELECT user_id, id as order_id, order_no, coupon_name, discount_amount 
+                FROM orders 
+                WHERE user_id IN :user_ids AND (coupon_id IS NOT NULL OR discount_amount > 0)
+                  AND status NOT IN (10, 30)
+                ORDER BY created_at DESC
+            """),
+            {"user_ids": tuple(user_ids) if len(user_ids) > 1 else (user_ids[0], user_ids[0])}
+        )
+        for row in order_coupon_result.mappings().all():
+            uid = row["user_id"]
+            if uid not in order_coupon_data:
+                order_coupon_data[uid] = []
+            order_coupon_data[uid].append({
+                "order_id": row["order_id"],
+                "order_no": row["order_no"],
+                "coupon_name": row["coupon_name"] or "-",
+                "discount_amount": float(row["discount_amount"]) if row["discount_amount"] else 0,
+            })
+
+    data = []
+    for row in rows:
+        m = row[0]
+        benefit = m.benefit_snapshot or {}
+        if isinstance(benefit, str):
+            try:
+                benefit = json.loads(benefit)
+            except:
+                benefit = {}
+        benefits_list = []
+        # 优先取权益列表（items）中的自定义权益
+        if benefit.get("items"):
+            for item in benefit["items"]:
+                title = item.get("title", "")
+                if title:
+                    benefits_list.append(title)
+        # 无自定义权益时，fallback 到固定配置字段
+        else:
+            if benefit.get("discount_rate"):
+                benefits_list.append(f"{int(benefit['discount_rate'] * 10)}折")
+            if benefit.get("priority_booking"):
+                benefits_list.append("优先预订")
+            if benefit.get("free_cancellation"):
+                benefits_list.append("免费退改")
+            if benefit.get("points_multiplier"):
+                benefits_list.append(f"{benefit['points_multiplier']}倍积分")
+            if benefit.get("free_pet_insurance"):
+                benefits_list.append("宠物保险")
+
+        # 从套餐的券包配置计算优惠券数量
+        coupon_package = row[5] or {}
+        if isinstance(coupon_package, str):
+            try:
+                coupon_package = json.loads(coupon_package)
+            except:
+                coupon_package = {}
+        coupon_count = 0
+        if isinstance(coupon_package, dict) and coupon_package.get("templates"):
+            for t in coupon_package["templates"]:
+                coupon_count += t.get("count", 0)
+        elif isinstance(coupon_package, list):
+            coupon_count = len(coupon_package)
+
+        order_info = order_data.get(m.order_id, {})
+        coupon_total = coupon_count
+        coupon_used = used_coupon_counts.get(m.user_id, 0)
+        coupon_remaining = max(0, coupon_total - coupon_used)
+        data.append({
+            "id": m.id,
+            "user_id": m.user_id,
+            "nickname": row[1] or "未知用户",
+            "phone": row[2] or "-",
+            "avatar": row[3] or "",
+            "plan_id": m.plan_id,
+            "plan_name": row[4] or "未知套餐",
+            "status": m.status,
+            "start_date": m.start_date.isoformat() if m.start_date else None,
+            "end_date": m.end_date.isoformat() if m.end_date else None,
+            "pay_amount": float(m.pay_amount) if m.pay_amount else 0,
+            "is_auto_renew": m.is_auto_renew,
+            "created_at": m.created_at.isoformat() if m.created_at else None,
+            "updated_at": m.updated_at.isoformat() if m.updated_at else None,
+            "benefits": benefits_list,
+            "order_no": order_info.get("order_no", "-"),
+            "pay_channel": order_info.get("pay_channel", "-"),
+            "coupon_total": coupon_total,
+            "coupon_used": coupon_used,
+            "coupon_remaining": coupon_remaining,
+            "order_coupons": order_coupon_data.get(m.user_id, []),
+        })
+
+    return success({
+        "list": data,
+        "total": total,
+        "page": page,
+        "page_size": page_size,
+    })
 # ==================== 管理后台：弹窗配置 ====================
 
 @app.get("/api/v1/admin/popups")
@@ -1246,3 +1501,378 @@ async def admin_delete_popup(
     return success(message="已停用")
 
 
+
+
+# ============================================================
+# 系统管理 - 管理员账号、角色、菜单管理
+# ============================================================
+
+@app.get("/api/v1/admin/admins")
+async def admin_list_admins(
+    page: int = 1,
+    page_size: int = 20,
+    keyword: str = "",
+    db: AsyncSession = Depends(get_db)
+):
+    """管理员账号列表"""
+    from app.models.admin_user import AdminUser
+    from app.models.admin_role import AdminRole
+    
+    query = select(AdminUser)
+    if keyword:
+        query = query.where(
+            (AdminUser.username.contains(keyword)) |
+            (AdminUser.real_name.contains(keyword)) |
+            (AdminUser.phone.contains(keyword))
+        )
+    
+    count_result = await db.execute(select(func.count()).select_from(query.subquery()))
+    total = count_result.scalar()
+    
+    result = await db.execute(query.offset((page - 1) * page_size).limit(page_size))
+    admins = result.scalars().all()
+    
+    data = []
+    for admin in admins:
+        role_name = None
+        if admin.role:
+            role_name = admin.role.name
+        data.append({
+            "id": admin.id,
+            "username": admin.username,
+            "real_name": admin.real_name,
+            "phone": admin.phone,
+            "email": admin.email,
+            "avatar": admin.avatar,
+            "role_id": admin.role_id,
+            "role_name": role_name,
+            "status": admin.status,
+            "last_login_at": admin.last_login_at.isoformat() if admin.last_login_at else None,
+            "created_at": admin.created_at.isoformat() if admin.created_at else None,
+        })
+    
+    return success({"list": data, "total": total, "page": page, "page_size": page_size})
+
+
+@app.get("/api/v1/admin/admins/{admin_id}")
+async def admin_get_admin(admin_id: int, db: AsyncSession = Depends(get_db)):
+    """管理员详情"""
+    from app.models.admin_user import AdminUser
+    result = await db.execute(select(AdminUser).where(AdminUser.id == admin_id))
+    admin = result.scalar_one_or_none()
+    if not admin:
+        return {"code": 404, "message": "管理员不存在", "data": None}
+    role_name = admin.role.name if admin.role else None
+    return success({
+        "id": admin.id, "username": admin.username, "real_name": admin.real_name,
+        "phone": admin.phone, "email": admin.email, "avatar": admin.avatar,
+        "role_id": admin.role_id, "role_name": role_name, "status": admin.status,
+        "last_login_at": admin.last_login_at.isoformat() if admin.last_login_at else None,
+        "created_at": admin.created_at.isoformat() if admin.created_at else None,
+    })
+
+
+@app.post("/api/v1/admin/admins")
+async def admin_create_admin(data: dict, db: AsyncSession = Depends(get_db)):
+    """创建管理员账号"""
+    import bcrypt
+    from app.models.admin_user import AdminUser
+    username = data.get("username", "").strip()
+    if not username:
+        return {"code": 400, "message": "用户名不能为空", "data": None}
+    result = await db.execute(select(AdminUser).where(AdminUser.username == username))
+    if result.scalar_one_or_none():
+        return {"code": 400, "message": "用户名已存在", "data": None}
+    password = data.get("password", "")
+    if len(password) < 6:
+        return {"code": 400, "message": "密码不能少于6位", "data": None}
+    hashed = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+    admin = AdminUser(
+        username=username, password=hashed, real_name=data.get("real_name"),
+        phone=data.get("phone"), email=data.get("email"), avatar=data.get("avatar"),
+        role_id=data.get("role_id"), status=data.get("status", 1),
+    )
+    db.add(admin)
+    await db.flush()
+    await db.commit()
+    return success({"id": admin.id}, message="创建成功")
+
+
+@app.put("/api/v1/admin/admins/{admin_id}")
+async def admin_update_admin(admin_id: int, data: dict, db: AsyncSession = Depends(get_db)):
+    """更新管理员账号"""
+    import bcrypt
+    from app.models.admin_user import AdminUser
+    result = await db.execute(select(AdminUser).where(AdminUser.id == admin_id))
+    admin = result.scalar_one_or_none()
+    if not admin:
+        return {"code": 404, "message": "管理员不存在", "data": None}
+    new_username = data.get("username", "").strip()
+    if new_username and new_username != admin.username:
+        check = await db.execute(select(AdminUser).where(AdminUser.username == new_username))
+        if check.scalar_one_or_none():
+            return {"code": 400, "message": "用户名已存在", "data": None}
+        admin.username = new_username
+    for field in ["real_name", "phone", "email", "avatar", "role_id", "status"]:
+        if field in data:
+            setattr(admin, field, data[field])
+    password = data.get("password")
+    if password and len(password) >= 6:
+        admin.password = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+    await db.commit()
+    return success({"id": admin.id}, message="更新成功")
+
+
+@app.delete("/api/v1/admin/admins/{admin_id}")
+async def admin_delete_admin(admin_id: int, db: AsyncSession = Depends(get_db)):
+    """删除/禁用管理员账号"""
+    from app.models.admin_user import AdminUser
+    result = await db.execute(select(AdminUser).where(AdminUser.id == admin_id))
+    admin = result.scalar_one_or_none()
+    if not admin:
+        return {"code": 404, "message": "管理员不存在", "data": None}
+    admin.status = 0
+    await db.commit()
+    return success(message="已禁用")
+
+
+# ========== 角色管理 ==========
+
+@app.get("/api/v1/admin/roles")
+async def admin_list_roles(page: int = 1, page_size: int = 20, keyword: str = "", db: AsyncSession = Depends(get_db)):
+    """角色列表"""
+    from app.models.admin_role import AdminRole
+    query = select(AdminRole)
+    if keyword:
+        query = query.where((AdminRole.name.contains(keyword)) | (AdminRole.code.contains(keyword)))
+    count_result = await db.execute(select(func.count()).select_from(query.subquery()))
+    total = count_result.scalar()
+    result = await db.execute(query.offset((page - 1) * page_size).limit(page_size))
+    roles = result.scalars().all()
+    data = []
+    for role in roles:
+        menu_ids = [m.id for m in role.menus] if role.menus else []
+        data.append({
+            "id": role.id, "name": role.name, "code": role.code,
+            "description": role.description, "status": role.status,
+            "menu_ids": menu_ids, "created_at": role.created_at.isoformat() if role.created_at else None,
+        })
+    return success({"list": data, "total": total, "page": page, "page_size": page_size})
+
+
+@app.get("/api/v1/admin/roles/{role_id}")
+async def admin_get_role(role_id: int, db: AsyncSession = Depends(get_db)):
+    """角色详情"""
+    from app.models.admin_role import AdminRole
+    result = await db.execute(select(AdminRole).where(AdminRole.id == role_id))
+    role = result.scalar_one_or_none()
+    if not role:
+        return {"code": 404, "message": "角色不存在", "data": None}
+    menu_ids = [m.id for m in role.menus] if role.menus else []
+    return success({
+        "id": role.id, "name": role.name, "code": role.code,
+        "description": role.description, "status": role.status,
+        "menu_ids": menu_ids, "created_at": role.created_at.isoformat() if role.created_at else None,
+    })
+
+
+@app.post("/api/v1/admin/roles")
+async def admin_create_role(data: dict, db: AsyncSession = Depends(get_db)):
+    """创建角色"""
+    from app.models.admin_role import AdminRole
+    from app.models.admin_role import admin_role_menus
+    code = data.get("code", "").strip()
+    name = data.get("name", "").strip()
+    if not code or not name:
+        return {"code": 400, "message": "角色编码和名称不能为空", "data": None}
+    result = await db.execute(select(AdminRole).where(AdminRole.code == code))
+    if result.scalar_one_or_none():
+        return {"code": 400, "message": "角色编码已存在", "data": None}
+    role = AdminRole(name=name, code=code, description=data.get("description"), status=data.get("status", 1))
+    db.add(role)
+    await db.flush()
+    menu_ids = data.get("menu_ids", [])
+    if menu_ids:
+        for menu_id in menu_ids:
+            db.add(admin_role_menus.insert().values(role_id=role.id, menu_id=menu_id))
+    await db.commit()
+    return success({"id": role.id}, message="创建成功")
+
+
+@app.put("/api/v1/admin/roles/{role_id}")
+async def admin_update_role(role_id: int, data: dict, db: AsyncSession = Depends(get_db)):
+    """更新角色"""
+    from app.models.admin_role import AdminRole
+    from app.models.admin_role import admin_role_menus
+    result = await db.execute(select(AdminRole).where(AdminRole.id == role_id))
+    role = result.scalar_one_or_none()
+    if not role:
+        return {"code": 404, "message": "角色不存在", "data": None}
+    for field in ["name", "description", "status"]:
+        if field in data:
+            setattr(role, field, data[field])
+    if "menu_ids" in data:
+        from app.models.admin_role import AdminRoleMenu
+        await db.execute(AdminRoleMenu.__table__.delete().where(AdminRoleMenu.role_id == role_id))
+        for menu_id in data["menu_ids"]:
+            await db.execute(admin_role_menus.insert().values(role_id=role_id, menu_id=menu_id))
+    await db.commit()
+    return success({"id": role.id}, message="更新成功")
+
+
+@app.delete("/api/v1/admin/roles/{role_id}")
+async def admin_delete_role(role_id: int, db: AsyncSession = Depends(get_db)):
+    """删除/禁用角色"""
+    from app.models.admin_role import AdminRole
+    result = await db.execute(select(AdminRole).where(AdminRole.id == role_id))
+    role = result.scalar_one_or_none()
+    if not role:
+        return {"code": 404, "message": "角色不存在", "data": None}
+    role.status = 0
+    await db.commit()
+    return success(message="已禁用")
+
+
+# ========== 菜单管理 ==========
+
+@app.get("/api/v1/admin/menus")
+async def admin_list_menus(db: AsyncSession = Depends(get_db)):
+    """菜单列表（平铺）"""
+    from app.models.admin_menu import AdminMenu
+    result = await db.execute(select(AdminMenu).where(AdminMenu.status == 1).order_by(AdminMenu.sort_order))
+    menus = result.scalars().all()
+    data = []
+    for menu in menus:
+        data.append({
+            "id": menu.id, "parent_id": menu.parent_id, "name": menu.name,
+            "path": menu.path, "icon": menu.icon, "sort_order": menu.sort_order,
+            "type": menu.type, "permission": menu.permission, "status": menu.status,
+            "created_at": menu.created_at.isoformat() if menu.created_at else None,
+        })
+    return success({"list": data})
+
+
+@app.get("/api/v1/admin/menus/tree")
+async def admin_menu_tree(db: AsyncSession = Depends(get_db)):
+    """菜单树"""
+    from app.models.admin_menu import AdminMenu
+    result = await db.execute(select(AdminMenu).where(AdminMenu.status == 1).order_by(AdminMenu.sort_order))
+    menus = result.scalars().all()
+    menu_map = {}
+    for menu in menus:
+        menu_map[menu.id] = {
+            "id": menu.id, "parent_id": menu.parent_id, "name": menu.name,
+            "path": menu.path, "icon": menu.icon, "sort_order": menu.sort_order,
+            "type": menu.type, "permission": menu.permission, "status": menu.status,
+            "children": [],
+        }
+    tree = []
+    for item in menu_map.values():
+        if item["parent_id"] == 0:
+            tree.append(item)
+        else:
+            parent = menu_map.get(item["parent_id"])
+            if parent:
+                parent["children"].append(item)
+    return success(tree)
+
+
+@app.post("/api/v1/admin/menus")
+async def admin_create_menu(data: dict, db: AsyncSession = Depends(get_db)):
+    """创建菜单"""
+    from app.models.admin_menu import AdminMenu
+    menu = AdminMenu(
+        parent_id=data.get("parent_id", 0), name=data.get("name"), path=data.get("path"),
+        icon=data.get("icon"), sort_order=data.get("sort_order", 0), type=data.get("type", 2),
+        permission=data.get("permission"), status=data.get("status", 1),
+    )
+    db.add(menu)
+    await db.flush()
+    await db.commit()
+    return success({"id": menu.id}, message="创建成功")
+
+
+@app.put("/api/v1/admin/menus/{menu_id}")
+async def admin_update_menu(menu_id: int, data: dict, db: AsyncSession = Depends(get_db)):
+    """更新菜单"""
+    from app.models.admin_menu import AdminMenu
+    result = await db.execute(select(AdminMenu).where(AdminMenu.id == menu_id))
+    menu = result.scalar_one_or_none()
+    if not menu:
+        return {"code": 404, "message": "菜单不存在", "data": None}
+    for field in ["parent_id", "name", "path", "icon", "sort_order", "type", "permission", "status"]:
+        if field in data:
+            setattr(menu, field, data[field])
+    await db.commit()
+    return success({"id": menu.id}, message="更新成功")
+
+
+@app.delete("/api/v1/admin/menus/{menu_id}")
+async def admin_delete_menu(menu_id: int, db: AsyncSession = Depends(get_db)):
+    """删除/禁用菜单"""
+    from app.models.admin_menu import AdminMenu
+    result = await db.execute(select(AdminMenu).where(AdminMenu.id == menu_id))
+    menu = result.scalar_one_or_none()
+    if not menu:
+        return {"code": 404, "message": "菜单不存在", "data": None}
+    menu.status = 0
+    await db.commit()
+    return success(message="已禁用")
+
+
+# ========== 当前用户信息 ==========
+
+@app.get("/api/v1/admin/me")
+async def admin_me(current_user: dict = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    """获取当前管理员信息"""
+    from app.models.admin_user import AdminUser
+    user_id = current_user.get("user_id")
+    if not user_id or user_id == 0:
+        return {"code": 404, "message": "未登录", "data": None}
+    result = await db.execute(select(AdminUser).where(AdminUser.id == user_id))
+    admin = result.scalar_one_or_none()
+    if not admin:
+        return {"code": 404, "message": "管理员不存在", "data": None}
+    role_name = admin.role.name if admin.role else None
+    return success({
+        "id": admin.id, "username": admin.username, "real_name": admin.real_name,
+        "phone": admin.phone, "email": admin.email, "avatar": admin.avatar,
+        "role_id": admin.role_id, "role_name": role_name, "status": admin.status,
+    })
+
+
+@app.get("/api/v1/admin/my-menus")
+async def admin_my_menus(current_user: dict = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    """获取当前用户的菜单"""
+    from app.models.admin_user import AdminUser
+    from app.models.admin_menu import AdminMenu
+    from app.models.admin_role import admin_role_menus
+    user_id = current_user.get("user_id", 0)
+    result = await db.execute(select(AdminUser).where(AdminUser.id == user_id))
+    admin = result.scalar_one_or_none()
+    if not admin or not admin.role_id:
+        return success([])
+    result = await db.execute(
+        select(AdminMenu)
+        .join(admin_role_menus, AdminMenu.id == admin_role_menus.c.menu_id)
+        .where(admin_role_menus.c.role_id == admin.role_id, AdminMenu.status == 1)
+        .order_by(AdminMenu.sort_order)
+    )
+    menus = result.scalars().all()
+    menu_map = {}
+    for menu in menus:
+        menu_map[menu.id] = {
+            "id": menu.id, "parent_id": menu.parent_id, "name": menu.name,
+            "path": menu.path, "icon": menu.icon, "sort_order": menu.sort_order,
+            "type": menu.type, "permission": menu.permission, "status": menu.status,
+            "children": [],
+        }
+    tree = []
+    for item in menu_map.values():
+        if item["parent_id"] == 0:
+            tree.append(item)
+        else:
+            parent = menu_map.get(item["parent_id"])
+            if parent:
+                parent["children"].append(item)
+    return success(tree)

@@ -28,6 +28,9 @@ export default function Index() {
   })
 
   const loadPopup = async () => {
+    // 未登录不显示会员弹窗
+    const token = Taro.getStorageSync('access_token')
+    if (!token) return
     // 当前小程序生命周期内已关闭过则不再弹
     if (Taro.getStorageSync('home_popup_dismissed')) return
     try {
@@ -79,7 +82,7 @@ export default function Index() {
       if (bannerRes.code === 200 && bannerRes.data?.banners) {
         setBanners(bannerRes.data.banners.map((b: any) => ({
           id: b.id,
-          image: b.image_url ? (b.image_url.startsWith('http') ? b.image_url : `https://tailtravel.westilt.com${b.image_url}`) : '',
+          image: b.image_url ? (b.image_url.startsWith('http') ? b.image_url : `https://tailtravel.westilt.com${b.image_url}`) + '?w=750&q=75' : '',
           link_url: b.link_url || '',
         })))
       } else {
@@ -94,7 +97,7 @@ export default function Index() {
           name: r.name,
           type: r.route_type_name || r.type_name || '精选',
           price: r.base_price || r.price || 0,
-          cover_image: r.cover_image || 'https://via.placeholder.com/620x420/CCCCCC/FFFFFF?text=No+Image',
+          cover_image: r.cover_image ? (r.cover_image.startsWith('http') ? r.cover_image : `https://tailtravel.westilt.com${r.cover_image}`) + '?w=400&q=75' : 'https://via.placeholder.com/620x420/CCCCCC/FFFFFF?text=No+Image',
           subtitle: r.subtitle || ''
         })))
       }
@@ -108,7 +111,7 @@ export default function Index() {
           date: a.event_date || '',
           location: a.location || '',
           participants: a.participants || 0,
-          image: a.cover_image ? (a.cover_image.startsWith('http') ? a.cover_image : `https://tailtravel.westilt.com${a.cover_image}`) : 'https://via.placeholder.com/700x380/CCCCCC/FFFFFF?text=No+Image',
+          image: a.cover_image ? (a.cover_image.startsWith('http') ? a.cover_image : `https://tailtravel.westilt.com${a.cover_image}`) + '?w=400&q=75' : 'https://via.placeholder.com/700x380/CCCCCC/FFFFFF?text=No+Image',
         })))
       }
 
@@ -121,7 +124,7 @@ export default function Index() {
           date: a.start_date || '',
           location: a.location || '',
           status: a.status_name || '报名中',
-          image: a.cover_image || 'https://via.placeholder.com/700x380/96C93D/FFFFFF?text=Charity',
+          image: a.cover_image ? (a.cover_image.startsWith('http') ? a.cover_image : `https://tailtravel.westilt.com${a.cover_image}`) + '?w=400&q=75' : 'https://via.placeholder.com/700x380/96C93D/FFFFFF?text=Charity',
         })))
       }
     } catch (error) {
@@ -240,9 +243,9 @@ export default function Index() {
             <Text className='section-more' onClick={() => Taro.switchTab({ url: '/pages/routes/index' })}>更多 {'>'}</Text>
           </View>
           
-          <ScrollView className='trip-scroll' scrollX>
-            {routes.map(route => (
-              <View key={route.id} className='trip-card' onClick={() => goToRouteDetail(route)}>
+          <ScrollView className='trip-scroll' scrollX showScrollbar={false}>
+            {routes.map((route, index) => (
+              <View key={route.id} className={`trip-card ${index === 0 ? 'trip-card-first' : ''}`} onClick={() => goToRouteDetail(route)}>
                 <Image className='trip-image' src={route.cover_image} mode='aspectFill' />
                 <View className='trip-tag'>{route.type}</View>
                 <View className='trip-overlay'>
@@ -307,7 +310,7 @@ export default function Index() {
           <View className='member-popup-mask' onClick={handlePopupClose} />
           <View className='member-popup-content'>
             <Text className='member-popup-close' onClick={handlePopupClose}>✕</Text>
-            <Image className='member-popup-poster' src={popupData.image ? (popupData.image.startsWith('http') ? popupData.image : `${BASE_URL}${popupData.image}`) : '/assets/images/member.jpg'} mode='widthFix' />
+            <Image className='member-popup-poster' src={popupData.image ? (popupData.image.startsWith('http') ? popupData.image : `${BASE_URL}${popupData.image}`) + '?w=600&q=75' : '/assets/images/member.jpg'} mode='widthFix' />
             {popupData.title && <Text className='member-popup-title'>{popupData.title}</Text>}
             {popupData.subtitle && <Text className='member-popup-subtitle'>{popupData.subtitle}</Text>}
             {popupData.content?.benefits?.length > 0 && (

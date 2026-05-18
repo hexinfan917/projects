@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import Taro, { useDidShow } from '@tarojs/taro'
-import { View, Text } from '@tarojs/components'
+import { View, Text , Image } from '@tarojs/components'
 import { getMemberCenter, getMemberCoupons, createMemberOrder, payMemberOrder } from '../../../utils/api'
 import './index.scss'
 
@@ -60,7 +60,7 @@ export default function MemberCenter() {
           <View className='page-back' onClick={() => {
             Taro.switchTab({ url: '/pages/profile/index' })
           }}>
-            <Text className='page-back-icon'>←</Text>
+            <Image className='page-back-icon' src='/assets/icons/return.png' mode='aspectFit' />
           </View>
           <Text className='navbar-title'>会员中心</Text>
         </View>
@@ -74,7 +74,7 @@ export default function MemberCenter() {
             <View className='member-vip-main'>
               <View className='member-vip-left'>
                 <Text className='member-vip-title'>尾巴旅行会员</Text>
-                <Text className='member-vip-price'>实付：¥39.90</Text>
+                <Text className='member-vip-price'>实付：¥{data.member_info?.pay_amount || '--'}</Text>
                 <Text className='member-vip-time'>购买时间：{data.member_info?.start_date?.split('T')[0] || '-'}</Text>
               </View>
               <View className='member-vip-right'>

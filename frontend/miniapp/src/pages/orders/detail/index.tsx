@@ -73,7 +73,7 @@ export default function OrderDetail() {
     <View className='order-detail' style={{ paddingTop: '140rpx' }}>
 
         <View className='page-back' onClick={() => Taro.navigateBack()}>
-          <Text className='page-back-icon'>←</Text>
+          <Image className='page-back-icon' src='/assets/icons/return.png' mode='aspectFit' />
         </View>
       <ScrollView className='detail-scroll' scrollY refresherEnabled refresherTriggered={refreshing} onRefresherRefresh={onRefresh}>
       <View className='status-bar'>

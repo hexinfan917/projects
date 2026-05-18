@@ -64,6 +64,16 @@ async def update_profile(
     })
 
 
+@router.delete("/account")
+async def delete_account(
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """注销当前用户账号"""
+    await user_service.delete_account(current_user["user_id"], db)
+    return success(message="账号已注销")
+
+
 @router.get("/{user_id}", response_model=UserResponse)
 async def get_user(
     user_id: int,

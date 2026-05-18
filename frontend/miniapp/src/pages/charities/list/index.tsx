@@ -26,7 +26,7 @@ export default function CharityList() {
           date: a.start_date || '',
           location: a.location || '',
           status: a.status_name || '报名中',
-          image: a.cover_image ? (a.cover_image.startsWith('http') ? a.cover_image : `https://tailtravel.westilt.com${a.cover_image}`) : '',
+          image: a.cover_image ? (a.cover_image.startsWith('http') ? a.cover_image : `https://tailtravel.westilt.com${a.cover_image}`) + '?w=400&q=75' : '',
         }))
         if (p === 1) {
           setList(items)
@@ -57,7 +57,7 @@ export default function CharityList() {
     <View className='charity-list-page'>
       {/* 返回按钮 - 与回顾详情页一致 */}
       <View className='page-back' onClick={() => Taro.navigateBack()}>
-        <Text className='page-back-icon'>←</Text>
+        <Image className='page-back-icon' src='/assets/icons/return.png' mode='aspectFit' />
       </View>
       {/* 页面头部 - 与图2设计一致 */}
       <View className='list-header'>

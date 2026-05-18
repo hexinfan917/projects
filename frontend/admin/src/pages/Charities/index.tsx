@@ -12,6 +12,7 @@ const typeMap: Record<string, { text: string; color: string }> = {
   rescue: { text: '流浪救助', color: 'orange' },
   donate: { text: '爱心捐赠', color: 'red' },
   adopt: { text: '宠物领养', color: 'green' },
+  community: { text: '社区活动', color: 'cyan' },
 };
 
 const statusMap: Record<number, { text: string; color: string }> = {
@@ -99,7 +100,7 @@ export default function CharityManage() {
       });
       const data = await res.json();
       if (data.code === 200 && data.data?.url) {
-        const url = data.data.url.startsWith('http') ? data.data.url : `http://localhost:8081${data.data.url}`;
+        const url = data.data.url;
         setCoverImageUrl(url);
         form.setFieldsValue({ cover_image: url });
         message.success('上传成功');
@@ -270,7 +271,8 @@ export default function CharityManage() {
         donate: { text: '爱心捐赠' },
         adopt: { text: '宠物领养' },
       },
-      render: (type: string) => {
+      render: (_: any, record: any) => {
+        const type = record.activity_type;
         const config = typeMap[type] || { text: type, color: 'default' };
         return <Tag color={config.color}>{config.text}</Tag>;
       },
@@ -299,7 +301,8 @@ export default function CharityManage() {
         3: { text: '已结束' },
         4: { text: '已取消' },
       },
-      render: (status: number) => {
+      render: (_: any, record: any) => {
+        const status = record.status;
         const config = statusMap[status] || { text: '未知', color: 'default' };
         return <Tag color={config.color}>{config.text}</Tag>;
       },

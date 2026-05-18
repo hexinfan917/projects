@@ -18,7 +18,7 @@ from pydantic import BaseModel
 import httpx
 import hmac
 import hashlib
-from sqlalchemy import select, func, text
+from sqlalchemy import select, func, text, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 from common.config import settings
 from common.redis_client import redis_client
@@ -75,6 +75,18 @@ async def auto_cancel_expired_orders():
                     schedule_id = row["schedule_id"]
                     quantity = row["participant_count"]
                     order_no = row["order_no"]
+                    
+                    # 查询订单是否使用了优惠券
+                    coupon_result = await db.execute(
+                        text("SELECT coupon_id FROM orders WHERE id = :order_id"),
+                        {"order_id": order_id}
+                    )
+                    coupon_row = coupon_result.mappings().one_or_none()
+                    if coupon_row and coupon_row["coupon_id"]:
+                        await db.execute(
+                            text("UPDATE user_coupons SET status = 1, used_order_id = NULL, used_at = NULL WHERE id = :coupon_id"),
+                            {"coupon_id": coupon_row["coupon_id"]}
+                        )
                     
                     # 取消订单
                     await db.execute(
@@ -392,30 +404,39 @@ async def create_order(
         coupon = coupon_result.scalar_one_or_none()
         
         if coupon:
-            # 校验有效期
-            now = datetime.now()
-            if coupon.valid_start_time <= now <= coupon.valid_end_time:
-                # 校验金额门槛
-                if float(coupon.min_amount) <= total_amount:
-                    # 校验适用范围
-                    applicable = True
-                    if coupon.applicable_type == 2 and coupon.applicable_ids:
-                        if data.route_id not in coupon.applicable_ids:
-                            applicable = False
-                    
-                    if applicable:
-                        discount_amount = calculate_discount(
-                            coupon.type, float(coupon.value), total_amount, float(coupon.max_discount or 0)
-                        )
-                        coupon_name = coupon.name
+            # 礼品券不能用于订单抵扣
+            if coupon.type == 4:
+                coupon_id = None
+                discount_amount = 0
+            else:
+                # 校验有效期
+                now = datetime.now()
+                if coupon.valid_start_time <= now <= coupon.valid_end_time:
+                    # 校验金额门槛
+                    if float(coupon.min_amount) <= total_amount:
+                        # 校验适用范围
+                        applicable = True
+                        if coupon.applicable_type == 2 and coupon.applicable_ids:
+                            if data.route_id not in coupon.applicable_ids:
+                                applicable = False
+                        
+                        if applicable:
+                            discount_amount = calculate_discount(
+                                coupon.type, float(coupon.value), total_amount, float(coupon.max_discount or 0)
+                            )
+                            coupon_name = coupon.name
+                        else:
+                            coupon_id = None
+                            discount_amount = 0
                     else:
                         coupon_id = None
+                        discount_amount = 0
                 else:
                     coupon_id = None
-            else:
-                coupon_id = None
+                    discount_amount = 0
         else:
             coupon_id = None
+            discount_amount = 0
     
     pay_amount = max(0.01, round(total_amount - discount_amount, 2))
     
@@ -503,8 +524,9 @@ async def pay_order(
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """发起支付并模拟支付成功（更新订单状态）"""
+    """发起微信支付"""
     from app.models.order import Order
+    import httpx
     
     user_id = current_user.get("user_id", 1)
     
@@ -521,42 +543,45 @@ async def pay_order(
     if order.status != 10:  # 只能支付待支付订单
         raise BadRequestException(f"订单状态不允许支付，当前状态:{order.status}")
     
-    # 模拟支付成功 - 更新订单状态
-    from datetime import datetime
-    order.status = 20  # 待出行
-    order.pay_time = datetime.now()
-    order.pay_channel = "wechat"
-    order.pay_trade_no = f"WX{datetime.now().strftime('%Y%m%d%H%M%S')}"
+    # 直接从JWT中获取openid
+    openid = current_user.get("openid", "")
     
-    # 核销优惠券
-    if order.coupon_id:
-        from app.models.coupon import UserCoupon
-        coupon_result = await db.execute(
-            select(UserCoupon).where(UserCoupon.id == order.coupon_id)
-        )
-        coupon = coupon_result.scalar_one_or_none()
-        if coupon:
-            coupon.status = 2  # 已使用
-            coupon.used_order_id = order.id
-            coupon.used_at = datetime.now()
+    if not openid:
+        raise BadRequestException("用户未绑定微信，无法发起支付")
     
-    await db.flush()
-    await db.commit()
+    # 调用 pay-service 创建支付订单
+    pay_service_url = os.getenv("PAY_SERVICE_URL", "http://pay-service:8000")
+    pay_payload = {
+        "order_no": order.order_no,
+        "amount": float(order.pay_amount),
+        "description": f"尾巴旅行-{order.route_name or '订单支付'}",
+        "method": "wechat_jsapi",
+        "openid": openid
+    }
     
-    logger.info(f"Order paid: {order.order_no}, id: {order_id}, user: {user_id}")
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            pay_response = await client.post(
+                f"{pay_service_url}/api/v1/pay/create",
+                json=pay_payload,
+                headers={"Authorization": f"Bearer {current_user.get('token', '')}"}
+            )
+            pay_result = pay_response.json()
+    except Exception as e:
+        logger.error(f"Call pay-service failed: {e}")
+        raise HTTPException(status_code=500, detail=f"支付服务调用失败: {str(e)}")
     
-    # 返回支付参数（模拟）
-    time_stamp = str(int(datetime.now().timestamp()))
-    nonce_str = ''.join(__import__('random').choices(__import__('string').ascii_letters + __import__('string').digits, k=32))
+    if pay_result.get("code") != 200:
+        logger.error(f"Pay-service error: {pay_result}")
+        raise HTTPException(status_code=500, detail=pay_result.get("message", "支付下单失败"))
+    
+    pay_data = pay_result.get("data", {})
+    logger.info(f"Pay order created: {order.order_no}, pay_order_no={pay_data.get('pay_order_no')}")
     
     return success({
-        "appId": settings.wechat.appid or "wx_test_appid",
-        "timeStamp": time_stamp,
-        "nonceStr": nonce_str,
-        "package": "prepay_id=wx_test_prepayid",
-        "signType": "RSA",
-        "paySign": "test_signature",
-        "message": "支付成功"
+        "pay_order_no": pay_data.get("pay_order_no"),
+        "pay_params": pay_data.get("pay_params"),
+        "mock": pay_data.get("mock", False)
     })
 
 @app.post("/api/v1/orders/{order_id}/cancel")
@@ -593,6 +618,15 @@ async def cancel_order(
         )
     
     order.status = 30  # 已取消
+    
+    # 恢复优惠券
+    if order.coupon_id:
+        await db.execute(
+            text("UPDATE user_coupons SET status = 1, used_at = NULL, used_order_id = NULL WHERE id = :coupon_id"),
+            {"coupon_id": order.coupon_id}
+        )
+        logger.info(f"Coupon restored: coupon_id={order.coupon_id}, order_id={order_id}")
+    
     await db.flush()
     await db.commit()
     
@@ -761,39 +795,149 @@ async def pay_callback(data: dict, db: AsyncSession = Depends(get_db)):
         return {"code": "FAIL", "message": "Missing order_no"}
     
     try:
-        # 查询订单
+        # 先查询普通订单
         result = await db.execute(select(Order).where(Order.order_no == order_no))
         order = result.scalar_one_or_none()
         
-        if not order:
-            logger.error(f"Pay callback order not found: {order_no}")
-            return {"code": "FAIL", "message": "Order not found"}
+        if order:
+            # 普通订单处理
+            if order.status != 10:
+                logger.warning(f"Pay callback order status invalid: {order_no}, status={order.status}")
+                return {"code": "SUCCESS", "message": "Order already processed"}
+            
+            order.status = 20
+            order.pay_time = datetime.now()
+            order.pay_channel = pay_channel
+            order.pay_trade_no = transaction_id or f"WX{datetime.now().strftime('%Y%m%d%H%M%S')}"
+            
+            # 核销优惠券
+            if order.coupon_id:
+                await db.execute(
+                    text("UPDATE user_coupons SET status = 2, used_at = NOW(), used_order_id = :order_id WHERE id = :coupon_id"),
+                    {"coupon_id": order.coupon_id, "order_id": order.id}
+                )
+                logger.info(f"Coupon written off: coupon_id={order.coupon_id}, order_id={order.id}")
+            
+            await db.commit()
+            logger.info(f"Order paid via callback: {order_no}, id={order.id}")
+            return {"code": "SUCCESS", "message": "OK"}
         
-        # 只能更新待支付订单
-        if order.status != 10:
-            logger.warning(f"Pay callback order status invalid: {order_no}, status={order.status}")
-            return {"code": "SUCCESS", "message": "Order already processed"}
+        # 普通订单不存在，尝试查找会员订单
+        member_result = await db.execute(
+            text("SELECT * FROM member_orders WHERE order_no = :order_no"),
+            {"order_no": order_no}
+        )
+        member_order = member_result.mappings().one_or_none()
         
-        # 更新订单状态
-        order.status = 20  # 待出行
-        order.pay_time = datetime.now()
-        order.pay_channel = pay_channel
-        order.pay_trade_no = transaction_id or f"WX{datetime.now().strftime('%Y%m%d%H%M%S')}"
+        if member_order:
+            # 会员订单处理
+            if member_order["status"] != 10:
+                return {"code": "SUCCESS", "message": "Member order already processed"}
+            
+            # Update member order status
+            await db.execute(
+                text("UPDATE member_orders SET status = 20, pay_time = NOW(), pay_channel = :pay_channel, pay_trade_no = :trade_no, updated_at = NOW() WHERE id = :order_id"),
+                {"order_id": member_order["id"], "pay_channel": pay_channel, "trade_no": transaction_id or f"WX{datetime.now().strftime('%Y%m%d%H%M%S')}"}
+            )
+            
+            # Process membership
+            plan_result = await db.execute(
+                text("SELECT * FROM member_plans WHERE id = :plan_id"),
+                {"plan_id": member_order["plan_id"]}
+            )
+            plan = plan_result.mappings().one_or_none()
+            user_id = member_order["user_id"]
+            
+            membership_result = await db.execute(
+                text("SELECT * FROM user_memberships WHERE user_id = :user_id AND status = 1"),
+                {"user_id": user_id}
+            )
+            existing = membership_result.mappings().one_or_none()
+            
+            now = datetime.now()
+            if existing:
+                new_end = existing["end_date"] + timedelta(days=plan["duration_days"] if plan else 30)
+                await db.execute(
+                    text("UPDATE user_memberships SET end_date = :end_date, order_id = :order_id, pay_amount = :pay_amount, benefit_snapshot = :benefit_snapshot, updated_at = NOW() WHERE id = :membership_id"),
+                    {
+                        "end_date": new_end,
+                        "order_id": member_order["id"],
+                        "pay_amount": member_order["pay_amount"],
+                        "benefit_snapshot": json.dumps(json.loads(plan["benefit_config"]) if isinstance(plan.get("benefit_config"), str) else (plan["benefit_config"] if plan else {})),
+                        "membership_id": existing["id"],
+                    }
+                )
+            else:
+                await db.execute(
+                    text("INSERT INTO user_memberships (user_id, plan_id, status, start_date, end_date, order_id, pay_amount, benefit_snapshot, created_at, updated_at) VALUES (:user_id, :plan_id, 1, :start_date, :end_date, :order_id, :pay_amount, :benefit_snapshot, NOW(), NOW())"),
+                    {
+                        "user_id": user_id,
+                        "plan_id": member_order["plan_id"],
+                        "start_date": date.today(),
+                        "end_date": date.today() + timedelta(days=plan["duration_days"] if plan else 30),
+                        "order_id": member_order["id"],
+                        "pay_amount": member_order["pay_amount"],
+                        "benefit_snapshot": json.dumps(json.loads(plan["benefit_config"]) if isinstance(plan.get("benefit_config"), str) else (plan["benefit_config"] if plan else {})),
+                    }
+                )
+            
+            # Issue coupons
+            if plan and plan["coupon_package"]:
+                coupon_package = plan["coupon_package"]
+                if isinstance(coupon_package, str):
+                    coupon_package = json.loads(coupon_package)
+                
+                # Support both list format [1,2,3] and object format {"templates": [...]}
+                if isinstance(coupon_package, list):
+                    template_ids = coupon_package
+                    templates_config = [{"template_id": tid, "count": 1, "valid_days": 30} for tid in template_ids]
+                elif isinstance(coupon_package, dict):
+                    templates_config = coupon_package.get("templates", [])
+                else:
+                    templates_config = []
+                
+                for item in templates_config:
+                    template_result = await db.execute(
+                        text("SELECT * FROM coupon_templates WHERE id = :template_id"),
+                        {"template_id": item["template_id"]}
+                    )
+                    template = template_result.mappings().one_or_none()
+                    if not template:
+                        continue
+                    valid_days = item.get("valid_days", 30)
+                    for _ in range(item.get("count", 1)):
+                        await db.execute(
+                            text("INSERT INTO user_coupons (user_id, template_id, coupon_no, name, type, value, min_amount, max_discount, applicable_type, applicable_ids, valid_start_time, valid_end_time, status, source_type, source_id, description, created_at) VALUES (:user_id, :template_id, :coupon_no, :name, :type, :value, :min_amount, :max_discount, :applicable_type, :applicable_ids, :valid_start, :valid_end, 1, 2, :source_id, :description, NOW())"),
+                            {
+                                "user_id": user_id,
+                                "template_id": template["id"],
+                                "coupon_no": generate_coupon_no(),
+                                "name": template["name"],
+                                "type": template["type"],
+                                "value": template["value"],
+                                "min_amount": template["min_amount"],
+                                "max_discount": template["max_discount"],
+                                "applicable_type": template["applicable_type"],
+                                "applicable_ids": json.dumps(template["applicable_ids"]) if template["applicable_ids"] else None,
+                                "valid_start": now,
+                                "valid_end": now + timedelta(days=valid_days),
+                                "source_id": member_order["id"],
+                                "description": template.get("description"),
+                            }
+                        )
+            
+            await db.commit()
+            logger.info(f"Member order paid via callback: {order_no}, id={member_order['id']}")
+            return {"code": "SUCCESS", "message": "OK"}
         
-        await db.commit()
-        
-        logger.info(f"Order paid via callback: {order_no}, id={order.id}")
-        
-        # TODO: 扣减排期库存（如需恢复库存管理，调用 route-service 扣减库存）
-        # TODO: 发送支付成功通知（短信/推送）
+        logger.error(f"Pay callback order not found: {order_no}")
+        return {"code": "FAIL", "message": "Order not found"}
         
     except Exception as e:
         logger.error(f"Pay callback processing error: {e}")
         import traceback
         logger.error(traceback.format_exc())
         return {"code": "FAIL", "message": "Internal error"}
-    
-    return {"code": "SUCCESS", "message": "OK"}
 
 
 # ==================== 管理后台 API ====================
@@ -883,6 +1027,7 @@ async def admin_get_order_detail(
     """管理后台获取订单详情"""
     try:
         from app.models.order import Order
+        from sqlalchemy import text
         
         result = await db.execute(select(Order).where(Order.id == order_id))
         o = result.scalar_one_or_none()
@@ -890,25 +1035,60 @@ async def admin_get_order_detail(
         if not o:
             return {"code": 404, "message": "订单不存在", "data": None}
         
+        # 如果路线封面为空，尝试从routes表查询
+        route_cover = o.route_cover
+        if not route_cover and o.route_id:
+            route_res = await db.execute(
+                text("SELECT cover_image FROM routes WHERE id = :route_id"),
+                {"route_id": o.route_id}
+            )
+            route_row = route_res.fetchone()
+            if route_row:
+                route_cover = route_row[0]
+        
+        # 查询默认出行人身份证（用于补充联系人信息）
+        contact_id_card = None
+        if o.user_id:
+            traveler_res = await db.execute(
+                text("SELECT id_card FROM travelers WHERE user_id = :user_id AND is_default = 1 AND status = 1 LIMIT 1"),
+                {"user_id": o.user_id}
+            )
+            traveler_row = traveler_res.fetchone()
+            if traveler_row:
+                contact_id_card = traveler_row[0]
+        
+        # 组装联系人信息（补充身份证号）
+        contact = o.contact or {}
+        if contact_id_card and isinstance(contact, dict):
+            contact = {**contact, "id_card": contact_id_card}
+        
         order = {
             "id": o.id,
             "order_no": o.order_no,
             "user_id": o.user_id,
             "route_id": o.route_id,
             "route_name": o.route_name,
-            "route_cover": o.route_cover,
+            "route_cover": route_cover,
             "travel_date": o.travel_date.isoformat() if o.travel_date else None,
             "participant_count": o.participant_count,
             "pet_count": o.pet_count,
-            "participants": o.participants,
-            "contact": o.contact,
+            "participants": o.participants or [],
+            "pets": o.pets or [],
+            "contact": contact,
             "route_price": float(o.route_price) if o.route_price else 0,
             "insurance_price": float(o.insurance_price) if o.insurance_price else 0,
+            "equipment_price": float(o.equipment_price) if o.equipment_price else 0,
+            "addon_amount": float(o.addon_amount) if o.addon_amount else 0,
+            "addons": o.addons or [],
             "discount_amount": float(o.discount_amount) if o.discount_amount else 0,
             "pay_amount": float(o.pay_amount) if o.pay_amount else 0,
+            "total_amount": float(o.total_amount) if o.total_amount else 0,
             "status": o.status,
             "status_name": STATUS_MAP.get(o.status, "未知"),
             "pay_time": o.pay_time.isoformat() if o.pay_time else None,
+            "pay_channel": o.pay_channel,
+            "pay_trade_no": o.pay_trade_no,
+            "pay_transaction_id": o.pay_transaction_id,
             "created_at": o.created_at.isoformat() if o.created_at else None,
             "updated_at": o.updated_at.isoformat() if o.updated_at else None,
             "refund_reject_reason": o.refund_reject_reason,
@@ -917,6 +1097,8 @@ async def admin_get_order_detail(
         return success(order)
     except Exception as e:
         logger.error(f"Error getting order detail: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
         return {"code": 500, "message": f"查询失败: {str(e)}", "data": None}
 
 
@@ -1276,6 +1458,8 @@ def generate_member_order_no() -> str:
 
 def calculate_discount(coupon_type: int, value: float, order_amount: float, max_discount: float = 0) -> float:
     """计算优惠金额"""
+    if coupon_type == 4:  # 礼品券不参与订单金额抵扣
+        return 0
     if coupon_type == 1:  # 满减券
         return min(value, order_amount)
     elif coupon_type == 2:  # 折扣券
@@ -1323,7 +1507,7 @@ async def get_user_coupons(
             "coupon_no": c.coupon_no,
             "name": c.name,
             "type": c.type,
-            "type_text": {1: "满减券", 2: "折扣券", 3: "立减券"}.get(c.type, "未知"),
+            "type_text": {1: "满减券", 2: "折扣券", 3: "立减券", 4: "礼品券"}.get(c.type, "未知"),
             "value": float(c.value),
             "min_amount": float(c.min_amount),
             "valid_start_time": c.valid_start_time.isoformat() if c.valid_start_time else None,
@@ -1333,6 +1517,7 @@ async def get_user_coupons(
             "is_expired_soon": c.valid_end_time and (c.valid_end_time - now).days <= 3 if c.status == 1 else False,
             "source_type": c.source_type,
             "used_order_id": c.used_order_id,
+            "description": c.description,
         }
         data.append(item)
     
@@ -1539,7 +1724,8 @@ async def get_available_coupons_for_order(
             UserCoupon.user_id == user_id,
             UserCoupon.status == 1,
             UserCoupon.valid_start_time <= now,
-            UserCoupon.valid_end_time >= now
+            UserCoupon.valid_end_time >= now,
+            UserCoupon.type != 4  # 礼品券不参与订单优惠
         ).order_by(UserCoupon.value.desc())
     )
     coupons = result.scalars().all()
@@ -1665,6 +1851,9 @@ async def calculate_coupon_discount(
     if not coupon:
         return {"code": 400, "message": "优惠券不存在或不可用", "data": None}
     
+    if coupon.type == 4:
+        return {"code": 400, "message": "礼品券不能用于订单抵扣", "data": None}
+    
     discount = calculate_discount(coupon.type, float(coupon.value), amount, float(coupon.max_discount or 0))
     
     return success({
@@ -1672,6 +1861,57 @@ async def calculate_coupon_discount(
         "discount_amount": discount,
         "pay_amount": max(0.01, round(amount - discount, 2))
     })
+
+
+@app.post("/api/v1/coupons/{coupon_id}/use")
+async def use_coupon(
+    coupon_id: int,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """用户使用礼品券（核销）"""
+    from app.models.coupon import UserCoupon
+    
+    user_id = current_user.get("user_id", 1)
+    now = datetime.now()
+    
+    result = await db.execute(
+        select(UserCoupon).where(
+            UserCoupon.id == coupon_id,
+            UserCoupon.user_id == user_id
+        )
+    )
+    coupon = result.scalar_one_or_none()
+    
+    if not coupon:
+        return {"code": 404, "message": "优惠券不存在", "data": None}
+    
+    if coupon.type != 4:
+        return {"code": 400, "message": "仅礼品券支持此方式核销", "data": None}
+    
+    if coupon.status == 2:
+        return {"code": 400, "message": "该礼品券已使用", "data": None}
+    
+    if coupon.status == 3:
+        return {"code": 400, "message": "该礼品券已过期", "data": None}
+    
+    if coupon.status == 4:
+        return {"code": 400, "message": "该礼品券已作废", "data": None}
+    
+    if coupon.valid_end_time < now:
+        coupon.status = 3
+        await db.commit()
+        return {"code": 400, "message": "该礼品券已过期", "data": None}
+    
+    coupon.status = 2
+    coupon.used_at = now
+    await db.commit()
+    
+    return success({
+        "id": coupon.id,
+        "coupon_no": coupon.coupon_no,
+        "used_at": coupon.used_at.isoformat()
+    }, message="核销成功")
 
 
 # ==================== 管理后台：优惠券模板 ====================
@@ -1724,7 +1964,7 @@ async def admin_get_coupon_templates(
             "id": t.id,
             "name": t.name,
             "type": t.type,
-            "type_text": {1: "满减券", 2: "折扣券", 3: "立减券"}.get(t.type, "未知"),
+            "type_text": {1: "满减券", 2: "折扣券", 3: "立减券", 4: "礼品券"}.get(t.type, "未知"),
             "value": float(t.value),
             "min_amount": float(t.min_amount),
             "max_discount": float(t.max_discount),
@@ -1828,6 +2068,89 @@ async def admin_delete_coupon_template(
     template.status = 0
     await db.commit()
     return success(message="已停用")
+
+
+@app.get("/api/v1/admin/user-coupons")
+async def admin_get_user_coupons(
+    status: Optional[int] = None,
+    type: Optional[int] = None,
+    keyword: Optional[str] = None,
+    user_id: Optional[int] = None,
+    page: int = 1,
+    page_size: int = 10,
+    db: AsyncSession = Depends(get_db)
+):
+    """管理后台查询用户优惠券/核销记录（含礼品券）"""
+    
+    where_clauses = ["1=1"]
+    params: dict = {}
+    
+    if status is not None:
+        where_clauses.append("uc.status = :status")
+        params["status"] = status
+    if type is not None:
+        where_clauses.append("uc.type = :type")
+        params["type"] = type
+    if user_id is not None:
+        where_clauses.append("uc.user_id = :user_id")
+        params["user_id"] = user_id
+    if keyword:
+        where_clauses.append("(uc.name LIKE :keyword OR uc.coupon_no LIKE :keyword OR u.nickname LIKE :keyword OR u.phone LIKE :keyword)")
+        params["keyword"] = f"%{keyword}%"
+    
+    where_sql = " AND ".join(where_clauses)
+    
+    # 查询总数
+    count_sql = f"""
+        SELECT COUNT(*) 
+        FROM user_coupons uc
+        LEFT JOIN users u ON uc.user_id = u.id
+        WHERE {where_sql}
+    """
+    total_result = await db.execute(text(count_sql), params)
+    total = total_result.scalar() or 0
+    
+    # 查询列表
+    list_sql = f"""
+        SELECT 
+            uc.id, uc.coupon_no, uc.name, uc.type, uc.value, uc.min_amount,
+            uc.status, uc.valid_start_time, uc.valid_end_time, uc.used_at,
+            uc.used_order_id, uc.source_type, uc.user_id, uc.created_at,
+            u.nickname, u.phone
+        FROM user_coupons uc
+        LEFT JOIN users u ON uc.user_id = u.id
+        WHERE {where_sql}
+        ORDER BY uc.created_at DESC
+        LIMIT :limit OFFSET :offset
+    """
+    query_params = {**params, "limit": page_size, "offset": (page - 1) * page_size}
+    result = await db.execute(text(list_sql), query_params)
+    rows = result.mappings().all()
+    
+    data = []
+    for row in rows:
+        data.append({
+            "id": row["id"],
+            "coupon_no": row["coupon_no"],
+            "name": row["name"],
+            "type": row["type"],
+            "type_text": {1: "满减券", 2: "折扣券", 3: "立减券", 4: "礼品券"}.get(row["type"], "未知"),
+            "value": float(row["value"] or 0),
+            "min_amount": float(row["min_amount"] or 0),
+            "status": row["status"],
+            "status_text": {1: "未使用", 2: "已使用", 3: "已过期", 4: "已作废"}.get(row["status"], "未知"),
+            "valid_start_time": row["valid_start_time"].isoformat() if row["valid_start_time"] else None,
+            "valid_end_time": row["valid_end_time"].isoformat() if row["valid_end_time"] else None,
+            "used_at": row["used_at"].isoformat() if row["used_at"] else None,
+            "used_order_id": row["used_order_id"],
+            "source_type": row["source_type"],
+            "user_id": row["user_id"],
+            "nickname": row["nickname"],
+            "phone": row["phone"],
+            "created_at": row["created_at"].isoformat() if row["created_at"] else None,
+        })
+    
+    return success({"list": data, "total": total, "page": page, "page_size": page_size})
 
 
 # ==================== 会员购买订单模块 ====================
@@ -1947,9 +2270,10 @@ async def pay_member_order(
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """会员订单支付（模拟支付成功）"""
+    """会员订单支付 - 调用微信支付"""
+    import httpx
+    
     user_id = current_user.get("user_id", 1)
-    now = datetime.now()
     
     # 查询订单
     order_result = await db.execute(
@@ -1964,118 +2288,55 @@ async def pay_member_order(
     if order["status"] != 10:
         return {"code": 400, "message": "订单状态不允许支付", "data": None}
     
-    # 查询套餐
+    # 查询用户openid
+    user_result = await db.execute(
+        text("SELECT openid FROM users WHERE id = :user_id"),
+        {"user_id": user_id}
+    )
+    user_row = user_result.mappings().one_or_none()
+    openid = user_row["openid"] if user_row else current_user.get("openid", "")
+    
+    if not openid:
+        return {"code": 400, "message": "用户未绑定微信，无法发起支付", "data": None}
+    
+    # 查询套餐名称
     plan_result = await db.execute(
         text("SELECT * FROM member_plans WHERE id = :plan_id"),
         {"plan_id": order["plan_id"]}
     )
     plan = plan_result.mappings().one_or_none()
+    plan_name = plan["name"] if plan else "会员套餐"
     
-    # 更新订单状态
-    await db.execute(
-        text("""
-            UPDATE member_orders 
-            SET status = 20, pay_time = NOW(), pay_channel = 'wechat', pay_trade_no = :trade_no, updated_at = NOW()
-            WHERE id = :order_id
-        """),
-        {"order_id": order_id, "trade_no": f"WX{now.strftime('%Y%m%d%H%M%S')}"}
-    )
+    # 调用 pay-service 创建支付订单
+    pay_service_url = os.getenv("PAY_SERVICE_URL", "http://pay-service:8000")
+    pay_payload = {
+        "order_no": order["order_no"],
+        "amount": float(order["pay_amount"]),
+        "description": f"尾巴旅行-{plan_name}",
+        "method": "wechat_jsapi",
+        "openid": openid
+    }
     
-    # 检查是否已有生效会员，如果有则续期
-    membership_result = await db.execute(
-        text("SELECT * FROM user_memberships WHERE user_id = :user_id AND status = 1"),
-        {"user_id": user_id}
-    )
-    existing = membership_result.mappings().one_or_none()
-    
-    if existing:
-        # 续期：在原有结束日期上增加
-        new_end = existing["end_date"] + timedelta(days=plan["duration_days"])
-        await db.execute(
-            text("""
-                UPDATE user_memberships 
-                SET end_date = :end_date, order_id = :order_id, pay_amount = :pay_amount, 
-                    benefit_snapshot = :benefit_snapshot, updated_at = NOW()
-                WHERE id = :membership_id
-            """),
-            {
-                "end_date": new_end,
-                "order_id": order_id,
-                "pay_amount": order["pay_amount"],
-                "benefit_snapshot": json.dumps(json.loads(plan["benefit_config"]) if isinstance(plan.get("benefit_config"), str) else (plan["benefit_config"] if plan else {})),
-                "membership_id": existing["id"],
-            }
-        )
-    else:
-        # 新建会员
-        await db.execute(
-            text("""
-                INSERT INTO user_memberships 
-                (user_id, plan_id, status, start_date, end_date, order_id, pay_amount, benefit_snapshot, created_at, updated_at)
-                VALUES 
-                (:user_id, :plan_id, 1, :start_date, :end_date, :order_id, :pay_amount, :benefit_snapshot, NOW(), NOW())
-            """),
-            {
-                "user_id": user_id,
-                "plan_id": order["plan_id"],
-                "start_date": date.today(),
-                "end_date": date.today() + timedelta(days=plan["duration_days"] if plan else 30),
-                "order_id": order_id,
-                "pay_amount": order["pay_amount"],
-                "benefit_snapshot": json.dumps(json.loads(plan["benefit_config"]) if isinstance(plan.get("benefit_config"), str) else (plan["benefit_config"] if plan else {})),
-            }
-        )
-    
-    # 发放消费券
-    if plan and plan["coupon_package"]:
-        coupon_package = plan["coupon_package"]
-        if isinstance(coupon_package, str):
-            coupon_package = json.loads(coupon_package)
-        
-        templates = coupon_package.get("templates", [])
-        for item in templates:
-            template_result = await db.execute(
-                text("SELECT * FROM coupon_templates WHERE id = :template_id"),
-                {"template_id": item["template_id"]}
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            pay_response = await client.post(
+                f"{pay_service_url}/api/v1/pay/create",
+                json=pay_payload,
+                headers={"Authorization": f"Bearer {current_user.get('token', '')}"}
             )
-            template = template_result.mappings().one_or_none()
-            if not template:
-                continue
-            
-            valid_days = item.get("valid_days", 30)
-            for _ in range(item.get("count", 1)):
-                await db.execute(
-                    text("""
-                        INSERT INTO user_coupons 
-                        (user_id, template_id, coupon_no, name, type, value, min_amount, max_discount,
-                         applicable_type, applicable_ids, valid_start_time, valid_end_time, status, source_type, source_id, created_at)
-                        VALUES 
-                        (:user_id, :template_id, :coupon_no, :name, :type, :value, :min_amount, :max_discount,
-                         :applicable_type, :applicable_ids, :valid_start, :valid_end, 1, 2, :source_id, NOW())
-                    """),
-                    {
-                        "user_id": user_id,
-                        "template_id": template["id"],
-                        "coupon_no": generate_coupon_no(),
-                        "name": template["name"],
-                        "type": template["type"],
-                        "value": template["value"],
-                        "min_amount": template["min_amount"],
-                        "max_discount": template["max_discount"],
-                        "applicable_type": template["applicable_type"],
-                        "applicable_ids": json.dumps(template["applicable_ids"]) if template["applicable_ids"] else None,
-                        "valid_start": now,
-                        "valid_end": now + timedelta(days=valid_days),
-                        "source_id": order_id,
-                    }
-                )
+            pay_result = pay_response.json()
+    except Exception as e:
+        logger.error(f"Call pay-service failed: {e}")
+        return {"code": 500, "message": f"支付服务调用失败: {str(e)}"}
     
-    await db.commit()
+    if pay_result.get("code") != 200:
+        return {"code": 500, "message": pay_result.get("message", "支付下单失败")}
     
+    pay_data = pay_result.get("data", {})
     return success({
-        "order_id": order_id,
-        "status": 20,
-        "message": "支付成功"
+        "pay_order_no": pay_data.get("pay_order_no"),
+        "pay_params": pay_data.get("pay_params"),
+        "mock": pay_data.get("mock", False)
     })
 
 
