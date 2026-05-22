@@ -65,6 +65,31 @@
   }
 }
 
+.age-input-wrap {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  background: #f5f6f7;
+  border-radius: 10px;
+  padding-right: 20px;
+}
+
+.age-input {
+  flex: 1;
+  height: 72px;
+  background: transparent;
+  border-radius: 10px;
+  padding: 0 20px;
+  font-size: 28px;
+  color: #333;
+}
+
+.age-unit {
+  font-size: 28px;
+  color: #333;
+  margin-left: 4px;
+}
+
 .avatar-upload {
   width: 120px;
   height: 120px;

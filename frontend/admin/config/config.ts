@@ -163,6 +163,34 @@ export default defineConfig({
       component: './Agreements',
     },
     {
+      name: '个人中心',
+      path: '/profile',
+      component: './Profile',
+      hideInMenu: true,
+      layout: true,
+    },
+    {
+      name: '系统管理',
+      path: '/system',
+      routes: [
+        {
+          name: '管理员管理',
+          path: '/system/admins',
+          component: './AdminUsers',
+        },
+        {
+          name: '角色管理',
+          path: '/system/roles',
+          component: './Roles',
+        },
+        {
+          name: '菜单管理',
+          path: '/system/menus',
+          component: './Menus',
+        },
+      ],
+    },
+    {
       name: '系统设置',
       path: '/settings',
       component: './Settings',

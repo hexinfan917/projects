@@ -14,22 +14,42 @@ export default function MemberInfo() {
     if (router?.params?.planId) {
       setPlanId(router.params.planId)
     }
+    // 自动从本地缓存读取用户信息填充表单
+    const userInfo = Taro.getStorageSync('user_info')
+    if (userInfo) {
+      setForm(prev => ({
+        ...prev,
+        real_name: userInfo.real_name || '',
+        phone: userInfo.phone || ''
+      }))
+    }
   }, [])
 
   const handleChange = (field: string, value: string) => {
     setForm(prev => ({ ...prev, [field]: value }))
   }
 
+  const isValidName = (name: string): boolean => {
+    if (!name || name.length < 2 || name.length > 20) return false
+    return /^[\u4e00-\u9fa5a-zA-Z·•]+$/.test(name)
+  }
+
   const handleSubmit = async () => {
-    if (!form.real_name.trim()) {
+    const name = form.real_name.trim()
+    const phone = form.phone.trim()
+    if (!name) {
       Taro.showToast({ title: '请输入姓名', icon: 'none' })
       return
     }
-    if (!form.phone.trim()) {
+    if (!isValidName(name)) {
+      Taro.showToast({ title: '姓名仅限2-20位中文/英文/·', icon: 'none' })
+      return
+    }
+    if (!phone) {
       Taro.showToast({ title: '请输入手机号', icon: 'none' })
       return
     }
-    if (!/^1[3-9]\d{9}$/.test(form.phone.trim())) {
+    if (!/^1[3-9]\d{9}$/.test(phone)) {
       Taro.showToast({ title: '请输入正确的手机号', icon: 'none' })
       return
     }

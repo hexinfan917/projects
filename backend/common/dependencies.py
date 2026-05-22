@@ -34,8 +34,8 @@ async def get_current_user(
     
     token = credentials.credentials
     
-    # 开发环境支持mock token
-    if token.startswith('mock_token_') or token.endswith('_dev'):
+    # 开发环境支持mock token（生产环境禁用）
+    if settings.app_env != "production" and (token.startswith('mock_token_') or token.endswith('_dev')):
         return {
             "user_id": 1,
             "openid": "mock_openid_dev",

@@ -3,7 +3,7 @@ INSERT INTO admin_users (id, username, password, real_name, phone, email, avatar
 VALUES (
     1,
     'admin',
-    '$2b$12$abcdefghijklmnopqrstuv',  -- bcrypt hash placeholder, actual login is hardcoded in auth.py
+    '$2b$12$HneJCU7wR7xcB4XqHLgGSusZO/T0Exxgdr6CQKvvbUjJBHB.S7/1G',  -- bcrypt hash for 'admin123'
     '系统管理员',
     '13800138000',
     'admin@petway.com',

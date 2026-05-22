@@ -33,7 +33,7 @@ async def wechat_login(
 
 
 @router.post("/admin/login")
-async def admin_login(login_data: dict):
+async def admin_login(login_data: dict, db: AsyncSession = Depends(get_db)):
     """
     管理后台登录
     
@@ -43,8 +43,22 @@ async def admin_login(login_data: dict):
     try:
         username = login_data.get("username")
         password = login_data.get("password")
-        if username != "admin" or password != "admin123":
+        
+        import bcrypt
+        from sqlalchemy import select
+        from app.models.admin_user import AdminUser
+        
+        result = await db.execute(select(AdminUser).where(AdminUser.username == username))
+        admin = result.scalar_one_or_none()
+        
+        if not admin:
             return error(message="账号或密码错误")
+        
+        if not bcrypt.checkpw(password.encode("utf-8"), admin.password.encode("utf-8")):
+            return error(message="账号或密码错误")
+        
+        if admin.status != 1:
+            return error(message="账号已被禁用")
         
         import jwt
         from datetime import datetime, timedelta
@@ -52,19 +66,25 @@ async def admin_login(login_data: dict):
         
         now = datetime.utcnow()
         payload = {
-            "user_id": 1,
-            "openid": "admin",
-            "role": "admin",
+            "id": admin.id,
+            "user_id": admin.id,
+            "username": admin.username,
+            "openid": admin.username,
+            "role": admin.role.name if admin.role else "admin",
             "type": "access",
             "iat": now,
             "exp": now + timedelta(hours=8),
         }
         token = jwt.encode(payload, settings.jwt.secret, algorithm=settings.jwt.algorithm)
         
+        # 更新最后登录时间
+        admin.last_login_at = now
+        await db.commit()
+        
         return success({
             "token": token,
-            "role": "admin",
-            "username": "admin"
+            "role": admin.role.name if admin.role else "admin",
+            "username": admin.username
         })
     except Exception as e:
         logger.error(f"Admin login failed: {e}")
@@ -102,6 +122,10 @@ async def test_login(
     测试登录（开发环境专用）
     支持传入 test_id 切换不同测试用户
     """
+    from common.config import settings
+    if settings.app_env == "production":
+        return error(message="测试登录仅在开发环境可用")
+    
     from sqlalchemy import select
     from app.models.user import User
     from app.services.wechat import WechatService

@@ -51,7 +51,7 @@ export default function Settings() {
       if (res.code === 200) {
         Taro.clearStorage()
         Taro.showToast({ title: '账号已注销', icon: 'success' })
-        setTimeout(() => Taro.reLaunch({ url: '/pages/login/index' }), 1500)
+        setTimeout(() => Taro.switchTab({ url: '/pages/index/index' }), 1500)
       } else {
         Taro.showToast({ title: res.message || '注销失败', icon: 'none' })
       }

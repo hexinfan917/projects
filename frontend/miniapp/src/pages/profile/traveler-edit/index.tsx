@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import Taro from '@tarojs/taro'
 import { View, Text, Input, Button , Image } from '@tarojs/components'
-import { getTravelers, createTraveler, updateTraveler } from '../../../utils/api'
+import { getTravelers, createTraveler, updateTraveler, updateUserProfile } from '../../../utils/api'
 import './index.scss'
 
 /** 校验手机号 */
@@ -35,6 +35,7 @@ const isValidName = (name: string): boolean => {
 
 export default function TravelerEdit() {
   const [form, setForm] = useState<any>({ name: '', phone: '', id_card: '', gender: 0, is_default: 0 })
+  const [isEdit, setIsEdit] = useState(false)
 
   useEffect(() => {
     const instance = Taro.getCurrentInstance()
@@ -51,10 +52,31 @@ export default function TravelerEdit() {
             is_default: found.is_default || 0,
             id: found.id
           })
+          setIsEdit(true)
         }
       })
     }
   }, [])
+
+  const handleFillSelf = () => {
+    const userInfo = Taro.getStorageSync('user_info')
+    if (!userInfo) {
+      Taro.showToast({ title: '未找到本人信息，请先完善个人资料', icon: 'none' })
+      return
+    }
+    if (!userInfo.real_name || !userInfo.phone || !userInfo.id_card) {
+      Taro.showToast({ title: '个人资料信息不完整，请先完善', icon: 'none' })
+      return
+    }
+    setForm({
+      ...form,
+      name: userInfo.real_name || '',
+      phone: userInfo.phone || '',
+      id_card: userInfo.id_card || '',
+      gender: userInfo.gender || 0,
+    })
+    Taro.showToast({ title: '已填充本人信息', icon: 'success' })
+  }
 
   const handleSave = async () => {
     // 姓名校验
@@ -103,7 +125,45 @@ export default function TravelerEdit() {
         }
       }
       Taro.showToast({ title: '保存成功', icon: 'success' })
-      setTimeout(() => Taro.navigateBack(), 1000)
+
+      // 检查个人资料是否需要同步
+      const userInfo = Taro.getStorageSync('user_info') || {}
+      const needSync = !userInfo.real_name || !userInfo.phone || !userInfo.id_card
+      if (needSync && (form.name || form.phone || form.id_card)) {
+        setTimeout(() => {
+          Taro.showModal({
+            title: '同步个人信息',
+            content: '是否将出行人信息同步到个人资料？同步后购买会员、下单时可自动填充。',
+            confirmText: '同步',
+            cancelText: '不同步',
+            success: async (modalRes) => {
+              if (modalRes.confirm) {
+                try {
+                  const updateData = {
+                    real_name: form.name,
+                    phone: form.phone,
+                    id_card: form.id_card,
+                    nickname: userInfo.nickname,
+                    avatar: userInfo.avatar,
+                    gender: userInfo.gender || 1,
+                    city: userInfo.city,
+                  }
+                  const profileRes: any = await updateUserProfile(updateData)
+                  if (profileRes.code === 200) {
+                    Taro.setStorageSync('user_info', { ...userInfo, ...updateData })
+                    Taro.showToast({ title: '同步成功', icon: 'success' })
+                  }
+                } catch {
+                  Taro.showToast({ title: '同步失败', icon: 'none' })
+                }
+              }
+              setTimeout(() => Taro.navigateBack(), 800)
+            }
+          })
+        }, 500)
+      } else {
+        setTimeout(() => Taro.navigateBack(), 1000)
+      }
     } catch (err: any) {
       Taro.showToast({ title: err.message || '保存失败', icon: 'none' })
     }
@@ -119,6 +179,9 @@ export default function TravelerEdit() {
         <View className='input-row'>
           <Text className='label'>姓名</Text>
           <Input className='input' placeholder='请输入真实姓名' value={form.name} onInput={(e) => setForm({ ...form, name: e.detail.value })} />
+          {!isEdit && (
+            <Text className='fill-self-btn' onClick={handleFillSelf}>使用本人信息</Text>
+          )}
         </View>
         <View className='input-row'>
           <Text className='label'>手机号</Text>

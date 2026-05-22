@@ -1,11 +1,15 @@
 import { LoginForm, ProFormText } from '@ant-design/pro-components';
 import { message, theme, Alert } from 'antd';
-import { history, request } from '@umijs/max';
+import { history, request, useModel } from '@umijs/max';
 import { useState } from 'react';
 
 export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const { token } = theme.useToken();
+  const { initialState } = useModel('@@initialState');
+
+  const siteName = initialState?.settings?.site_name?.value || '尾巴旅行PetWay';
+  const siteLogo = initialState?.settings?.site_logo?.value || 'https://img.alicdn.com/tfs/TB1YHEpwUT1gK0jSZFhXXaAtVXa-28-27.svg';
 
   const handleSubmit = async (values: { username: string; password: string }) => {
     setLoading(true);
@@ -17,7 +21,8 @@ export default function LoginPage() {
       if (res.code === 200 && res.data?.token) {
         localStorage.setItem('token', res.data.token);
         message.success('登录成功');
-        history.push('/home');
+        // 登录成功后刷新页面，确保 initialState 重新加载
+        window.location.href = '/admin/';
         return;
       }
       message.error(res.message || '登录失败');
@@ -39,8 +44,8 @@ export default function LoginPage() {
       }}
     >
       <LoginForm
-        logo="https://img.alicdn.com/tfs/TB1YHEpwUT1gK0jSZFhXXaAtVXa-28-27.svg"
-        title="尾巴旅行PetWay"
+        logo={siteLogo}
+        title={siteName}
         subTitle="管理后台登录"
         onFinish={handleSubmit}
         submitter={{

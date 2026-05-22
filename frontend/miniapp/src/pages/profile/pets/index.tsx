@@ -5,7 +5,7 @@ const logoIcon = '/assets/toplogo.png'
 import { getPets, deletePet, setActiveTab, compressImageUrl } from '../../../utils/api'
 import './index.scss'
 
-const BASE_URL = 'https://tailtravel.westilt.com'
+const BASE_URL = 'https://tailtravel.cn'
 
 function fullImageUrl(url?: string) {
   if (!url) return ''
@@ -22,6 +22,15 @@ function calcAge(birthDate?: string) {
   const m = now.getMonth() - birth.getMonth()
   if (m < 0 || (m === 0 && now.getDate() < birth.getDate())) age--
   return age > 0 ? String(age) : ''
+}
+
+function formatAge(ageStr?: string) {
+  if (!ageStr) return ''
+  const s = ageStr.trim()
+  if (!s) return ''
+  // 已包含岁/半等描述词的不加
+  if (/[岁半]/.test(s)) return s
+  return s + '岁'
 }
 
 export default function Pets() {
@@ -105,7 +114,7 @@ export default function Pets() {
               {pet.is_default ? <Text className='default-tag'>默认</Text> : null}
             </View>
             <Text className='pet-meta'>
-              {calcAge(pet.birth_date) || '-'}岁 · {GENDER_MAP[pet.gender] || '-'} · {pet.breed || '-'} · {pet.weight || '-'}kg
+              {formatAge(pet.age_str) || (calcAge(pet.birth_date) ? calcAge(pet.birth_date) + '岁' : '-')} · {GENDER_MAP[pet.gender] || '-'} · {pet.breed || '-'} · {pet.weight || '-'}kg · 疫苗:{pet.vaccine_date ? pet.vaccine_date.split('T')[0] : '-'}
             </Text>
           </View>
           <View className='pet-actions'>

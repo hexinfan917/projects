@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
-import Taro, { useDidShow } from '@tarojs/taro'
+import Taro, { useDidShow, useUnload } from '@tarojs/taro'
 import { View, Text, ScrollView, Image } from '@tarojs/components'
 import { getOrders, cancelOrder } from '../../../utils/api'
 import './index.scss'
@@ -98,6 +98,14 @@ export default function OrderList() {
     }
   }, [])
 
+  useUnload(() => {
+    const instance = Taro.getCurrentInstance()
+    const from = instance.router?.params?.from
+    if (from === 'pay') {
+      Taro.switchTab({ url: '/pages/profile/index' })
+    }
+  })
+
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 1000)
     return () => clearInterval(timer)
@@ -151,9 +159,22 @@ export default function OrderList() {
   }
 
   return (
-    <View className='order-list' style={{ paddingTop: '140rpx' }}>
+    <View className='order-list'>
 
-        <View className='page-back' onClick={() => Taro.navigateBack()}>
+        <View className='page-back' onClick={() => {
+          const pages = Taro.getCurrentPages()
+          if (pages.length <= 1) {
+            const instance = Taro.getCurrentInstance()
+            const from = instance.router?.params?.from
+            if (from === 'pay') {
+              Taro.switchTab({ url: '/pages/profile/index' })
+            } else {
+              Taro.switchTab({ url: '/pages/index/index' })
+            }
+          } else {
+            Taro.navigateBack()
+          }
+        }}>
           <Image className='page-back-icon' src='/assets/icons/return.png' mode='aspectFit' />
         </View>
       <View className='tabs'>
@@ -240,6 +261,7 @@ export default function OrderList() {
               className='qr-image'
               src={require('../../../assets/images/customer-service.jpg')}
               mode='widthFix'
+              showMenuByLongpress
               onError={() => Taro.showToast({ title: '图片加载失败', icon: 'none' })}
             />
             <Text className='qr-modal-tip'>长按二维码识别，添加客服微信</Text>

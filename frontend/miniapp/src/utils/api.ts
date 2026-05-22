@@ -1,6 +1,6 @@
 import Taro, { eventCenter } from '@tarojs/taro'
 
-export const BASE_URL = 'https://tailtravel.westilt.com'
+export const BASE_URL = 'https://tailtravel.cn'
 
 /** 补全图片 URL 并添加压缩参数 */
 export function compressImageUrl(url?: string, width?: number): string {

@@ -58,9 +58,11 @@ class UserService:
         }
     
     async def delete_account(self, user_id: int, db: AsyncSession) -> User:
-        """注销账号（软删除：将状态设为0）"""
+        """注销账号（软删除：状态设为0，openid置为特殊值，下次登录会创建新账号）"""
+        import time
         user = await self.get_user_by_id(user_id, db)
         user.status = 0
+        user.openid = f"deleted_{user_id}_{int(time.time())}"
         await db.commit()
         await db.refresh(user)
         return user

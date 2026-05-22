@@ -56,9 +56,25 @@ class PetService:
         
         is_default = data.get('is_default', 0)
         
-        # 处理日期转换
+        # 处理日期转换：如果 age_str 是纯数字/小数，计算 birth_date
+        age_str = data.get('age_str')
         birth_date_str = data.get('birth_date')
-        if birth_date_str and isinstance(birth_date_str, str):
+        if age_str and not birth_date_str:
+            import re
+            num_match = re.match(r'^\d+(\.\d+)?$', age_str.strip())
+            if num_match:
+                try:
+                    age_val = float(num_match.group())
+                    now = datetime.now()
+                    year = int(now.year - age_val)
+                    month = now.month
+                    day = now.day
+                    data['birth_date'] = date(year, month, day)
+                    logger.info(f"根据 age_str 计算 birth_date 成功: {data['birth_date']}")
+                except Exception as e:
+                    logger.error(f"根据 age_str 计算 birth_date 失败: {age_str}, 错误: {e}")
+                    data['birth_date'] = None
+        elif birth_date_str and isinstance(birth_date_str, str):
             try:
                 data['birth_date'] = datetime.strptime(birth_date_str, '%Y-%m-%d').date()
                 logger.info(f"转换 birth_date 成功: {data['birth_date']}")
@@ -78,8 +94,8 @@ class PetService:
 
         # 将 None 的可选字段替换为空字符串，避免数据库 NOT NULL 报错
         for field in ['breed', 'avatar', 'health_notes']:
-            if update_data.get(field) is None:
-                update_data[field] = ''
+            if data.get(field) is None:
+                data[field] = ''
         
         # 如果设置为默认，先将其他宠物设为非默认
         if is_default == 1:
@@ -125,9 +141,25 @@ class PetService:
         update_data = pet_data.model_dump(exclude_unset=True)
         logger.info(f"更新宠物 - 接收数据: {update_data}")
         
-        # 处理日期转换
+        # 处理日期转换：如果 age_str 是纯数字/小数，计算 birth_date
+        age_str = update_data.get('age_str')
         birth_date_str = update_data.get('birth_date')
-        if birth_date_str and isinstance(birth_date_str, str):
+        if age_str and not birth_date_str:
+            import re
+            num_match = re.match(r'^\d+(\.\d+)?$', str(age_str).strip())
+            if num_match:
+                try:
+                    age_val = float(num_match.group())
+                    now = datetime.now()
+                    year = int(now.year - age_val)
+                    month = now.month
+                    day = now.day
+                    update_data['birth_date'] = date(year, month, day)
+                    logger.info(f"根据 age_str 计算 birth_date 成功: {update_data['birth_date']}")
+                except Exception as e:
+                    logger.error(f"根据 age_str 计算 birth_date 失败: {age_str}, 错误: {e}")
+                    update_data['birth_date'] = None
+        elif birth_date_str and isinstance(birth_date_str, str):
             try:
                 update_data['birth_date'] = datetime.strptime(birth_date_str, '%Y-%m-%d').date()
             except ValueError:

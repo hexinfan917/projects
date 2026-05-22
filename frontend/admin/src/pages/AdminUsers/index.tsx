@@ -49,7 +49,7 @@ const AdminList: React.FC = () => {
     },
     {
       title: '操作',
-      width: 160,
+      width: 200,
       fixed: 'right',
       search: false,
       render: (_, record) => (
@@ -63,6 +63,21 @@ const AdminList: React.FC = () => {
           >
             编辑
           </a>
+          <Popconfirm
+            title="确认重置密码?"
+            description="重置后密码为123456"
+            onConfirm={async () => {
+              const res = await request(`/api/v1/admin/admins/${record.id}/reset-password`, { method: 'PUT' });
+              if (res.code === 200) {
+                message.success('密码已重置为123456');
+                actionRef.current?.reload();
+              } else {
+                message.error(res.message || '操作失败');
+              }
+            }}
+          >
+            <a style={{ color: '#faad14' }}>重置密码</a>
+          </Popconfirm>
           <Popconfirm
             title="确认禁用?"
             onConfirm={async () => {

@@ -28,7 +28,7 @@ export default function ReviewList() {
           participants: a.participants || 0,
           like_count: a.like_count || 0,
           view_count: a.view_count || 0,
-          image: a.cover_image ? (a.cover_image.startsWith('http') ? a.cover_image : `https://tailtravel.westilt.com${a.cover_image}`) + '?w=400&q=75' : '',
+          image: a.cover_image ? (a.cover_image.startsWith('http') ? a.cover_image : `https://tailtravel.cn${a.cover_image}`) + '?w=750&q=75' : '',
           tag: a.location || '精彩回顾',
         }))
         if (p === 1) {

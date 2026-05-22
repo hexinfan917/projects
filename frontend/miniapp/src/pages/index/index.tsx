@@ -18,6 +18,7 @@ export default function Index() {
   const [popupData, setPopupData] = useState<any>(null)
 
   useDidShow(() => {
+    console.log('[Index] useDidShow triggered')
     loadHomeData()
     setActiveTab(0, 'pages/index/index')
     loadPopup()
@@ -28,11 +29,14 @@ export default function Index() {
   })
 
   const loadPopup = async () => {
-    // 未登录不显示会员弹窗
-    const token = Taro.getStorageSync('access_token')
-    if (!token) return
-    // 当前小程序生命周期内已关闭过则不再弹
-    if (Taro.getStorageSync('home_popup_dismissed')) return
+    // 当前小程序生命周期内已关闭/已点击开通则不再弹
+    const dismissed = Taro.getStorageSync('home_popup_dismissed')
+    console.log('[Popup] dismissed value:', dismissed)
+    if (dismissed) {
+      console.log('[Popup] skipped: home_popup_dismissed is set')
+      return
+    }
+    console.log('[Popup] loading...')
     try {
       const res = await getMemberPopup()
       if (res.code === 200 && res.data?.should_show) {
@@ -58,13 +62,15 @@ export default function Index() {
 
   const handlePopupOpen = () => {
     setPopupVisible(false)
+    // 标记当前小程序生命周期内已处理，避免返回首页重复弹出
+    Taro.setStorageSync('home_popup_dismissed', true)
     if (popupData?.id) {
       logPopupAction(popupData.id, 2)
     }
     const token = Taro.getStorageSync('access_token')
     const targetUrl = popupData?.target_page || '/pages/member/center/index'
     if (!token) {
-      Taro.navigateTo({ url: `/pages/login/index?redirect=${encodeURIComponent(targetUrl)}` })
+      Taro.navigateTo({ url: `/pages/login/index?redirect=${targetUrl}` })
       return
     }
     Taro.navigateTo({ url: targetUrl })
@@ -82,7 +88,7 @@ export default function Index() {
       if (bannerRes.code === 200 && bannerRes.data?.banners) {
         setBanners(bannerRes.data.banners.map((b: any) => ({
           id: b.id,
-          image: b.image_url ? (b.image_url.startsWith('http') ? b.image_url : `https://tailtravel.westilt.com${b.image_url}`) + '?w=750&q=75' : '',
+          image: b.image_url ? (b.image_url.startsWith('http') ? b.image_url : `https://tailtravel.cn${b.image_url}`) + '?w=750&q=75' : '',
           link_url: b.link_url || '',
         })))
       } else {
@@ -97,7 +103,7 @@ export default function Index() {
           name: r.name,
           type: r.route_type_name || r.type_name || '精选',
           price: r.base_price || r.price || 0,
-          cover_image: r.cover_image ? (r.cover_image.startsWith('http') ? r.cover_image : `https://tailtravel.westilt.com${r.cover_image}`) + '?w=400&q=75' : 'https://via.placeholder.com/620x420/CCCCCC/FFFFFF?text=No+Image',
+          cover_image: r.cover_image ? (r.cover_image.startsWith('http') ? r.cover_image : `https://tailtravel.cn${r.cover_image}`) + '?w=750&q=75' : 'https://via.placeholder.com/620x420/CCCCCC/FFFFFF?text=No+Image',
           subtitle: r.subtitle || ''
         })))
       }
@@ -111,7 +117,7 @@ export default function Index() {
           date: a.event_date || '',
           location: a.location || '',
           participants: a.participants || 0,
-          image: a.cover_image ? (a.cover_image.startsWith('http') ? a.cover_image : `https://tailtravel.westilt.com${a.cover_image}`) + '?w=400&q=75' : 'https://via.placeholder.com/700x380/CCCCCC/FFFFFF?text=No+Image',
+          image: a.cover_image ? (a.cover_image.startsWith('http') ? a.cover_image : `https://tailtravel.cn${a.cover_image}`) + '?w=750&q=75' : 'https://via.placeholder.com/700x380/CCCCCC/FFFFFF?text=No+Image',
         })))
       }
 
@@ -124,7 +130,7 @@ export default function Index() {
           date: a.start_date || '',
           location: a.location || '',
           status: a.status_name || '报名中',
-          image: a.cover_image ? (a.cover_image.startsWith('http') ? a.cover_image : `https://tailtravel.westilt.com${a.cover_image}`) + '?w=400&q=75' : 'https://via.placeholder.com/700x380/96C93D/FFFFFF?text=Charity',
+          image: a.cover_image ? (a.cover_image.startsWith('http') ? a.cover_image : `https://tailtravel.cn${a.cover_image}`) + '?w=750&q=75' : 'https://via.placeholder.com/700x380/96C93D/FFFFFF?text=Charity',
         })))
       }
     } catch (error) {

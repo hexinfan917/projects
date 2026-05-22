@@ -46,6 +46,10 @@ WECHAT_PAY_CONFIG = {
     "sandbox": os.getenv("WECHAT_PAY_SANDBOX", "true").lower() == "true"
 }
 
+# 微信退款证书配置
+WECHAT_CERT_PATH = os.getenv("WECHAT_CERT_PATH", "")
+WECHAT_KEY_PATH = os.getenv("WECHAT_KEY_PATH", "")
+
 # 支付方式
 PAYMENT_METHODS = {
     "wechat_jsapi": "微信支付-JSAPI",
@@ -90,6 +94,35 @@ def generate_sign(params: dict, key: str, sign_type: str = "MD5"):
                        hashlib.sha256).hexdigest().upper()
     else:
         raise ValueError(f"Unsupported sign_type: {sign_type}")
+
+
+def sign_v3(message: str, private_key_path: str) -> str:
+    """
+    微信支付 V3 API 签名 (SHA256withRSA)
+    """
+    from cryptography.hazmat.primitives import hashes, serialization
+    from cryptography.hazmat.primitives.asymmetric import padding
+    
+    with open(private_key_path, "rb") as f:
+        private_key = serialization.load_pem_private_key(f.read(), password=None)
+    
+    signature = private_key.sign(
+        message.encode('utf-8'),
+        padding.PKCS1v15(),
+        hashes.SHA256()
+    )
+    return base64.b64encode(signature).decode('utf-8')
+
+
+def build_v3_auth_header(method: str, url_path: str, body: str, private_key_path: str, mchid: str, serial_no: str) -> str:
+    """
+    构建微信支付 V3 Authorization 头
+    """
+    timestamp = str(int(datetime.now().timestamp()))
+    nonce_str = generate_nonce_str()
+    message = f"{method}\n{url_path}\n{timestamp}\n{nonce_str}\n{body}\n"
+    signature = sign_v3(message, private_key_path)
+    return f'WECHATPAY2-SHA256-RSA2048 mchid="{mchid}",nonce_str="{nonce_str}",signature="{signature}",timestamp="{timestamp}",serial_no="{serial_no}"'
 
 
 def build_wechat_pay_params(prepay_id: str, appid: str, key: str) -> dict:
@@ -491,10 +524,14 @@ async def create_refund(
         - order_no: 业务订单号
         - refund_amount: 退款金额
         - reason: 退款原因
+        - transaction_id: 微信支付单号（可选）
+        - total_amount: 订单总金额（可选）
     """
     order_no = data.get("order_no")
     refund_amount = data.get("refund_amount")
     reason = data.get("reason", "")
+    transaction_id = data.get("transaction_id", "")
+    total_amount = data.get("total_amount", refund_amount)
     
     if not order_no or not refund_amount:
         raise HTTPException(status_code=400, detail="缺少必要参数")
@@ -504,17 +541,78 @@ async def create_refund(
     config = WECHAT_PAY_CONFIG
     
     # 检查是否配置了微信支付
-    if config["appid"] and config["mchid"] and config["apikey"]:
-        # TODO: 调用微信退款 API (V2 或 V3)
-        # V2: https://api.mch.weixin.qq.com/secapi/pay/refund （需要客户端证书）
-        # V3: https://api.mch.weixin.qq.com/v3/refund/domestic/refunds （需要商户私钥+证书）
-        logger.info(f"Calling WeChat refund API for order: {order_no}")
-        # 真实退款逻辑待接入商户证书后实现
-        refund_status = "processing"
+    if config["mchid"] and WECHAT_KEY_PATH and os.path.exists(WECHAT_KEY_PATH):
+        # 使用微信支付 V3 API 退款（只需要私钥+序列号，不需要证书文件）
+        try:
+            refund_amount_fen = int(float(refund_amount) * 100)
+            total_fee_fen = int(float(total_amount) * 100)
+            
+            url_path = "/v3/refund/domestic/refunds"
+            url = f"https://api.mch.weixin.qq.com{url_path}"
+            
+            refund_body = {
+                "out_refund_no": refund_no,
+                "reason": reason[:80] if reason else "用户申请退款",
+                "amount": {
+                    "refund": refund_amount_fen,
+                    "total": total_fee_fen,
+                    "currency": "CNY"
+                }
+            }
+            
+            if transaction_id:
+                refund_body["transaction_id"] = transaction_id
+            else:
+                refund_body["out_trade_no"] = order_no
+            
+            body_json = json.dumps(refund_body, separators=(',', ':'), ensure_ascii=False)
+            
+            serial_no = os.getenv("WECHAT_CERT_SERIAL_NO", "")
+            if not serial_no:
+                logger.error("WECHAT_CERT_SERIAL_NO not configured")
+                return {"code": 500, "message": "微信商户证书序列号未配置，无法发起退款", "data": None}
+            
+            auth_header = build_v3_auth_header(
+                "POST", url_path, body_json, WECHAT_KEY_PATH, config["mchid"], serial_no
+            )
+            
+            logger.info(f"Calling WeChat V3 refund API: order_no={order_no}, refund_no={refund_no}")
+            
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                response = await client.post(
+                    url,
+                    headers={
+                        "Authorization": auth_header,
+                        "Content-Type": "application/json",
+                        "Accept": "application/json"
+                    },
+                    content=body_json
+                )
+            
+            if response.status_code == 200:
+                wx_result = response.json()
+                refund_status = "success"
+                logger.info(f"WeChat V3 refund success: {refund_no} for order {order_no}, result={wx_result}")
+            else:
+                try:
+                    wx_error = response.json()
+                    err_msg = wx_error.get("message", "未知错误")
+                    err_code = wx_error.get("code", "")
+                except:
+                    err_msg = response.text or "未知错误"
+                    err_code = ""
+                logger.error(f"WeChat V3 refund failed: {response.status_code} - {err_msg}")
+                return {"code": 500, "message": f"微信退款失败: {err_msg}", "data": None}
+                
+        except Exception as e:
+            logger.error(f"WeChat V3 refund exception: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
+            return {"code": 500, "message": f"微信退款接口调用失败: {str(e)}", "data": None}
     else:
         # Mock 退款（开发测试环境）
         logger.warning(f"WeChat pay not configured, using mock refund for order: {order_no}")
-        refund_status = "processing"
+        refund_status = "success"  # mock 环境直接成功
     
     # 保存退款记录到 Redis
     refund_data = {

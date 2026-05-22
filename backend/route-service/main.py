@@ -113,7 +113,7 @@ async def get_routes(
                 Route.title, Route.subtitle, Route.cover_image, Route.description,
                 Route.duration, Route.difficulty, Route.min_participants,
                 Route.max_participants, Route.base_price, Route.extra_person_price,
-                Route.extra_pet_price, Route.highlights,
+                Route.extra_pet_price, Route.highlights, Route.sort_order,
                 Route.created_at
             )
         )
@@ -265,14 +265,23 @@ async def get_routes(
 
 @app.get("/api/v1/routes/types")
 async def get_route_types(db: AsyncSession = Depends(get_db)):
-    """获取路线类型列表"""
+    """获取路线类型列表（只返回有上架路线的类型）"""
     try:
-        result = await db.execute(
-            select(RouteType).where(RouteType.status == 1).order_by(RouteType.sort_order)
+        # 先获取有上架路线的类型ID
+        route_types_result = await db.execute(
+            select(Route.route_type).where(Route.status == 1).distinct()
         )
-        types = result.scalars().all()
-        if types:
-            return success([{"id": t.id, "name": t.name, "icon": t.icon, "color": t.color} for t in types])
+        active_type_ids = [r[0] for r in route_types_result.all() if r[0] is not None]
+        
+        if active_type_ids:
+            result = await db.execute(
+                select(RouteType)
+                .where(RouteType.status == 1, RouteType.id.in_(active_type_ids))
+                .order_by(RouteType.sort_order)
+            )
+            types = result.scalars().all()
+            if types:
+                return success([{"id": t.id, "name": t.name, "icon": t.icon, "color": t.color} for t in types])
     except Exception as e:
         logger.warning(f"Failed to get route types from db: {e}")
     # 兜底返回默认值
@@ -746,8 +755,11 @@ async def admin_update_route(
         for rich_field in ['highlights_detail', 'fee_description', 'fee_include', 'fee_exclude', 'notice']:
             if update_data.get(rich_field):
                 update_data[rich_field] = await _process_rich_text(update_data[rich_field])
+        # sort_order 默认为 0
+        if update_data.get('sort_order') is None:
+            update_data['sort_order'] = 0
         for field, value in update_data.items():
-            if value is not None or field in ['subtitle', 'title', 'description', 'is_hot', 'status', 'content_modules', 'sort_order']:  # 允许清空这些字段
+            if value is not None or field in ['subtitle', 'title', 'description', 'is_hot', 'status', 'content_modules']:  # 允许清空这些字段
                 setattr(route, field, value)
         
         await db.commit()
@@ -782,7 +794,7 @@ async def admin_delete_route(
         
         logger.info(f"Found route: id={route.id}, name={route.name}, current status={route.status}")
         
-        route.status = 0  # 软删除
+        route.status = -1  # 软删除（-1=已删除，与下架0区分开）
         await db.commit()
         await db.refresh(route)
         
@@ -818,12 +830,12 @@ async def admin_get_routes(
             Route.cover_image, Route.base_price, Route.extra_person_price,
             Route.extra_pet_price, Route.duration,
             Route.min_participants, Route.max_participants,
-            Route.is_hot, Route.status, Route.created_at, Route.updated_at
+            Route.is_hot, Route.status, Route.sort_order, Route.created_at, Route.updated_at
         )
         if status is not None:
             query = select(Route).where(Route.status == status).options(load_only_cols)
         else:
-            query = select(Route).where(Route.status == 1).options(load_only_cols)
+            query = select(Route).where(Route.status.in_([0, 1])).options(load_only_cols)
         
         # 热门筛选
         if is_hot is not None:
@@ -846,7 +858,7 @@ async def admin_get_routes(
         if status is not None:
             count_query = count_query.where(Route.status == status)
         else:
-            count_query = count_query.where(Route.status == 1)
+            count_query = count_query.where(Route.status.in_([0, 1]))
         if is_hot is not None:
             count_query = count_query.where(Route.is_hot == is_hot)
         if keyword:
@@ -1457,7 +1469,10 @@ async def admin_list_addons(
     db: AsyncSession = Depends(get_db)
 ):
     """管理后台：行程选配列表"""
-    query = select(RouteAddon)
+    from app.models.route import Route
+    query = select(RouteAddon, Route.name.label("route_name")).join(
+        Route, RouteAddon.route_id == Route.id, isouter=True
+    )
     if route_id:
         query = query.where(RouteAddon.route_id == route_id)
     if category:
@@ -1473,7 +1488,7 @@ async def admin_list_addons(
 
     query = query.offset((page - 1) * page_size).limit(page_size)
     result = await db.execute(query)
-    addons = result.scalars().all()
+    rows = result.all()
 
     return success({
         "total": total,
@@ -1483,6 +1498,7 @@ async def admin_list_addons(
             {
                 "id": a.id,
                 "route_id": a.route_id,
+                "route_name": route_name,
                 "category": a.category,
                 "name": a.name,
                 "price": float(a.price),
@@ -1497,7 +1513,7 @@ async def admin_list_addons(
                 "extra_config": a.extra_config or {},
                 "created_at": a.created_at.isoformat() if a.created_at else None
             }
-            for a in addons
+            for a, route_name in rows
         ]
     })
 

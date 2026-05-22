@@ -3,6 +3,7 @@ import { defineConfig } from '@umijs/max';
 export default defineConfig({
   publicPath: '/admin/',
   base: '/admin/',
+  hash: true,
   antd: {},
   access: {},
   model: {},
@@ -77,11 +78,11 @@ export default defineConfig({
       path: '/schedules',
       component: './Schedules',
     },
-    {
-      name: '评价管理',
-      path: '/evaluations',
-      component: './Evaluations',
-    },
+    // {
+    //   name: '评价管理',
+    //   path: '/evaluations',
+    //   component: './Evaluations',
+    // },
     {
       name: '宠物档案',
       path: '/pets',
@@ -118,6 +119,13 @@ export default defineConfig({
           component: './Menus',
         },
       ],
+    },
+    {
+      name: '个人中心',
+      path: '/profile',
+      component: './Profile',
+      hideInMenu: true,
+      layout: true,
     },
     {
       name: '系统设置',

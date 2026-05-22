@@ -52,7 +52,7 @@ export default function Routes() {
       if (kw) params.keyword = kw
       if (activeCategory) params.route_type = parseInt(activeCategory, 10)
       const res = await getRoutes(params)
-      const list = (res.data?.routes || []).map((r: any) => ({ ...r, price: r.base_price || 0, cover_image: r.cover_image ? (r.cover_image.startsWith('http') ? r.cover_image : `https://tailtravel.westilt.com${r.cover_image}`) + '?w=400&q=75' : '' }))
+      const list = (res.data?.routes || []).map((r: any) => ({ ...r, price: r.base_price || 0, cover_image: r.cover_image ? (r.cover_image.startsWith('http') ? r.cover_image : `https://tailtravel.cn${r.cover_image}`) + '?w=750&q=75' : '' }))
       setRoutes(prev => refresh ? list : [...prev, ...list])
       setNoMore(list.length < pageSize)
       if (!refresh) setPage(currentPage + 1)
@@ -107,12 +107,6 @@ export default function Routes() {
               <Text className='routes-search-clear' onClick={() => { setKeyword(''); loadRoutes(true, ''); }}>✕</Text>
             ) : null}
           </View>
-        </View>
-
-        {/* 标题 */}
-        <View className='routes-hero'>
-          <Text className='routes-hero-title'>线路</Text>
-          <Text className='routes-hero-subtitle'>发现适合您和爱宠的独家旅行路径。</Text>
         </View>
 
         {/* 分类筛选 */}

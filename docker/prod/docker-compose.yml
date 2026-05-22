@@ -9,8 +9,10 @@ services:
       MYSQL_DATABASE: petway
       MYSQL_USER: ${DB_USER}
       MYSQL_PASSWORD: ${DB_PASSWORD}
+      TZ: Asia/Shanghai
     volumes:
       - mysql_data:/var/lib/mysql
+      - /etc/localtime:/etc/localtime:ro
     command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4
     restart: always
     networks:
@@ -19,8 +21,11 @@ services:
   redis:
     image: redis:7-alpine
     container_name: petway-redis
+    environment:
+      - TZ=Asia/Shanghai
     volumes:
       - redis_data:/data
+      - /etc/localtime:/etc/localtime:ro
     command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
     restart: always
     networks:
@@ -42,6 +47,9 @@ services:
       - JWT_SECRET=${JWT_SECRET}
       - WECHAT_APPID=${WECHAT_APPID}
       - WECHAT_APPSECRET=${WECHAT_APPSECRET}
+      - TZ=Asia/Shanghai
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
     restart: always
     networks:
       - petway-network
@@ -61,6 +69,9 @@ services:
       - REDIS_PASSWORD=${REDIS_PASSWORD}
       - JWT_SECRET=${JWT_SECRET}
       - FILE_SERVICE_URL=http://petway-file-service:8000
+      - TZ=Asia/Shanghai
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
     restart: always
     networks:
       - petway-network
@@ -80,6 +91,9 @@ services:
       - REDIS_PASSWORD=${REDIS_PASSWORD}
       - JWT_SECRET=${JWT_SECRET}
       - PAY_SERVICE_URL=http://petway-pay-service:8000
+      - TZ=Asia/Shanghai
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
     restart: always
     networks:
       - petway-network
@@ -98,6 +112,9 @@ services:
       - REDIS_HOST=redis
       - REDIS_PASSWORD=${REDIS_PASSWORD}
       - JWT_SECRET=${JWT_SECRET}
+      - TZ=Asia/Shanghai
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
     restart: always
     networks:
       - petway-network
@@ -153,8 +170,10 @@ services:
       - REDIS_PASSWORD=${REDIS_PASSWORD}
       - JWT_SECRET=${JWT_SECRET}
       - UPLOAD_DIR=/app/uploads
+      - TZ=Asia/Shanghai
     volumes:
       - /opt/petway/backend/file-service/uploads:/app/uploads
+      - /etc/localtime:/etc/localtime:ro
     restart: always
     networks:
       - petway-network
@@ -177,8 +196,15 @@ services:
       - WECHAT_APPID=${WECHAT_APPID}
       - WECHAT_MCHID=${WECHAT_MCHID}
       - WECHAT_APIKEY=${WECHAT_APIKEY}
-      - WECHAT_NOTIFY_URL=https://tailtravel.westilt.com/api/v1/pay/notify
+      - WECHAT_NOTIFY_URL=https://tailtravel.cn/api/v1/pay/notify
       - WECHAT_PAY_SANDBOX=${WECHAT_PAY_SANDBOX:-false}
+      - WECHAT_CERT_PATH=/app/certs/apiclient_cert.pem
+      - WECHAT_KEY_PATH=/app/certs/apiclient_key.pem
+      - WECHAT_CERT_SERIAL_NO=578981595A43F2E58B46B5C4416E53937C7C5659
+      - TZ=Asia/Shanghai
+    volumes:
+      - /opt/petway/certs:/app/certs
+      - /etc/localtime:/etc/localtime:ro
     restart: always
     networks:
       - petway-network
@@ -216,6 +242,9 @@ services:
       - REDIS_HOST=redis
       - REDIS_PASSWORD=${REDIS_PASSWORD}
       - JWT_SECRET=${JWT_SECRET}
+      - TZ=Asia/Shanghai
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
     depends_on:
       - user-service
       - route-service

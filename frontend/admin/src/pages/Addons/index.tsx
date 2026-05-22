@@ -262,12 +262,14 @@ export default function AddonManage() {
     },
     {
       title: '关联线路',
-      dataIndex: 'route_id',
-      width: 150,
+      dataIndex: 'route_name',
+      width: 200,
       search: false,
-      render: (routeId: number) => {
-        const route = routes.find((r: any) => r.value === routeId);
-        return route?.label || routeId;
+      ellipsis: true,
+      render: (_: any, record: any) => {
+        if (record.route_name) return record.route_name;
+        const route = routes.find((r: any) => r.value === record.route_id);
+        return route?.label || record.route_id;
       },
     },
     {

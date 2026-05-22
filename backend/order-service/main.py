@@ -412,17 +412,31 @@ async def create_order(
                 # 校验有效期
                 now = datetime.now()
                 if coupon.valid_start_time <= now <= coupon.valid_end_time:
+                    # 查询模板最新配置
+                    template = None
+                    if coupon.template_id:
+                        from app.models.coupon import CouponTemplate
+                        template_result = await db.execute(
+                            select(CouponTemplate).where(CouponTemplate.id == coupon.template_id)
+                        )
+                        template = template_result.scalar_one_or_none()
+                    
+                    min_amount = float(template.min_amount) if template else float(coupon.min_amount)
+                    max_discount = float(template.max_discount) if template else float(coupon.max_discount or 0)
+                    applicable_type = template.applicable_type if template else coupon.applicable_type
+                    applicable_ids = template.applicable_ids if template else coupon.applicable_ids
+                    
                     # 校验金额门槛
-                    if float(coupon.min_amount) <= total_amount:
+                    if min_amount <= total_amount:
                         # 校验适用范围
                         applicable = True
-                        if coupon.applicable_type == 2 and coupon.applicable_ids:
-                            if data.route_id not in coupon.applicable_ids:
+                        if applicable_type == 2 and applicable_ids:
+                            if data.route_id not in applicable_ids:
                                 applicable = False
                         
                         if applicable:
                             discount_amount = calculate_discount(
-                                coupon.type, float(coupon.value), total_amount, float(coupon.max_discount or 0)
+                                coupon.type, float(coupon.value), total_amount, max_discount
                             )
                             coupon_name = coupon.name
                         else:
@@ -1122,6 +1136,10 @@ async def admin_refund_order(
         if order.status not in [20, 60, 70]:  # 待出行、已完成、已评价
             return {"code": 400, "message": "当前订单状态不允许退款", "data": None}
         
+        # 防止重复退款：已经退款成功过的订单不允许再次退款
+        if order.refund_time:
+            return {"code": 400, "message": "该订单已退款成功，不可重复退款", "data": None}
+        
         refund_type = refund_data.get('refund_type', 'full')
         refund_reason = refund_data.get('refund_reason', '')
         
@@ -1215,6 +1233,7 @@ async def admin_get_refunds(
 @app.post("/api/v1/admin/refunds/{order_id}/approve")
 async def admin_approve_refund(
     order_id: int,
+    authorization: Optional[str] = Header(None),
     db: AsyncSession = Depends(get_db)
 ):
     """审核通过退款"""
@@ -1230,6 +1249,41 @@ async def admin_approve_refund(
         
         if order.status != 40:
             return {"code": 400, "message": "订单不是退款中状态", "data": None}
+        
+        # 调用 pay-service 发起退款
+        pay_service_url = os.getenv("PAY_SERVICE_URL", "http://pay-service:8000")
+        refund_payload = {
+            "order_no": order.order_no,
+            "refund_amount": float(order.refund_amount or order.pay_amount),
+            "reason": order.refund_reason or "用户申请退款",
+            "transaction_id": order.pay_trade_no or order.pay_transaction_id or "",
+            "total_amount": float(order.pay_amount or order.total_amount or 0)
+        }
+        
+        headers = {}
+        if authorization:
+            headers["Authorization"] = authorization
+        
+        try:
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                pay_response = await client.post(
+                    f"{pay_service_url}/api/v1/pay/refund",
+                    json=refund_payload,
+                    headers=headers
+                )
+                pay_result = pay_response.json()
+        except Exception as e:
+            logger.error(f"Call pay-service refund failed: {e}")
+            return {"code": 500, "message": f"退款服务调用失败: {str(e)}", "data": None}
+        
+        if pay_result.get("code") != 200:
+            logger.error(f"Pay-service refund error: {pay_result}")
+            # 退款失败，回滚订单状态到待出行，允许重新发起退款
+            order.status = 20
+            order.refund_amount = 0
+            order.refund_reason = f"退款失败: {pay_result.get('message', '未知错误')}"
+            await db.commit()
+            return {"code": 500, "message": f"退款失败: {pay_result.get('message', '退款服务返回错误')}", "data": None}
         
         # 更新为已退款状态
         order.status = 50
@@ -1378,7 +1432,7 @@ async def admin_get_stats(
         today_end = datetime.combine(today, datetime.max.time())
         
         # 总用户数（直接查询共享数据库）
-        total_users_result = await db.execute(text("SELECT COUNT(*) FROM users WHERE status = 1"))
+        total_users_result = await db.execute(text("SELECT COUNT(*) FROM users"))
         total_users = total_users_result.scalar() or 0
         
         # 今日订单数
@@ -1461,14 +1515,14 @@ def calculate_discount(coupon_type: int, value: float, order_amount: float, max_
     if coupon_type == 4:  # 礼品券不参与订单金额抵扣
         return 0
     if coupon_type == 1:  # 满减券
-        return min(value, order_amount)
+        return value
     elif coupon_type == 2:  # 折扣券
         discount = order_amount * (1 - value)
         if max_discount > 0:
             discount = min(discount, max_discount)
         return round(discount, 2)
     elif coupon_type == 3:  # 立减券
-        return min(value, order_amount)
+        return value
     return 0
 
 
@@ -1481,7 +1535,7 @@ async def get_user_coupons(
     db: AsyncSession = Depends(get_db)
 ):
     """获取用户优惠券列表"""
-    from app.models.coupon import UserCoupon
+    from app.models.coupon import UserCoupon, CouponTemplate
     
     user_id = current_user.get("user_id", 1)
     
@@ -1499,9 +1553,22 @@ async def get_user_coupons(
     result = await db.execute(query)
     coupons = result.scalars().all()
     
+    # 查询模板最新配置
+    template_ids = [c.template_id for c in coupons if c.template_id]
+    template_map = {}
+    if template_ids:
+        template_result = await db.execute(
+            select(CouponTemplate).where(CouponTemplate.id.in_(template_ids))
+        )
+        template_map = {t.id: t for t in template_result.scalars().all()}
+    
     now = datetime.now()
     data = []
     for c in coupons:
+        template = template_map.get(c.template_id)
+        # 使用模板最新门槛配置
+        min_amount = float(template.min_amount) if template else float(c.min_amount)
+        
         item = {
             "id": c.id,
             "coupon_no": c.coupon_no,
@@ -1509,7 +1576,7 @@ async def get_user_coupons(
             "type": c.type,
             "type_text": {1: "满减券", 2: "折扣券", 3: "立减券", 4: "礼品券"}.get(c.type, "未知"),
             "value": float(c.value),
-            "min_amount": float(c.min_amount),
+            "min_amount": min_amount,
             "valid_start_time": c.valid_start_time.isoformat() if c.valid_start_time else None,
             "valid_end_time": c.valid_end_time.isoformat() if c.valid_end_time else None,
             "status": c.status,
@@ -1714,7 +1781,7 @@ async def get_available_coupons_for_order(
     db: AsyncSession = Depends(get_db)
 ):
     """获取订单可用优惠券"""
-    from app.models.coupon import UserCoupon
+    from app.models.coupon import UserCoupon, CouponTemplate
     
     user_id = current_user.get("user_id", 1)
     now = datetime.now()
@@ -1729,6 +1796,15 @@ async def get_available_coupons_for_order(
         ).order_by(UserCoupon.value.desc())
     )
     coupons = result.scalars().all()
+    
+    # 查询模板最新配置
+    template_ids = [c.template_id for c in coupons if c.template_id]
+    template_map = {}
+    if template_ids:
+        template_result = await db.execute(
+            select(CouponTemplate).where(CouponTemplate.id.in_(template_ids))
+        )
+        template_map = {t.id: t for t in template_result.scalars().all()}
     
     available = []
     unavailable = []
@@ -1745,21 +1821,29 @@ async def get_available_coupons_for_order(
         pass
     
     for c in coupons:
+        template = template_map.get(c.template_id)
+        
+        # 使用模板的最新配置（如果模板存在），否则回退到用户券的配置
+        min_amount = float(template.min_amount) if template else float(c.min_amount)
+        max_discount = float(template.max_discount) if template else float(c.max_discount or 0)
+        applicable_type = template.applicable_type if template else c.applicable_type
+        applicable_ids = template.applicable_ids if template else c.applicable_ids
+        
         # 检查金额门槛
-        if c.min_amount > 0 and amount < float(c.min_amount):
+        if min_amount > 0 and amount < min_amount:
             unavailable.append({
                 "id": c.id,
                 "name": c.name,
                 "type": c.type,
                 "value": float(c.value),
-                "reason": f"订单金额未满{c.min_amount}元"
+                "reason": f"订单金额未满{min_amount}元"
             })
             continue
         
         # 检查适用范围
-        if c.applicable_type == 2 and c.applicable_ids:
+        if applicable_type == 2 and applicable_ids:
             # 指定路线
-            if route_id not in (c.applicable_ids or []):
+            if route_id not in (applicable_ids or []):
                 unavailable.append({
                     "id": c.id,
                     "name": c.name,
@@ -1768,9 +1852,9 @@ async def get_available_coupons_for_order(
                     "reason": "不适用当前路线"
                 })
                 continue
-        elif c.applicable_type == 3 and c.applicable_ids:
+        elif applicable_type == 3 and applicable_ids:
             # 指定路线类型
-            if route_type is None or route_type not in (c.applicable_ids or []):
+            if route_type is None or route_type not in (applicable_ids or []):
                 unavailable.append({
                     "id": c.id,
                     "name": c.name,
@@ -1779,9 +1863,9 @@ async def get_available_coupons_for_order(
                     "reason": "不适用当前路线类型"
                 })
                 continue
-        elif c.applicable_type == 4 and c.applicable_ids:
+        elif applicable_type == 4 and applicable_ids:
             # 指定用户（理论上已过滤，兜底校验）
-            if user_id not in (c.applicable_ids or []):
+            if user_id not in (applicable_ids or []):
                 unavailable.append({
                     "id": c.id,
                     "name": c.name,
@@ -1791,7 +1875,7 @@ async def get_available_coupons_for_order(
                 })
                 continue
         
-        discount = calculate_discount(c.type, float(c.value), amount, float(c.max_discount or 0))
+        discount = calculate_discount(c.type, float(c.value), amount, max_discount)
         
         item = {
             "id": c.id,
@@ -1799,7 +1883,7 @@ async def get_available_coupons_for_order(
             "name": c.name,
             "type": c.type,
             "value": float(c.value),
-            "min_amount": float(c.min_amount),
+            "min_amount": min_amount,
             "discount_amount": discount,
             "valid_end_time": c.valid_end_time.isoformat() if c.valid_end_time else None,
             "is_best": False,

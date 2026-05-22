@@ -165,6 +165,7 @@ export default function OrderDetail() {
               className='qr-image'
               src={require('../../../assets/images/customer-service.jpg')}
               mode='widthFix'
+              showMenuByLongpress
               onError={() => Taro.showToast({ title: '图片加载失败', icon: 'none' })}
             />
             <Text className='qr-modal-tip'>长按二维码识别，添加客服微信</Text>

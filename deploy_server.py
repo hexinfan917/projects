@@ -13,9 +13,9 @@ SOURCE_DIR = "D:/projects"
 
 EXCLUDE_DIRS = {
     '.git', 'node_modules', 'venv', '.venv', '__pycache__',
-    '.umi', '.umi-production', '.npm-cache', 'dist',
+    '.umi', '.umi-production', '.npm-cache',
     'logs', '.cache', '.umi-test', 'coverage', '.turbo',
-    'build', 'output', 'tmp', 'temp'
+    'build', 'output', 'tmp', 'temp', 'uploads'
 }
 
 def ssh_exec(ssh, cmd, timeout=60):
@@ -57,7 +57,13 @@ def create_tarball(source_dir):
     count = 0
     with tarfile.open(fileobj=buffer, mode="w:gz") as tar:
         for root, dirs, files in os.walk(source_dir):
-            dirs[:] = [d for d in dirs if d not in EXCLUDE_DIRS and not d.startswith('.')]
+            rel_root = os.path.relpath(root, source_dir).replace(chr(92), "/")
+            dirs[:] = [
+                d for d in dirs
+                if d not in EXCLUDE_DIRS
+                and not d.startswith('.')
+                and not (rel_root.startswith('frontend/miniapp') and d == 'dist')
+            ]
             for file in files:
                 if file.endswith(('.log', '.pyc', '.pyo')) or file in EXCLUDE_DIRS:
                     continue
@@ -137,6 +143,9 @@ echo "DOCKER_INSTALL_DONE" > /tmp/docker_install.status
 
     # Step 3: Upload code
     print("\n=== Step 3: Upload Project Code ===")
+    # Backup uploads and certs before cleanup
+    ssh_exec(ssh, f"sudo cp -a {REMOTE_PATH}/backend/file-service/uploads /tmp/uploads_backup 2>/dev/null || true")
+    ssh_exec(ssh, f"sudo cp -a {REMOTE_PATH}/certs /tmp/certs_backup 2>/dev/null || true")
     ssh_exec(ssh, f"sudo mkdir -p {REMOTE_PATH} && sudo rm -rf {REMOTE_PATH}/*")
     ssh_exec(ssh, f"sudo chown -R $USER:$USER {REMOTE_PATH}")
 
@@ -147,6 +156,9 @@ echo "DOCKER_INSTALL_DONE" > /tmp/docker_install.status
     print("Upload done.")
 
     ssh_exec(ssh, f"tar -xzf {remote_tar} -C {REMOTE_PATH} && rm {remote_tar}")
+    # Restore uploads and certs directory
+    ssh_exec(ssh, f"sudo mkdir -p {REMOTE_PATH}/backend/file-service/uploads && sudo cp -a /tmp/uploads_backup/* {REMOTE_PATH}/backend/file-service/uploads/ 2>/dev/null || true && sudo rm -rf /tmp/uploads_backup")
+    ssh_exec(ssh, f"sudo mkdir -p {REMOTE_PATH}/certs && sudo cp -a /tmp/certs_backup/* {REMOTE_PATH}/certs/ 2>/dev/null || true && sudo rm -rf /tmp/certs_backup")
     out, _ = ssh_exec_simple(ssh, f"ls -la {REMOTE_PATH}/ | head -15")
     print(out)
 
@@ -157,14 +169,19 @@ DB_USER=petway
 DB_PASSWORD=Petway123
 REDIS_PASSWORD=Petway123
 JWT_SECRET=petway_jwt_secret_key_2024_change_me_at_least_32_chars
-WECHAT_APPID=your_wechat_appid
-WECHAT_APPSECRET=your_wechat_appsecret
+WECHAT_APPID=wxdf099f340581f93d
+WECHAT_APPSECRET=0692f41ecc987e3696df9548e5a5b2ca
+WECHAT_MCHID=1745520876
+WECHAT_APIKEY=qaec9lm5xci1322g59stwnnb55jdue1w
 OSS_ACCESS_KEY_ID=your_oss_key
 OSS_ACCESS_KEY_SECRET=your_oss_secret
 OSS_BUCKET=your_bucket
 OSS_ENDPOINT=oss-cn-hangzhou.aliyuncs.com
 """
+    # Create .env in both locations for compatibility
     with sftp.file(f"{REMOTE_PATH}/docker/.env", 'w') as f:
+        f.write(env_content)
+    with sftp.file(f"{REMOTE_PATH}/docker/prod/.env", 'w') as f:
         f.write(env_content)
     print(".env created.")
 
@@ -186,7 +203,7 @@ OSS_ENDPOINT=oss-cn-hangzhou.aliyuncs.com
         print("MySQL not ready, checking logs...")
         ssh_exec_simple(ssh, "sudo docker logs petway-mysql --tail 20")
 
-    ssh_exec(ssh, f"cd {REMOTE_PATH} && for f in database/migrations/*.sql; do echo \"Running $f...\"; sudo docker exec -i petway-mysql mysql -uroot -pPetway123 petway < \"$f\" 2>/dev/null || true; done", timeout=120)
+    ssh_exec(ssh, f"cd {REMOTE_PATH} && for f in database/migrations/*.sql; do echo \"Running $f...\"; sudo docker exec -i petway-mysql mysql -uroot -pPetway123 --default-character-set=utf8mb4 petway < \"$f\" 2>/dev/null || true; done", timeout=120)
 
     # Step 7: Status check
     print("\n=== Step 7: Service Status ===")

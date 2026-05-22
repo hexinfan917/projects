@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import Taro, { useDidShow } from '@tarojs/taro'
 import { View, Text, Image, Swiper, SwiperItem, ScrollView } from '@tarojs/components'
 import { getRouteDetail, getRouteSchedules, getPets, getTravelers, createOrder, getRouteAddons, getAvailableCoupons, calculateCoupon, getAgreements, compressImageUrl } from '../../../utils/api'
@@ -14,6 +14,14 @@ function calcAge(birthDate?: string) {
   const m = now.getMonth() - birth.getMonth()
   if (m < 0 || (m === 0 && now.getDate() < birth.getDate())) age--
   return age > 0 ? age : '-'
+}
+
+function formatAge(ageStr?: string) {
+  if (!ageStr) return ''
+  const s = ageStr.trim()
+  if (!s) return ''
+  if (/[岁半]/.test(s)) return s
+  return s + '岁'
 }
 
 function maskPhone(phone?: string) {
@@ -464,7 +472,7 @@ export default function OrderConfirm() {
         pets: selectedPets.map(p => ({ id: p.id, name: p.name, breed: p.breed, weight: p.weight, gender: p.gender })),
         participant_count: selectedTravelers.length,
         pet_count: selectedPetIds.length,
-        route_price: schedule.price || route.base_price || 0,
+        route_price: routePrice,
         insurance_price: insurancePrice,
         equipment_price: 0,
         discount_amount: couponDiscount,
@@ -524,17 +532,30 @@ export default function OrderConfirm() {
   const canSubmit = selectedTravelers.length > 0 && selectedPetIds.length > 0 && (agreements.length === 0 || agreed)
 
   // 加载可用优惠券
+  const selectedCouponIdRef = useRef(selectedCouponId)
+  selectedCouponIdRef.current = selectedCouponId
+
   useEffect(() => {
     if (!route?.id || total <= 0) return
     const loadCoupons = async () => {
       try {
         const res = await getAvailableCoupons({ route_id: route.id, amount: total })
         if (res.code === 200) {
-          setAvailableCoupons(res.data?.available || [])
-          // 如果有最优券且未手动选择，自动选中
-          if (res.data?.best_coupon_id && !selectedCouponId) {
+          const available = res.data?.available || []
+          setAvailableCoupons(available)
+
+          // 检查当前选中的券是否仍然可用，若不可用则取消选中
+          const currentId = selectedCouponIdRef.current
+          if (currentId) {
+            const stillAvailable = available.some((c: any) => c.id === currentId)
+            if (!stillAvailable) {
+              setSelectedCouponId(null)
+              setCouponDiscount(0)
+            }
+          } else if (res.data?.best_coupon_id) {
+            // 未选中时自动选中最优券
             setSelectedCouponId(res.data.best_coupon_id)
-            const best = res.data.available?.find((c: any) => c.id === res.data.best_coupon_id)
+            const best = available.find((c: any) => c.id === res.data.best_coupon_id)
             if (best) setCouponDiscount(best.discount_amount)
           }
         }
@@ -622,7 +643,7 @@ export default function OrderConfirm() {
               <Text className='info-name'>
                 {pet.name}
                 {pet.is_default ? <Text className='default-tag'>默认</Text> : null}
-                （{calcAge(pet.birth_date)}岁，{GENDER_MAP[pet.gender] || '-'}）
+                （{formatAge(pet.age_str) || (calcAge(pet.birth_date) !== '-' ? calcAge(pet.birth_date) + '岁' : '-')}，{GENDER_MAP[pet.gender] || '-'}）
               </Text>
               <Text className='info-detail'>{pet.breed || '-'} · 体重:{pet.weight || '-'}kg</Text>
             </View>
@@ -1027,7 +1048,7 @@ export default function OrderConfirm() {
                 return (
                   <View key={p.id} className='modal-item' onClick={() => togglePetInModal(p.id)}>
                     <View className='modal-item-info'>
-                      <Text className='modal-item-name'>{p.name} <Text className='modal-item-phone'>{calcAge(p.birth_date)}岁 · {GENDER_MAP[p.gender] || '-'}</Text></Text>
+                      <Text className='modal-item-name'>{p.name} <Text className='modal-item-phone'>{formatAge(p.age_str) || (calcAge(p.birth_date) !== '-' ? calcAge(p.birth_date) + '岁' : '-')} · {GENDER_MAP[p.gender] || '-'}</Text></Text>
                       <Text className='modal-item-sub'>{p.breed || '-'} · 体重：{p.weight || '-'}kg</Text>
                     </View>
                     <View className={`check-circle ${checked ? 'checked' : ''}`} />

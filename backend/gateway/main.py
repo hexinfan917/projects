@@ -7,6 +7,8 @@ import sys
 import os
 import jwt
 import re
+import json
+import asyncio
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
@@ -50,6 +52,9 @@ PUBLIC_PATHS = [
     r"^/api/v1/pay/refund/notify$",
     r"^/api/v1/map/.*",
     r"^/api/v1/files/static/.*",
+    r"^/api/v1/popups/member-activity$",
+    r"^/api/v1/popups/\d+/log$",
+    r"^/api/v1/settings/public$",
 ]
 
 
@@ -98,6 +103,11 @@ LOCAL_SERVICE_ROUTES = {
     "/api/v1/admin/travelers": "http://localhost:8001",
     "/api/v1/admin/settings": "http://localhost:8001",
     "/api/v1/admin/operation-logs": "http://localhost:8001",
+    "/api/v1/admin/me": "http://localhost:8001",
+    "/api/v1/admin/menus/tree": "http://localhost:8001",
+    "/api/v1/admin/menus": "http://localhost:8001",
+    "/api/v1/admin/roles": "http://localhost:8001",
+    "/api/v1/admin/admins": "http://localhost:8001",
     "/api/v1/admin/route-types": "http://localhost:8033",
     "/api/v1/admin/routes": "http://localhost:8033",
     "/api/v1/admin/addons": "http://localhost:8033",
@@ -109,6 +119,7 @@ LOCAL_SERVICE_ROUTES = {
     "/api/v1/admin/refunds": "http://localhost:8003",
     "/api/v1/orders": "http://localhost:8003",
     "/api/v1/map": "http://localhost:8004",
+    "/api/v1/settings/public": "http://localhost:8001",
     "/api/v1/contents": "http://localhost:8005",
     "/api/v1/contents/banners": "http://localhost:8005",
     "/api/v1/admin/articles": "http://localhost:8005",
@@ -199,6 +210,7 @@ async def proxy(request: Request, path: str):
     """路由转发（含鉴权）"""
     current_path = request.url.path
     
+    user_payload = None
     # 鉴权检查（非公开路径需要验证JWT）
     if not is_public_path(current_path):
         auth_header = request.headers.get("authorization", "")
@@ -242,13 +254,14 @@ async def proxy(request: Request, path: str):
     
     logger.info(f"Proxy: {request.method} {current_path} -> {target_url}")
     
+    # 读取请求体（用于转发和日志）
+    body = await request.body()
+    
     # 转发请求
     try:
         method = request.method
         headers = dict(request.headers)
         headers.pop("host", None)
-        
-        body = await request.body()
         
         response = await request.app.state.http_client.request(
             method=method,
@@ -259,6 +272,13 @@ async def proxy(request: Request, path: str):
         )
         
         logger.info(f"Proxy response: {response.status_code} for {target_url}")
+        
+        # 记录操作日志（admin 写操作）
+        if method in ("POST", "PUT", "DELETE", "PATCH") and current_path.startswith("/api/v1/admin/") and "operation-logs" not in current_path:
+            try:
+                await _log_operation(request, current_path, method, response.status_code, body, user_payload)
+            except Exception as e:
+                logger.warning(f"Operation log failed: {e}")
         
         # 检查响应内容类型，二进制数据（如图片、Excel）直接流式转发
         content_type = response.headers.get("content-type", "")
@@ -288,6 +308,93 @@ async def proxy(request: Request, path: str):
             status_code=500,
             content={"code": 500, "message": "Service unavailable", "data": None}
         )
+
+
+# 敏感字段，日志中需要脱敏
+_SENSITIVE_KEYS = {"password", "token", "secret", "id_card", "phone", "credit_card", "bank_card", "api_key", "appsecret", "cert", "private_key", "signature", "code", "verify_code", "sms_code", "captcha"}
+
+
+def _sanitize_body(body_bytes: bytes) -> str:
+    """过滤请求体中的敏感信息，限制长度"""
+    if not body_bytes:
+        return ""
+    try:
+        data = json.loads(body_bytes)
+    except Exception:
+        text = body_bytes.decode("utf-8", errors="ignore")
+        return text[:500] if len(text) <= 500 else text[:500] + "..."
+    
+    def _redact(obj):
+        if isinstance(obj, dict):
+            result = {}
+            for k, v in obj.items():
+                if any(sk in k.lower() for sk in _SENSITIVE_KEYS):
+                    result[k] = "***"
+                else:
+                    result[k] = _redact(v)
+            return result
+        elif isinstance(obj, list):
+            return [_redact(i) for i in obj]
+        return obj
+    
+    sanitized = _redact(data)
+    result = json.dumps(sanitized, ensure_ascii=False)
+    return result[:1000] if len(result) <= 1000 else result[:1000] + "..."
+
+
+def _extract_module_action(path: str, method: str) -> tuple:
+    """从请求路径和方法推导 module 和 action"""
+    parts = path.strip("/").split("/")
+    # 路径格式: api/v1/admin/xxx/... 或 api/v1/admin/xxx/{id}
+    module = parts[3] if len(parts) >= 4 else "admin"
+    
+    action_map = {
+        "POST": "CREATE",
+        "PUT": "UPDATE",
+        "PATCH": "UPDATE",
+        "DELETE": "DELETE",
+    }
+    action = action_map.get(method, "QUERY")
+    return module, action
+
+
+async def _log_operation(request: Request, path: str, method: str, status_code: int, body: bytes, user_payload: dict):
+    """异步记录操作日志（fire-and-forget）"""
+    try:
+        user_service_url = SERVICE_ROUTES.get("/api/v1/admin/operation-logs")
+        if not user_service_url:
+            return
+        
+        module, action = _extract_module_action(path, method)
+        client_ip = request.headers.get("x-forwarded-for", request.client.host if request.client else "")
+        if "," in client_ip:
+            client_ip = client_ip.split(",")[0].strip()
+        
+        log_payload = {
+            "user_id": (user_payload.get("id") or user_payload.get("user_id")) if user_payload else None,
+            "username": (user_payload.get("username") or user_payload.get("openid")) if user_payload else None,
+            "module": module,
+            "action": action,
+            "description": f"{method} {path}",
+            "request_method": method,
+            "request_path": path,
+            "request_params": _sanitize_body(body),
+            "response_code": status_code,
+            "ip_address": client_ip,
+        }
+        
+        res = await request.app.state.http_client.post(
+            f"{user_service_url}/api/v1/admin/operation-logs",
+            json=log_payload,
+            timeout=5.0
+        )
+        data = res.json()
+        if data.get("code") != 200:
+            logger.warning(f"Operation log failed: {data.get('message')}")
+        else:
+            logger.info(f"Operation log recorded: {module}/{action} {path}")
+    except Exception as e:
+        logger.warning(f"Operation log failed: {e}")
 
 if __name__ == "__main__":
     import uvicorn

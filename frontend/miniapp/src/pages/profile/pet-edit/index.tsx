@@ -4,7 +4,7 @@ import { View, Text, Input, Button, Image, Picker } from '@tarojs/components'
 import { getPet, getPets, createPet, updatePet, uploadFile, compressImageUrl } from '../../../utils/api'
 import './index.scss'
 
-const BASE_URL = 'https://tailtravel.westilt.com'
+const BASE_URL = 'https://tailtravel.cn'
 
 function fullImageUrl(url?: string) {
   if (!url) return ''
@@ -31,6 +31,10 @@ function ageToBirthDate(age: string) {
   return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
 }
 
+function isNumericAge(ageStr: string) {
+  return /^\d+(\.\d+)?$/.test(ageStr.trim())
+}
+
 export default function PetEdit() {
   const [pet, setPet] = useState<any>({
     name: '',
@@ -51,7 +55,8 @@ export default function PetEdit() {
     if (id) {
       getPet(Number(id)).then(res => {
         const data = res.data || {}
-        const ageStr = calcAge(data.birth_date)
+        // 优先使用 age_str，否则根据 birth_date 计算
+        const ageStr = data.age_str || calcAge(data.birth_date) || ''
         setPet({
           ...data,
           age: ageStr,
@@ -91,24 +96,35 @@ export default function PetEdit() {
       Taro.showToast({ title: '请填写宠物昵称', icon: 'none' })
       return
     }
-    if (!pet.age || Number(pet.age) <= 0 || !/^[1-9]\d*$/.test(String(pet.age))) {
-      Taro.showToast({ title: '请填写正确的正整数年龄', icon: 'none' })
+    if (!pet.age || pet.age.trim() === '') {
+      Taro.showToast({ title: '请填写宠物年龄', icon: 'none' })
       return
     }
     if (pet.gender === undefined || pet.gender === null) {
       Taro.showToast({ title: '请选择宠物性别', icon: 'none' })
       return
     }
-    const birthDate = ageToBirthDate(pet.age)
+    if (!pet.vaccine_date) {
+      Taro.showToast({ title: '请选择疫苗时间', icon: 'none' })
+      return
+    }
+
+    const ageStr = pet.age.trim()
+    let birthDate: string | undefined
+    if (isNumericAge(ageStr)) {
+      birthDate = ageToBirthDate(ageStr)
+    }
+
     const payload: any = {
       name: pet.name,
       breed: pet.breed || undefined,
-      birth_date: birthDate,
+      birth_date: birthDate || undefined,
+      age_str: ageStr,
       gender: pet.gender,
       weight: pet.weight ? Number(pet.weight) : undefined,
       is_default: pet.is_default ? 1 : 0,
       avatar: pet.avatar || undefined,
-      vaccine_date: pet.vaccine_date || undefined
+      vaccine_date: pet.vaccine_date
     }
     try {
       if (pet.id) {
@@ -119,7 +135,7 @@ export default function PetEdit() {
         const existingPets = petsRes.data || []
         const isDuplicate = existingPets.some((p: any) =>
           p.name === pet.name &&
-          p.birth_date === birthDate &&
+          p.age_str === ageStr &&
           p.gender === pet.gender
         )
         if (isDuplicate) {
@@ -147,7 +163,7 @@ export default function PetEdit() {
     }
   }
 
-  const canSubmit = !!pet.name && !!pet.age && /^[1-9]\d*$/.test(String(pet.age)) && pet.gender !== undefined && pet.gender !== null
+  const canSubmit = !!pet.name && !!pet.age && pet.age.trim() !== '' && pet.gender !== undefined && pet.gender !== null && !!pet.vaccine_date
 
   return (
     <View className='pet-edit-page' style={{ paddingTop: '140rpx' }}>
@@ -184,13 +200,16 @@ export default function PetEdit() {
         {/* 年龄 */}
         <View className='form-row'>
           <Text className='form-label'>年龄 <Text className='required'>*</Text></Text>
-          <Input
-            className='form-input'
-            type='number'
-            placeholder='请输入年龄（正整数）'
-            value={pet.age}
-            onInput={(e) => setPet({ ...pet, age: e.detail.value })}
-          />
+          <View className='age-input-wrap'>
+            <Input
+              className='form-input age-input'
+              type='text'
+              placeholder='请输入宠物年龄'
+              value={pet.age}
+              onInput={(e) => setPet({ ...pet, age: e.detail.value })}
+            />
+            <Text className='age-unit'>岁</Text>
+          </View>
         </View>
 
         {/* 性别 */}
@@ -206,6 +225,16 @@ export default function PetEdit() {
               onClick={() => setPet({ ...pet, gender: 0 })}
             >母</Text>
           </View>
+        </View>
+
+        {/* 疫苗时间 */}
+        <View className='form-row'>
+          <Text className='form-label'>疫苗时间 <Text className='required'>*</Text></Text>
+          <Picker mode='date' value={pet.vaccine_date || ''} onChange={onVaccineChange}>
+            <View className={`picker-value ${pet.vaccine_date ? '' : 'placeholder'}`}>
+              {pet.vaccine_date || '请选择疫苗时间'}
+            </View>
+          </Picker>
         </View>
 
         {/* 品种 */}
@@ -229,16 +258,6 @@ export default function PetEdit() {
             value={pet.weight}
             onInput={(e) => setPet({ ...pet, weight: e.detail.value })}
           />
-        </View>
-
-        {/* 疫苗时间 */}
-        <View className='form-row'>
-          <Text className='form-label'>疫苗时间</Text>
-          <Picker mode='date' value={pet.vaccine_date || ''} onChange={onVaccineChange}>
-            <View className={`picker-value ${pet.vaccine_date ? '' : 'placeholder'}`}>
-              {pet.vaccine_date || '请选择疫苗时间'}
-            </View>
-          </Picker>
         </View>
 
         {/* 默认宠物 */}

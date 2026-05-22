@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import Taro, { useDidShow } from '@tarojs/taro'
 import { View, Text, Image } from '@tarojs/components'
 const logoIcon = '/assets/toplogo.png'
-import { getUserProfile, setActiveTab, getMemberCenter, getUserCoupons, compressImageUrl } from '../../utils/api'
+import { getUserProfile, setActiveTab, getMemberCenter, getUserCoupons, getMemberPlans, compressImageUrl } from '../../utils/api'
 import './index.scss'
 
 const ICON_MAP: Record<string, string> = {
@@ -55,6 +55,7 @@ export default function Profile() {
   const [serviceVisible, setServiceVisible] = useState(false)
   const [memberInfo, setMemberInfo] = useState<any>(null)
   const [couponCount, setCouponCount] = useState(0)
+  const [memberPlan, setMemberPlan] = useState<any>(null)
 
   const loadUser = () => {
     const token = Taro.getStorageSync('access_token')
@@ -93,11 +94,23 @@ export default function Profile() {
     }
   }
 
+  const loadMemberPlan = async () => {
+    try {
+      const res = await getMemberPlans()
+      if (res.code === 200 && res.data?.list?.length > 0) {
+        setMemberPlan(res.data.list[0])
+      }
+    } catch (e) {
+      // ignore
+    }
+  }
+
   useDidShow(() => {
     setActiveTab(3, 'pages/profile/index')
     loadUser()
     loadMemberInfo()
     loadCouponCount()
+    loadMemberPlan()
   })
 
   useEffect(() => {
@@ -235,19 +248,11 @@ export default function Profile() {
               </View>
               {/* 下半部分 */}
               <View className='vip-card-bottom'>
-                <View className='vip-icons'>
-                  <View className='vip-icon-item'>
-                    <Text className='vip-icon-text'>%</Text>
-                  </View>
-                  <View className='vip-icon-item'>
-                    <Text className='vip-icon-text'>⚡</Text>
-                  </View>
-                  <View className='vip-icon-item'>
-                    <Text className='vip-icon-text'>¥</Text>
-                  </View>
-                </View>
                 <View className='vip-desc'>
-                  <Text className='vip-desc-price'>¥39.9/年，开通年度会员</Text>
+                  <Text className='vip-desc-price'>{memberPlan?.subtitle || '¥39.9/年，开通年度会员'}</Text>
+                  {memberPlan?.original_price ? (
+                    <Text className='vip-desc-original'>¥{memberPlan.original_price}</Text>
+                  ) : null}
                 </View>
               </View>
             </>
@@ -315,14 +320,16 @@ export default function Profile() {
           <View className='service-mask' onClick={() => setServiceVisible(false)} />
           <View className='service-content'>
             <Text className='service-title'>联系客服</Text>
-            <Text className='service-body'>工作时间：周一至周五{'\n'}10:00~20:00 微信号：{'\n'}Petway_</Text>
-            <View className='service-btns'>
-              <View className='service-btn cancel' onClick={() => setServiceVisible(false)}>
-                <Text>取消</Text>
-              </View>
-              <View className='service-btn confirm' onClick={copyWechat}>
-                <Text>复制微信</Text>
-              </View>
+            <Image
+              className='qr-image'
+              src={require('../../assets/images/customer-service.jpg')}
+              mode='widthFix'
+              showMenuByLongpress
+              onError={() => Taro.showToast({ title: '图片加载失败', icon: 'none' })}
+            />
+            <Text className='qr-modal-tip'>长按二维码识别，添加客服微信</Text>
+            <View className='qr-modal-close' onClick={() => setServiceVisible(false)}>
+              <Text>关闭</Text>
             </View>
           </View>
         </View>

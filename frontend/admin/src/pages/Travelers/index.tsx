@@ -1,6 +1,13 @@
-import { PageContainer, ProTable, ModalForm, ProFormText, ProFormSelect, ProFormDatePicker } from '@ant-design/pro-components';
+import {
+  PageContainer,
+  ProTable,
+  ModalForm,
+  ProFormText,
+  ProFormSelect,
+  ProFormDatePicker,
+} from '@ant-design/pro-components';
 import { Button, Tag, Avatar, message, Popconfirm, Space } from 'antd';
-import { EyeOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import { EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useRef, useState } from 'react';
 import { request } from '@umijs/max';
 import dayjs from 'dayjs';
@@ -15,6 +22,7 @@ export default function TravelerManage() {
   const tableRef = useRef<any>(null);
   const [editVisible, setEditVisible] = useState(false);
   const [editData, setEditData] = useState<any>(null);
+  const [filterUserId, setFilterUserId] = useState<number | undefined>(undefined);
 
   const handleEdit = (record: any) => {
     setEditData(record);
@@ -59,8 +67,27 @@ export default function TravelerManage() {
     {
       title: 'ID',
       dataIndex: 'id',
-      width: 60,
+      width: 80,
       search: false,
+      render: (id: string | number) => {
+        const str = String(id);
+        return str.startsWith('u_') ? str.replace('u_', '') : str;
+      },
+    },
+    {
+      title: '类型',
+      dataIndex: 'type',
+      width: 90,
+      valueEnum: {
+        '本人': { text: '本人' },
+        '同行人': { text: '同行人' },
+      },
+      render: (_: any, record: any) =>
+        record.type === '本人' ? (
+          <Tag color="orange">本人</Tag>
+        ) : (
+          <Tag color="blue">同行人</Tag>
+        ),
     },
     {
       title: '姓名',
@@ -77,7 +104,7 @@ export default function TravelerManage() {
       dataIndex: 'id_card',
       width: 180,
       search: false,
-      render: (idCard: string) => idCard ? `${idCard.slice(0, 6)}****${idCard.slice(-4)}` : '-',
+      render: (idCard: string) => (idCard ? `${idCard.slice(0, 6)}****${idCard.slice(-4)}` : '-'),
     },
     {
       title: '性别',
@@ -95,7 +122,11 @@ export default function TravelerManage() {
       dataIndex: 'birthday',
       width: 120,
       search: false,
-      render: (date: string) => date ? dayjs(date).format('YYYY-MM-DD') : '-',
+      render: (date: string) => {
+        if (!date || date === 'Invalid Date') return '-';
+        const d = dayjs(date);
+        return d.isValid() ? d.format('YYYY-MM-DD') : '-';
+      },
     },
     {
       title: '紧急联系人',
@@ -103,7 +134,9 @@ export default function TravelerManage() {
       search: false,
       render: (record: any) =>
         record.emergency_name ? (
-          <span>{record.emergency_name} ({record.emergency_phone})</span>
+          <span>
+            {record.emergency_name} ({record.emergency_phone})
+          </span>
         ) : (
           <span style={{ color: '#999' }}>-</span>
         ),
@@ -117,16 +150,55 @@ export default function TravelerManage() {
         isDefault === 1 ? <Tag color="blue">默认</Tag> : '-',
     },
     {
-      title: '用户ID',
-      dataIndex: 'user_id',
-      width: 80,
+      title: '同行人数量',
+      dataIndex: 'traveler_count',
+      width: 100,
+      search: false,
+      render: (count: number, record: any) =>
+        record.type === '本人' ? (
+          <Tag color="blue">{count || 0} 人</Tag>
+        ) : (
+          '-'
+        ),
+    },
+    {
+      title: '所属用户',
+      width: 180,
+      search: false,
+      render: (record: any) => {
+        const owner = record.owner;
+        if (!owner) return '-';
+        const isFiltered = filterUserId === owner.id;
+        return (
+          <Space>
+            <Avatar src={owner.avatar} size="small">
+              {(owner.nickname || owner.real_name || 'U').charAt(0)}
+            </Avatar>
+            <Button
+              type="link"
+              size="small"
+              style={{ padding: 0, color: isFiltered ? '#ff4d4f' : '#1890ff' }}
+              onClick={() => {
+                if (isFiltered) {
+                  setFilterUserId(undefined);
+                } else {
+                  setFilterUserId(owner.id);
+                }
+                tableRef.current?.reload();
+              }}
+            >
+              {isFiltered ? '取消筛选' : `${owner.real_name || owner.nickname || '用户'}(${owner.phone || '-'})`}
+            </Button>
+          </Space>
+        );
+      },
     },
     {
       title: '创建时间',
       dataIndex: 'created_at',
       width: 180,
       search: false,
-      render: (date: string) => date ? dayjs(date).format('YYYY-MM-DD HH:mm') : '-',
+      render: (date: string) => (date ? dayjs(date).format('YYYY-MM-DD HH:mm') : '-'),
     },
     {
       title: '操作',
@@ -135,21 +207,34 @@ export default function TravelerManage() {
       search: false,
       render: (_: any, record: any) => (
         <Space>
-          <Button type="link" size="small" icon={<EditOutlined />} onClick={() => handleEdit(record)}>
-            编辑
-          </Button>
-          <Popconfirm title="确定删除该出行人吗？" onConfirm={() => handleDelete(record.id)}>
-            <Button type="link" size="small" danger icon={<DeleteOutlined />}>
-              删除
-            </Button>
-          </Popconfirm>
+          {record.type === '同行人' && (
+            <>
+              <Button type="link" size="small" icon={<EditOutlined />} onClick={() => handleEdit(record)}>
+                编辑
+              </Button>
+              <Popconfirm title="确定删除该出行人吗？" onConfirm={() => handleDelete(record.id)}>
+                <Button type="link" size="small" danger icon={<DeleteOutlined />}>
+                  删除
+                </Button>
+              </Popconfirm>
+            </>
+          )}
         </Space>
       ),
     },
   ];
 
   return (
-    <PageContainer title="出行人管理">
+    <PageContainer
+      title="出行人管理"
+      subTitle={
+        filterUserId ? (
+          <Tag color="red" closable onClose={() => { setFilterUserId(undefined); tableRef.current?.reload(); }}>
+            已筛选用户ID: {filterUserId}
+          </Tag>
+        ) : undefined
+      }
+    >
       <ProTable
         columns={columns}
         actionRef={tableRef}
@@ -158,7 +243,7 @@ export default function TravelerManage() {
             params: {
               page: params.current,
               page_size: params.pageSize,
-              user_id: params.user_id,
+              user_id: filterUserId,
               keyword: params.name || params.phone,
             },
           });
@@ -172,6 +257,15 @@ export default function TravelerManage() {
         search={{ labelWidth: 'auto' }}
         pagination={{ pageSize: 10, showSizeChanger: true }}
         scroll={{ x: 1400 }}
+        toolbar={{
+          actions: filterUserId
+            ? [
+                <Button key="clear" onClick={() => { setFilterUserId(undefined); tableRef.current?.reload(); }}>
+                  清除筛选
+                </Button>,
+              ]
+            : [],
+        }}
       />
       <ModalForm
         title="编辑出行人"

@@ -1,4 +1,5 @@
 -- 初始化后台菜单和角色数据
+SET NAMES utf8mb4;
 
 -- 插入超级管理员角色
 INSERT INTO admin_roles (id, name, code, description, status) VALUES

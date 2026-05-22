@@ -512,7 +512,7 @@ async def admin_update_pet(
         if not pet:
             return {"code": 404, "message": "宠物不存在", "data": None}
         
-        allowed_fields = ['name', 'breed', 'breed_type', 'birth_date', 'gender', 'weight', 'avatar', 'tags', 'health_notes', 'vaccine_date', 'is_default']
+        allowed_fields = ['name', 'breed', 'breed_type', 'birth_date', 'age_str', 'gender', 'weight', 'avatar', 'tags', 'health_notes', 'vaccine_date', 'is_default']
         
         for field in allowed_fields:
             if field in pet_data:
@@ -571,13 +571,37 @@ async def admin_get_travelers(
     page_size: int = 10,
     db: AsyncSession = Depends(get_db)
 ):
-    """管理后台获取出行人列表"""
+    """管理后台获取出行人列表（平铺视图）
+    
+    同时返回用户本人和同行人，增加 owner 用户信息和 type 字段
+    """
     try:
         from app.models.traveler import Traveler
+        from app.models.user import User
         from sqlalchemy import or_
         
+        def _parse_id_card_birthday(id_card: str) -> str:
+            if not id_card:
+                return None
+            id_card = id_card.strip()
+            if len(id_card) == 18:
+                return f"{id_card[6:10]}-{id_card[10:12]}-{id_card[12:14]}"
+            elif len(id_card) == 15:
+                return f"19{id_card[6:8]}-{id_card[8:10]}-{id_card[10:12]}"
+            return None
+
+        def _parse_id_card_gender(id_card: str) -> int:
+            if not id_card:
+                return 0
+            id_card = id_card.strip()
+            if len(id_card) == 18:
+                return 1 if int(id_card[16]) % 2 == 1 else 2
+            elif len(id_card) == 15:
+                return 1 if int(id_card[14]) % 2 == 1 else 2
+            return 0
+
+        # 1. 先查询符合条件的 travelers
         query = select(Traveler).where(Traveler.status == 1)
-        
         if user_id:
             query = query.where(Traveler.user_id == user_id)
         if keyword:
@@ -585,33 +609,122 @@ async def admin_get_travelers(
                 Traveler.name.contains(keyword),
                 Traveler.phone.contains(keyword)
             ))
-        
         query = query.order_by(Traveler.created_at.desc())
         
-        # 分页
-        total_result = await db.execute(select(func.count()).select_from(query.subquery()))
-        total = total_result.scalar()
+        # 2. 收集关联的用户ID
+        t_result = await db.execute(query)
+        travelers_db = t_result.scalars().all()
+        traveler_user_ids = list({t.user_id for t in travelers_db})
         
-        query = query.offset((page - 1) * page_size).limit(page_size)
-        result = await db.execute(query)
-        travelers_db = result.scalars().all()
+        # 3. 查询这些用户的信息
+        users_map = {}
+        if traveler_user_ids:
+            u_result = await db.execute(select(User).where(User.id.in_(traveler_user_ids)))
+            users_map = {u.id: u for u in u_result.scalars().all()}
         
-        travelers = []
+        # 4. 判断 traveler 是否为本人（用户在 travelers 表中添加了自己）
+        def _is_owner_traveler(t, u) -> bool:
+            if not u:
+                return False
+            # 如果 name 和 phone 都与用户本人一致，则认为是本人记录
+            name_match = bool(t.name and u.real_name and t.name == u.real_name)
+            phone_match = bool(t.phone and u.phone and t.phone == u.phone)
+            return name_match or phone_match
+        
+        # 5. 构建 travelers 记录（同行人），排除本人记录
+        records = []
         for t in travelers_db:
-            travelers.append({
+            u = users_map.get(t.user_id)
+            # 跳过与用户本人信息匹配的记录
+            if _is_owner_traveler(t, u):
+                continue
+            birthday = t.birthday.isoformat() if t.birthday else None
+            if not birthday and t.id_card:
+                birthday = _parse_id_card_birthday(t.id_card)
+            gender = t.gender if t.gender != 0 else _parse_id_card_gender(t.id_card)
+            records.append({
                 "id": t.id,
                 "user_id": t.user_id,
                 "name": t.name,
                 "phone": t.phone,
                 "id_card": t.id_card,
-                "gender": t.gender,
-                "birthday": t.birthday.isoformat() if t.birthday else None,
+                "gender": gender,
+                "birthday": birthday,
                 "emergency_name": t.emergency_name,
                 "emergency_phone": t.emergency_phone,
                 "remark": t.remark,
                 "is_default": t.is_default,
                 "created_at": t.created_at.isoformat() if t.created_at else None,
+                "type": "同行人",
+                "owner": {
+                    "id": u.id if u else t.user_id,
+                    "nickname": u.nickname if u else None,
+                    "real_name": u.real_name if u else None,
+                    "phone": u.phone if u else None,
+                    "avatar": u.avatar if u else None,
+                } if u else None,
             })
+        
+        # 6. 统计每个用户的同行人数量（排除本人记录）
+        traveler_count_by_user = {}
+        for t in travelers_db:
+            u = users_map.get(t.user_id)
+            if _is_owner_traveler(t, u):
+                continue
+            traveler_count_by_user[t.user_id] = traveler_count_by_user.get(t.user_id, 0) + 1
+        
+        # 6. 同时加入用户本人记录（从 users 表）
+        owner_records = []
+        for uid in traveler_user_ids:
+            u = users_map.get(uid)
+            if not u:
+                continue
+            owner_records.append({
+                "id": f"u_{u.id}",  # 用前缀区分，避免和 traveler id 冲突
+                "user_id": u.id,
+                "name": u.real_name or u.nickname or '-',
+                "phone": u.phone,
+                "id_card": u.id_card,
+                "gender": u.gender,
+                "birthday": u.birthday.isoformat() if u.birthday else None,
+                "emergency_name": None,
+                "emergency_phone": None,
+                "remark": None,
+                "is_default": 0,
+                "created_at": u.created_at.isoformat() if u.created_at else None,
+                "type": "本人",
+                "traveler_count": traveler_count_by_user.get(u.id, 0),
+                "owner": {
+                    "id": u.id,
+                    "nickname": u.nickname,
+                    "real_name": u.real_name,
+                    "phone": u.phone,
+                    "avatar": u.avatar,
+                },
+            })
+        
+        # 合并：本人排前面，同行人在后
+        all_records = owner_records + records
+        
+        # 6. 如果按用户筛选，只保留该用户的记录
+        if user_id:
+            all_records = [r for r in all_records if r["user_id"] == user_id]
+        
+        # 7. 关键字搜索（同时搜本人和同行人的姓名/手机号）
+        if keyword:
+            kw = keyword.lower()
+            all_records = [
+                r for r in all_records
+                if (r.get("name") and kw in r["name"].lower())
+                or (r.get("phone") and kw in r["phone"].lower())
+            ]
+        
+        total = len(all_records)
+        
+        # 8. 分页
+        start = (page - 1) * page_size
+        end = start + page_size
+        paged_records = all_records[start:end]
         
         return {
             "code": 200,
@@ -620,7 +733,7 @@ async def admin_get_travelers(
                 "total": total,
                 "page": page,
                 "page_size": page_size,
-                "travelers": travelers
+                "travelers": paged_records
             }
         }
     except Exception as e:
@@ -631,6 +744,31 @@ async def admin_get_travelers(
 
 
 # ==================== 系统设置 API ====================
+
+@app.get("/api/v1/settings/public")
+async def get_public_settings(db: AsyncSession = Depends(get_db)):
+    """获取公开系统设置（无需登录）"""
+    try:
+        from app.models.setting import SystemSetting
+        
+        result = await db.execute(
+            select(SystemSetting).where(SystemSetting.is_public == 1)
+            .order_by(SystemSetting.key)
+        )
+        settings_db = result.scalars().all()
+        
+        settings = {}
+        for s in settings_db:
+            settings[s.key] = {
+                "value": s.value,
+                "description": s.description,
+            }
+        
+        return {"code": 200, "message": "success", "data": settings}
+    except Exception as e:
+        logger.error(f"Error getting public settings: {e}")
+        return {"code": 500, "message": f"查询失败: {str(e)}", "data": None}
+
 
 @app.get("/api/v1/admin/settings")
 async def admin_get_settings(
@@ -943,17 +1081,20 @@ async def get_member_coupons(
     user_id = current_user.get("user_id", 1)
     
     sql = """
-        SELECT id, coupon_no, name, type, value, min_amount, valid_start_time, valid_end_time, status, source_type, description
-        FROM user_coupons
-        WHERE user_id = :user_id AND source_type IN (2, 3)
+        SELECT uc.id, uc.coupon_no, uc.name, uc.type, uc.value, uc.min_amount,
+               uc.valid_start_time, uc.valid_end_time, uc.status, uc.source_type, uc.description,
+               ct.min_amount as template_min_amount
+        FROM user_coupons uc
+        LEFT JOIN coupon_templates ct ON uc.template_id = ct.id
+        WHERE uc.user_id = :user_id AND uc.source_type IN (2, 3)
     """
     params = {"user_id": user_id}
     
     if status:
-        sql += " AND status = :status"
+        sql += " AND uc.status = :status"
         params["status"] = status
     
-    sql += " ORDER BY created_at DESC"
+    sql += " ORDER BY uc.created_at DESC"
     
     result = await db.execute(text(sql), params)
     rows = result.mappings().all()
@@ -963,6 +1104,9 @@ async def get_member_coupons(
     for row in rows:
         if row["status"] == 1 and row["type"] != 4:
             total_value += float(row["value"])
+        # 使用模板最新门槛配置
+        template_min = row["template_min_amount"]
+        min_amount = float(template_min) if template_min is not None else float(row["min_amount"])
         coupons.append({
             "id": row["id"],
             "coupon_no": row["coupon_no"],
@@ -970,7 +1114,7 @@ async def get_member_coupons(
             "type": row["type"],
             "type_text": {1: "满减券", 2: "折扣券", 3: "立减券", 4: "礼品券"}.get(row["type"], "未知"),
             "value": float(row["value"]),
-            "min_amount": float(row["min_amount"]),
+            "min_amount": min_amount,
             "valid_start_time": row["valid_start_time"].isoformat() if row["valid_start_time"] else None,
             "valid_end_time": row["valid_end_time"].isoformat() if row["valid_end_time"] else None,
             "status": row["status"],
@@ -1623,6 +1767,20 @@ async def admin_update_admin(admin_id: int, data: dict, db: AsyncSession = Depen
     return success({"id": admin.id}, message="更新成功")
 
 
+@app.put("/api/v1/admin/admins/{admin_id}/reset-password")
+async def admin_reset_password(admin_id: int, db: AsyncSession = Depends(get_db)):
+    """重置管理员密码为123456"""
+    import bcrypt
+    from app.models.admin_user import AdminUser
+    result = await db.execute(select(AdminUser).where(AdminUser.id == admin_id))
+    admin = result.scalar_one_or_none()
+    if not admin:
+        return {"code": 404, "message": "管理员不存在", "data": None}
+    admin.password = bcrypt.hashpw("123456".encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+    await db.commit()
+    return success(message="密码已重置为123456")
+
+
 @app.delete("/api/v1/admin/admins/{admin_id}")
 async def admin_delete_admin(admin_id: int, db: AsyncSession = Depends(get_db)):
     """删除/禁用管理员账号"""
@@ -1694,7 +1852,7 @@ async def admin_create_role(data: dict, db: AsyncSession = Depends(get_db)):
     menu_ids = data.get("menu_ids", [])
     if menu_ids:
         for menu_id in menu_ids:
-            db.add(admin_role_menus.insert().values(role_id=role.id, menu_id=menu_id))
+            await db.execute(admin_role_menus.insert().values(role_id=role.id, menu_id=menu_id))
     await db.commit()
     return success({"id": role.id}, message="创建成功")
 
@@ -1712,8 +1870,7 @@ async def admin_update_role(role_id: int, data: dict, db: AsyncSession = Depends
         if field in data:
             setattr(role, field, data[field])
     if "menu_ids" in data:
-        from app.models.admin_role import AdminRoleMenu
-        await db.execute(AdminRoleMenu.__table__.delete().where(AdminRoleMenu.role_id == role_id))
+        await db.execute(admin_role_menus.delete().where(admin_role_menus.c.role_id == role_id))
         for menu_id in data["menu_ids"]:
             await db.execute(admin_role_menus.insert().values(role_id=role_id, menu_id=menu_id))
     await db.commit()
@@ -1833,6 +1990,55 @@ async def admin_me(current_user: dict = Depends(get_current_user), db: AsyncSess
     admin = result.scalar_one_or_none()
     if not admin:
         return {"code": 404, "message": "管理员不存在", "data": None}
+    role_name = admin.role.name if admin.role else None
+    return success({
+        "id": admin.id, "username": admin.username, "real_name": admin.real_name,
+        "phone": admin.phone, "email": admin.email, "avatar": admin.avatar,
+        "role_id": admin.role_id, "role_name": role_name, "status": admin.status,
+    })
+
+
+@app.put("/api/v1/admin/me")
+async def admin_update_me(
+    data: dict,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """更新当前管理员信息"""
+    from app.models.admin_user import AdminUser
+    import bcrypt
+    user_id = current_user.get("user_id")
+    if not user_id or user_id == 0:
+        return {"code": 404, "message": "未登录", "data": None}
+    result = await db.execute(select(AdminUser).where(AdminUser.id == user_id))
+    admin = result.scalar_one_or_none()
+    if not admin:
+        return {"code": 404, "message": "管理员不存在", "data": None}
+    
+    # 更新允许修改的字段
+    if "real_name" in data:
+        admin.real_name = data["real_name"]
+    if "phone" in data:
+        admin.phone = data["phone"]
+    if "email" in data:
+        admin.email = data["email"]
+    if "avatar" in data:
+        admin.avatar = data["avatar"]
+    
+    # 修改密码需要同时提供旧密码和新密码
+    old_password = data.get("old_password")
+    new_password = data.get("new_password")
+    if new_password:
+        if not old_password:
+            return {"code": 400, "message": "修改密码需要提供旧密码", "data": None}
+        if not bcrypt.checkpw(old_password.encode("utf-8"), admin.password.encode("utf-8")):
+            return {"code": 400, "message": "旧密码错误", "data": None}
+        if len(new_password) < 6:
+            return {"code": 400, "message": "新密码不能少于6位", "data": None}
+        admin.password = bcrypt.hashpw(new_password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+    
+    await db.commit()
+    await db.refresh(admin)
     role_name = admin.role.name if admin.role else None
     return success({
         "id": admin.id, "username": admin.username, "real_name": admin.real_name,

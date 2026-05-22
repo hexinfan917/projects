@@ -93,7 +93,7 @@ export default function Community() {
           {articles.map(article => (
             <View key={article.id} className='post-card' onClick={() => goToDetail(article.id)}>
               {article.cover_image ? (
-                <Image className='post-image' src={article.cover_image ? (article.cover_image.startsWith('http') ? article.cover_image : `https://tailtravel.westilt.com${article.cover_image}`) + '?w=400&q=75' : ''} mode='widthFix' />
+                <Image className='post-image' src={article.cover_image ? (article.cover_image.startsWith('http') ? article.cover_image : `https://tailtravel.cn${article.cover_image}`) + '?w=750&q=75' : ''} mode='widthFix' />
               ) : (
                 <View className='post-image-placeholder' />
               )}

@@ -24,7 +24,12 @@ const config = {
     options: {}
   },
   framework: 'react',
-  compiler: 'webpack5',
+  compiler: {
+    type: 'webpack5',
+    prebundle: {
+      enable: false
+    }
+  },
   cache: {
     enable: false
   },

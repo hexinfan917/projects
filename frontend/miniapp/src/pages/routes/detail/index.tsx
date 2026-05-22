@@ -5,7 +5,7 @@ import { getRouteDetail, getRouteSchedules } from '../../../utils/api'
 import './index.scss'
 
 const WEEK_DAYS = ['日', '一', '二', '三', '四', '五', '六']
-const FILE_BASE_URL = 'https://tailtravel.westilt.com'
+const FILE_BASE_URL = 'https://tailtravel.cn'
 
 /** 处理富文本中的图片：补全相对路径 + 自适应样式 */
 function processRichText(html: string): string {
@@ -91,15 +91,24 @@ export default function RouteDetail() {
     }
   }
 
+  const today = useMemo(() => {
+    const d = new Date()
+    d.setHours(0, 0, 0, 0)
+    return d
+  }, [])
+
   const scheduleMap = useMemo(() => {
     const map: Record<string, any> = {}
     schedules.forEach(s => {
       if (s.schedule_date) {
-        map[s.schedule_date] = s
+        const date = new Date(s.schedule_date + 'T00:00:00')
+        if (date >= today) {
+          map[s.schedule_date] = s
+        }
       }
     })
     return map
-  }, [schedules])
+  }, [schedules, today])
 
   const calendarDays = useMemo(() => generateCalendarDays(year, month), [year, month])
 
@@ -107,15 +116,42 @@ export default function RouteDetail() {
     return calendarDays.filter(d => d && scheduleMap[`${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`]).length
   }, [calendarDays, scheduleMap, year, month])
 
+  const hasAnySchedule = useMemo(() => Object.keys(scheduleMap).length > 0, [scheduleMap])
+
+  // 提取所有有营期的月份（YYYY-MM 格式，已排序）
+  const availableMonths = useMemo(() => {
+    const monthSet = new Set<string>()
+    Object.keys(scheduleMap).forEach(dateStr => {
+      const [y, m] = dateStr.split('-')
+      monthSet.add(`${y}-${m}`)
+    })
+    return Array.from(monthSet).sort().map(str => {
+      const [y, m] = str.split('-').map(Number)
+      return { year: y, month: m }
+    })
+  }, [scheduleMap])
+
   const handleOpenCalendar = () => {
     const token = Taro.getStorageSync('access_token')
     if (!token) {
       Taro.navigateTo({ url: '/pages/login/index' })
       return
     }
-    if (availableCount === 0) {
-      Taro.showToast({ title: '当月暂无营期', icon: 'none' })
+    if (!hasAnySchedule) {
+      Taro.showToast({ title: '当前暂无营期', icon: 'none' })
       return
+    }
+    // 如果当月没有营期，自动切换到有营期的最近月份
+    if (availableCount === 0) {
+      const currentMonthStr = `${year}-${String(month).padStart(2, '0')}`
+      const nextAvailable = availableMonths.find(m => {
+        const mStr = `${m.year}-${String(m.month).padStart(2, '0')}`
+        return mStr > currentMonthStr
+      })
+      if (nextAvailable) {
+        setYear(nextAvailable.year)
+        setMonth(nextAvailable.month)
+      }
     }
     setShowCalendar(true)
   }
@@ -149,7 +185,7 @@ export default function RouteDetail() {
         {images.length === 1 ? (
           <Image
             className='cover-image'
-            src={(images[0].startsWith('http') ? images[0] : `https://tailtravel.westilt.com${images[0]}`) + '?w=750&q=75'}
+            src={(images[0].startsWith('http') ? images[0] : `https://tailtravel.cn${images[0]}`) + '?w=750&q=75'}
             mode='aspectFill'
             lazyLoad
             onError={() => console.warn('封面图加载失败:', images[0])}
@@ -160,7 +196,7 @@ export default function RouteDetail() {
               <SwiperItem key={idx}>
                 <Image
                   className='cover-image'
-                  src={(img.startsWith('http') ? img : `https://tailtravel.westilt.com${img}`) + '?w=750&q=75'}
+                  src={(img.startsWith('http') ? img : `https://tailtravel.cn${img}`) + '?w=750&q=75'}
                   mode='aspectFill'
                   lazyLoad
                   onError={() => console.warn('轮播图加载失败:', img)}

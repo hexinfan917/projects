@@ -31,7 +31,7 @@ export default function OrderPay() {
       if (payData.mock) {
         Taro.showToast({ title: '模拟支付成功', icon: 'success' })
         setTimeout(() => {
-          Taro.redirectTo({ url: '/pages/orders/list/index' })
+          Taro.reLaunch({ url: '/pages/orders/list/index?from=pay' })
         }, 1000)
         return
       }
@@ -48,7 +48,7 @@ export default function OrderPay() {
         success: () => {
           Taro.showToast({ title: '支付成功', icon: 'success' })
           setTimeout(() => {
-            Taro.redirectTo({ url: '/pages/orders/list/index' })
+            Taro.reLaunch({ url: '/pages/orders/list/index?from=pay' })
           }, 1000)
         },
         fail: (err: any) => {
@@ -56,7 +56,7 @@ export default function OrderPay() {
           const isCancel = err.errMsg?.includes('cancel')
           Taro.showToast({ title: isCancel ? '已取消支付' : '支付失败', icon: 'none' })
           setTimeout(() => {
-            Taro.redirectTo({ url: `/pages/orders/list/index?status=${isCancel ? '10' : 'all'}` })
+            Taro.reLaunch({ url: `/pages/orders/list/index?status=${isCancel ? '10' : 'all'}` })
           }, 1000)
         }
       })

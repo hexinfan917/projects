@@ -1,6 +1,6 @@
 import { PageContainer, ProTable, ModalForm, ProFormText, ProFormDigit, ProFormSelect } from '@ant-design/pro-components';
-import { Button, Tag, Image, message, Popconfirm, Space, Upload } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import { Button, Tag, Image, message, Popconfirm, Space, Upload, Spin } from 'antd';
+import { PlusOutlined, EditOutlined, DeleteOutlined, LoadingOutlined } from '@ant-design/icons';
 import { useRef, useState } from 'react';
 import { request } from '@umijs/max';
 import dayjs from 'dayjs';
@@ -10,11 +10,51 @@ const statusMap: Record<number, { text: string; color: string }> = {
   1: { text: '启用', color: 'success' },
 };
 
+/** 压缩图片：限制最大宽度1920，质量0.85 */
+function compressImage(file: File, maxWidth: number = 1920, quality: number = 0.85): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new window.Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          reject(new Error('Canvas not supported'));
+          return;
+        }
+        ctx.drawImage(img, 0, 0, width, height);
+        canvas.toBlob(
+          (blob) => {
+            if (blob) resolve(blob);
+            else reject(new Error('Compression failed'));
+          },
+          'image/jpeg',
+          quality
+        );
+      };
+      img.onerror = reject;
+      img.src = e.target?.result as string;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
 export default function BannerManage() {
   const tableRef = useRef<any>(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [editData, setEditData] = useState<any>(null);
   const [imageUrl, setImageUrl] = useState<string>('');
+  const [uploading, setUploading] = useState(false);
   const formRef = useRef<any>(null);
 
   const openModal = (record?: any) => {
@@ -23,7 +63,7 @@ export default function BannerManage() {
     setModalVisible(true);
     setTimeout(() => {
       formRef.current?.setFieldsValue(record || { status: 1, sort_order: 0 });
-    }, 0);
+    }, 100);
   };
 
   const handleDelete = async (id: number) => {
@@ -88,23 +128,32 @@ export default function BannerManage() {
   };
 
   const handleUpload = async (file: File) => {
-    const formData = new FormData();
-    formData.append('file', file);
+    setUploading(true);
     try {
+      // 先压缩图片
+      const compressed = await compressImage(file, 1920, 0.85);
+      const compressedFile = new File([compressed], file.name.replace(/\.[^.]+$/, '.jpg'), {
+        type: 'image/jpeg',
+      });
+
+      const formData = new FormData();
+      formData.append('file', compressedFile);
       const res = await request('/api/v1/files/upload/image', {
         method: 'POST',
         data: formData,
         requestType: 'form',
+        timeout: 30000,
       });
       if (res.code === 200 && res.data?.url) {
-        const url = res.data.url;
-        setImageUrl(url);
+        setImageUrl(res.data.url);
         message.success('上传成功');
       } else {
         message.error(res.message || '上传失败');
       }
     } catch (error) {
       message.error('上传失败');
+    } finally {
+      setUploading(false);
     }
     return false;
   };
@@ -223,11 +272,14 @@ export default function BannerManage() {
         onFinish={handleSubmit}
         formRef={formRef}
         width={700}
+        initialValues={editData || { status: 1, sort_order: 0 }}
         modalProps={{
           destroyOnClose: true,
           afterClose: () => {
             setImageUrl('');
             setEditData(null);
+            setUploading(false);
+            formRef.current?.resetFields();
           },
         }}
       >
@@ -244,13 +296,16 @@ export default function BannerManage() {
           ]}
         />
         <div style={{ marginBottom: 24 }}>
-          <div style={{ marginBottom: 8, color: 'rgba(0, 0, 0, 0.88)', fontWeight: 500 }}>轮播图片 <span style={{ color: '#ff4d4f' }}>*</span></div>
-          <Upload
-            accept="image/*"
-            showUploadList={false}
-            beforeUpload={handleUpload}
-          >
-            {imageUrl ? (
+          <div style={{ marginBottom: 8, color: 'rgba(0, 0, 0, 0.88)', fontWeight: 500 }}>
+            轮播图片 <span style={{ color: '#ff4d4f' }}>*</span>
+          </div>
+          <Upload accept="image/*" showUploadList={false} beforeUpload={handleUpload} disabled={uploading}>
+            {uploading ? (
+              <div style={{ width: 300, height: 150, border: '1px dashed #d9d9d9', borderRadius: 4, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                <Spin indicator={<LoadingOutlined style={{ fontSize: 28 }} spin />} />
+                <div style={{ marginTop: 8, color: '#999' }}>上传中...</div>
+              </div>
+            ) : imageUrl ? (
               <div style={{ position: 'relative', display: 'inline-block' }}>
                 <Image src={imageUrl} width={300} height={150} style={{ objectFit: 'cover', borderRadius: 4 }} preview={false} />
                 <div style={{ marginTop: 8, color: '#1890ff', cursor: 'pointer' }}>点击更换图片</div>

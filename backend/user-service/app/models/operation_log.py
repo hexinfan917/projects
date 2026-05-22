@@ -12,7 +12,7 @@ class OperationLog(Base):
     __tablename__ = "operation_logs"
     
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    user_id: Mapped[int] = mapped_column(Integer, nullable=False, comment="操作用户ID")
+    user_id: Mapped[int] = mapped_column(Integer, nullable=True, comment="操作用户ID")
     username: Mapped[str] = mapped_column(String(50), nullable=True, comment="用户名")
     action: Mapped[str] = mapped_column(String(50), nullable=False, comment="操作类型")
     module: Mapped[str] = mapped_column(String(50), nullable=False, comment="操作模块")

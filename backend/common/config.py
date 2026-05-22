@@ -62,6 +62,7 @@ class Settings(BaseSettings):
     app_name: str = "petway-service"
     app_port: int = 8000
     debug: bool = False
+    app_env: str = os.getenv("APP_ENV", "development")  # development / production
     
     # 子配置
     database: DatabaseConfig = DatabaseConfig()

@@ -4,11 +4,28 @@ import { View, Text, Input, Button, Image } from '@tarojs/components'
 import { getUserProfile, updateUserProfile, uploadFile, compressImageUrl } from '../../../utils/api'
 import './index.scss'
 
-const BASE_URL = 'https://tailtravel.westilt.com'
+const BASE_URL = 'https://tailtravel.cn'
 
 function fullImageUrl(url?: string) {
   if (!url) return ''
   return compressImageUrl(url, 200)
+}
+
+const isValidPhone = (phone: string): boolean => /^1[3-9]\d{9}$/.test(phone)
+
+const isValidIdCard = (idCard: string): boolean => {
+  if (!idCard || idCard.length !== 18) return false
+  if (!/^\d{17}[\dXx]$/.test(idCard)) return false
+  const weights = [7, 9, 10, 5, 8, 4, 2, 1, 6, 3, 7, 9, 10, 5, 8, 4, 2]
+  const checkCodes = ['1', '0', 'X', '9', '8', '7', '6', '5', '4', '3', '2']
+  let sum = 0
+  for (let i = 0; i < 17; i++) sum += parseInt(idCard[i], 10) * weights[i]
+  return checkCodes[sum % 11] === idCard[17].toUpperCase()
+}
+
+const isValidName = (name: string): boolean => {
+  if (!name || name.length < 2 || name.length > 20) return false
+  return /^[\u4e00-\u9fa5a-zA-Z·•]+$/.test(name)
 }
 
 const GENDER_OPTIONS = [
@@ -17,7 +34,7 @@ const GENDER_OPTIONS = [
 ]
 
 export default function ProfileEdit() {
-  const [user, setUser] = useState<any>({ nickname: '', phone: '', city: '', gender: 1, avatar: '' })
+  const [user, setUser] = useState<any>({ nickname: '', phone: '', city: '', gender: 1, avatar: '', real_name: '', id_card: '' })
 
   useEffect(() => {
     loadUser()
@@ -54,6 +71,30 @@ export default function ProfileEdit() {
   }
 
   const handleSave = async () => {
+    if (!user.real_name?.trim()) {
+      Taro.showToast({ title: '请输入真实姓名', icon: 'none' })
+      return
+    }
+    if (!isValidName(user.real_name.trim())) {
+      Taro.showToast({ title: '姓名仅限2-20位中文/英文/·', icon: 'none' })
+      return
+    }
+    if (!user.phone?.trim()) {
+      Taro.showToast({ title: '请输入手机号', icon: 'none' })
+      return
+    }
+    if (!isValidPhone(user.phone.trim())) {
+      Taro.showToast({ title: '手机号格式不正确', icon: 'none' })
+      return
+    }
+    if (!user.id_card?.trim()) {
+      Taro.showToast({ title: '请输入身份证号', icon: 'none' })
+      return
+    }
+    if (!isValidIdCard(user.id_card.trim())) {
+      Taro.showToast({ title: '身份证号格式不正确', icon: 'none' })
+      return
+    }
     try {
       const res: any = await updateUserProfile({
         nickname: user.nickname,
@@ -61,6 +102,8 @@ export default function ProfileEdit() {
         city: user.city,
         gender: Number(user.gender) || 1,
         avatar: user.avatar,
+        real_name: user.real_name,
+        id_card: user.id_card,
       })
       if (res.code === 200) {
         Taro.setStorageSync('user_info', res.data)
@@ -122,6 +165,14 @@ export default function ProfileEdit() {
         <View className='input-row'>
           <Text className='label'>所在城市</Text>
           <Input className='input' placeholder='请输入城市' value={user.city || ''} onInput={(e) => setUser({ ...user, city: e.detail.value })} />
+        </View>
+        <View className='input-row'>
+          <Text className='label'>真实姓名</Text>
+          <Input className='input' placeholder='请输入真实姓名' value={user.real_name || ''} onInput={(e) => setUser({ ...user, real_name: e.detail.value })} />
+        </View>
+        <View className='input-row'>
+          <Text className='label'>身份证号</Text>
+          <Input className='input' placeholder='请输入身份证号' value={user.id_card || ''} onInput={(e) => setUser({ ...user, id_card: e.detail.value })} />
         </View>
       </View>
       <Button className='save-btn' onClick={handleSave}>确认提交</Button>

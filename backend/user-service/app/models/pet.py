@@ -19,6 +19,7 @@ class PetProfile(Base):
     breed: Mapped[Optional[str]] = mapped_column(String(50), nullable=True, comment="品种")
     breed_type: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, comment="体型: 1小型 2中型 3大型 4巨型")
     birth_date: Mapped[Optional[datetime]] = mapped_column(Date, nullable=True, comment="出生日期")
+    age_str: Mapped[Optional[str]] = mapped_column(String(20), nullable=True, comment="年龄文本（支持小数和描述，如1.5、1岁半）")
     gender: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, comment="0母 1公")
     weight: Mapped[Optional[float]] = mapped_column(Integer, nullable=True, comment="体重kg")
     avatar: Mapped[Optional[str]] = mapped_column(String(500), nullable=True, comment="头像URL")

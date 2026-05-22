@@ -1,8 +1,8 @@
 import { PageContainer } from '@ant-design/pro-components';
-import { Card, Form, Input, Button, message, Tabs, Switch, Space, Divider } from 'antd';
+import { Card, Form, Input, Button, message, Tabs, Space, Divider, Upload, Image } from 'antd';
 import { useState, useEffect } from 'react';
 import { request } from '@umijs/max';
-import { SaveOutlined, ReloadOutlined, LogoutOutlined } from '@ant-design/icons';
+import { SaveOutlined, ReloadOutlined, LogoutOutlined, UploadOutlined } from '@ant-design/icons';
 import { history } from '@umijs/max';
 
 const { TabPane } = Tabs;
@@ -11,6 +11,7 @@ export default function Settings() {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [logoUrl, setLogoUrl] = useState('');
 
   // 获取设置
   const fetchSettings = async () => {
@@ -18,12 +19,12 @@ export default function Settings() {
       setLoading(true);
       const res = await request('/api/v1/admin/settings');
       if (res.code === 200 && res.data) {
-        // 将设置数据转换为表单值
         const formValues: any = {};
         Object.keys(res.data).forEach((key) => {
           formValues[key] = res.data[key].value;
         });
         form.setFieldsValue(formValues);
+        setLogoUrl(formValues.site_logo || '');
       }
     } catch (error) {
       message.error('获取设置失败');
@@ -56,6 +57,29 @@ export default function Settings() {
     }
   };
 
+  const handleUpload = async (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    try {
+      const res = await request('/api/v1/files/upload/image', {
+        method: 'POST',
+        data: formData,
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      if (res.code === 200 && res.data?.url) {
+        const url = res.data.url;
+        form.setFieldsValue({ site_logo: url });
+        setLogoUrl(url);
+        message.success('上传成功');
+      } else {
+        message.error(res.message || '上传失败');
+      }
+    } catch (error) {
+      message.error('上传失败');
+    }
+    return false; // 阻止默认上传行为
+  };
+
   return (
     <PageContainer title="系统设置">
       <Card loading={loading}>
@@ -63,10 +87,6 @@ export default function Settings() {
           form={form}
           layout="vertical"
           onFinish={handleSave}
-          initialValues={{
-            site_name: '尾巴旅行',
-            site_description: '带宠出行，探索世界',
-          }}
         >
           <Tabs defaultActiveKey="basic">
             <TabPane tab="基础设置" key="basic">
@@ -79,8 +99,28 @@ export default function Settings() {
               </Form.Item>
 
               <Form.Item name="site_logo" label="网站Logo">
-                <Input placeholder="Logo URL" />
+                <Input placeholder="Logo URL" style={{ marginBottom: 8 }} />
               </Form.Item>
+
+              <div style={{ marginBottom: 16 }}>
+                <Upload
+                  beforeUpload={handleUpload}
+                  showUploadList={false}
+                  accept="image/*"
+                >
+                  <Button icon={<UploadOutlined />}>上传Logo</Button>
+                </Upload>
+                {logoUrl && (
+                  <div style={{ marginTop: 8 }}>
+                    <Image
+                      src={logoUrl}
+                      alt="Logo预览"
+                      style={{ maxHeight: 80, maxWidth: 200 }}
+                      preview={false}
+                    />
+                  </div>
+                )}
+              </div>
 
               <Form.Item name="site_description" label="网站描述">
                 <Input.TextArea rows={3} placeholder="请输入网站描述" />
