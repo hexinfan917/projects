@@ -22,6 +22,7 @@ services:
     image: redis:7-alpine
     container_name: petway-redis
     environment:
+      - APP_ENV=production
       - TZ=Asia/Shanghai
     volumes:
       - redis_data:/data
@@ -47,6 +48,7 @@ services:
       - JWT_SECRET=${JWT_SECRET}
       - WECHAT_APPID=${WECHAT_APPID}
       - WECHAT_APPSECRET=${WECHAT_APPSECRET}
+      - APP_ENV=production
       - TZ=Asia/Shanghai
     volumes:
       - /etc/localtime:/etc/localtime:ro
@@ -69,6 +71,7 @@ services:
       - REDIS_PASSWORD=${REDIS_PASSWORD}
       - JWT_SECRET=${JWT_SECRET}
       - FILE_SERVICE_URL=http://petway-file-service:8000
+      - APP_ENV=production
       - TZ=Asia/Shanghai
     volumes:
       - /etc/localtime:/etc/localtime:ro
@@ -91,6 +94,7 @@ services:
       - REDIS_PASSWORD=${REDIS_PASSWORD}
       - JWT_SECRET=${JWT_SECRET}
       - PAY_SERVICE_URL=http://petway-pay-service:8000
+      - APP_ENV=production
       - TZ=Asia/Shanghai
     volumes:
       - /etc/localtime:/etc/localtime:ro
@@ -112,6 +116,7 @@ services:
       - REDIS_HOST=redis
       - REDIS_PASSWORD=${REDIS_PASSWORD}
       - JWT_SECRET=${JWT_SECRET}
+      - APP_ENV=production
       - TZ=Asia/Shanghai
     volumes:
       - /etc/localtime:/etc/localtime:ro
@@ -170,6 +175,7 @@ services:
       - REDIS_PASSWORD=${REDIS_PASSWORD}
       - JWT_SECRET=${JWT_SECRET}
       - UPLOAD_DIR=/app/uploads
+      - APP_ENV=production
       - TZ=Asia/Shanghai
     volumes:
       - /opt/petway/backend/file-service/uploads:/app/uploads
@@ -201,6 +207,7 @@ services:
       - WECHAT_CERT_PATH=/app/certs/apiclient_cert.pem
       - WECHAT_KEY_PATH=/app/certs/apiclient_key.pem
       - WECHAT_CERT_SERIAL_NO=578981595A43F2E58B46B5C4416E53937C7C5659
+      - APP_ENV=production
       - TZ=Asia/Shanghai
     volumes:
       - /opt/petway/certs:/app/certs
@@ -242,6 +249,7 @@ services:
       - REDIS_HOST=redis
       - REDIS_PASSWORD=${REDIS_PASSWORD}
       - JWT_SECRET=${JWT_SECRET}
+      - APP_ENV=production
       - TZ=Asia/Shanghai
     volumes:
       - /etc/localtime:/etc/localtime:ro

@@ -567,6 +567,7 @@ async def admin_delete_pet(
 async def admin_get_travelers(
     user_id: Optional[int] = None,
     keyword: Optional[str] = None,
+    traveler_type: Optional[str] = None,
     page: int = 1,
     page_size: int = 10,
     db: AsyncSession = Depends(get_db)
@@ -631,6 +632,14 @@ async def admin_get_travelers(
             phone_match = bool(t.phone and u.phone and t.phone == u.phone)
             return name_match or phone_match
         
+        # 6. 统计每个用户的同行人数量（排除本人记录）
+        traveler_count_by_user = {}
+        for t in travelers_db:
+            u = users_map.get(t.user_id)
+            if _is_owner_traveler(t, u):
+                continue
+            traveler_count_by_user[t.user_id] = traveler_count_by_user.get(t.user_id, 0) + 1
+        
         # 5. 构建 travelers 记录（同行人），排除本人记录
         records = []
         for t in travelers_db:
@@ -656,6 +665,7 @@ async def admin_get_travelers(
                 "is_default": t.is_default,
                 "created_at": t.created_at.isoformat() if t.created_at else None,
                 "type": "同行人",
+                "traveler_count": traveler_count_by_user.get(t.user_id, 0),
                 "owner": {
                     "id": u.id if u else t.user_id,
                     "nickname": u.nickname if u else None,
@@ -706,6 +716,21 @@ async def admin_get_travelers(
         # 合并：本人排前面，同行人在后
         all_records = owner_records + records
         
+        # 按用户分组排序：同一用户的记录排在一起，本人优先，同行人在后
+        # 用户组之间按该用户最新记录时间倒序排列
+        user_latest_time = {}
+        for r in all_records:
+            uid = r.get("user_id", 0)
+            cat = r.get("created_at") or "1970-01-01T00:00:00"
+            if uid not in user_latest_time or cat > user_latest_time[uid]:
+                user_latest_time[uid] = cat
+        
+        all_records.sort(key=lambda r: (
+            user_latest_time.get(r.get("user_id", 0), "1970-01-01T00:00:00"),
+            0 if r.get("type") == "本人" else 1,
+            r.get("created_at") or "1970-01-01T00:00:00"
+        ), reverse=True)
+        
         # 6. 如果按用户筛选，只保留该用户的记录
         if user_id:
             all_records = [r for r in all_records if r["user_id"] == user_id]
@@ -718,6 +743,10 @@ async def admin_get_travelers(
                 if (r.get("name") and kw in r["name"].lower())
                 or (r.get("phone") and kw in r["phone"].lower())
             ]
+        
+        # 8. 按类型筛选
+        if traveler_type:
+            all_records = [r for r in all_records if r.get("type") == traveler_type]
         
         total = len(all_records)
         

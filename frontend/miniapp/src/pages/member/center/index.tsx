@@ -4,7 +4,7 @@ import { View, Text , Image } from '@tarojs/components'
 import { getMemberCenter, getMemberCoupons, createMemberOrder, payMemberOrder } from '../../../utils/api'
 import './index.scss'
 
-const TYPE_MAP: Record<number, string> = { 1: '满减券', 2: '折扣券', 3: '立减券' }
+const TYPE_MAP: Record<number, string> = { 1: '满减券', 2: '折扣券', 3: '立减券', 4: '礼品券' }
 
 export default function MemberCenter() {
   const [data, setData] = useState<any>(null)
@@ -109,18 +109,40 @@ export default function MemberCenter() {
             ) : (
               <View className='coupon-list'>
                 {coupons.slice(0, 5).map((item: any) => (
-                  <View key={item.id} className='coupon-card'>
+                  <View
+                    key={item.id}
+                    className='coupon-card'
+                    onClick={() => {
+                      if (item.type === 4) {
+                        Taro.navigateTo({
+                          url: `/pages/coupons/detail/index?data=${encodeURIComponent(JSON.stringify(item))}`
+                        })
+                      }
+                    }}
+                  >
                     <View className='coupon-left'>
-                      <Text className='coupon-value'>¥{item.value}</Text>
+                      <Text className='coupon-value'>
+                        {item.type === 4 ? '礼品' : (item.type === 2 ? `${item.value}折` : `¥${item.value}`)}
+                      </Text>
                       <Text className='coupon-type'>{TYPE_MAP[item.type] || '优惠券'}</Text>
                     </View>
                     <View className='coupon-right'>
                       <Text className='coupon-name'>{item.name}</Text>
                       <Text className='coupon-desc'>
-                        {item.min_amount > 0 ? `满${item.min_amount}元可用` : '无门槛'}
+                        {item.type === 4
+                          ? (item.description || '点击查看详情')
+                          : (item.min_amount > 0 ? `满${item.min_amount}元可用` : '无门槛')
+                        }
                       </Text>
                       <Text className='coupon-valid'>有效期至 {item.valid_end_time ? item.valid_end_time.split('T')[0] : '-'}</Text>
-                      <Text className='coupon-tag'>不可退</Text>
+                      {item.type === 4 && (
+                        <View className='use-btn'>
+                          <Text className='use-btn-text'>去使用</Text>
+                        </View>
+                      )}
+                      {item.type !== 4 && (
+                        <Text className='coupon-tag'>不可退</Text>
+                      )}
                     </View>
                   </View>
                 ))}

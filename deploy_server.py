@@ -164,7 +164,8 @@ echo "DOCKER_INSTALL_DONE" > /tmp/docker_install.status
 
     # Step 4: Create .env
     print("\n=== Step 4: Configure Environment ===")
-    env_content = """DB_ROOT_PASSWORD=Petway123
+    env_content = """APP_ENV=production
+DB_ROOT_PASSWORD=Petway123
 DB_USER=petway
 DB_PASSWORD=Petway123
 REDIS_PASSWORD=Petway123

@@ -297,8 +297,8 @@ async def create_payment(
     # 生成支付订单号
     pay_order_no = generate_out_trade_no()
     
-    # 金额转换为分
-    amount_fen = int(float(amount) * 100)
+    # 金额转换为分（使用 round 避免浮点误差）
+    amount_fen = round(float(amount) * 100)
     
     config = WECHAT_PAY_CONFIG
     
@@ -407,8 +407,8 @@ async def pay_notify(request: Request, background_tasks: BackgroundTasks):
     
     config = WECHAT_PAY_CONFIG
     
-    # 验证签名（真实环境）
-    if config["apikey"] and not data.get("mock"):
+    # 验证签名（生产环境必须验证）
+    if config["apikey"]:
         if not await verify_wechat_notify(data.copy(), config["apikey"]):
             logger.error("Invalid notify sign")
             return PlainTextResponse("<xml><return_code><![CDATA[FAIL]]></return_code><return_msg><![CDATA[Invalid sign]]></return_msg></xml>", status_code=200)
@@ -541,11 +541,14 @@ async def create_refund(
     config = WECHAT_PAY_CONFIG
     
     # 检查是否配置了微信支付
-    if config["mchid"] and WECHAT_KEY_PATH and os.path.exists(WECHAT_KEY_PATH):
+    if config["mchid"]:
+        if not WECHAT_KEY_PATH or not os.path.exists(WECHAT_KEY_PATH):
+            logger.error(f"WeChat refund certificate missing: {WECHAT_KEY_PATH}")
+            return {"code": 500, "message": "微信退款证书缺失，无法发起退款", "data": None}
         # 使用微信支付 V3 API 退款（只需要私钥+序列号，不需要证书文件）
         try:
-            refund_amount_fen = int(float(refund_amount) * 100)
-            total_fee_fen = int(float(total_amount) * 100)
+            refund_amount_fen = round(float(refund_amount) * 100)
+            total_fee_fen = round(float(total_amount) * 100)
             
             url_path = "/v3/refund/domestic/refunds"
             url = f"https://api.mch.weixin.qq.com{url_path}"
@@ -591,8 +594,17 @@ async def create_refund(
             
             if response.status_code == 200:
                 wx_result = response.json()
-                refund_status = "success"
-                logger.info(f"WeChat V3 refund success: {refund_no} for order {order_no}, result={wx_result}")
+                # V3 退款是异步的，需要检查 status
+                if wx_result.get("status") == "SUCCESS":
+                    refund_status = "success"
+                    logger.info(f"WeChat V3 refund success: {refund_no} for order {order_no}")
+                elif wx_result.get("status") == "PROCESSING":
+                    refund_status = "processing"
+                    logger.info(f"WeChat V3 refund processing: {refund_no} for order {order_no}")
+                else:
+                    err_msg = wx_result.get("status", "未知状态")
+                    logger.error(f"WeChat V3 refund abnormal status: {err_msg}")
+                    return {"code": 500, "message": f"微信退款异常状态: {err_msg}", "data": None}
             else:
                 try:
                     wx_error = response.json()

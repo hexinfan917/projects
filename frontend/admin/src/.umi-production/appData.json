@@ -41,7 +41,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 2
+        "register": 1
       },
       "enableBy": "register"
     },
@@ -54,7 +54,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 65
+        "register": 19
       },
       "enableBy": "register"
     },
@@ -67,7 +67,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 15
+        "register": 9
       },
       "enableBy": "register"
     },
@@ -84,7 +84,7 @@
             0
           ]
         },
-        "register": 8
+        "register": 6
       },
       "enableBy": "register"
     },
@@ -118,7 +118,7 @@
             0
           ]
         },
-        "register": 1
+        "register": 2
       },
       "enableBy": "register"
     },
@@ -145,10 +145,10 @@
       "time": {
         "hooks": {
           "modifyAppData": [
-            233
+            195
           ]
         },
-        "register": 45
+        "register": 41
       },
       "enableBy": "register"
     },
@@ -195,10 +195,10 @@
       "time": {
         "hooks": {
           "onCheck": [
-            1
+            0
           ]
         },
-        "register": 1
+        "register": 2
       },
       "enableBy": "register"
     },
@@ -228,7 +228,7 @@
             0
           ]
         },
-        "register": 25
+        "register": 17
       },
       "enableBy": "register"
     },
@@ -1094,10 +1094,10 @@
       "time": {
         "hooks": {
           "onStart": [
-            1
+            0
           ]
         },
-        "register": 2
+        "register": 1
       },
       "enableBy": "register"
     },
@@ -1123,7 +1123,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 109
+        "register": 119
       },
       "enableBy": "register"
     },
@@ -1136,7 +1136,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 102
+        "register": 92
       },
       "enableBy": "config"
     },
@@ -1149,7 +1149,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 29
+        "register": 25
       },
       "enableBy": "config"
     },
@@ -1166,7 +1166,7 @@
             0
           ]
         },
-        "register": 1
+        "register": 2
       },
       "enableBy": "register"
     },
@@ -1179,7 +1179,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 1
+        "register": 2
       },
       "enableBy": "register"
     },
@@ -1192,7 +1192,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 4
+        "register": 7
       },
       "enableBy": "config"
     },
@@ -1205,7 +1205,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 62
+        "register": 55
       }
     },
     "./node_modules/@umijs/preset-umi/dist/features/mpa/mpa": {
@@ -1272,7 +1272,7 @@
             2
           ]
         },
-        "register": 5
+        "register": 4
       }
     },
     "./node_modules/@umijs/preset-umi/dist/features/polyfill/publicPathPolyfill": {
@@ -1284,7 +1284,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 2
+        "register": 1
       },
       "enableBy": "register"
     },
@@ -1297,7 +1297,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 5
+        "register": 4
       },
       "enableBy": "register"
     },
@@ -1310,7 +1310,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 2
+        "register": 1
       },
       "enableBy": "config"
     },
@@ -1349,7 +1349,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 12
+        "register": 10
       },
       "enableBy": "register"
     },
@@ -1375,7 +1375,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 2
+        "register": 1
       }
     },
     "./node_modules/@umijs/preset-umi/dist/features/ssr/ssr": {
@@ -1387,7 +1387,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 8
+        "register": 6
       },
       "enableBy": "config"
     },
@@ -1413,7 +1413,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 7
+        "register": 8
       },
       "enableBy": "register"
     },
@@ -1439,7 +1439,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 2
+        "register": 1
       },
       "enableBy": "config"
     },
@@ -1452,7 +1452,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 25
+        "register": 18
       }
     },
     "./node_modules/@umijs/preset-umi/dist/features/monorepo/redirect": {
@@ -1464,7 +1464,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 38
+        "register": 33
       },
       "enableBy": "config"
     },
@@ -1489,7 +1489,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 2
+        "register": 1
       }
     },
     "./node_modules/@umijs/preset-umi/dist/features/legacy/legacy": {
@@ -1514,7 +1514,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 1
+        "register": 2
       },
       "enableBy": "config"
     },
@@ -1527,7 +1527,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 3
+        "register": 6
       }
     },
     "./node_modules/@umijs/preset-umi/dist/features/swc/swc": {
@@ -1556,7 +1556,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 7
+        "register": 6
       }
     },
     "./node_modules/@umijs/preset-umi/dist/features/mako/mako": {
@@ -1581,7 +1581,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 2
+        "register": 1
       }
     },
     "./node_modules/@umijs/preset-umi/dist/features/hmrGuardian/hmrGuardian": {
@@ -1593,7 +1593,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 6
+        "register": 5
       }
     },
     "./node_modules/@umijs/preset-umi/dist/features/routePreloadOnLoad/routePreloadOnLoad": {
@@ -1605,7 +1605,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 46
+        "register": 41
       }
     },
     "./node_modules/@umijs/preset-umi/dist/features/forget/forget": {
@@ -1630,7 +1630,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 4
+        "register": 2
       },
       "enableBy": "register"
     },
@@ -1643,7 +1643,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 19
+        "register": 18
       },
       "enableBy": "register"
     },
@@ -1656,7 +1656,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 69
+        "register": 60
       },
       "enableBy": "register"
     },
@@ -1669,7 +1669,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 110
+        "register": 86
       }
     },
     "./node_modules/@umijs/preset-umi/dist/commands/help": {
@@ -1681,7 +1681,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 1
+        "register": 2
       },
       "enableBy": "register"
     },
@@ -1720,7 +1720,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 1
+        "register": 2
       },
       "enableBy": "register"
     },
@@ -1733,7 +1733,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 2
+        "register": 1
       },
       "enableBy": "register"
     },
@@ -1759,7 +1759,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 1
+        "register": 2
       },
       "enableBy": "register"
     },
@@ -1772,7 +1772,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 2
+        "register": 6
       },
       "enableBy": "register"
     },
@@ -1837,7 +1837,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 7
+        "register": 1
       },
       "enableBy": "register"
     },
@@ -1876,7 +1876,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 2
+        "register": 1
       },
       "enableBy": "register"
     },
@@ -1902,7 +1902,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 3
+        "register": 2
       },
       "enableBy": "register"
     },
@@ -1915,7 +1915,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 35
+        "register": 30
       },
       "enableBy": "register"
     },
@@ -1928,7 +1928,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 3
+        "register": 2
       },
       "enableBy": "register"
     },
@@ -1941,7 +1941,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 5
+        "register": 6
       },
       "enableBy": "register"
     },
@@ -1954,7 +1954,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 5
+        "register": 3
       },
       "enableBy": "config"
     },
@@ -1982,7 +1982,7 @@
       "time": {
         "hooks": {
           "modifyConfig": [
-            7
+            8
           ],
           "modifyAppData": [
             0
@@ -1991,7 +1991,7 @@
             0
           ]
         },
-        "register": 18
+        "register": 13
       }
     },
     "./node_modules/@umijs/plugins/dist/dva": {
@@ -2003,7 +2003,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 15
+        "register": 12
       },
       "enableBy": "config"
     },
@@ -2041,7 +2041,7 @@
             1
           ]
         },
-        "register": 12
+        "register": 6
       },
       "enableBy": "config"
     },
@@ -2054,7 +2054,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 7
+        "register": 6
       },
       "enableBy": "config"
     },
@@ -2093,7 +2093,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 1
+        "register": 2
       },
       "enableBy": "config"
     },
@@ -2131,7 +2131,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 4
+        "register": 3
       }
     },
     "./node_modules/@umijs/plugins/dist/react-query": {
@@ -2143,7 +2143,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 3
+        "register": 2
       },
       "enableBy": "config"
     },
@@ -2156,7 +2156,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 1
+        "register": 2
       },
       "enableBy": "config"
     },
@@ -2169,7 +2169,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 3
+        "register": 2
       },
       "enableBy": "config"
     },
@@ -2182,7 +2182,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 1
+        "register": 2
       },
       "enableBy": "config"
     },
@@ -2195,7 +2195,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 3
+        "register": 2
       },
       "enableBy": "config"
     },
@@ -3737,7 +3737,7 @@
       "parentId": "ant-design-pro-layout",
       "id": "13",
       "absPath": "/travelers",
-      "__content": "import {\n  PageContainer,\n  ProTable,\n  ModalForm,\n  ProFormText,\n  ProFormSelect,\n  ProFormDatePicker,\n} from '@ant-design/pro-components';\nimport { Button, Tag, Avatar, message, Popconfirm, Space } from 'antd';\nimport { EditOutlined, DeleteOutlined } from '@ant-design/icons';\nimport { useRef, useState } from 'react';\nimport { request } from '@umijs/max';\nimport dayjs from 'dayjs';\n\nconst genderMap: Record<number, string> = {\n  0: '未知',\n  1: '男',\n  2: '女',\n};\n\nexport default function TravelerManage() {\n  const tableRef = useRef<any>(null);\n  const [editVisible, setEditVisible] = useState(false);\n  const [editData, setEditData] = useState<any>(null);\n  const [filterUserId, setFilterUserId] = useState<number | undefined>(undefined);\n\n  const handleEdit = (record: any) => {\n    setEditData(record);\n    setEditVisible(true);\n  };\n\n  const handleUpdate = async (values: any) => {\n    try {\n      const res = await request(`/api/v1/admin/travelers/${editData.id}`, {\n        method: 'PUT',\n        data: values,\n      });\n      if (res.code === 200) {\n        message.success('更新成功');\n        setEditVisible(false);\n        tableRef.current?.reload();\n        return true;\n      }\n      message.error(res.message || '更新失败');\n      return false;\n    } catch (error) {\n      message.error('更新失败');\n      return false;\n    }\n  };\n\n  const handleDelete = async (id: number) => {\n    try {\n      const res = await request(`/api/v1/admin/travelers/${id}`, { method: 'DELETE' });\n      if (res.code === 200) {\n        message.success('删除成功');\n        tableRef.current?.reload();\n      } else {\n        message.error(res.message || '删除失败');\n      }\n    } catch (error) {\n      message.error('删除失败');\n    }\n  };\n\n  const columns = [\n    {\n      title: 'ID',\n      dataIndex: 'id',\n      width: 80,\n      search: false,\n      render: (id: string | number) => {\n        const str = String(id);\n        return str.startsWith('u_') ? str.replace('u_', '') : str;\n      },\n    },\n    {\n      title: '类型',\n      dataIndex: 'type',\n      width: 90,\n      valueEnum: {\n        '本人': { text: '本人' },\n        '同行人': { text: '同行人' },\n      },\n      render: (_: any, record: any) =>\n        record.type === '本人' ? (\n          <Tag color=\"orange\">本人</Tag>\n        ) : (\n          <Tag color=\"blue\">同行人</Tag>\n        ),\n    },\n    {\n      title: '姓名',\n      dataIndex: 'name',\n      width: 100,\n    },\n    {\n      title: '手机号',\n      dataIndex: 'phone',\n      width: 120,\n    },\n    {\n      title: '身份证',\n      dataIndex: 'id_card',\n      width: 180,\n      search: false,\n      render: (idCard: string) => (idCard ? `${idCard.slice(0, 6)}****${idCard.slice(-4)}` : '-'),\n    },\n    {\n      title: '性别',\n      dataIndex: 'gender',\n      width: 80,\n      valueEnum: {\n        0: { text: '未知' },\n        1: { text: '男' },\n        2: { text: '女' },\n      },\n      render: (_: any, record: any) => genderMap[record.gender] || '-',\n    },\n    {\n      title: '生日',\n      dataIndex: 'birthday',\n      width: 120,\n      search: false,\n      render: (date: string) => {\n        if (!date || date === 'Invalid Date') return '-';\n        const d = dayjs(date);\n        return d.isValid() ? d.format('YYYY-MM-DD') : '-';\n      },\n    },\n    {\n      title: '紧急联系人',\n      width: 200,\n      search: false,\n      render: (record: any) =>\n        record.emergency_name ? (\n          <span>\n            {record.emergency_name} ({record.emergency_phone})\n          </span>\n        ) : (\n          <span style={{ color: '#999' }}>-</span>\n        ),\n    },\n    {\n      title: '默认',\n      dataIndex: 'is_default',\n      width: 80,\n      search: false,\n      render: (isDefault: number) =>\n        isDefault === 1 ? <Tag color=\"blue\">默认</Tag> : '-',\n    },\n    {\n      title: '同行人数量',\n      dataIndex: 'traveler_count',\n      width: 100,\n      search: false,\n      render: (count: number, record: any) =>\n        record.type === '本人' ? (\n          <Tag color=\"blue\">{count || 0} 人</Tag>\n        ) : (\n          '-'\n        ),\n    },\n    {\n      title: '所属用户',\n      width: 180,\n      search: false,\n      render: (record: any) => {\n        const owner = record.owner;\n        if (!owner) return '-';\n        const isFiltered = filterUserId === owner.id;\n        return (\n          <Space>\n            <Avatar src={owner.avatar} size=\"small\">\n              {(owner.nickname || owner.real_name || 'U').charAt(0)}\n            </Avatar>\n            <Button\n              type=\"link\"\n              size=\"small\"\n              style={{ padding: 0, color: isFiltered ? '#ff4d4f' : '#1890ff' }}\n              onClick={() => {\n                if (isFiltered) {\n                  setFilterUserId(undefined);\n                } else {\n                  setFilterUserId(owner.id);\n                }\n                tableRef.current?.reload();\n              }}\n            >\n              {isFiltered ? '取消筛选' : `${owner.real_name || owner.nickname || '用户'}(${owner.phone || '-'})`}\n            </Button>\n          </Space>\n        );\n      },\n    },\n    {\n      title: '创建时间',\n      dataIndex: 'created_at',\n      width: 180,\n      search: false,\n      render: (date: string) => (date ? dayjs(date).format('YYYY-MM-DD HH:mm') : '-'),\n    },\n    {\n      title: '操作',\n      width: 120,\n      fixed: 'right',\n      search: false,\n      render: (_: any, record: any) => (\n        <Space>\n          {record.type === '同行人' && (\n            <>\n              <Button type=\"link\" size=\"small\" icon={<EditOutlined />} onClick={() => handleEdit(record)}>\n                编辑\n              </Button>\n              <Popconfirm title=\"确定删除该出行人吗？\" onConfirm={() => handleDelete(record.id)}>\n                <Button type=\"link\" size=\"small\" danger icon={<DeleteOutlined />}>\n                  删除\n                </Button>\n              </Popconfirm>\n            </>\n          )}\n        </Space>\n      ),\n    },\n  ];\n\n  return (\n    <PageContainer\n      title=\"出行人管理\"\n      subTitle={\n        filterUserId ? (\n          <Tag color=\"red\" closable onClose={() => { setFilterUserId(undefined); tableRef.current?.reload(); }}>\n            已筛选用户ID: {filterUserId}\n          </Tag>\n        ) : undefined\n      }\n    >\n      <ProTable\n        columns={columns}\n        actionRef={tableRef}\n        request={async (params) => {\n          const res = await request('/api/v1/admin/travelers', {\n            params: {\n              page: params.current,\n              page_size: params.pageSize,\n              user_id: filterUserId,\n              keyword: params.name || params.phone,\n            },\n          });\n          return {\n            data: res.data?.travelers || [],\n            success: res.code === 200,\n            total: res.data?.total || 0,\n          };\n        }}\n        rowKey=\"id\"\n        search={{ labelWidth: 'auto' }}\n        pagination={{ pageSize: 10, showSizeChanger: true }}\n        scroll={{ x: 1400 }}\n        toolbar={{\n          actions: filterUserId\n            ? [\n                <Button key=\"clear\" onClick={() => { setFilterUserId(undefined); tableRef.current?.reload(); }}>\n                  清除筛选\n                </Button>,\n              ]\n            : [],\n        }}\n      />\n      <ModalForm\n        title=\"编辑出行人\"\n        open={editVisible}\n        onOpenChange={setEditVisible}\n        initialValues={editData}\n        onFinish={handleUpdate}\n        modalProps={{ destroyOnClose: true }}\n      >\n        <ProFormText name=\"name\" label=\"姓名\" rules={[{ required: true }]} />\n        <ProFormText name=\"phone\" label=\"手机号\" rules={[{ required: true }]} />\n        <ProFormText name=\"id_card\" label=\"身份证\" />\n        <ProFormSelect\n          name=\"gender\"\n          label=\"性别\"\n          options={[\n            { label: '未知', value: 0 },\n            { label: '男', value: 1 },\n            { label: '女', value: 2 },\n          ]}\n        />\n        <ProFormDatePicker name=\"birthday\" label=\"生日\" />\n        <ProFormText name=\"emergency_name\" label=\"紧急联系人姓名\" />\n        <ProFormText name=\"emergency_phone\" label=\"紧急联系人电话\" />\n      </ModalForm>\n    </PageContainer>\n  );\n}\n",
+      "__content": "import {\n  PageContainer,\n  ProTable,\n  ModalForm,\n  ProFormText,\n  ProFormSelect,\n  ProFormDatePicker,\n} from '@ant-design/pro-components';\nimport { Button, Tag, Avatar, message, Popconfirm, Space } from 'antd';\nimport { EditOutlined, DeleteOutlined } from '@ant-design/icons';\nimport { useRef, useState } from 'react';\nimport { request } from '@umijs/max';\nimport dayjs from 'dayjs';\n\nconst genderMap: Record<number, string> = {\n  0: '未知',\n  1: '男',\n  2: '女',\n};\n\nexport default function TravelerManage() {\n  const tableRef = useRef<any>(null);\n  const [editVisible, setEditVisible] = useState(false);\n  const [editData, setEditData] = useState<any>(null);\n  const [filterUserId, setFilterUserId] = useState<number | undefined>(undefined);\n\n  const handleEdit = (record: any) => {\n    setEditData(record);\n    setEditVisible(true);\n  };\n\n  const handleUpdate = async (values: any) => {\n    try {\n      const res = await request(`/api/v1/admin/travelers/${editData.id}`, {\n        method: 'PUT',\n        data: values,\n      });\n      if (res.code === 200) {\n        message.success('更新成功');\n        setEditVisible(false);\n        tableRef.current?.reload();\n        return true;\n      }\n      message.error(res.message || '更新失败');\n      return false;\n    } catch (error) {\n      message.error('更新失败');\n      return false;\n    }\n  };\n\n  const handleDelete = async (id: number) => {\n    try {\n      const res = await request(`/api/v1/admin/travelers/${id}`, { method: 'DELETE' });\n      if (res.code === 200) {\n        message.success('删除成功');\n        tableRef.current?.reload();\n      } else {\n        message.error(res.message || '删除失败');\n      }\n    } catch (error) {\n      message.error('删除失败');\n    }\n  };\n\n  const columns = [\n    {\n      title: 'ID',\n      dataIndex: 'id',\n      width: 80,\n      search: false,\n      render: (id: string | number) => {\n        const str = String(id);\n        return str.startsWith('u_') ? str.replace('u_', '') : str;\n      },\n    },\n    {\n      title: '类型',\n      dataIndex: 'type',\n      width: 90,\n      valueEnum: {\n        '本人': { text: '本人' },\n        '同行人': { text: '同行人' },\n      },\n      render: (_: any, record: any) =>\n        record.type === '本人' ? (\n          <Tag color=\"orange\">本人</Tag>\n        ) : (\n          <Tag color=\"blue\">同行人</Tag>\n        ),\n    },\n    {\n      title: '姓名',\n      dataIndex: 'name',\n      width: 100,\n    },\n    {\n      title: '手机号',\n      dataIndex: 'phone',\n      width: 120,\n    },\n    {\n      title: '身份证',\n      dataIndex: 'id_card',\n      width: 180,\n      search: false,\n      render: (idCard: string) => (idCard ? `${idCard.slice(0, 6)}****${idCard.slice(-4)}` : '-'),\n    },\n    {\n      title: '性别',\n      dataIndex: 'gender',\n      width: 80,\n      valueEnum: {\n        0: { text: '未知' },\n        1: { text: '男' },\n        2: { text: '女' },\n      },\n      render: (_: any, record: any) => genderMap[record.gender] || '-',\n    },\n    {\n      title: '生日',\n      dataIndex: 'birthday',\n      width: 120,\n      search: false,\n      render: (date: string) => {\n        if (!date || date === 'Invalid Date') return '-';\n        const d = dayjs(date);\n        return d.isValid() ? d.format('YYYY-MM-DD') : '-';\n      },\n    },\n    {\n      title: '紧急联系人',\n      width: 200,\n      search: false,\n      render: (record: any) =>\n        record.emergency_name ? (\n          <span>\n            {record.emergency_name} ({record.emergency_phone})\n          </span>\n        ) : (\n          <span style={{ color: '#999' }}>-</span>\n        ),\n    },\n    {\n      title: '默认',\n      dataIndex: 'is_default',\n      width: 80,\n      search: false,\n      render: (isDefault: number) =>\n        isDefault === 1 ? <Tag color=\"blue\">默认</Tag> : '-',\n    },\n    {\n      title: '同行人数量',\n      dataIndex: 'traveler_count',\n      width: 100,\n      search: false,\n      render: (count: number, record: any) => {\n        const num = count || 0;\n        if (record.type === '本人') {\n          return <Tag color=\"blue\">{num} 人</Tag>;\n        }\n        return num > 0 ? <Tag color=\"green\">{num} 人</Tag> : '-';\n      },\n    },\n    {\n      title: '所属用户',\n      width: 180,\n      search: false,\n      render: (record: any) => {\n        if (record._sameOwnerAsPrev) {\n          return <span style={{ color: '#999', fontSize: 12, paddingLeft: 32 }}>┗ 同上</span>;\n        }\n        const owner = record.owner;\n        if (!owner) return '-';\n        const isFiltered = filterUserId === owner.id;\n        return (\n          <Space>\n            <Avatar src={owner.avatar} size=\"small\">\n              {(owner.nickname || owner.real_name || 'U').charAt(0)}\n            </Avatar>\n            <Button\n              type=\"link\"\n              size=\"small\"\n              style={{ padding: 0, color: isFiltered ? '#ff4d4f' : '#1890ff' }}\n              onClick={() => {\n                if (isFiltered) {\n                  setFilterUserId(undefined);\n                } else {\n                  setFilterUserId(owner.id);\n                }\n                tableRef.current?.reload();\n              }}\n            >\n              {isFiltered ? '取消筛选' : `${owner.real_name || owner.nickname || '用户'}(${owner.phone || '-'})`}\n            </Button>\n          </Space>\n        );\n      },\n    },\n    {\n      title: '创建时间',\n      dataIndex: 'created_at',\n      width: 180,\n      search: false,\n      render: (date: string) => (date ? dayjs(date).format('YYYY-MM-DD HH:mm') : '-'),\n    },\n    {\n      title: '操作',\n      width: 120,\n      fixed: 'right',\n      search: false,\n      render: (_: any, record: any) => (\n        <Space>\n          {record.type === '同行人' && (\n            <>\n              <Button type=\"link\" size=\"small\" icon={<EditOutlined />} onClick={() => handleEdit(record)}>\n                编辑\n              </Button>\n              <Popconfirm title=\"确定删除该出行人吗？\" onConfirm={() => handleDelete(record.id)}>\n                <Button type=\"link\" size=\"small\" danger icon={<DeleteOutlined />}>\n                  删除\n                </Button>\n              </Popconfirm>\n            </>\n          )}\n        </Space>\n      ),\n    },\n  ];\n\n  return (\n    <PageContainer\n      title=\"出行人管理\"\n      subTitle={\n        filterUserId ? (\n          <Tag color=\"red\" closable onClose={() => { setFilterUserId(undefined); tableRef.current?.reload(); }}>\n            已筛选用户ID: {filterUserId}\n          </Tag>\n        ) : undefined\n      }\n    >\n      <ProTable\n        columns={columns}\n        actionRef={tableRef}\n        form={{\n          initialValues: {\n            type: '同行人',\n          },\n        }}\n        request={async (params) => {\n          const res = await request('/api/v1/admin/travelers', {\n            params: {\n              page: params.current,\n              page_size: params.pageSize,\n              user_id: filterUserId,\n              keyword: params.name || params.phone,\n              traveler_type: params.type,\n            },\n          });\n          const list = res.data?.travelers || [];\n          // 标记同一用户的后续记录，列表中隐藏重复所属用户\n          for (let i = 1; i < list.length; i++) {\n            if (list[i].user_id === list[i - 1].user_id) {\n              list[i]._sameOwnerAsPrev = true;\n            }\n          }\n          return {\n            data: list,\n            success: res.code === 200,\n            total: res.data?.total || 0,\n          };\n        }}\n        rowKey=\"id\"\n        search={{ labelWidth: 'auto' }}\n        pagination={{ pageSize: 10, showSizeChanger: true }}\n        scroll={{ x: 1400 }}\n        toolbar={{\n          actions: filterUserId\n            ? [\n                <Button key=\"clear\" onClick={() => { setFilterUserId(undefined); tableRef.current?.reload(); }}>\n                  清除筛选\n                </Button>,\n              ]\n            : [],\n        }}\n      />\n      <ModalForm\n        title=\"编辑出行人\"\n        open={editVisible}\n        onOpenChange={setEditVisible}\n        initialValues={editData}\n        onFinish={handleUpdate}\n        modalProps={{ destroyOnClose: true }}\n      >\n        <ProFormText name=\"name\" label=\"姓名\" rules={[{ required: true }]} />\n        <ProFormText name=\"phone\" label=\"手机号\" rules={[{ required: true }]} />\n        <ProFormText name=\"id_card\" label=\"身份证\" />\n        <ProFormSelect\n          name=\"gender\"\n          label=\"性别\"\n          options={[\n            { label: '未知', value: 0 },\n            { label: '男', value: 1 },\n            { label: '女', value: 2 },\n          ]}\n        />\n        <ProFormDatePicker name=\"birthday\" label=\"生日\" />\n        <ProFormText name=\"emergency_name\" label=\"紧急联系人姓名\" />\n        <ProFormText name=\"emergency_phone\" label=\"紧急联系人电话\" />\n      </ModalForm>\n    </PageContainer>\n  );\n}\n",
       "__isJSFile": true,
       "__absFile": "D:/projects/frontend/admin/src/pages/Travelers/index.tsx"
     },

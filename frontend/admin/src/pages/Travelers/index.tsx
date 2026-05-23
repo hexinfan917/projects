@@ -154,18 +154,22 @@ export default function TravelerManage() {
       dataIndex: 'traveler_count',
       width: 100,
       search: false,
-      render: (count: number, record: any) =>
-        record.type === '本人' ? (
-          <Tag color="blue">{count || 0} 人</Tag>
-        ) : (
-          '-'
-        ),
+      render: (count: number, record: any) => {
+        const num = count || 0;
+        if (record.type === '本人') {
+          return <Tag color="blue">{num} 人</Tag>;
+        }
+        return num > 0 ? <Tag color="green">{num} 人</Tag> : '-';
+      },
     },
     {
       title: '所属用户',
       width: 180,
       search: false,
       render: (record: any) => {
+        if (record._sameOwnerAsPrev) {
+          return <span style={{ color: '#999', fontSize: 12, paddingLeft: 32 }}>┗ 同上</span>;
+        }
         const owner = record.owner;
         if (!owner) return '-';
         const isFiltered = filterUserId === owner.id;
@@ -238,6 +242,11 @@ export default function TravelerManage() {
       <ProTable
         columns={columns}
         actionRef={tableRef}
+        form={{
+          initialValues: {
+            type: '同行人',
+          },
+        }}
         request={async (params) => {
           const res = await request('/api/v1/admin/travelers', {
             params: {
@@ -245,10 +254,18 @@ export default function TravelerManage() {
               page_size: params.pageSize,
               user_id: filterUserId,
               keyword: params.name || params.phone,
+              traveler_type: params.type,
             },
           });
+          const list = res.data?.travelers || [];
+          // 标记同一用户的后续记录，列表中隐藏重复所属用户
+          for (let i = 1; i < list.length; i++) {
+            if (list[i].user_id === list[i - 1].user_id) {
+              list[i]._sameOwnerAsPrev = true;
+            }
+          }
           return {
-            data: res.data?.travelers || [],
+            data: list,
             success: res.code === 200,
             total: res.data?.total || 0,
           };

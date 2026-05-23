@@ -167,11 +167,17 @@ export default function ProfileEdit() {
           <Input className='input' placeholder='请输入城市' value={user.city || ''} onInput={(e) => setUser({ ...user, city: e.detail.value })} />
         </View>
         <View className='input-row'>
-          <Text className='label'>真实姓名</Text>
+          <View className='label'>
+            <Text>真实姓名</Text>
+            <Text className='required'>*</Text>
+          </View>
           <Input className='input' placeholder='请输入真实姓名' value={user.real_name || ''} onInput={(e) => setUser({ ...user, real_name: e.detail.value })} />
         </View>
         <View className='input-row'>
-          <Text className='label'>身份证号</Text>
+          <View className='label'>
+            <Text>身份证号</Text>
+            <Text className='required'>*</Text>
+          </View>
           <Input className='input' placeholder='请输入身份证号' value={user.id_card || ''} onInput={(e) => setUser({ ...user, id_card: e.detail.value })} />
         </View>
       </View>

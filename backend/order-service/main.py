@@ -88,9 +88,9 @@ async def auto_cancel_expired_orders():
                             {"coupon_id": coupon_row["coupon_id"]}
                         )
                     
-                    # 取消订单
+                    # 取消订单（必须确认状态仍为待支付，防止竞争条件）
                     await db.execute(
-                        text("UPDATE orders SET status = 30, updated_at = NOW() WHERE id = :order_id"),
+                        text("UPDATE orders SET status = 30, updated_at = NOW() WHERE id = :order_id AND status = 10"),
                         {"order_id": order_id}
                     )
                     
