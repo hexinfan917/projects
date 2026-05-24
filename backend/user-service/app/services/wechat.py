@@ -41,9 +41,12 @@ class WechatService:
         if not user:
             # 创建新用户
             is_new_user = True
+            # 生成随机默认昵称，避免所有新用户都一样
+            import random, string
+            suffix = ''.join(random.choices(string.ascii_lowercase + string.digits, k=4))
             user = User(
                 openid=openid,
-                nickname=f"微信用户",
+                nickname=f"宠友_{suffix}",
                 avatar="",
                 status=1,
             )

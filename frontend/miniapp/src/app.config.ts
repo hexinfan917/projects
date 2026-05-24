@@ -13,6 +13,7 @@ export default defineAppConfig({
     'pages/profile/travelers/index',
     'pages/profile/traveler-edit/index',
     'pages/profile/edit/index',
+    'pages/profile/complete-info/index',
     'pages/profile/footprint/index',
     'pages/profile/about/index',
     'pages/profile/settings/index',

@@ -45,11 +45,20 @@ export default function Login() {
       Taro.setStorageSync('user_info', data.data.user)
       const savedToken = Taro.getStorageSync('access_token')
       console.log('[Login] token saved, preparing redirect... savedToken=', savedToken ? 'exists' : 'missing', 'length=', savedToken?.length)
+
+      const isNewUser = data?.data?.is_new_user === true
+
       Taro.showToast({
         title: '登录成功',
         icon: 'success',
         duration: 800,
         complete: () => {
+          // 新用户引导完善资料
+          if (isNewUser) {
+            Taro.redirectTo({ url: '/pages/profile/complete-info/index' })
+            return
+          }
+
           // 检查是否有 redirect 参数
           const router = Taro.getCurrentInstance().router
           const redirect = router?.params?.redirect as string
