@@ -435,13 +435,15 @@ export default function OrderConfirm() {
       Taro.showToast({ title: '请至少选择1只宠物', icon: 'none' })
       return
     }
-    // 校验人数是否满足套餐基础数
-    if (selectedTravelers.length < pkgConfig.basePerson) {
-      Taro.showToast({ title: `「${pkgConfig.label}」至少需要${pkgConfig.basePerson}位出行人`, icon: 'none' })
+    // 校验人数是否满足套餐基础数 + BookingPopup 中的额外选择数
+    const requiredPersons = pkgConfig.basePerson + (bookingParams?.extraPerson || 0)
+    const requiredPets = pkgConfig.basePet + (bookingParams?.extraPet || 0)
+    if (selectedTravelers.length < requiredPersons) {
+      Taro.showToast({ title: `您选择了增加${bookingParams?.extraPerson || 0}人，请至少添加${requiredPersons}位出行人`, icon: 'none' })
       return
     }
-    if (bookingParams?.packageType !== 'single_person' && selectedPetIds.length < pkgConfig.basePet) {
-      Taro.showToast({ title: `「${pkgConfig.label}」至少需要${pkgConfig.basePet}只宠物`, icon: 'none' })
+    if (bookingParams?.packageType !== 'single_person' && selectedPetIds.length < requiredPets) {
+      Taro.showToast({ title: `您选择了增加${bookingParams?.extraPet || 0}宠，请至少添加${requiredPets}只宠物`, icon: 'none' })
       return
     }
     if (!schedule || !route) {
@@ -575,9 +577,12 @@ export default function OrderConfirm() {
   const extraPetUnitPrice = schedule && schedule[extraPetScheduleField] != null
     ? schedule[extraPetScheduleField] : 0
 
-  // 额外数量：按实际选中人数与套餐基础数的差额计算（用户在确认页添加/删除人宠，价格实时同步）
-  const extraPersonCount = Math.max(0, selectedTravelers.length - pkgConfig.basePerson)
-  const extraPetCount = Math.max(0, selectedPetIds.length - pkgConfig.basePet)
+  // 额外数量：取 BookingPopup 中的选择与实际差额的最大值
+  // BookingPopup 中的 extraPerson/extraPet 是用户意向（保底），实际带更多人则追加
+  const actualExtraPerson = Math.max(0, selectedTravelers.length - pkgConfig.basePerson)
+  const actualExtraPet = Math.max(0, selectedPetIds.length - pkgConfig.basePet)
+  const extraPersonCount = Math.max(bookingParams?.extraPerson || 0, actualExtraPerson)
+  const extraPetCount = Math.max(bookingParams?.extraPet || 0, actualExtraPet)
 
   // 路线价格（基础价 + 加人 + 加宠，不含保险）
   const routePrice = basePrice + extraPersonCount * extraPersonUnitPrice + extraPetCount * extraPetUnitPrice
