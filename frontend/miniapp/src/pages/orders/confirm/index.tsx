@@ -813,7 +813,7 @@ export default function OrderConfirm() {
           <View className='insurance-left'>
             <View className='insurance-name-row'>
               <Text className='insurance-name'>宠物意外险</Text>
-              <Text className='insurance-price'>+¥15</Text>
+              <Text className='insurance-price'>+¥15/狗
             </View>
             <Text className='insurance-desc'>保障宠物行程中突发意外医疗费用，最高保额¥5000</Text>
           </View>
@@ -824,7 +824,7 @@ export default function OrderConfirm() {
           <View className='insurance-left'>
             <View className='insurance-name-row'>
               <Text className='insurance-name'>人身意外险</Text>
-              <Text className='insurance-price'>+¥10</Text>
+              <Text className='insurance-price'>+¥10/人
             </View>
             <Text className='insurance-desc'>保障出行人意外伤害及医疗，最高保额¥200,000</Text>
           </View>
