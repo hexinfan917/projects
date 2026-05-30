@@ -135,7 +135,7 @@ export default function MemberPay() {
 
       <View className='pay-content'>
         <View className='plan-info-card'>
-          <Text className='plan-info-name'>{plan?.name || '会员套餐'}</Text>
+          <Text className='plan-info-name'>{plan?.name || '权益套餐'}</Text>
           <Text className='plan-info-duration'>{plan?.duration_days || 365}天有效期</Text>
           <View className='plan-info-price-row'>
             <Text className='plan-info-price'>¥{plan?.sale_price || '--'}</Text>

@@ -238,21 +238,18 @@ export default function Profile() {
               {/* 上半部分 */}
               <View className='vip-card-top'>
                 <View className='vip-title-wrap'>
-                  <Text className='vip-title'>VIP</Text>
-                  <Text className='vip-subtitle'>会员</Text>
+                  <Text className='vip-title'>权益</Text>
+                  <Text className='vip-subtitle'>说明</Text>
                 </View>
                 <View className='vip-tags'>
                   <Text className='vip-tag'>享专属优惠</Text>
-                  <Text className='vip-tag vip-tag-primary'>立即开通 ›</Text>
+                  <Text className='vip-tag vip-tag-primary'>查看详情 ›</Text>
                 </View>
               </View>
               {/* 下半部分 */}
               <View className='vip-card-bottom'>
                 <View className='vip-desc'>
-                  <Text className='vip-desc-price'>{memberPlan?.subtitle || '¥39.9/年，开通年度会员'}</Text>
-                  {memberPlan?.original_price ? (
-                    <Text className='vip-desc-original'>¥{memberPlan.original_price}</Text>
-                  ) : null}
+                  <Text className='vip-desc-price'>出行享专属折扣 · 每月领券包</Text>
                 </View>
               </View>
             </>
