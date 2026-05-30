@@ -139,12 +139,12 @@ export default function Profile() {
 
   const copyWechat = () => {
     Taro.setClipboardData({ data: WECHAT_ID }).then(() => {
-      Taro.showToast({ title: '微信号已复制', icon: 'none' })
+      Taro.showToast({ title: '客服号已复制', icon: 'none' })
       setServiceVisible(false)
     }).catch(() => {
       Taro.showModal({
-        title: '复制微信号',
-        content: `微信号：${WECHAT_ID}\n\n（模拟器复制功能受限，请手动复制）`,
+        title: '复制客服号',
+        content: `客服号：${WECHAT_ID}\n\n（模拟器复制功能受限，请手动复制）`,
         showCancel: false,
         confirmText: '知道了',
         success: () => setServiceVisible(false)
@@ -327,7 +327,7 @@ export default function Profile() {
               showMenuByLongpress
               onError={() => Taro.showToast({ title: '图片加载失败', icon: 'none' })}
             />
-            <Text className='qr-modal-tip'>长按二维码识别，添加客服微信</Text>
+            <Text className='qr-modal-tip'>长按二维码识别，添加客服</Text>
             <View className='qr-modal-close' onClick={() => setServiceVisible(false)}>
               <Text>关闭</Text>
             </View>

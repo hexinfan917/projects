@@ -6,11 +6,11 @@ const WECHAT_ID = 'Petway_'
 
 const copyWechat = () => {
   Taro.setClipboardData({ data: WECHAT_ID }).then(() => {
-    Taro.showToast({ title: '微信号已复制', icon: 'none' })
+    Taro.showToast({ title: '客服号已复制', icon: 'none' })
   }).catch(() => {
     Taro.showModal({
-      title: '复制微信号',
-      content: `微信号：${WECHAT_ID}\n\n（模拟器复制功能受限，请手动复制）`,
+      title: '复制客服号',
+      content: `客服号：${WECHAT_ID}\n\n（模拟器复制功能受限，请手动复制）`,
       showCancel: false,
       confirmText: '知道了'
     })
@@ -33,7 +33,7 @@ export default function About() {
 
       <View className='info-section'>
         <View className='info-item'>
-          <Text className='info-label'>客服微信</Text>
+          <Text className='info-label'>客服联系方式</Text>
           <View className='info-value' onClick={copyWechat}>
             <Text>Petway_（点击复制）</Text>
           </View>

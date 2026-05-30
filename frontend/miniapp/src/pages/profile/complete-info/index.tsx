@@ -175,13 +175,13 @@ export default function CompleteInfo() {
               <Input
                 className='nickname-input'
                 type='nickname'
-                placeholder='请输入昵称，或点击键盘上方「使用微信昵称」'
+                placeholder='请输入昵称，或点击键盘上方「使用昵称」'
                 value={nickname}
                 onInput={handleNicknameInput}
                 onBlur={handleNicknameBlur}
               />
             </View>
-            <Text className='field-tip'>点击输入框后，键盘上方会显示「使用微信昵称」快捷选项</Text>
+            <Text className='field-tip'>点击输入框后，键盘上方会显示「使用昵称」快捷选项</Text>
           </View>
         </View>
 

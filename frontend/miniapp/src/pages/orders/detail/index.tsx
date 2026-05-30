@@ -168,7 +168,7 @@ export default function OrderDetail() {
               showMenuByLongpress
               onError={() => Taro.showToast({ title: '图片加载失败', icon: 'none' })}
             />
-            <Text className='qr-modal-tip'>长按二维码识别，添加客服微信</Text>
+            <Text className='qr-modal-tip'>长按二维码识别，添加客服</Text>
             <View className='qr-modal-close' onClick={() => setQrModalVisible(false)}>
               <Text>关闭</Text>
             </View>
