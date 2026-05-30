@@ -435,15 +435,13 @@ export default function OrderConfirm() {
       Taro.showToast({ title: '请至少选择1只宠物', icon: 'none' })
       return
     }
-    // 校验人数是否满足套餐基础数 + 额外增加数
-    const requiredPersons = pkgConfig.basePerson + (bookingParams?.extraPerson || 0)
-    const requiredPets = pkgConfig.basePet + (bookingParams?.extraPet || 0)
-    if (selectedTravelers.length < requiredPersons) {
-      Taro.showToast({ title: `您选择了增加${bookingParams?.extraPerson || 0}人，请至少添加${requiredPersons}位出行人`, icon: 'none' })
+    // 校验人数是否满足套餐基础数
+    if (selectedTravelers.length < pkgConfig.basePerson) {
+      Taro.showToast({ title: `「${pkgConfig.label}」至少需要${pkgConfig.basePerson}位出行人`, icon: 'none' })
       return
     }
-    if (bookingParams?.packageType !== 'single_person' && selectedPetIds.length < requiredPets) {
-      Taro.showToast({ title: `您选择了增加${bookingParams?.extraPet || 0}宠，请至少添加${requiredPets}只宠物`, icon: 'none' })
+    if (bookingParams?.packageType !== 'single_person' && selectedPetIds.length < pkgConfig.basePet) {
+      Taro.showToast({ title: `「${pkgConfig.label}」至少需要${pkgConfig.basePet}只宠物`, icon: 'none' })
       return
     }
     if (!schedule || !route) {
@@ -577,9 +575,9 @@ export default function OrderConfirm() {
   const extraPetUnitPrice = schedule && schedule[extraPetScheduleField] != null
     ? schedule[extraPetScheduleField] : 0
 
-  // 额外数量：从 bookingParams 取（与 BookingPopup 保持一致）
-  const extraPersonCount = bookingParams?.extraPerson || 0
-  const extraPetCount = bookingParams?.extraPet || 0
+  // 额外数量：按实际选中人数与套餐基础数的差额计算（用户在确认页添加/删除人宠，价格实时同步）
+  const extraPersonCount = Math.max(0, selectedTravelers.length - pkgConfig.basePerson)
+  const extraPetCount = Math.max(0, selectedPetIds.length - pkgConfig.basePet)
 
   // 路线价格（基础价 + 加人 + 加宠，不含保险）
   const routePrice = basePrice + extraPersonCount * extraPersonUnitPrice + extraPetCount * extraPetUnitPrice
@@ -779,12 +777,12 @@ export default function OrderConfirm() {
                 {bookingParams.travelType === 'bus' ? '大巴出行' : '自行前往'}
               </Text>
             </View>
-            {(bookingParams.extraPerson > 0 || bookingParams.extraPet > 0) && (
+            {(extraPersonCount > 0 || extraPetCount > 0) && (
               <View className='info-row'>
                 <Text className='info-label'>额外增加</Text>
                 <Text className='info-value'>
-                  {bookingParams.extraPerson > 0 ? `成人+${bookingParams.extraPerson} ` : ''}
-                  {bookingParams.extraPet > 0 ? `宠物+${bookingParams.extraPet}` : ''}
+                  {extraPersonCount > 0 ? `成人+${extraPersonCount} ` : ''}
+                  {extraPetCount > 0 ? `宠物+${extraPetCount}` : ''}
                 </Text>
               </View>
             )}
