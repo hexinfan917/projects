@@ -103,7 +103,7 @@ export default function Login() {
     // 用户拒绝授权手机号
     if (e.detail?.errMsg && e.detail.errMsg.includes('fail')) {
       console.log('[GetPhoneNumber] user denied:', e.detail?.errMsg)
-      Taro.showToast({ title: '需要授权手机号才能登录', icon: 'none' })
+      Taro.showToast({ title: '需要绑定手机号才能登录', icon: 'none' })
       return
     }
 
@@ -239,8 +239,8 @@ export default function Login() {
       <View className='action-section'>
         <View className='btn-wrapper'>
           <Button className='wx-login-btn' openType='getPhoneNumber' onGetPhoneNumber={handleGetPhoneNumber}>
-            <Text className='btn-icon'>💬</Text>
-            <Text className='btn-text'>微信授权手机号登录</Text>
+            <Text className='btn-icon'>📱</Text>
+            <Text className='btn-text'>手机号快捷登录</Text>
           </Button>
         </View>
 
@@ -300,13 +300,13 @@ export default function Login() {
                   <Input
                     className='pm-input'
                     type='nickname'
-                    placeholder='点击输入，或选择键盘上方「使用微信昵称」'
+                    placeholder='点击输入，或选择键盘上方「使用昵称」'
                     value={nickname}
                     onInput={handleNicknameInput}
                     onBlur={handleNicknameBlur}
                   />
                 </View>
-                <Text className='pm-tip'>点击输入框后，键盘上方会显示「使用微信昵称」</Text>
+                <Text className='pm-tip'>点击输入框后，键盘上方会显示「使用昵称」</Text>
               </View>
             </View>
 
