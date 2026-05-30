@@ -19,7 +19,7 @@ export default function Search() {
         setResults(res.data.routes.map((r: any) => ({
           id: r.id,
           name: r.name,
-          price: r.base_price || r.price || 0,
+          price: r.schedule_price || r.price || 0,
           cover_image: r.cover_image ? (r.cover_image.startsWith('http') ? r.cover_image : `https://tailtravel.cn${r.cover_image}`) + '?w=750&q=75' : '',
           type_name: r.route_type_name || r.type_name || '',
         })))

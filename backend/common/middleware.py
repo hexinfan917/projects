@@ -1,6 +1,7 @@
 """
 FastAPI中间件模块
 """
+import os
 import time
 import uuid
 from fastapi import Request, Response
@@ -13,28 +14,16 @@ class RequestLogMiddleware(BaseHTTPMiddleware):
     """请求日志中间件"""
     
     async def dispatch(self, request: Request, call_next):
-        # 生成请求ID
         request_id = str(uuid.uuid4())[:8]
         request.state.request_id = request_id
-        
-        # 记录请求开始时间
         start_time = time.time()
-        
-        # 处理请求
         response: Response = await call_next(request)
-        
-        # 计算处理时间
         process_time = (time.time() - start_time) * 1000
-        
-        # 记录日志
         logger.info(
             f"[{request_id}] {request.method} {request.url.path} "
             f"- Status: {response.status_code} - Time: {process_time:.2f}ms"
         )
-        
-        # 添加请求ID到响应头
         response.headers["X-Request-ID"] = request_id
-        
         return response
 
 
@@ -51,14 +40,22 @@ class ExceptionMiddleware(BaseHTTPMiddleware):
 
 
 def setup_cors(app, allow_origins=None):
-    """配置CORS"""
+    """配置CORS - 生产环境只允许 tailtravel.cn"""
     if allow_origins is None:
-        allow_origins = ["*"]
+        # 生产环境限制域名，开发环境允许所有
+        app_env = os.environ.get("APP_ENV", "development")
+        if app_env == "production":
+            allow_origins = [
+                "https://tailtravel.cn",
+                "https://tailtravel.westilt.com",
+            ]
+        else:
+            allow_origins = ["*"]
     
     app.add_middleware(
         CORSMiddleware,
         allow_origins=allow_origins,
         allow_credentials=True,
-        allow_methods=["*"],
+        allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
         allow_headers=["*"],
     )

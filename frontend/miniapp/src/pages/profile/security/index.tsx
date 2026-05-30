@@ -12,10 +12,13 @@ export default function Security() {
   const [oldPassword, setOldPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [countdown, setCountdown] = useState(0)
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
 
   useEffect(() => {
     const info = Taro.getStorageSync('user_info')
     if (info?.phone) setPhone(info.phone)
+    const token = Taro.getStorageSync('access_token')
+    setIsLoggedIn(!!token)
   }, [])
 
   useEffect(() => {
@@ -109,10 +112,12 @@ export default function Security() {
           <Text className='info-label'>修改密码</Text>
           <Text className='info-arrow'>{'>'}</Text>
         </View>
-        <View className='info-item danger' onClick={() => setModalType('delete')}>
-          <Text className='info-label danger-text'>注销账号</Text>
-          <Text className='info-arrow'>{'>'}</Text>
-        </View>
+        {isLoggedIn && (
+          <View className='info-item danger' onClick={() => setModalType('delete')}>
+            <Text className='info-label danger-text'>注销账号</Text>
+            <Text className='info-arrow'>{'>'}</Text>
+          </View>
+        )}
       </View>
 
       <View className='tip-section'>

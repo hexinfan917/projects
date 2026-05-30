@@ -35,6 +35,7 @@ logger = setup_logger("route-service")
 from app.models.route import Route, RouteSchedule
 from app.models.route_type import RouteType
 from app.models.addon import RouteAddon
+from app.models.addon_category import AddonCategory
 from app.schemas.route import RouteResponse, RouteListResponse, RouteDetailResponse
 
 @asynccontextmanager
@@ -84,6 +85,37 @@ async def _get_route_name_to_id_map(db: AsyncSession) -> dict:
         logger.warning(f"Failed to get route types from db: {e}")
     return {v: k for k, v in _DEFAULT_TYPE_NAME_MAP.items()}
 
+async def _get_nearest_schedule_prices(db: AsyncSession, route_ids: list) -> dict:
+    """批量查询每个路线的最近排期价格 {route_id: {price, self_drive_price}}
+    
+    跳过价格为0或未配置的排期，取第一个有有效价格的排期
+    """
+    from datetime import date
+    from app.models.route import RouteSchedule
+    if not route_ids:
+        return {}
+    try:
+        result = await db.execute(
+            select(RouteSchedule.route_id, RouteSchedule.price, RouteSchedule.self_drive_price)
+            .where(RouteSchedule.route_id.in_(route_ids))
+            .where(RouteSchedule.status == 1)
+            .where(RouteSchedule.schedule_date >= date.today())
+            .where(RouteSchedule.price > 0)
+            .order_by(RouteSchedule.route_id, RouteSchedule.schedule_date.asc())
+        )
+        schedule_map = {}
+        for row in result.all():
+            rid = row.route_id
+            if rid not in schedule_map:
+                schedule_map[rid] = {
+                    "price": float(row.price) if row.price else None,
+                    "self_drive_price": float(row.self_drive_price) if row.self_drive_price else None
+                }
+        return schedule_map
+    except Exception as e:
+        logger.warning(f"Failed to get nearest schedule prices: {e}")
+        return {}
+
 @app.get("/api/v1/routes", response_model=RouteListResponse)
 async def get_routes(
     route_type: Optional[int] = Query(None, description="路线类型: 1山野 2海边 3森林 4主题 5自驾"),
@@ -112,8 +144,15 @@ async def get_routes(
                 Route.id, Route.route_no, Route.name, Route.route_type,
                 Route.title, Route.subtitle, Route.cover_image, Route.description,
                 Route.duration, Route.difficulty, Route.min_participants,
-                Route.max_participants, Route.base_price, Route.extra_person_price,
-                Route.extra_pet_price, Route.highlights, Route.sort_order,
+                Route.max_participants, Route.base_price, Route.self_drive_discount, Route.single_person_price,
+                Route.two_person_one_pet_price, Route.one_person_two_pet_price,
+                Route.single_pet_price, Route.extra_person_price,
+                Route.extra_pet_price,
+                Route.self_drive_base_price, Route.self_drive_single_person_price,
+                Route.self_drive_two_person_one_pet_price, Route.self_drive_one_person_two_pet_price,
+                Route.self_drive_single_pet_price, Route.self_drive_extra_person_price,
+                Route.self_drive_extra_pet_price,
+                Route.highlights, Route.sort_order,
                 Route.created_at
             )
         )
@@ -140,16 +179,9 @@ async def get_routes(
                 conditions.append(Route.route_type == matched_type)
             query = query.where(or_(*conditions))
         
-        # 价格筛选
-        if min_price is not None:
-            query = query.where(Route.base_price >= min_price)
-        if max_price is not None:
-            query = query.where(Route.base_price <= max_price)
-        
+        # 价格筛选已废弃（价格下放到排期管理）
         # 排序
-        if sort_by == "price":
-            query = query.order_by(Route.base_price)
-        elif sort_by == "rating":
+        if sort_by == "rating":
             query = query.order_by(Route.id)  # 暂无rating字段
         else:
             query = query.order_by(Route.sort_order.asc(), Route.created_at.desc())
@@ -172,16 +204,17 @@ async def get_routes(
             if matched_type:
                 conditions.append(Route.route_type == matched_type)
             count_query = count_query.where(or_(*conditions))
-        if min_price is not None:
-            count_query = count_query.where(Route.base_price >= min_price)
-        if max_price is not None:
-            count_query = count_query.where(Route.base_price <= max_price)
+
         total_result = await db.execute(count_query)
         total = total_result.scalar() or 0
         
         query = query.offset((page - 1) * page_size).limit(page_size)
         result = await db.execute(query)
         routes_db = result.scalars().all()
+        
+        # 查询最近排期价格
+        route_ids = [r.id for r in routes_db]
+        schedule_prices = await _get_nearest_schedule_prices(db, route_ids)
         
         # 兜底逻辑：如果查询热门路线但结果为空，则自动将最新一条上架路线标记为热门并返回
         if is_hot == 1 and not routes_db:
@@ -195,8 +228,7 @@ async def get_routes(
                         Route.id, Route.route_no, Route.name, Route.route_type,
                         Route.title, Route.subtitle, Route.cover_image, Route.description,
                         Route.duration, Route.difficulty, Route.min_participants,
-                        Route.max_participants, Route.base_price, Route.extra_person_price,
-                        Route.extra_pet_price, Route.highlights,
+                        Route.max_participants, Route.highlights, Route.sort_order,
                         Route.created_at
                     )
                 )
@@ -228,6 +260,7 @@ async def get_routes(
             except Exception as e:
                 logger.warning(f"Failed to get rating for route {r.id}: {e}")
             
+            sp = schedule_prices.get(r.id, {})
             routes.append({
                 "id": r.id,
                 "route_no": r.route_no,
@@ -242,12 +275,11 @@ async def get_routes(
                 "difficulty": r.difficulty,
                 "min_participants": r.min_participants,
                 "max_participants": r.max_participants,
-                "base_price": float(r.base_price) if r.base_price else 0,
-                "extra_person_price": float(r.extra_person_price) if r.extra_person_price else 0,
-                "extra_pet_price": float(r.extra_pet_price) if r.extra_pet_price else 0,
+                "schedule_price": sp.get("price") if sp.get("price") else 0,
+                "schedule_self_drive_price": sp.get("self_drive_price") if sp.get("self_drive_price") else None,
                 "rating": avg_rating,
                 "review_count": review_count,
-                "distance": None,  # 暂无距离字段
+                "distance": None,
                 "tags": r.highlights[:3] if r.highlights else []
             })
         
@@ -265,23 +297,16 @@ async def get_routes(
 
 @app.get("/api/v1/routes/types")
 async def get_route_types(db: AsyncSession = Depends(get_db)):
-    """获取路线类型列表（只返回有上架路线的类型）"""
+    """获取路线类型列表（返回所有启用的类型）"""
     try:
-        # 先获取有上架路线的类型ID
-        route_types_result = await db.execute(
-            select(Route.route_type).where(Route.status == 1).distinct()
+        result = await db.execute(
+            select(RouteType)
+            .where(RouteType.status == 1)
+            .order_by(RouteType.sort_order)
         )
-        active_type_ids = [r[0] for r in route_types_result.all() if r[0] is not None]
-        
-        if active_type_ids:
-            result = await db.execute(
-                select(RouteType)
-                .where(RouteType.status == 1, RouteType.id.in_(active_type_ids))
-                .order_by(RouteType.sort_order)
-            )
-            types = result.scalars().all()
-            if types:
-                return success([{"id": t.id, "name": t.name, "icon": t.icon, "color": t.color} for t in types])
+        types = result.scalars().all()
+        if types:
+            return success([{"id": t.id, "name": t.name, "icon": t.icon, "color": t.color} for t in types])
     except Exception as e:
         logger.warning(f"Failed to get route types from db: {e}")
     # 兜底返回默认值
@@ -337,6 +362,10 @@ async def get_route_detail(
             lines = re.sub(r'<[^>]+>', '', fee_text).split('\n')
             return [line.strip().lstrip('•').lstrip('-').strip() for line in lines if line.strip()][:10]
         
+        # 查询最近排期价格
+        sp = await _get_nearest_schedule_prices(db, [r.id])
+        sp_val = sp.get(r.id, {})
+        
         type_map = await _get_route_type_map(db)
         route = {
             "id": r.id,
@@ -361,9 +390,8 @@ async def get_route_detail(
             "difficulty_name": difficulty_map.get(r.difficulty, "简单"),
             "min_participants": r.min_participants,
             "max_participants": r.max_participants,
-            "base_price": float(r.base_price) if r.base_price else 0,
-            "extra_person_price": float(r.extra_person_price) if r.extra_person_price else 0,
-            "extra_pet_price": float(r.extra_pet_price) if r.extra_pet_price else 0,
+            "schedule_price": sp_val.get("price") if sp_val.get("price") else 0,
+            "schedule_self_drive_price": sp_val.get("self_drive_price") if sp_val.get("self_drive_price") else None,
             "rating": avg_rating,
             "review_count": review_count,
             "suitable_breeds": r.suitable_breeds or [],
@@ -372,7 +400,6 @@ async def get_route_detail(
             "safety_video_duration": r.safety_video_duration or 180,
             "is_safety_required": bool(r.is_safety_required),
             "status": r.status,
-            # TODO: 行程安排应存入数据库，当前使用默认模板
             "schedule": [
                 {"time": "09:00", "activity": "集合出发", "detail": "在指定地点集合，签到领取物资"},
                 {"time": "10:30", "activity": "到达活动地，自由活动", "detail": "狗狗们尽情玩耍，主人拍照留念"},
@@ -451,11 +478,25 @@ async def get_route_schedules(
                 "start_time": _format_time(s.start_time) or "09:00",
                 "end_time": _format_time(s.end_time) or "17:00",
                 "price": float(s.price) if s.price else 0,
+                "self_drive_price": float(s.self_drive_price) if s.self_drive_price else None,
+                "single_person_price": float(s.single_person_price) if s.single_person_price else None,
+                "two_person_one_pet_price": float(s.two_person_one_pet_price) if s.two_person_one_pet_price else None,
+                "one_person_two_pet_price": float(s.one_person_two_pet_price) if s.one_person_two_pet_price else None,
+                "single_pet_price": float(s.single_pet_price) if s.single_pet_price else None,
+                "extra_person_price": float(s.extra_person_price) if s.extra_person_price else None,
+                "extra_pet_price": float(s.extra_pet_price) if s.extra_pet_price else None,
+                "self_drive_single_person_price": float(s.self_drive_single_person_price) if s.self_drive_single_person_price else None,
+                "self_drive_two_person_one_pet_price": float(s.self_drive_two_person_one_pet_price) if s.self_drive_two_person_one_pet_price else None,
+                "self_drive_one_person_two_pet_price": float(s.self_drive_one_person_two_pet_price) if s.self_drive_one_person_two_pet_price else None,
+                "self_drive_single_pet_price": float(s.self_drive_single_pet_price) if s.self_drive_single_pet_price else None,
+                "self_drive_extra_person_price": float(s.self_drive_extra_person_price) if s.self_drive_extra_person_price else None,
+                "self_drive_extra_pet_price": float(s.self_drive_extra_pet_price) if s.self_drive_extra_pet_price else None,
                 "stock": s.stock or 0,
                 "sold": s.sold or 0,
                 "status": s.status or 1,
                 "guide_name": user_names.get(s.guide_id, "") if s.guide_id else "",
-                "trainer_name": user_names.get(s.trainer_id, "") if s.trainer_id else ""
+                "trainer_name": user_names.get(s.trainer_id, "") if s.trainer_id else "",
+                "addon_prices": s.addon_prices or {},
             })
         
         return success({
@@ -579,9 +620,22 @@ class RouteCreateUpdate(BaseModel):
     difficulty: int = 3
     min_participants: int = 4
     max_participants: int = 12
-    base_price: float
+    base_price: Optional[float] = None
+    self_drive_discount: Optional[float] = 0
+    single_person_price: Optional[float] = None
+    two_person_one_pet_price: Optional[float] = None
+    one_person_two_pet_price: Optional[float] = None
+    single_pet_price: Optional[float] = None
     extra_person_price: Optional[float] = 0
     extra_pet_price: Optional[float] = 0
+    # 自驾套餐价格
+    self_drive_base_price: Optional[float] = None
+    self_drive_single_person_price: Optional[float] = None
+    self_drive_two_person_one_pet_price: Optional[float] = None
+    self_drive_one_person_two_pet_price: Optional[float] = None
+    self_drive_single_pet_price: Optional[float] = None
+    self_drive_extra_person_price: Optional[float] = None
+    self_drive_extra_pet_price: Optional[float] = None
     safety_video_url: Optional[str] = None
     safety_video_duration: int = 180
     is_safety_required: int = 1
@@ -595,10 +649,26 @@ class ScheduleCreateUpdate(BaseModel):
     start_time: Optional[str] = "09:00"
     end_time: Optional[str] = "17:00"
     price: Optional[float] = None
+    self_drive_price: Optional[float] = None
+    # 大巴套餐价格
+    single_person_price: Optional[float] = None
+    two_person_one_pet_price: Optional[float] = None
+    one_person_two_pet_price: Optional[float] = None
+    single_pet_price: Optional[float] = None
+    extra_person_price: Optional[float] = None
+    extra_pet_price: Optional[float] = None
+    # 自驾套餐价格
+    self_drive_single_person_price: Optional[float] = None
+    self_drive_two_person_one_pet_price: Optional[float] = None
+    self_drive_one_person_two_pet_price: Optional[float] = None
+    self_drive_single_pet_price: Optional[float] = None
+    self_drive_extra_person_price: Optional[float] = None
+    self_drive_extra_pet_price: Optional[float] = None
     stock: Optional[int] = None
     status: Optional[int] = None
     guide_id: Optional[int] = None
     trainer_id: Optional[int] = None
+    addon_prices: Optional[dict] = None
 
 
 def _format_time(time_val) -> str:
@@ -707,9 +777,6 @@ async def admin_create_route(
             difficulty=data.difficulty,
             min_participants=data.min_participants,
             max_participants=data.max_participants,
-            base_price=data.base_price,
-            extra_person_price=data.extra_person_price,
-            extra_pet_price=data.extra_pet_price,
             safety_video_url=data.safety_video_url,
             safety_video_duration=data.safety_video_duration,
             is_safety_required=data.is_safety_required,
@@ -758,6 +825,14 @@ async def admin_update_route(
         # sort_order 默认为 0
         if update_data.get('sort_order') is None:
             update_data['sort_order'] = 0
+        # 价格字段已下放到排期管理，不再通过路线基本信息更新
+        price_fields = ['base_price', 'self_drive_discount', 'single_person_price', 'two_person_one_pet_price',
+                        'one_person_two_pet_price', 'single_pet_price', 'extra_person_price', 'extra_pet_price',
+                        'self_drive_base_price', 'self_drive_single_person_price', 'self_drive_two_person_one_pet_price',
+                        'self_drive_one_person_two_pet_price', 'self_drive_single_pet_price',
+                        'self_drive_extra_person_price', 'self_drive_extra_pet_price']
+        for field in price_fields:
+            update_data.pop(field, None)
         for field, value in update_data.items():
             if value is not None or field in ['subtitle', 'title', 'description', 'is_hot', 'status', 'content_modules']:  # 允许清空这些字段
                 setattr(route, field, value)
@@ -827,8 +902,15 @@ async def admin_get_routes(
         # 列表只加载必要字段避免 sort memory 溢出
         load_only_cols = load_only(
             Route.id, Route.route_no, Route.name, Route.route_type,
-            Route.cover_image, Route.base_price, Route.extra_person_price,
-            Route.extra_pet_price, Route.duration,
+            Route.cover_image, Route.base_price, Route.self_drive_discount, Route.single_person_price,
+            Route.two_person_one_pet_price, Route.one_person_two_pet_price,
+            Route.single_pet_price, Route.extra_person_price,
+            Route.extra_pet_price,
+            Route.self_drive_base_price, Route.self_drive_single_person_price,
+            Route.self_drive_two_person_one_pet_price, Route.self_drive_one_person_two_pet_price,
+            Route.self_drive_single_pet_price, Route.self_drive_extra_person_price,
+            Route.self_drive_extra_pet_price,
+            Route.duration,
             Route.min_participants, Route.max_participants,
             Route.is_hot, Route.status, Route.sort_order, Route.created_at, Route.updated_at
         )
@@ -879,9 +961,14 @@ async def admin_get_routes(
         result = await db.execute(query)
         routes_db = result.scalars().all()
         
+        # 查询最近排期价格
+        route_ids = [r.id for r in routes_db]
+        schedule_prices = await _get_nearest_schedule_prices(db, route_ids)
+        
         routes = []
         type_map = await _get_route_type_map(db)
         for r in routes_db:
+            sp = schedule_prices.get(r.id, {})
             routes.append({
                 "id": r.id,
                 "route_no": r.route_no,
@@ -889,7 +976,8 @@ async def admin_get_routes(
                 "route_type": r.route_type,
                 "type_name": type_map.get(r.route_type, "其他"),
                 "cover_image": r.cover_image,
-                "base_price": float(r.base_price) if r.base_price else 0,
+                "schedule_price": sp.get("price") if sp.get("price") else 0,
+                "schedule_self_drive_price": sp.get("self_drive_price") if sp.get("self_drive_price") else None,
                 "duration": r.duration,
                 "min_participants": r.min_participants,
                 "max_participants": r.max_participants,
@@ -926,6 +1014,10 @@ async def admin_get_route_detail(
         if not r:
             return {"code": 404, "message": "路线不存在", "data": None}
         
+        # 查询最近排期价格
+        sp = await _get_nearest_schedule_prices(db, [r.id])
+        sp_val = sp.get(r.id, {})
+        
         type_map = await _get_route_type_map(db)
         route = {
             "id": r.id,
@@ -951,9 +1043,8 @@ async def admin_get_route_detail(
             "difficulty": r.difficulty,
             "min_participants": r.min_participants,
             "max_participants": r.max_participants,
-            "base_price": float(r.base_price) if r.base_price else 0,
-            "extra_person_price": float(r.extra_person_price) if r.extra_person_price else 0,
-            "extra_pet_price": float(r.extra_pet_price) if r.extra_pet_price else 0,
+            "schedule_price": sp_val.get("price") if sp_val.get("price") else 0,
+            "schedule_self_drive_price": sp_val.get("self_drive_price") if sp_val.get("self_drive_price") else None,
             "safety_video_url": r.safety_video_url,
             "safety_video_duration": r.safety_video_duration,
             "is_safety_required": r.is_safety_required,
@@ -1142,11 +1233,13 @@ async def admin_get_all_schedules(
                 "start_time": _format_time(s.start_time) or "09:00",
                 "end_time": _format_time(s.end_time) or "17:00",
                 "price": float(s.price) if s.price else 0,
+                "self_drive_price": float(s.self_drive_price) if s.self_drive_price else None,
                 "stock": s.stock or 0,
                 "sold": s.sold or 0,
                 "status": s.status or 1,
                 "guide_id": s.guide_id,
                 "trainer_id": s.trainer_id,
+                "addon_prices": s.addon_prices or {},
             })
         
         return success({
@@ -1172,16 +1265,11 @@ async def admin_get_schedules(
         from app.models.route import RouteSchedule
         from sqlalchemy import and_
         
-        # 只返回正常状态的排期
+        # 返回该路线所有排期（不限制状态，管理后台需要查看全部）
         result = await db.execute(
             select(RouteSchedule)
-            .where(
-                and_(
-                    RouteSchedule.route_id == route_id,
-                    RouteSchedule.status == 1
-                )
-            )
-            .order_by(RouteSchedule.schedule_date.desc())
+            .where(RouteSchedule.route_id == route_id)
+            .order_by(RouteSchedule.schedule_date.asc())
         )
         schedules_db = result.scalars().all()
         
@@ -1194,6 +1282,21 @@ async def admin_get_schedules(
                 "start_time": _format_time(s.start_time) or "09:00",
                 "end_time": _format_time(s.end_time) or "17:00",
                 "price": float(s.price) if s.price else 0,
+                "self_drive_price": float(s.self_drive_price) if s.self_drive_price else None,
+                # 大巴套餐价格
+                "single_person_price": float(s.single_person_price) if s.single_person_price else None,
+                "two_person_one_pet_price": float(s.two_person_one_pet_price) if s.two_person_one_pet_price else None,
+                "one_person_two_pet_price": float(s.one_person_two_pet_price) if s.one_person_two_pet_price else None,
+                "single_pet_price": float(s.single_pet_price) if s.single_pet_price else None,
+                "extra_person_price": float(s.extra_person_price) if s.extra_person_price else None,
+                "extra_pet_price": float(s.extra_pet_price) if s.extra_pet_price else None,
+                # 自驾套餐价格
+                "self_drive_single_person_price": float(s.self_drive_single_person_price) if s.self_drive_single_person_price else None,
+                "self_drive_two_person_one_pet_price": float(s.self_drive_two_person_one_pet_price) if s.self_drive_two_person_one_pet_price else None,
+                "self_drive_one_person_two_pet_price": float(s.self_drive_one_person_two_pet_price) if s.self_drive_one_person_two_pet_price else None,
+                "self_drive_single_pet_price": float(s.self_drive_single_pet_price) if s.self_drive_single_pet_price else None,
+                "self_drive_extra_person_price": float(s.self_drive_extra_person_price) if s.self_drive_extra_person_price else None,
+                "self_drive_extra_pet_price": float(s.self_drive_extra_pet_price) if s.self_drive_extra_pet_price else None,
                 "stock": s.stock or 0,
                 "sold": s.sold or 0,
                 "status": s.status or 1,
@@ -1221,13 +1324,12 @@ async def admin_create_schedule(
         
         schedule_date = datetime.strptime(data.schedule_date, "%Y-%m-%d").date()
         
-        # 检查该日期是否已存在排期
+        # 检查该日期是否已存在排期（不区分状态，数据库唯一键限制）
         existing_result = await db.execute(
             select(RouteSchedule).where(
                 and_(
                     RouteSchedule.route_id == route_id,
-                    RouteSchedule.schedule_date == schedule_date,
-                    RouteSchedule.status == 1
+                    RouteSchedule.schedule_date == schedule_date
                 )
             )
         )
@@ -1240,6 +1342,20 @@ async def admin_create_schedule(
             start_time=data.start_time,
             end_time=data.end_time,
             price=data.price,
+            self_drive_price=data.self_drive_price,
+            single_person_price=data.single_person_price,
+            two_person_one_pet_price=data.two_person_one_pet_price,
+            one_person_two_pet_price=data.one_person_two_pet_price,
+            single_pet_price=data.single_pet_price,
+            extra_person_price=data.extra_person_price,
+            extra_pet_price=data.extra_pet_price,
+            self_drive_single_person_price=data.self_drive_single_person_price,
+            self_drive_two_person_one_pet_price=data.self_drive_two_person_one_pet_price,
+            self_drive_one_person_two_pet_price=data.self_drive_one_person_two_pet_price,
+            self_drive_single_pet_price=data.self_drive_single_pet_price,
+            self_drive_extra_person_price=data.self_drive_extra_person_price,
+            self_drive_extra_pet_price=data.self_drive_extra_pet_price,
+            addon_prices=data.addon_prices,
             stock=data.stock,
             status=data.status,
             guide_id=data.guide_id,
@@ -1320,12 +1436,11 @@ async def admin_delete_schedule(
             logger.info(f"Schedule has orders, cannot delete: {schedule_id}")
             return {"code": 409, "message": f"该排期已有{schedule.sold}个订单，不可删除", "data": None}
         
-        # 更新状态为已删除
-        schedule.status = 0
+        # 物理删除排期（无订单关联时）
+        await db.delete(schedule)
         await db.commit()
-        await db.refresh(schedule)
         
-        logger.info(f"Schedule deleted successfully: {schedule_id}, new status={schedule.status}")
+        logger.info(f"Schedule deleted successfully: {schedule_id}")
         return success({"message": "排期删除成功"})
     except Exception as e:
         logger.error(f"Error deleting schedule: {e}")
@@ -1352,6 +1467,21 @@ async def admin_batch_create_schedules(
         start_time = data.get('start_time', '09:00')
         end_time = data.get('end_time', '17:00')
         price = data.get('price')
+        self_drive_price = data.get('self_drive_price')
+        # 大巴套餐价格
+        single_person_price = data.get('single_person_price')
+        two_person_one_pet_price = data.get('two_person_one_pet_price')
+        one_person_two_pet_price = data.get('one_person_two_pet_price')
+        single_pet_price = data.get('single_pet_price')
+        extra_person_price = data.get('extra_person_price')
+        extra_pet_price = data.get('extra_pet_price')
+        # 自驾套餐价格
+        self_drive_single_person_price = data.get('self_drive_single_person_price')
+        self_drive_two_person_one_pet_price = data.get('self_drive_two_person_one_pet_price')
+        self_drive_one_person_two_pet_price = data.get('self_drive_one_person_two_pet_price')
+        self_drive_single_pet_price = data.get('self_drive_single_pet_price')
+        self_drive_extra_person_price = data.get('self_drive_extra_person_price')
+        self_drive_extra_pet_price = data.get('self_drive_extra_pet_price')
         stock = data.get('stock', 12)
         
         if not start_date or not end_date:
@@ -1367,13 +1497,12 @@ async def admin_batch_create_schedules(
         while current_date <= end:
             # 检查是否为指定的星期几
             if current_date.isoweekday() in week_days:
-                # 检查该日期是否已存在排期
+                # 检查该日期是否已存在排期（不区分状态，数据库唯一键限制）
                 existing_result = await db.execute(
                     select(RouteSchedule).where(
                         and_(
                             RouteSchedule.route_id == route_id,
-                            RouteSchedule.schedule_date == current_date,
-                            RouteSchedule.status == 1
+                            RouteSchedule.schedule_date == current_date
                         )
                     )
                 )
@@ -1388,6 +1517,19 @@ async def admin_batch_create_schedules(
                     start_time=start_time,
                     end_time=end_time,
                     price=price,
+                    self_drive_price=self_drive_price,
+                    single_person_price=single_person_price,
+                    two_person_one_pet_price=two_person_one_pet_price,
+                    one_person_two_pet_price=one_person_two_pet_price,
+                    single_pet_price=single_pet_price,
+                    extra_person_price=extra_person_price,
+                    extra_pet_price=extra_pet_price,
+                    self_drive_single_person_price=self_drive_single_person_price,
+                    self_drive_two_person_one_pet_price=self_drive_two_person_one_pet_price,
+                    self_drive_one_person_two_pet_price=self_drive_one_person_two_pet_price,
+                    self_drive_single_pet_price=self_drive_single_pet_price,
+                    self_drive_extra_person_price=self_drive_extra_person_price,
+                    self_drive_extra_pet_price=self_drive_extra_pet_price,
                     stock=stock,
                     status=1,
                     guide_id=None,
@@ -1503,6 +1645,7 @@ async def admin_list_addons(
                 "name": a.name,
                 "price": float(a.price),
                 "unit": a.unit,
+                "description": a.description,
                 "stock": a.stock,
                 "sold": a.sold,
                 "limit_per_order": a.limit_per_order,
@@ -1608,6 +1751,136 @@ async def admin_delete_addon(
     if not addon:
         return {"code": 404, "message": "选配不存在", "data": None}
     await db.delete(addon)
+    await db.commit()
+    return success(None)
+
+
+# ==================== 行程选配分类 API ====================
+
+@app.get("/api/v1/addon-categories")
+async def get_addon_categories(
+    db: AsyncSession = Depends(get_db)
+):
+    """获取启用的行程选配分类列表（公开接口，小程序端）"""
+    query = select(AddonCategory).where(AddonCategory.status == 1)
+    query = query.order_by(AddonCategory.sort_order.asc(), AddonCategory.id.asc())
+    result = await db.execute(query)
+    categories = result.scalars().all()
+    return success({
+        "categories": [
+            {
+                "id": c.id,
+                "code": c.code,
+                "name": c.name,
+                "sort_order": c.sort_order,
+            }
+            for c in categories
+        ]
+    })
+
+@app.get("/api/v1/admin/addon-categories")
+async def admin_list_addon_categories(
+    status: Optional[int] = None,
+    db: AsyncSession = Depends(get_db)
+):
+    """管理后台：行程选配分类列表"""
+    query = select(AddonCategory)
+    if status is not None:
+        query = query.where(AddonCategory.status == status)
+    query = query.order_by(AddonCategory.sort_order.asc(), AddonCategory.id.asc())
+    result = await db.execute(query)
+    categories = result.scalars().all()
+    return success({
+        "categories": [
+            {
+                "id": c.id,
+                "code": c.code,
+                "name": c.name,
+                "sort_order": c.sort_order,
+                "status": c.status,
+                "created_at": c.created_at.isoformat() if c.created_at else None,
+                "updated_at": c.updated_at.isoformat() if c.updated_at else None,
+            }
+            for c in categories
+        ]
+    })
+
+
+@app.post("/api/v1/admin/addon-categories")
+async def admin_create_addon_category(
+    data: dict,
+    db: AsyncSession = Depends(get_db)
+):
+    """管理后台：创建行程选配分类"""
+    # 检查 code 是否已存在
+    code = data.get("code", "").strip()
+    if not code:
+        return {"code": 400, "message": "标识码不能为空", "data": None}
+    result = await db.execute(select(AddonCategory).where(AddonCategory.code == code))
+    if result.scalar_one_or_none():
+        return {"code": 400, "message": "标识码已存在", "data": None}
+
+    category = AddonCategory(
+        code=code,
+        name=data.get("name", ""),
+        sort_order=data.get("sort_order", 0),
+        status=data.get("status", 1),
+    )
+    db.add(category)
+    await db.commit()
+    await db.refresh(category)
+    return success({"id": category.id})
+
+
+@app.put("/api/v1/admin/addon-categories/{category_id}")
+async def admin_update_addon_category(
+    category_id: int,
+    data: dict,
+    db: AsyncSession = Depends(get_db)
+):
+    """管理后台：更新行程选配分类"""
+    result = await db.execute(select(AddonCategory).where(AddonCategory.id == category_id))
+    category = result.scalar_one_or_none()
+    if not category:
+        return {"code": 404, "message": "分类不存在", "data": None}
+
+    # 如果修改了 code，检查是否冲突
+    new_code = data.get("code", "").strip()
+    if new_code and new_code != category.code:
+        check = await db.execute(select(AddonCategory).where(AddonCategory.code == new_code))
+        if check.scalar_one_or_none():
+            return {"code": 400, "message": "标识码已存在", "data": None}
+        category.code = new_code
+
+    for field in ["name", "sort_order", "status"]:
+        if field in data:
+            setattr(category, field, data[field])
+
+    await db.commit()
+    await db.refresh(category)
+    return success({"id": category.id})
+
+
+@app.delete("/api/v1/admin/addon-categories/{category_id}")
+async def admin_delete_addon_category(
+    category_id: int,
+    db: AsyncSession = Depends(get_db)
+):
+    """管理后台：删除行程选配分类"""
+    result = await db.execute(select(AddonCategory).where(AddonCategory.id == category_id))
+    category = result.scalar_one_or_none()
+    if not category:
+        return {"code": 404, "message": "分类不存在", "data": None}
+
+    # 检查是否有关联的选配
+    check = await db.execute(select(func.count()).select_from(
+        select(RouteAddon).where(RouteAddon.category == category.code).subquery()
+    ))
+    count = check.scalar() or 0
+    if count > 0:
+        return {"code": 400, "message": f"该分类下还有 {count} 个选配，无法删除", "data": None}
+
+    await db.delete(category)
     await db.commit()
     return success(None)
 

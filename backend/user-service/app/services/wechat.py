@@ -21,16 +21,30 @@ class WechatService:
         self.jwt_secret = settings.jwt.secret
         self.jwt_expire = settings.jwt.expire
     
-    async def login(self, code: str, db: AsyncSession) -> dict:
+    async def login(self, code: str, db: AsyncSession, phone_code: str = None) -> dict:
         """
         微信登录
         
         1. 用code换取openid和session_key
-        2. 查找或创建用户
-        3. 生成JWT token
+        2. 如有phone_code，获取用户手机号
+        3. 查找或创建用户
+        4. 生成JWT token
         """
+        import logging
+        logger = logging.getLogger(__name__)
+        
         # 调用微信接口获取openid
         openid, session_key = await self._get_openid_by_code(code)
+        
+        # 获取手机号
+        phone = None
+        logger.info(f"[Login] phone_code present: {bool(phone_code)}")
+        if phone_code:
+            try:
+                phone = await self._get_phone_by_code(phone_code)
+                logger.info(f"[Login] Got phone: {phone}")
+            except Exception as e:
+                logger.error(f"[Login] Failed to get phone: {e}", exc_info=True)
         
         # 查找或创建用户
         from sqlalchemy import select
@@ -46,13 +60,20 @@ class WechatService:
             suffix = ''.join(random.choices(string.ascii_lowercase + string.digits, k=4))
             user = User(
                 openid=openid,
-                nickname=f"宠友_{suffix}",
+                nickname=f"尾巴人_{suffix}",
                 avatar="",
                 status=1,
             )
             db.add(user)
             await db.commit()
             await db.refresh(user)
+        
+        # 更新手机号（如果获取到了且用户当前没有手机号）
+        if phone and not user.phone:
+            user.phone = phone
+            await db.commit()
+            await db.refresh(user)
+            logger.info(f"[Login] Updated user phone: {phone}")
         
         # 生成token
         tokens = self._generate_tokens(user.id, openid)
@@ -160,6 +181,72 @@ class WechatService:
             "refresh_token": refresh_token,
             "expires_in": self.jwt_expire,
         }
+    
+    async def _get_access_token(self) -> str:
+        """获取微信access_token（带缓存）"""
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        cache_key = f"wechat_access_token:{self.appid}"
+        try:
+            cached = await redis_client.get(cache_key)
+            if cached:
+                logger.info("[Wechat] Using cached access_token")
+                return cached
+        except Exception as e:
+            logger.warning(f"[Wechat] Redis get failed: {e}")
+        
+        url = "https://api.weixin.qq.com/cgi-bin/token"
+        params = {
+            "grant_type": "client_credential",
+            "appid": self.appid,
+            "secret": self.appsecret,
+        }
+        
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.get(url, params=params)
+            result = response.json()
+        
+        access_token = result.get("access_token")
+        expires_in = result.get("expires_in", 7200)
+        
+        if not access_token:
+            errcode = result.get("errcode")
+            errmsg = result.get("errmsg", "未知错误")
+            raise BadRequestException(f"获取微信access_token失败: {errmsg}")
+        
+        logger.info(f"[Wechat] Got new access_token, expires_in={expires_in}")
+        
+        # 缓存，提前5分钟过期
+        try:
+            await redis_client.set(cache_key, access_token, expire=int(expires_in) - 300)
+        except Exception as e:
+            logger.warning(f"[Wechat] Redis set failed: {e}")
+        
+        return access_token
+    
+    async def _get_phone_by_code(self, phone_code: str) -> str:
+        """用code换取用户手机号"""
+        if not self.appid or not self.appsecret or self.appid == 'your-app-id':
+            import logging
+            logging.getLogger(__name__).warning("WeChat not configured, skip phone get")
+            return None
+        
+        access_token = await self._get_access_token()
+        url = f"https://api.weixin.qq.com/wxa/business/getuserphonenumber?access_token={access_token}"
+        
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.post(url, json={"code": phone_code})
+            result = response.json()
+        
+        errcode = result.get("errcode")
+        if errcode is not None and errcode != 0:
+            errmsg = result.get("errmsg", "未知错误")
+            raise BadRequestException(f"获取手机号失败: {errmsg}")
+        
+        phone_info = result.get("phone_info", {})
+        phone = phone_info.get("purePhoneNumber") or phone_info.get("phoneNumber")
+        return phone
     
     async def refresh_token(self, refresh_token: str) -> dict:
         """刷新访问令牌"""

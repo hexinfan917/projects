@@ -8,6 +8,11 @@
   padding-bottom: 20rpx;
 }
 
+.profile-page.no-scroll {
+  overflow: hidden;
+  height: 100vh;
+}
+
 
 /* 顶部用户区域 - 绿色卡片 */
 .user-header {
@@ -40,19 +45,19 @@
 }
 
 .avatar {
-  width: 120rpx;
-  height: 120rpx;
+  width: 140rpx;
+  height: 140rpx;
   border-radius: 50%;
-  border: 4rpx solid rgba(255, 255, 255, 0.3);
   margin-right: 24rpx;
   background: #fff;
 }
 
 .avatar-placeholder {
-  background: #e6e9e7;
+  background: transparent;
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
 }
 
 .avatar-icon {
@@ -61,8 +66,8 @@
 }
 
 .avatar-icon-img {
-  width: 56rpx;
-  height: 56rpx;
+  width: 100%;
+  height: 100%;
 }
 
 .user-info {

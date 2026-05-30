@@ -62,6 +62,23 @@ export const layout = ({ initialState, setInitialState }: { initialState: any; s
     menu: {
       locale: false,
     },
+    menuDataRender: (menuData: any[]) => {
+      const routesItem = menuData.find((item: any) => item.path === '/routes');
+      const addonsItem = menuData.find((item: any) => item.path === '/addons');
+      const addonCategoriesItem = menuData.find((item: any) => item.path === '/addon-categories');
+      if (routesItem) {
+        routesItem.children = routesItem.children || [];
+        if (addonsItem && !routesItem.children.find((c: any) => c.path === '/addons')) {
+          routesItem.children.push(addonsItem);
+        }
+        if (addonCategoriesItem && !routesItem.children.find((c: any) => c.path === '/addon-categories')) {
+          routesItem.children.push(addonCategoriesItem);
+        }
+      }
+      return menuData.filter((item: any) =>
+        item.path !== '/addons' && item.path !== '/addon-categories'
+      );
+    },
     rightRender: (initState: any) => {
       if (!initState?.isLogin) return null;
       const handleMenuClick = ({ key }: { key: string }) => {

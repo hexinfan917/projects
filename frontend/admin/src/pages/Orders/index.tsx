@@ -271,7 +271,7 @@ export default function OrderList() {
                     <Descriptions.Item label="用户ID">{currentOrder.user_id}</Descriptions.Item>
                     <Descriptions.Item label="支付时间">{currentOrder.pay_time ? dayjs(currentOrder.pay_time).format('YYYY-MM-DD HH:mm:ss') : '-'}</Descriptions.Item>
                     <Descriptions.Item label="支付方式">{currentOrder.pay_channel || '-'}</Descriptions.Item>
-                    <Descriptions.Item label="微信支付单号">{currentOrder.pay_transaction_id || '-'}</Descriptions.Item>
+                    <Descriptions.Item label="微信支付单号">{currentOrder.pay_trade_no || currentOrder.pay_transaction_id || '-'}</Descriptions.Item>
                   </Descriptions>
                 </Col>
               </Row>

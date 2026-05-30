@@ -23,9 +23,10 @@ async def wechat_login(
     微信登录
     
     - **code**: 微信登录凭证
+    - **phone_code**: 微信手机号凭证（可选）
     """
     try:
-        result = await wechat_service.login(login_data.code, db)
+        result = await wechat_service.login(login_data.code, db, phone_code=login_data.phone_code)
         return success(result)
     except Exception as e:
         logger.error(f"Wechat login failed: {e}")

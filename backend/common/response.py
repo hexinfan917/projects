@@ -35,8 +35,13 @@ class ResponseMessage:
         return cls.MESSAGES.get(code, "未知错误")
 
 
+import json
+
+
 class APIResponse(JSONResponse):
     """统一API响应"""
+    
+    media_type = "application/json; charset=utf-8"
     
     def __init__(
         self,
@@ -55,6 +60,15 @@ class APIResponse(JSONResponse):
             content["request_id"] = request_id
         
         super().__init__(content=content, **kwargs)
+    
+    def render(self, content: Any) -> bytes:
+        return json.dumps(
+            content,
+            ensure_ascii=False,
+            allow_nan=False,
+            indent=None,
+            separators=(",", ":"),
+        ).encode("utf-8")
 
 
 def success(data: Any = None, message: str = "success") -> APIResponse:

@@ -1,6 +1,6 @@
 /* 登录页面 - Material Design 3 风格 */
 .login-page {
-  min-height: 100vh;
+  height: 100vh;
   background: #f5f7f5;
   display: flex;
   flex-direction: column;
@@ -230,4 +230,187 @@
   height: 640rpx;
   background: rgba(253, 192, 3, 0.1);
   filter: blur(240rpx);
+}
+
+/* ========== 完善资料弹窗 ========== */
+.profile-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 200;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40rpx;
+}
+
+.profile-modal-content {
+  width: 100%;
+  max-height: 85vh;
+  background: #fff;
+  border-radius: 32rpx;
+  padding: 48rpx 40rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow-y: auto;
+  box-shadow: 0 20rpx 60rpx rgba(0, 0, 0, 0.15);
+}
+
+.pm-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 40rpx;
+}
+
+.pm-header .pm-logo {
+  width: 100rpx;
+  height: 100rpx;
+  margin-bottom: 16rpx;
+}
+
+.pm-header .pm-title {
+  font-size: 36rpx;
+  font-weight: 700;
+  color: #333;
+  margin-bottom: 8rpx;
+}
+
+.pm-header .pm-subtitle {
+  font-size: 26rpx;
+  color: #999;
+}
+
+.pm-form {
+  width: 100%;
+  margin-bottom: 40rpx;
+}
+
+.pm-avatar-wrap {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 40rpx;
+}
+
+.pm-avatar-btn {
+  width: 180rpx;
+  height: 180rpx;
+  border-radius: 50%;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pm-avatar-btn::after {
+  border: none;
+}
+
+.pm-avatar-img {
+  width: 180rpx;
+  height: 180rpx;
+  border-radius: 50%;
+  border: 4rpx solid #22C55E;
+}
+
+.pm-avatar-placeholder {
+  width: 180rpx;
+  height: 180rpx;
+  border-radius: 50%;
+  background: #f0f0f0;
+  border: 2rpx dashed #ccc;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.pm-avatar-placeholder .pm-avatar-icon {
+  font-size: 48rpx;
+  margin-bottom: 8rpx;
+}
+
+.pm-avatar-placeholder .pm-avatar-text {
+  font-size: 22rpx;
+  color: #999;
+}
+
+.pm-nickname-wrap {
+  width: 100%;
+}
+
+.pm-nickname-wrap .pm-label {
+  display: block;
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 16rpx;
+}
+
+.pm-nickname-wrap .pm-input-box {
+  background: #f8f8f8;
+  border-radius: 16rpx;
+  padding: 0 24rpx;
+  margin-bottom: 12rpx;
+}
+
+.pm-nickname-wrap .pm-input {
+  height: 90rpx;
+  font-size: 30rpx;
+  color: #333;
+}
+
+.pm-nickname-wrap .pm-tip {
+  display: block;
+  font-size: 24rpx;
+  color: #999;
+  line-height: 1.5;
+}
+
+.pm-actions {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.pm-actions .pm-submit-btn {
+  width: 100%;
+  height: 90rpx;
+  line-height: 90rpx;
+  background: #22C55E;
+  color: #fff;
+  font-size: 32rpx;
+  font-weight: 500;
+  border-radius: 45rpx;
+  margin-bottom: 24rpx;
+}
+
+.pm-actions .pm-submit-btn::after {
+  border: none;
+}
+
+.pm-actions .pm-submit-btn.disabled {
+  background: #a8e6b8;
+}
+
+.pm-actions .pm-submit-btn:active {
+  opacity: 0.9;
+}
+
+.pm-actions .pm-skip {
+  font-size: 28rpx;
+  color: #999;
+  padding: 10rpx 30rpx;
+}
+
+.pm-actions .pm-skip:active {
+  color: #666;
 }

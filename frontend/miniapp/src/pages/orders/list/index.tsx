@@ -195,7 +195,10 @@ export default function OrderList() {
           return (
             <View key={order.id} className='order-card' onClick={() => goDetail(order.id)}>
               <View className='order-header'>
-                <Text className='order-no'>订单号: {order.order_no}</Text>
+                <View className='order-no-wrap' onClick={(e) => { e.stopPropagation(); Taro.setClipboardData({ data: order.order_no }) }}>
+                  <Text className='order-no'>订单号: {order.order_no}</Text>
+                  <Text className='copy-icon'>📋</Text>
+                </View>
                 <Text className='order-status'>{STATUS_MAP[order.status]}</Text>
               </View>
               <View className='order-body'>

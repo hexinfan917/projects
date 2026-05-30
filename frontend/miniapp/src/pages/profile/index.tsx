@@ -20,7 +20,7 @@ const ICON_MAP: Record<string, string> = {
   '待出行': '/assets/icons/profile/travel.png',
   '待评价': '/assets/icons/profile/review.png',
   '退款/售后': '/assets/icons/profile/refund.png',
-  '默认头像': '/assets/icons/profile/default-avatar.png',
+  '默认头像': '/assets/icons/profile/head.png',
 }
 
 const SERVICES = [
@@ -168,7 +168,7 @@ export default function Profile() {
   }
 
   return (
-    <View className='profile-page'>
+    <View className={`profile-page ${serviceVisible ? 'no-scroll' : ''}`}>
       <View className='custom-navbar'>
         <View className='navbar-bg' />
         <View className='navbar-content'>
@@ -184,13 +184,13 @@ export default function Profile() {
             <Image className='avatar' src={compressImageUrl(user.avatar, 200)} mode='aspectFill' style={{ width: '120rpx', height: '120rpx' }} />
           ) : (
             <View className='avatar avatar-placeholder'>
-              <Image className='avatar-icon-img' src={ICON_MAP['默认头像']} mode='aspectFit' />
+              <Image className='avatar-icon-img' src={ICON_MAP['默认头像']} mode='aspectFill' />
             </View>
           )}
           <View className='user-info'>
             {user ? (
               <>
-                <Text className='nickname'>{user.nickname || '宠友'}</Text>
+                <Text className='nickname'>{user.nickname || '尾巴人'}</Text>
               </>
             ) : (
               <View className='login-wrap' onClick={goLogin}>
@@ -295,7 +295,7 @@ export default function Profile() {
               key={m.label}
               className='more-item'
               onClick={() => {
-                if (m.path && (m.label === '出行人管理' || m.label === '我的足迹')) {
+                if (m.path && (m.label === '出行人管理' || m.label === '我的足迹' || m.label === '会员中心' || m.label === '优惠券')) {
                   if (!checkLogin()) return
                   Taro.navigateTo({ url: m.path })
                 } else if (m.path) {
@@ -316,9 +316,9 @@ export default function Profile() {
       </View>
 
       {serviceVisible && (
-        <View className='service-modal'>
-          <View className='service-mask' onClick={() => setServiceVisible(false)} />
-          <View className='service-content'>
+        <View className='service-modal' catchMove>
+          <View className='service-mask' onClick={() => setServiceVisible(false)} catchMove />
+          <View className='service-content' catchMove>
             <Text className='service-title'>联系客服</Text>
             <Image
               className='qr-image'

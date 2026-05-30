@@ -33,6 +33,12 @@ const isValidName = (name: string): boolean => {
   return /^[\u4e00-\u9fa5a-zA-Z·•]+$/.test(name)
 }
 
+/** 身份证脱敏 */
+const maskIdCardSimple = (idCard: string) => {
+  if (!idCard || idCard.length < 8) return idCard
+  return idCard.slice(0, 4) + '********' + idCard.slice(-4)
+}
+
 export default function TravelerEdit() {
   const [form, setForm] = useState<any>({ name: '', phone: '', id_card: '', gender: 0, is_default: 0 })
   const [isEdit, setIsEdit] = useState(false)
@@ -110,12 +116,89 @@ export default function TravelerEdit() {
     }
 
     try {
+      const userInfo = Taro.getStorageSync('user_info') || {}
+      // 资料关键信息是否完整：真实姓名 + 身份证号
+      // 手机号不算关键信息（可能自动获取），同步目的是填充姓名和身份证
+      const hasCriticalProfile = userInfo.real_name && userInfo.id_card
+
+      // 新建时检查是否已存在相同身份证号的出行人
+      let existList: any[] = []
+      if (!form.id) {
+        const existRes: any = await getTravelers()
+        existList = existRes.data || []
+        const duplicate = existList.find((t: any) => t.id_card === form.id_card)
+        if (duplicate) {
+          Taro.showModal({
+            title: '提示',
+            content: `已存在身份证号为 ${maskIdCardSimple(form.id_card)} 的出行人（${duplicate.name}），请勿重复添加。`,
+            showCancel: false,
+            confirmText: '知道了',
+          })
+          return
+        }
+      }
+
+      // 判断是否是本人
+      // - 资料有身份证：通过身份证号匹配
+      // - 资料完全空白：第一个出行人默认认为是本人
+      let isSelf = false
+      if (form.id_card && userInfo.id_card) {
+        isSelf = form.id_card === userInfo.id_card
+      } else if (!hasCriticalProfile && !form.id) {
+        isSelf = existList.length === 0
+      }
+
       if (form.id) {
+        // 编辑已有出行人
         const res: any = await updateTraveler(form.id, form)
         if (res?.code !== 200) {
           throw new Error(res?.message || '保存失败')
         }
+        Taro.showToast({ title: '保存成功', icon: 'success' })
+
+        // 编辑本人且信息有变化时，询问同步
+        const changed = isSelf && (
+          form.name !== userInfo.real_name ||
+          form.phone !== userInfo.phone ||
+          form.id_card !== userInfo.id_card
+        )
+        if (changed) {
+          setTimeout(() => {
+            Taro.showModal({
+              title: '同步个人信息',
+              content: '出行人信息已变更，是否同步更新到个人资料？',
+              confirmText: '同步',
+              cancelText: '不同步',
+              success: async (modalRes) => {
+                if (modalRes.confirm) {
+                  try {
+                    const updateData = {
+                      real_name: form.name,
+                      phone: form.phone,
+                      id_card: form.id_card,
+                      nickname: userInfo.nickname,
+                      avatar: userInfo.avatar,
+                      gender: userInfo.gender || 1,
+                      city: userInfo.city,
+                    }
+                    const profileRes: any = await updateUserProfile(updateData)
+                    if (profileRes.code === 200) {
+                      Taro.setStorageSync('user_info', { ...userInfo, ...updateData })
+                      Taro.showToast({ title: '同步成功', icon: 'success' })
+                    }
+                  } catch {
+                    Taro.showToast({ title: '同步失败', icon: 'none' })
+                  }
+                }
+                setTimeout(() => Taro.navigateBack(), 800)
+              }
+            })
+          }, 500)
+        } else {
+          setTimeout(() => Taro.navigateBack(), 1000)
+        }
       } else {
+        // 新建出行人
         const res: any = await createTraveler(form)
         if (res?.code !== 200) {
           throw new Error(res?.message || '保存失败')
@@ -123,46 +206,44 @@ export default function TravelerEdit() {
         if (res?.data?.id) {
           Taro.setStorageSync('order_confirm_select_traveler_id', res.data.id)
         }
-      }
-      Taro.showToast({ title: '保存成功', icon: 'success' })
+        Taro.showToast({ title: '保存成功', icon: 'success' })
 
-      // 检查个人资料是否需要同步
-      const userInfo = Taro.getStorageSync('user_info') || {}
-      const needSync = !userInfo.real_name || !userInfo.phone || !userInfo.id_card
-      if (needSync && (form.name || form.phone || form.id_card)) {
-        setTimeout(() => {
-          Taro.showModal({
-            title: '同步个人信息',
-            content: '是否将出行人信息同步到个人资料？同步后购买会员、下单时可自动填充。',
-            confirmText: '同步',
-            cancelText: '不同步',
-            success: async (modalRes) => {
-              if (modalRes.confirm) {
-                try {
-                  const updateData = {
-                    real_name: form.name,
-                    phone: form.phone,
-                    id_card: form.id_card,
-                    nickname: userInfo.nickname,
-                    avatar: userInfo.avatar,
-                    gender: userInfo.gender || 1,
-                    city: userInfo.city,
+        // 新建本人且个人资料完全空白时才询问同步
+        if (isSelf && !hasCriticalProfile) {
+          setTimeout(() => {
+            Taro.showModal({
+              title: '同步个人信息',
+              content: '是否将出行人信息同步到个人资料？同步后购买会员、下单时可自动填充。',
+              confirmText: '同步',
+              cancelText: '不同步',
+              success: async (modalRes) => {
+                if (modalRes.confirm) {
+                  try {
+                    const updateData = {
+                      real_name: form.name,
+                      phone: form.phone,
+                      id_card: form.id_card,
+                      nickname: userInfo.nickname,
+                      avatar: userInfo.avatar,
+                      gender: userInfo.gender || 1,
+                      city: userInfo.city,
+                    }
+                    const profileRes: any = await updateUserProfile(updateData)
+                    if (profileRes.code === 200) {
+                      Taro.setStorageSync('user_info', { ...userInfo, ...updateData })
+                      Taro.showToast({ title: '同步成功', icon: 'success' })
+                    }
+                  } catch {
+                    Taro.showToast({ title: '同步失败', icon: 'none' })
                   }
-                  const profileRes: any = await updateUserProfile(updateData)
-                  if (profileRes.code === 200) {
-                    Taro.setStorageSync('user_info', { ...userInfo, ...updateData })
-                    Taro.showToast({ title: '同步成功', icon: 'success' })
-                  }
-                } catch {
-                  Taro.showToast({ title: '同步失败', icon: 'none' })
                 }
+                setTimeout(() => Taro.navigateBack(), 800)
               }
-              setTimeout(() => Taro.navigateBack(), 800)
-            }
-          })
-        }, 500)
-      } else {
-        setTimeout(() => Taro.navigateBack(), 1000)
+            })
+          }, 500)
+        } else {
+          setTimeout(() => Taro.navigateBack(), 1000)
+        }
       }
     } catch (err: any) {
       Taro.showToast({ title: err.message || '保存失败', icon: 'none' })

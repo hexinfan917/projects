@@ -154,14 +154,19 @@ export default defineConfig({
     },
 
     {
-      name: '公益管理',
-      path: '/charities',
-      component: './Charities',
-    },
-    {
       name: '行程选配',
       path: '/addons',
       component: './Addons',
+    },
+    {
+      name: '选配分类',
+      path: '/addon-categories',
+      component: './AddonCategories/index',
+    },
+    {
+      name: '公益管理',
+      path: '/charities',
+      component: './Charities',
     },
     {
       name: '会员管理',

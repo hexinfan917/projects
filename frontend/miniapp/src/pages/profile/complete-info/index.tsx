@@ -21,7 +21,7 @@ export default function CompleteInfo() {
   useEffect(() => {
     // 加载当前用户信息（如果是从登录跳转过来的，可能已有随机昵称）
     const info = Taro.getStorageSync('user_info')
-    if (info?.nickname && !info.nickname.startsWith('宠友_')) {
+    if (info?.nickname && !info.nickname.startsWith('尾巴人_')) {
       setNickname(info.nickname)
     }
     if (info?.avatar) {
@@ -156,7 +156,9 @@ export default function CompleteInfo() {
               onChooseAvatar={handleChooseAvatar}
             >
               {avatarUrl ? (
-                <Image className='avatar-img' src={avatarUrl} mode='aspectFill' />
+                <View className='avatar-img-wrap'>
+                  <Image className='avatar-img' src={avatarUrl} mode='aspectFill' />
+                </View>
               ) : (
                 <View className='avatar-placeholder'>
                   <Text className='placeholder-icon'>📷</Text>

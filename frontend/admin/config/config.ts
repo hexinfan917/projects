@@ -1,23 +1,6 @@
 import { defineConfig } from '@umijs/max';
 
-export default defineConfig({
-  publicPath: '/admin/',
-  antd: {},
-  access: {},
-  model: {},
-  initialState: {},
-  request: {},
-  layout: {
-    title: '尾巴旅行管理后台',
-    logo: '/logo.png',
-  },
-  proxy: {
-    '/api': {
-      target: 'http://localhost:8081',
-      changeOrigin: true,
-    },
-  },
-  routes: [
+const routes = [
     {
       path: '/',
       redirect: '/home',
@@ -81,6 +64,17 @@ export default defineConfig({
       path: '/schedules',
       component: './Schedules',
     },
+    {
+      name: '行程选配',
+      path: '/addons',
+      component: './Addons',
+    },
+    {
+      name: '选配分类',
+      path: '/addon-categories',
+      component: './AddonCategories/index',
+    },
+
     {
       name: '订单管理',
       path: '/orders',
@@ -195,6 +189,25 @@ export default defineConfig({
       path: '/settings',
       component: './Settings',
     },
-  ],
+  ];
+
+export default defineConfig({
+  publicPath: '/admin/',
+  antd: {},
+  access: {},
+  model: {},
+  initialState: {},
+  request: {},
+  layout: {
+    title: '尾巴旅行管理后台',
+    logo: '/logo.png',
+  },
+  proxy: {
+    '/api': {
+      target: 'http://localhost:8081',
+      changeOrigin: true,
+    },
+  },
+  routes: routes,
   npmClient: 'npm',
 });

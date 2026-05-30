@@ -1,272 +1,666 @@
 .order-confirm {
   min-height: 100vh;
-  background: #f7f8fa;
-  padding-bottom: 160px;
+  background: #f8f9ff;
+  padding-bottom: 200rpx;
+  overflow-x: hidden;
 }
 
-/* 头部栏 */
-.order-header {
-  background: #22C55E;
-  padding: 36px 28px;
-  color: #fff;
-  .header-title {
-    display: block;
-    font-size: 40px;
-    font-weight: 600;
-    margin-bottom: 14px;
-  }
-  .header-sub {
-    display: block;
-    font-size: 30px;
-    opacity: 0.95;
-  }
-}
-
-/* 内容块 */
-.section-block {
-  background: #fff;
-  margin: 24px 28px;
-  border-radius: 18px;
-  padding: 28px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-}
-
-.section-label {
-  display: block;
-  font-size: 32px;
-  font-weight: 600;
-  color: #333;
-  margin-bottom: 22px;
-}
-
-.section-header {
+/* ---------- 顶部固定导航 ---------- */
+.top-nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  height: 152rpx;
+  padding-top: 40rpx;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  margin-bottom: 22px;
-  .section-label {
-    margin-bottom: 0;
+  padding-left: 32rpx;
+  padding-right: 32rpx;
+  background: #f8f9ff;
+  box-shadow: 0 2rpx 8rpx rgba(0,0,0,0.05);
+  box-sizing: border-box;
+
+  .nav-back {
+    width: 64rpx;
+    height: 64rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: -16rpx;
+    color: #994700;
+    font-size: 32rpx;
+    font-weight: 700;
+  }
+
+  .nav-title {
+    margin-left: 16rpx;
+    font-size: 36rpx;
+    font-weight: 700;
+    color: #121c2a;
   }
 }
 
-.section-header-actions {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-}
-
-.section-header-action {
-  font-size: 28px;
-  color: #666;
-  padding: 6px 12px;
-  &.primary {
-    color: #22C55E;
-  }
-}
-
-.default-tag {
-  display: inline-block;
-  background: #22C55E;
-  color: #fff;
-  font-size: 20px;
-  padding: 2px 10px;
-  border-radius: 10px;
-  margin-left: 10px;
-  vertical-align: middle;
-}
-
-/* 信息卡片 */
-.info-card {
-  display: flex;
-  align-items: center;
-  background: #fafbfc;
-  border: 2px solid #e5e6eb;
-  border-radius: 14px;
-  padding: 22px;
-  margin-bottom: 18px;
-  transition: all 0.2s;
-  &.active {
-    border-color: #52c41a;
-    background: #f6ffed;
-  }
-}
-
-.pet-avatar-small {
-  width: 96px;
-  height: 96px;
-  border-radius: 50%;
-  margin-right: 18px;
-  background: #eee;
-  flex-shrink: 0;
-}
-
-.info-main {
-  flex: 1;
-  min-width: 0;
-}
-
-.info-name {
-  display: block;
-  font-size: 32px;
-  color: #222;
-  font-weight: 500;
-  margin-bottom: 10px;
-}
-
-.info-detail {
-  display: block;
-  font-size: 28px;
-  color: #666;
-}
-
-.card-actions {
+/* ---------- 主内容区 ---------- */
+.main-content {
+  padding: 0 32rpx;
+  margin-top: 172rpx;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  margin-left: 14px;
+  gap: 32rpx;
 }
 
-.card-actions-inline {
-  display: flex;
-  align-items: center;
-  margin-top: 10px;
-}
-
-.action-text {
-  font-size: 28px;
-  color: #ff7700;
-  padding: 4px 10px;
-  &.delete {
-    color: #ff4d4f;
-  }
-}
-
-.card-right {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin-left: 14px;
-}
-
-.check-circle {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  border: 2px solid #ccc;
+/* ---------- Hero 行程摘要 ---------- */
+.hero-section {
   position: relative;
-  flex-shrink: 0;
-  &.checked {
-    border-color: #52c41a;
-    background: #52c41a;
-    &::after {
-      content: '';
-      position: absolute;
-      left: 12px;
-      top: 6px;
-      width: 10px;
-      height: 18px;
-      border: solid #fff;
-      border-width: 0 3px 3px 0;
-      transform: rotate(45deg);
+  width: calc(100% + 64rpx);
+  margin-left: -32rpx;
+  height: 512rpx;
+  overflow: hidden;
+
+  .hero-image {
+    width: 100%;
+    height: 100%;
+  }
+
+  .hero-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(to top, rgba(0,0,0,0.6), transparent 60%);
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 32rpx;
+
+    .hero-tags {
+      display: flex;
+      gap: 12rpx;
+      margin-bottom: 16rpx;
+
+      .hero-tag {
+        background: #ff7a00;
+        color: #fff;
+        padding: 8rpx 24rpx;
+        border-radius: 8rpx;
+        font-size: 24rpx;
+        font-weight: 700;
+      }
+    }
+
+    .hero-title {
+      color: #fff;
+      font-size: 48rpx;
+      font-weight: 700;
+      line-height: 64rpx;
+    }
+
+    .hero-date {
+      display: flex;
+      align-items: center;
+      gap: 12rpx;
+      color: rgba(255,255,255,0.9);
+      font-size: 28rpx;
+      margin-top: 8rpx;
+    }
+
+    .hero-chips {
+      display: flex;
+      gap: 12rpx;
+      margin-top: 24rpx;
+
+      .hero-chip {
+        background: rgba(255,255,255,0.2);
+        padding: 8rpx 24rpx;
+        border-radius: 9999rpx;
+        font-size: 24rpx;
+        color: #fff;
+      }
     }
   }
 }
 
-.section-add-btn {
-  display: block;
-  text-align: center;
-  font-size: 30px;
-  color: #ff7700;
-  padding: 22px 0;
-  border: 2px dashed #ffcc80;
-  border-radius: 14px;
-  background: #fff7e6;
+/* ---------- 通用卡片 ---------- */
+.section-block {
+  background: #fff;
+  border-radius: 24rpx;
+  padding: 32rpx;
+  box-shadow: 0 4rpx 12rpx rgba(0,0,0,0.05);
 }
 
-.empty-tip {
-  display: block;
-  text-align: center;
-  font-size: 28px;
-  color: #999;
-  padding: 26px 0;
-}
-
-/* 保险 */
-.insurance-row {
+/* ---------- Section 标题 ---------- */
+.section-header {
   display: flex;
   align-items: center;
-  padding: 18px 0;
-  border-bottom: 1px solid #f0f0f0;
-  &:last-child {
-    border-bottom: none;
+  justify-content: space-between;
+  margin-bottom: 24rpx;
+
+  .section-title {
+    display: flex;
+    align-items: center;
+    gap: 12rpx;
+    font-size: 32rpx;
+    font-weight: 600;
+    color: #121c2a;
+
+    .section-icon {
+      font-size: 36rpx;
+      color: #994700;
+    }
+  }
+
+  .section-actions {
+    display: flex;
+    gap: 24rpx;
+
+    .section-action {
+      font-size: 24rpx;
+      color: #994700;
+      font-weight: 700;
+    }
   }
 }
 
-.insurance-dot {
-  font-size: 22px;
-  color: #ff7700;
-  margin-right: 14px;
+/* ---------- 空状态 ---------- */
+.empty-state {
+  padding: 64rpx 32rpx;
+  border-radius: 24rpx;
+  border: 4rpx dashed #e0c0af;
+  background: #f8f9ff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #8c7263;
+
+  .empty-icon {
+    font-size: 64rpx;
+    margin-bottom: 16rpx;
+    opacity: 0.2;
+  }
+
+  .empty-text {
+    font-size: 28rpx;
+  }
 }
 
-.insurance-text {
-  flex: 1;
-  font-size: 28px;
-  color: #444;
-  line-height: 1.45;
+/* ---------- 信息卡片（有数据） ---------- */
+.info-card {
+  padding: 32rpx;
+  border-radius: 24rpx;
+  border: 2rpx solid #e0c0af;
+  background: #f8f9ff;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 24rpx;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+
+  .info-left {
+    flex: 1;
+    min-width: 0;
+
+    .info-name-row {
+      display: flex;
+      align-items: center;
+      gap: 12rpx;
+      margin-bottom: 12rpx;
+
+      .info-name {
+        font-size: 32rpx;
+        font-weight: 600;
+        color: #121c2a;
+      }
+
+      .default-badge {
+        font-size: 24rpx;
+        color: #002113;
+        background: #6ffbbe;
+        padding: 4rpx 16rpx;
+        border-radius: 8rpx;
+      }
+    }
+
+    .info-detail {
+      font-size: 28rpx;
+      color: #584235;
+      line-height: 1.5;
+      display: block;
+    }
+  }
+
+  .info-right {
+    display: flex;
+    gap: 32rpx;
+
+    .info-action {
+      display: flex;
+      align-items: center;
+      gap: 8rpx;
+      font-size: 24rpx;
+      color: #994700;
+      font-weight: 700;
+
+      &.delete {
+        color: #ba1a1a;
+      }
+    }
+  }
 }
 
-.insurance-tip {
-  display: block;
-  font-size: 24px;
-  color: #999;
-  margin-top: 14px;
+/* 宠物头像 */
+.pet-avatar-wrap {
+  display: flex;
+  align-items: center;
+  gap: 24rpx;
+
+  .pet-avatar {
+    width: 96rpx;
+    height: 96rpx;
+    border-radius: 50%;
+    border: 4rpx solid #ffdbc8;
+    flex-shrink: 0;
+  }
 }
 
-/* 底部固定栏 */
+/* ---------- 保险服务 ---------- */
+.insurance-section {
+  background: #fff;
+  border-radius: 24rpx;
+  padding: 32rpx;
+  box-shadow: 0 4rpx 12rpx rgba(0,0,0,0.05);
+
+  .insurance-header {
+    display: flex;
+    align-items: center;
+    gap: 12rpx;
+    margin-bottom: 32rpx;
+
+    .insurance-icon {
+      font-size: 36rpx;
+      color: #994700;
+    }
+
+    .insurance-title {
+      font-size: 32rpx;
+      font-weight: 600;
+      color: #121c2a;
+    }
+
+    .insurance-badge {
+      font-size: 24rpx;
+      color: #994700;
+      background: #ffdbc8;
+      padding: 4rpx 16rpx;
+      border-radius: 9999rpx;
+      font-weight: 400;
+    }
+  }
+
+  .insurance-item {
+    padding: 32rpx;
+    border-radius: 24rpx;
+    border: 2rpx solid #e0c0af;
+    background: #f8f9ff;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24rpx;
+    position: relative;
+    overflow: hidden;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+
+    &.active {
+      border: 4rpx solid #006c49;
+      background: rgba(0, 108, 73, 0.05);
+
+      .insurance-check {
+        position: absolute;
+        top: 0;
+        right: 0;
+        background: #006c49;
+        color: #fff;
+        padding: 8rpx 24rpx;
+        border-bottom-left-radius: 24rpx;
+        font-size: 24rpx;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+    }
+
+    &.disabled {
+      opacity: 0.6;
+    }
+
+    .insurance-left {
+      flex: 1;
+      min-width: 0;
+
+      .insurance-name-row {
+        display: flex;
+        align-items: center;
+        gap: 12rpx;
+        margin-bottom: 8rpx;
+        flex-wrap: wrap;
+
+        .insurance-name {
+          font-size: 32rpx;
+          font-weight: 600;
+          color: #121c2a;
+        }
+
+        .insurance-price {
+          font-size: 28rpx;
+          color: #994700;
+          font-weight: 700;
+        }
+      }
+
+      .insurance-desc {
+        font-size: 24rpx;
+        color: #584235;
+      }
+    }
+
+    .insurance-total {
+      font-size: 32rpx;
+      font-weight: 600;
+      color: #121c2a;
+      flex-shrink: 0;
+      margin-left: 24rpx;
+    }
+  }
+
+  .insurance-tip {
+    font-size: 20rpx;
+    color: rgba(88, 66, 53, 0.6);
+    font-style: italic;
+    padding: 0 8rpx;
+    margin-top: 16rpx;
+  }
+}
+
+/* ---------- 优惠券 ---------- */
+.coupon-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  .coupon-left {
+    display: flex;
+    align-items: center;
+    gap: 12rpx;
+
+    .coupon-icon {
+      font-size: 36rpx;
+      color: #994700;
+    }
+
+    .coupon-title {
+      font-size: 32rpx;
+      font-weight: 600;
+      color: #121c2a;
+    }
+  }
+
+  .coupon-right {
+    display: flex;
+    align-items: center;
+    gap: 8rpx;
+    color: #584235;
+
+    .coupon-text {
+      font-size: 28rpx;
+    }
+
+    .coupon-arrow {
+      font-size: 32rpx;
+    }
+  }
+}
+
+/* ---------- 协议 ---------- */
+.agreement-section {
+  display: flex;
+  gap: 24rpx;
+  padding: 0 16rpx;
+  padding-top: 16rpx;
+
+  .agreement-check-wrap {
+    position: relative;
+    flex-shrink: 0;
+    margin-top: 4rpx;
+
+    .agreement-check-input {
+      width: 40rpx;
+      height: 40rpx;
+      border: 2rpx solid #e0c0af;
+      border-radius: 8rpx;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      &.checked {
+        background: #994700;
+        border-color: #994700;
+      }
+    }
+
+    .agreement-check-icon {
+      font-size: 24rpx;
+      color: #fff;
+      line-height: 1;
+    }
+  }
+
+  .agreement-text {
+    font-size: 24rpx;
+    color: #584235;
+    line-height: 1.6;
+
+    .agreement-link {
+      color: #994700;
+    }
+  }
+}
+
+/* ---------- 底部结算栏 ---------- */
 .bottom-bar {
   position: fixed;
   left: 0;
   right: 0;
   bottom: 0;
-  height: 128px;
+  z-index: 50;
   background: #fff;
-  border-top: 1px solid #e5e5e5;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 28px;
-  z-index: 100;
-  pointer-events: auto;
-  transform: translateZ(0);
+  border-top: 2rpx solid #e0c0af;
+  box-shadow: 0 -4rpx 20rpx rgba(0,0,0,0.05);
+  padding-bottom: constant(safe-area-inset-bottom);
+  padding-bottom: env(safe-area-inset-bottom);
+
+  .bottom-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 32rpx;
+    height: 128rpx;
+
+    .bottom-left {
+      display: flex;
+      align-items: center;
+      gap: 32rpx;
+
+      .detail-btn {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        color: #584235;
+
+        .detail-icon {
+          font-size: 32rpx;
+        }
+
+        .detail-label {
+          font-size: 20rpx;
+        }
+      }
+
+      .price-wrap {
+        display: flex;
+        flex-direction: column;
+
+        .price-label {
+          font-size: 24rpx;
+          color: #584235;
+        }
+
+        .price-value {
+          font-size: 48rpx;
+          font-weight: 700;
+          color: #ba1a1a;
+          line-height: 1.2;
+        }
+      }
+    }
+
+    .submit-btn {
+      padding: 24rpx 80rpx;
+      background: #22C55E;
+      border-radius: 88rpx;
+      font-size: 28rpx;
+      font-weight: 700;
+      color: #fff;
+      text-align: center;
+      box-shadow: 0 8rpx 24rpx rgba(0,0,0,0.15);
+
+      &.disabled {
+        background: #ccc;
+      }
+    }
+  }
 }
 
-.bottom-price {
-  font-size: 36px;
-  color: #ff4d4f;
-  font-weight: 600;
+/* ---------- 已选信息 ---------- */
+.selected-info {
+  .info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16rpx 0;
+    border-bottom: 2rpx solid #f0f0f0;
+
+    &:last-child {
+      border-bottom: none;
+    }
+
+    .info-label {
+      font-size: 28rpx;
+      color: #584235;
+    }
+
+    .info-value {
+      font-size: 28rpx;
+      color: #121c2a;
+      font-weight: 500;
+    }
+
+    .info-value-column {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+
+      .info-addon {
+        font-size: 26rpx;
+        color: #584235;
+      }
+    }
+  }
 }
 
-.bottom-submit {
-  width: 260px;
-  height: 88px;
-  line-height: 88px;
-  border-radius: 44px;
-  font-size: 32px;
-  color: #fff;
-  text-align: center;
-  border: none;
+/* ---------- 价格明细弹窗 ---------- */
+.price-detail-modal {
   position: relative;
-  z-index: 101;
-  pointer-events: auto;
-  &.active {
-    background: #22C55E;
+  background: #fff;
+  border-radius: 48rpx 48rpx 0 0;
+  padding: 32rpx 32rpx 48rpx;
+  z-index: 1001;
+  max-height: 70vh;
+  display: flex;
+  flex-direction: column;
+
+  .price-detail-body {
+    padding-top: 10rpx;
   }
-  &.disabled {
-    background: #ccc;
+
+  .price-detail-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 18rpx 0;
+
+    &.sub {
+      padding: 10rpx 0;
+      .price-detail-name {
+        color: #8c7263;
+        font-size: 28rpx;
+      }
+      .price-detail-value {
+        color: #8c7263;
+        font-size: 28rpx;
+      }
+    }
+
+    &.discount {
+      .price-detail-value {
+        color: #ba1a1a;
+      }
+    }
+
+    &.total {
+      padding: 24rpx 0;
+      .price-detail-name {
+        font-size: 32rpx;
+        font-weight: 600;
+        color: #121c2a;
+      }
+      .price-detail-value {
+        font-size: 48rpx;
+        font-weight: 700;
+        color: #ba1a1a;
+      }
+    }
+  }
+
+  .price-detail-name {
+    font-size: 28rpx;
+    color: #584235;
+  }
+
+  .price-detail-value {
+    font-size: 28rpx;
+    color: #121c2a;
+    font-weight: 600;
+  }
+
+  .price-detail-divider {
+    height: 2rpx;
+    background: #e0c0af;
+    margin: 16rpx 0;
   }
 }
 
-/* 出行人弹窗 */
+
+/* ---------- 出行人弹窗 ---------- */
 .traveler-modal-wrap {
   position: fixed;
   top: 0;
@@ -291,8 +685,8 @@
 .traveler-modal {
   position: relative;
   background: #fff;
-  border-radius: 24px 24px 0 0;
-  padding: 28px 24px 40px;
+  border-radius: 48rpx 48rpx 0 0;
+  padding: 32rpx 32rpx 48rpx;
   z-index: 1001;
   max-height: 80vh;
   display: flex;
@@ -303,19 +697,19 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 20px;
+  margin-bottom: 24rpx;
 }
 
 .modal-title {
-  font-size: 34px;
-  font-weight: bold;
-  color: #333;
+  font-size: 36rpx;
+  font-weight: 700;
+  color: #121c2a;
 }
 
 .modal-close {
-  font-size: 36px;
-  color: #999;
-  padding: 10px;
+  font-size: 36rpx;
+  color: #8c7263;
+  padding: 10rpx;
 }
 
 .modal-body {
@@ -328,11 +722,11 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: #fafbfc;
-  border: 2px solid #e5e6eb;
-  border-radius: 12px;
-  padding: 20px;
-  margin-bottom: 16px;
+  background: #f8f9ff;
+  border: 2rpx solid #e0c0af;
+  border-radius: 24rpx;
+  padding: 24rpx;
+  margin-bottom: 16rpx;
 }
 
 .modal-item-info {
@@ -342,508 +736,75 @@
 
 .modal-item-name {
   display: block;
-  font-size: 30px;
-  color: #222;
-  font-weight: 500;
-  margin-bottom: 8px;
+  font-size: 30rpx;
+  color: #121c2a;
+  font-weight: 600;
+  margin-bottom: 8rpx;
 }
 
 .modal-item-phone {
-  font-size: 26px;
-  color: #666;
+  font-size: 26rpx;
+  color: #584235;
 }
 
 .modal-item-sub {
   display: block;
-  font-size: 26px;
-  color: #888;
+  font-size: 26rpx;
+  color: #8c7263;
 }
 
 .modal-empty {
-  padding: 40px 0;
+  padding: 40rpx 0;
 }
 
 .modal-footer {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  margin-top: 20px;
-  padding-top: 20px;
-  border-top: 1px solid #f0f0f0;
-}
-
-.modal-add-text {
-  font-size: 28px;
-  color: #ff7700;
-  padding: 10px 16px;
+  justify-content: flex-end;
+  margin-top: 24rpx;
+  padding-top: 24rpx;
+  border-top: 2rpx solid #e0c0af;
 }
 
 .modal-confirm {
-  width: 180px;
-  height: 72px;
-  line-height: 72px;
+  width: 200rpx;
+  height: 72rpx;
+  line-height: 72rpx;
   text-align: center;
   background: #22C55E;
   color: #fff;
-  font-size: 28px;
-  border-radius: 36px;
-}
-
-/* 顶部返回按钮 */
-.page-back {
-  position: fixed;
-  top: 0;
-  left: 0;
-  z-index: 100;
-  padding: 20rpx 28rpx;
-  display: flex;
-  align-items: center;
-}
-
-.page-back-icon {
-  font-size: 40rpx;
-  color: #fff;
-  font-weight: bold;
-}
-
-/* 行程选配 Tab */
-.addon-tabs {
-  display: flex;
-  gap: 16rpx;
-  margin-bottom: 24rpx;
-  border-bottom: 1rpx solid #f0f0f0;
-  padding-bottom: 16rpx;
-}
-
-.addon-tab {
-  padding: 12rpx 28rpx;
-  border-radius: 32rpx;
-  font-size: 30rpx;
-  color: #666;
-  background: #F0FDF4;
-  transition: all 0.2s;
-
-  &.active {
-    background: #F0FDF4;
-    color: #22C55E;
-    font-weight: 600;
-  }
-}
-
-/* 选配列表 */
-.addon-list {
-  display: flex;
-  flex-direction: column;
-  gap: 20rpx;
-}
-
-.addon-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: #fafbfc;
-  border: 2rpx solid #e5e6eb;
-  border-radius: 14rpx;
-  padding: 22rpx;
-
-  &.addon-with-options {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 16rpx;
-  }
-}
-
-.addon-name {
-  display: block;
-  font-size: 32rpx;
-  color: #222;
-  font-weight: 500;
-  margin-bottom: 8rpx;
-}
-
-.addon-desc {
-  display: block;
-  font-size: 26rpx;
-  color: #888;
-  margin-bottom: 8rpx;
-  line-height: 1.4;
-}
-
-.addon-price {
-  font-size: 30rpx;
-  color: #FF4D4F;
-  font-weight: bold;
-}
-
-.addon-info {
-  flex: 1;
-  min-width: 0;
-}
-
-/* 狗狗票选项列表 */
-.addon-options-list {
-  display: flex;
-  flex-direction: column;
-  gap: 16rpx;
-  width: 100%;
-}
-
-.addon-option-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: #fff;
-  padding: 18rpx 20rpx;
-  border-radius: 12rpx;
-  border: 1rpx solid #eee;
-}
-
-.addon-option-info {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 6rpx;
-}
-
-.addon-option-name {
-  font-size: 30rpx;
-  color: #333;
-  font-weight: 500;
-}
-
-.addon-option-desc {
-  font-size: 24rpx;
-  color: #999;
-  line-height: 1.4;
-}
-
-/* 数量控制 */
-.addon-qty-row {
-  display: flex;
-  align-items: center;
-  gap: 16rpx;
-}
-
-.addon-subtotal {
   font-size: 28rpx;
-  color: #FF4D4F;
-  font-weight: bold;
-  margin-right: 8rpx;
+  border-radius: 36rpx;
 }
 
-.qty-control {
-  display: flex;
-  align-items: center;
-  gap: 4rpx;
-}
-
-.qty-btn {
-  width: 48rpx;
-  height: 48rpx;
-  line-height: 44rpx;
-  text-align: center;
-  border-radius: 8rpx;
-  font-size: 32rpx;
-  color: #333;
-  background: #f0f0f0;
-  border: 1rpx solid #ddd;
-
-  &.disabled {
-    color: #ccc;
-    background: #f5f5f5;
-    border-color: #eee;
-  }
-}
-
-.qty-value {
-  min-width: 48rpx;
-  text-align: center;
-  font-size: 30rpx;
-  color: #333;
-  font-weight: 500;
-}
-
-/* 选配合计 */
-.addon-total-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: 24rpx;
-  padding-top: 20rpx;
-  border-top: 2rpx dashed #e5e5e5;
-}
-
-.addon-total-label {
-  font-size: 30rpx;
-  color: #666;
-}
-
-.addon-total-price {
-  font-size: 36rpx;
-  color: #FF4D4F;
-  font-weight: bold;
-}
-
-/* 底部价格区域 */
-.bottom-price-wrap {
-  display: flex;
-  flex-direction: column;
-}
-
-.bottom-price-label {
-  font-size: 24rpx;
-  color: #999;
-}
-
-.bottom-price-main {
-  font-size: 36rpx;
-  color: #ff4d4f;
-  font-weight: 600;
-}
-
-.bottom-price-detail {
-  font-size: 24rpx;
-  color: #999;
-  margin-top: 4rpx;
-}
-
-/* 价格明细弹窗 */
-.price-detail-modal {
-  position: relative;
-  background: #fff;
-  border-radius: 24rpx 24rpx 0 0;
-  padding: 28rpx 30rpx 40rpx;
-  z-index: 1001;
-  max-height: 70vh;
-  display: flex;
-  flex-direction: column;
-}
-
-.price-detail-body {
-  padding-top: 10rpx;
-}
-
-.price-detail-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 18rpx 0;
-  &.sub {
-    padding: 10rpx 0;
-    .price-detail-name {
-      color: #999;
-      font-size: 30rpx;
-    }
-    .price-detail-value {
-      color: #999;
-      font-size: 30rpx;
-      font-weight: 600;
-    }
-  }
-  &.discount {
-    .price-detail-value {
-      color: #ff4d4f;
-    }
-  }
-  &.total {
-    padding: 24rpx 0;
-    .price-detail-name {
-      font-size: 36rpx;
-      font-weight: 600;
-      color: #333;
-    }
-    .price-detail-value {
-      font-size: 42rpx;
-      font-weight: 600;
-      color: #333;
-    }
-  }
-}
-
-.price-detail-name {
-  font-size: 30rpx;
-  color: #666;
-}
-
-.price-detail-value {
-  font-size: 32rpx;
-  color: #333;
-  font-weight: 600;
-}
-
-.price-detail-divider {
-  height: 1rpx;
-  background: #e5e5e5;
-  margin: 10rpx 0;
-}
-
-/* 酒店房型行 */
-.hotel-room-row {
-  align-items: flex-start;
-  padding: 24px;
-}
-
-.hotel-room-mini-specs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin-top: 8px;
-}
-
-.hotel-room-mini-spec {
-  font-size: 30px;
-  color: #888;
-}
-
-/* 酒店房型卡片（订单确认页） */
-.hotel-room-cards {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  margin-top: 16px;
-}
-
-.hotel-room-card-confirm {
-  display: flex;
-  background: #f8f9fa;
-  border-radius: 16px;
-  padding: 20px;
-  align-items: flex-start;
-}
-
-.hotel-room-top-confirm {
+/* ---------- 勾选圆圈 ---------- */
+.check-circle {
+  width: 40rpx;
+  height: 40rpx;
+  border-radius: 50%;
+  border: 2rpx solid #e0c0af;
   position: relative;
   flex-shrink: 0;
-  margin-right: 20px;
+
+  &.checked {
+    border-color: #006c49;
+    background: #006c49;
+
+    &::after {
+      content: '';
+      position: absolute;
+      left: 12rpx;
+      top: 6rpx;
+      width: 10rpx;
+      height: 18rpx;
+      border: solid #fff;
+      border-width: 0 3rpx 3rpx 0;
+      transform: rotate(45deg);
+    }
+  }
 }
 
-.hotel-room-img-confirm {
-  width: 180px;
-  height: 140px;
-  border-radius: 12px;
-}
-
-.hotel-room-tags-under-img {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8rpx;
-  margin-top: 12rpx;
-  max-width: 180px;
-}
-
-.hotel-room-tag-under {
-  font-size: 28rpx;
-  color: #FF8C42;
-  background: rgba(255, 140, 66, 0.1);
-  padding: 4rpx 10rpx;
-  border-radius: 6rpx;
-}
-
-.hotel-room-body-confirm {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.hotel-room-name-confirm {
-  font-size: 36px;
-  font-weight: bold;
-  color: #333;
-}
-
-.hotel-room-tags-confirm {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8rpx;
-}
-
-.hotel-room-tag-confirm {
-  font-size: 28rpx;
-  color: #FF8C42;
-  background: rgba(255, 140, 66, 0.1);
-  padding: 4rpx 10rpx;
-  border-radius: 6rpx;
-}
-
-.hotel-room-specs-confirm {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12rpx;
-}
-
-.hotel-room-spec-confirm {
-  font-size: 30rpx;
-  color: #666;
-}
-
-.hotel-room-policy-confirm {
-  font-size: 28rpx;
-  color: #999;
-  line-height: 1.4;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.hotel-room-breakfast-confirm {
-  display: flex;
-  align-items: center;
-  gap: 12rpx;
-}
-
-.hotel-room-bf-icon {
-  width: 36rpx;
-  height: 36rpx;
-  background: #333;
-  color: #fff;
-  font-size: 28rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 6rpx;
-}
-
-.hotel-room-bf-text {
-  font-size: 30rpx;
-  color: #666;
-}
-
-.hotel-room-action-confirm {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  justify-content: space-between;
-  margin-left: 16px;
-  flex-shrink: 0;
-  min-width: 120px;
-}
-
-.hotel-room-stock-confirm {
-  font-size: 30rpx;
-  color: #999;
-}
-
-.hotel-room-price-row-confirm {
-  display: flex;
-  align-items: baseline;
-  gap: 12rpx;
-}
-
-.hotel-room-op-confirm {
-  font-size: 32rpx;
-  color: #bbb;
-  text-decoration: line-through;
-}
-
-.hotel-room-p-confirm {
-  font-size: 42rpx;
-  color: #FF4D4F;
-  font-weight: bold;
-}
-
-/* ---------- 酒店房型详情弹窗（订单确认页） ---------- */
+/* ---------- 酒店房型详情弹窗 ---------- */
 .room-modal-confirm {
   position: fixed;
   top: 0;
@@ -868,7 +829,7 @@
 .room-modal-content-confirm {
   position: relative;
   background: #fff;
-  border-radius: 24rpx 24rpx 0 0;
+  border-radius: 48rpx 48rpx 0 0;
   z-index: 2001;
   max-height: 85vh;
   display: flex;
@@ -881,20 +842,20 @@
   justify-content: center;
   padding: 24rpx 30rpx;
   position: relative;
-  border-bottom: 1rpx solid #f0f0f0;
+  border-bottom: 2rpx solid #e0c0af;
 }
 
 .room-modal-title-confirm {
-  font-size: 40rpx;
-  font-weight: bold;
-  color: #333;
+  font-size: 36rpx;
+  font-weight: 700;
+  color: #121c2a;
 }
 
 .room-modal-close-confirm {
   position: absolute;
   right: 30rpx;
   font-size: 36rpx;
-  color: #999;
+  color: #8c7263;
   padding: 10rpx;
 }
 
@@ -918,9 +879,9 @@
 
 .room-modal-name-confirm {
   display: block;
-  font-size: 40rpx;
-  font-weight: bold;
-  color: #333;
+  font-size: 36rpx;
+  font-weight: 700;
+  color: #121c2a;
   margin-bottom: 16rpx;
 }
 
@@ -932,8 +893,8 @@
 }
 
 .room-modal-spec-confirm {
-  font-size: 32rpx;
-  color: #666;
+  font-size: 28rpx;
+  color: #584235;
 }
 
 .room-modal-section-confirm {
@@ -942,9 +903,9 @@
 
 .room-modal-section-title-confirm {
   display: block;
-  font-size: 36rpx;
-  font-weight: bold;
-  color: #333;
+  font-size: 32rpx;
+  font-weight: 700;
+  color: #121c2a;
   margin-bottom: 16rpx;
   position: relative;
   padding-left: 20rpx;
@@ -955,9 +916,9 @@
     left: 0;
     top: 50%;
     transform: translateY(-50%);
-    width: 6rpx;
+    width: 8rpx;
     height: 28rpx;
-    background: #FF8C42;
+    background: #994700;
     border-radius: 4rpx;
   }
 }
@@ -969,90 +930,329 @@
 
 .room-modal-info-label-confirm {
   width: 180rpx;
-  font-size: 36rpx;
-  color: #333;
+  font-size: 28rpx;
+  color: #121c2a;
   font-weight: 600;
   flex-shrink: 0;
 }
 
 .room-modal-info-value-confirm {
   flex: 1;
-  font-size: 34rpx;
-  color: #666;
+  font-size: 28rpx;
+  color: #584235;
   line-height: 1.5;
 }
 
+/* ---------- 行程选配 ---------- */
+.addon-tabs {
+  display: flex;
+  gap: 16rpx;
+  margin-bottom: 24rpx;
+  border-bottom: 2rpx solid #e0c0af;
+  padding-bottom: 16rpx;
+}
 
-// 优惠券选择样式
-.coupon-select-row {
+.addon-tab {
+  padding: 12rpx 28rpx;
+  border-radius: 32rpx;
+  font-size: 28rpx;
+  color: #584235;
+  background: #eff4ff;
+  transition: all 0.2s;
+
+  &.active {
+    background: #006c49;
+    color: #fff;
+    font-weight: 600;
+  }
+}
+
+.addon-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+
+.addon-item {
   display: flex;
   align-items: center;
-  padding: 20rpx 0;
-  border-bottom: 1rpx solid #f3f4f6;
-  .coupon-select-name {
-    flex: 1;
-    font-size: 28rpx;
-    color: #1f2937;
-  }
-  .coupon-select-discount {
-    font-size: 28rpx;
-    color: #FF6B35;
-    font-weight: 600;
-    margin-right: 12rpx;
-  }
-  .coupon-select-placeholder {
-    flex: 1;
-    font-size: 28rpx;
-    color: #9CA3AF;
-  }
-  .coupon-select-arrow {
-    font-size: 32rpx;
-    color: #9CA3AF;
+  justify-content: space-between;
+  background: #f8f9ff;
+  border: 2rpx solid #e0c0af;
+  border-radius: 24rpx;
+  padding: 24rpx;
+
+  &.addon-with-options {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16rpx;
   }
 }
 
-/* 协议勾选区域 */
-.agreement-section {
-  background: #fff;
-  margin: 24rpx 28rpx;
-  border-radius: 18rpx;
-  padding: 28rpx;
+.addon-name {
+  display: block;
+  font-size: 30rpx;
+  color: #121c2a;
+  font-weight: 600;
+  margin-bottom: 8rpx;
 }
 
-.agreement-checkbox {
+.addon-desc {
+  display: block;
+  font-size: 24rpx;
+  color: #584235;
+  margin-bottom: 8rpx;
+  line-height: 1.4;
+}
+
+.addon-price {
+  font-size: 28rpx;
+  color: #ba1a1a;
+  font-weight: 700;
+}
+
+.addon-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.addon-options-list {
   display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+  width: 100%;
+}
+
+.addon-option-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #fff;
+  padding: 18rpx 20rpx;
+  border-radius: 16rpx;
+  border: 2rpx solid #e0c0af;
+}
+
+.addon-option-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+}
+
+.addon-option-name {
+  font-size: 28rpx;
+  color: #121c2a;
+  font-weight: 600;
+}
+
+.addon-option-desc {
+  font-size: 22rpx;
+  color: #8c7263;
+  line-height: 1.4;
+}
+
+.addon-qty-row {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.addon-subtotal {
+  font-size: 26rpx;
+  color: #ba1a1a;
+  font-weight: 700;
+  margin-right: 8rpx;
+}
+
+.qty-control {
+  display: flex;
+  align-items: center;
+  gap: 4rpx;
+}
+
+.qty-btn {
+  width: 48rpx;
+  height: 48rpx;
+  line-height: 44rpx;
+  text-align: center;
+  border-radius: 8rpx;
+  font-size: 32rpx;
+  color: #121c2a;
+  background: #d0dbed;
+
+  &.disabled {
+    color: #c1c5cb;
+    background: #e5e7eb;
+  }
+}
+
+.qty-value {
+  min-width: 48rpx;
+  text-align: center;
+  font-size: 28rpx;
+  color: #121c2a;
+  font-weight: 600;
+}
+
+.addon-total-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 24rpx;
+  padding-top: 20rpx;
+  border-top: 2rpx dashed #e0c0af;
+}
+
+.addon-total-label {
+  font-size: 28rpx;
+  color: #584235;
+}
+
+.addon-total-price {
+  font-size: 32rpx;
+  color: #ba1a1a;
+  font-weight: 700;
+}
+
+/* ---------- 酒店房型 ---------- */
+.hotel-room-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+  margin-top: 16rpx;
+}
+
+.hotel-room-card-confirm {
+  display: flex;
+  background: #f8f9ff;
+  border-radius: 24rpx;
+  padding: 20rpx;
   align-items: flex-start;
 }
 
-.agreement-check {
+.hotel-room-top-confirm {
+  position: relative;
+  flex-shrink: 0;
+  margin-right: 20rpx;
+}
+
+.hotel-room-img-confirm {
+  width: 180rpx;
+  height: 140rpx;
+  border-radius: 16rpx;
+}
+
+.hotel-room-tags-under-img {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8rpx;
+  margin-top: 12rpx;
+  max-width: 180rpx;
+}
+
+.hotel-room-tag-under {
+  font-size: 22rpx;
+  color: #994700;
+  background: rgba(153, 71, 0, 0.1);
+  padding: 4rpx 10rpx;
+  border-radius: 6rpx;
+}
+
+.hotel-room-body-confirm {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.hotel-room-name-confirm {
+  font-size: 30rpx;
+  font-weight: 700;
+  color: #121c2a;
+}
+
+.hotel-room-specs-confirm {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+}
+
+.hotel-room-spec-confirm {
+  font-size: 24rpx;
+  color: #584235;
+}
+
+.hotel-room-breakfast-confirm {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.hotel-room-bf-icon {
   width: 36rpx;
   height: 36rpx;
-  border: 2rpx solid #d1d5db;
-  border-radius: 8rpx;
-  margin-right: 16rpx;
-  margin-top: 4rpx;
+  background: #121c2a;
+  color: #fff;
+  font-size: 22rpx;
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
-  &.checked {
-    background: #22C55E;
-    border-color: #22C55E;
-  }
+  border-radius: 6rpx;
 }
 
-.agreement-check-icon {
+.hotel-room-bf-text {
   font-size: 24rpx;
+  color: #584235;
+}
+
+.hotel-room-action-confirm {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-left: 16rpx;
+  flex-shrink: 0;
+  min-width: 120rpx;
+}
+
+.hotel-room-stock-confirm {
+  font-size: 24rpx;
+  color: #8c7263;
+}
+
+.hotel-room-price-row-confirm {
+  display: flex;
+  align-items: baseline;
+  gap: 12rpx;
+}
+
+.hotel-room-op-confirm {
+  font-size: 24rpx;
+  color: #8c7263;
+  text-decoration: line-through;
+}
+
+.hotel-room-p-confirm {
+  font-size: 32rpx;
+  color: #ba1a1a;
+  font-weight: 700;
+}
+
+/* ---------- 顶部返回按钮（兼容旧代码） ---------- */
+.page-back {
+  position: fixed;
+  top: 24rpx;
+  left: 24rpx;
+  z-index: 51;
+  width: 64rpx;
+  height: 64rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   color: #fff;
-}
-
-.agreement-text {
-  font-size: 26rpx;
-  color: #6b7280;
-  line-height: 1.5;
-}
-
-.agreement-link {
-  color: #22C55E;
-  text-decoration: underline;
+  font-size: 32rpx;
+  font-weight: 700;
+  background: rgba(0,0,0,0.3);
+  border-radius: 50%;
 }

@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react'
 import Taro, { useDidShow } from '@tarojs/taro'
 import { View, Text, Image, Swiper, SwiperItem, ScrollView } from '@tarojs/components'
-import { getRouteDetail, getRouteSchedules, getPets, getTravelers, createOrder, getRouteAddons, getAvailableCoupons, calculateCoupon, getAgreements, compressImageUrl } from '../../../utils/api'
+import { getRouteDetail, getRouteSchedules, getPets, getTravelers, createOrder, getRouteAddons, getAddonCategories, getAvailableCoupons, calculateCoupon, getAgreements, compressImageUrl } from '../../../utils/api'
 import './index.scss'
 
 const GENDER_MAP: any = { 0: '母', 1: '公' }
@@ -33,6 +33,14 @@ function maskIdCard(idCard?: string) {
   if (!idCard || idCard.length < 8) return idCard || '-'
   return idCard.slice(0, 3) + '***********' + idCard.slice(-4)
 }
+
+const PACKAGE_OPTIONS = [
+  { key: 'couple', label: '一人一宠', priceField: 'base_price', basePerson: 1, basePet: 1 },
+  { key: 'one_person_two_pet', label: '一人两宠', priceField: 'one_person_two_pet_price', basePerson: 1, basePet: 2 },
+  { key: 'two_person_one_pet', label: '二人一宠', priceField: 'two_person_one_pet_price', basePerson: 2, basePet: 1 },
+  { key: 'single_person', label: '单人轻旅（无宠）', priceField: 'single_person_price', basePerson: 1, basePet: 0 },
+  { key: 'single_pet', label: '毛孩专属接送（无主人陪同）', priceField: 'single_pet_price', basePerson: 0, basePet: 1 },
+]
 
 /* ---------- 酒店房型详情弹窗 ---------- */
 function HotelRoomModal({ room, visible, onClose }: any) {
@@ -117,13 +125,9 @@ export default function OrderConfirm() {
   const [showPetModal, setShowPetModal] = useState(false)
 
   // 行程选配
-  const ADDON_TABS = [
-    { key: 'dog_ticket', label: '狗狗票' },
-    { key: 'hotel', label: '酒店' },
-    { key: 'amusement', label: '游乐项目' }
-  ]
+  const [addonTabs, setAddonTabs] = useState<any[]>([])
   const [addons, setAddons] = useState<any[]>([])
-  const [activeAddonTab, setActiveAddonTab] = useState('dog_ticket')
+  const [activeAddonTab, setActiveAddonTab] = useState('')
   const [addonQuantities, setAddonQuantities] = useState<Record<number, number>>({})
   // 狗狗票选项数量：{ addonId: { optionName: quantity } }
   const [addonOptionQuantities, setAddonOptionQuantities] = useState<Record<number, Record<string, number>>>({})
@@ -140,12 +144,40 @@ export default function OrderConfirm() {
   const [agreements, setAgreements] = useState<any[]>([])
   const [agreed, setAgreed] = useState(false)
 
+  // 从弹窗传入的参数
+  const [bookingParams, setBookingParams] = useState<any>(null)
+
   useEffect(() => {
     const instance = Taro.getCurrentInstance()
-    const routeId = instance.router?.params?.routeId
-    const scheduleId = instance.router?.params?.scheduleId
+    const params = instance.router?.params
+    const routeId = params?.routeId
+    const scheduleId = params?.scheduleId
+
+    // 解析弹窗传入的参数
+    const bp: any = {
+      routeId: routeId ? Number(routeId) : 0,
+      scheduleId: scheduleId ? Number(scheduleId) : 0,
+      travelDate: params?.travelDate || '',
+      packageType: params?.packageType || 'couple',
+      basePerson: Number(params?.basePerson || 1),
+      basePet: Number(params?.basePet || 1),
+      extraPerson: Number(params?.extraPerson || 0),
+      extraPet: Number(params?.extraPet || 0),
+      travelType: params?.travelType || 'bus',
+      addons: (() => {
+        try {
+          return params?.addons ? JSON.parse(decodeURIComponent(params.addons)) : []
+        } catch (e) {
+          console.error('解析 addons 失败:', e)
+          return []
+        }
+      })(),
+      totalPrice: Number(params?.totalPrice || 0),
+    }
+    setBookingParams(bp)
+
     if (routeId) {
-      loadRouteData(Number(routeId), Number(scheduleId))
+      loadRouteData(Number(routeId), Number(scheduleId), bp)
     }
     loadAgreements()
   }, [])
@@ -173,7 +205,7 @@ export default function OrderConfirm() {
     loadPets()
   })
 
-  const loadRouteData = async (routeId: number, scheduleId: number) => {
+  const loadRouteData = async (routeId: number, scheduleId: number, bp?: any) => {
     try {
       const rres = await getRouteDetail(routeId)
       setRoute(rres.data || {})
@@ -181,20 +213,36 @@ export default function OrderConfirm() {
       const schedules = sres.data?.schedules || []
       const found = schedules.find((s: any) => String(s.id) === String(scheduleId))
       setSchedule(found || null)
+      // 加载行程选配分类
+      const cres = await getAddonCategories()
+      const catList = cres.data?.categories || []
+      const tabs = catList.filter((c: any) => c.status === 1).map((c: any) => ({ key: c.code, label: c.name }))
+      setAddonTabs(tabs)
+      if (tabs.length > 0 && !activeAddonTab) {
+        setActiveAddonTab(tabs[0].key)
+      }
       // 加载行程选配
       const ares = await getRouteAddons(routeId)
       const addonList = ares.data?.addons || []
       setAddons(addonList)
-      // 必选项默认数量为1
+      // 从 bookingParams 恢复已选数量，必选项默认数量为1
       const defaultQty: Record<number, number> = {}
       const defaultOptionQty: Record<number, Record<string, number>> = {}
       const defaultRoomQty: Record<number, Record<string, number>> = {}
+      // 恢复从路线详情页传入的 addon 数量
+      const preAddons = bookingParams?.addons || []
+      preAddons.forEach((a: any) => {
+        const id = a.addon_id || a.id
+        if (id) {
+          defaultQty[id] = a.quantity || 1
+        }
+      })
       addonList.forEach((a: any) => {
-        if (a.is_required) {
+        if (a.is_required && !defaultQty[a.id]) {
           if (a.category === 'dog_ticket' && a.extra_config?.options?.length > 0) {
-            // 有选项的狗狗票，默认不选任何选项（让用户自己选择）
+            // 有选项的狗狗票，默认不选任何选项
           } else if (a.category === 'hotel' && a.extra_config?.rooms?.length > 0) {
-            // 有房型的酒店，默认不选任何房型（让用户自己选择）
+            // 有房型的酒店，默认不选任何房型
           } else {
             defaultQty[a.id] = 1
           }
@@ -382,8 +430,20 @@ export default function OrderConfirm() {
       Taro.showToast({ title: '请至少选择1位出行人', icon: 'none' })
       return
     }
-    if (selectedPetIds.length === 0) {
+    // 单人轻旅（无宠）不需要宠物
+    if (bookingParams?.packageType !== 'single_person' && selectedPetIds.length === 0) {
       Taro.showToast({ title: '请至少选择1只宠物', icon: 'none' })
+      return
+    }
+    // 校验人数是否满足套餐基础数 + 额外增加数
+    const requiredPersons = pkgConfig.basePerson + (bookingParams?.extraPerson || 0)
+    const requiredPets = pkgConfig.basePet + (bookingParams?.extraPet || 0)
+    if (selectedTravelers.length < requiredPersons) {
+      Taro.showToast({ title: `您选择了增加${bookingParams?.extraPerson || 0}人，请至少添加${requiredPersons}位出行人`, icon: 'none' })
+      return
+    }
+    if (bookingParams?.packageType !== 'single_person' && selectedPetIds.length < requiredPets) {
+      Taro.showToast({ title: `您选择了增加${bookingParams?.extraPet || 0}宠，请至少添加${requiredPets}只宠物`, icon: 'none' })
       return
     }
     if (!schedule || !route) {
@@ -397,7 +457,6 @@ export default function OrderConfirm() {
     try {
       const contact = selectedTravelers[0]
       const participants = selectedTravelers.slice(1)
-      const insurancePrice = 15 * selectedPetIds.length + 10 * selectedTravelers.length
       const selectedAddons = addons
         .filter((a: any) => {
           if (a.category === 'dog_ticket' && a.extra_config?.options?.length > 0) {
@@ -473,12 +532,13 @@ export default function OrderConfirm() {
         participant_count: selectedTravelers.length,
         pet_count: selectedPetIds.length,
         route_price: routePrice,
-        insurance_price: insurancePrice,
+        insurance_price: petInsuranceTotal + personInsuranceTotal,
         equipment_price: 0,
         discount_amount: couponDiscount,
         coupon_id: selectedCouponId,
-        addons: selectedAddons,
-        addon_amount: addonTotal
+        addons: [...(bookingParams?.addons || []), ...selectedAddons],
+        addon_amount: addonTotal,
+        travel_type: bookingParams?.travelType
       })
       if (res.code !== 200) {
         throw new Error(res.message || '创建订单失败')
@@ -495,40 +555,44 @@ export default function OrderConfirm() {
 
   const selectedTravelers = travelers.filter(t => selectedTravelerIds.includes(t.id))
   const selectedPets = pets.filter(p => selectedPetIds.includes(p.id))
-  const unitPrice = schedule?.price || route?.base_price || 0
-  const extraPersonPrice = route?.extra_person_price || 0
-  const extraPetPrice = route?.extra_pet_price || 0
+  const travelType = bookingParams?.travelType || 'bus'
+
+  // 套餐配置
+  const pkgType = bookingParams?.packageType || 'couple'
+  const pkgConfig = PACKAGE_OPTIONS.find(p => p.key === pkgType) || PACKAGE_OPTIONS[0]
+
+  // 价格完全从排期取（不再回退到路线默认价）
+  const priceField = travelType === 'self_drive' ? `self_drive_${pkgConfig.priceField}` : pkgConfig.priceField
+  const schedulePriceField = pkgConfig.priceField === 'base_price'
+    ? (travelType === 'self_drive' ? 'self_drive_price' : 'price')
+    : priceField
+  let basePrice = schedule && schedule[schedulePriceField] != null ? schedule[schedulePriceField] : 0
+
+  // 额外单价：完全从排期取
+  const extraPersonScheduleField = travelType === 'self_drive' ? 'self_drive_extra_person_price' : 'extra_person_price'
+  const extraPersonUnitPrice = schedule && schedule[extraPersonScheduleField] != null
+    ? schedule[extraPersonScheduleField] : 0
+
+  const extraPetScheduleField = travelType === 'self_drive' ? 'self_drive_extra_pet_price' : 'extra_pet_price'
+  const extraPetUnitPrice = schedule && schedule[extraPetScheduleField] != null
+    ? schedule[extraPetScheduleField] : 0
+
+  // 额外数量：从 bookingParams 取（与 BookingPopup 保持一致）
+  const extraPersonCount = bookingParams?.extraPerson || 0
+  const extraPetCount = bookingParams?.extraPet || 0
+
+  // 路线价格（基础价 + 加人 + 加宠，不含保险）
+  const routePrice = basePrice + extraPersonCount * extraPersonUnitPrice + extraPetCount * extraPetUnitPrice
+
+  // 保险（按实际选中的出行人/宠物计算）
   const petInsuranceTotal = 15 * selectedPetIds.length
   const personInsuranceTotal = 10 * selectedTravelers.length
-  // 行程选配合计
-  const addonTotal = addons.reduce((sum, a) => {
-    // 有选项的狗狗票，累加选项价格
-    if (a.category === 'dog_ticket' && a.extra_config?.options?.length > 0) {
-      const optionQtyMap = addonOptionQuantities[a.id] || {}
-      const optionSum = a.extra_config.options.reduce((optSum: number, opt: any) => {
-        const qty = optionQtyMap[opt.name] || 0
-        return optSum + opt.price * qty
-      }, 0)
-      return sum + optionSum
-    }
-    // 有房型酒店，累加房型价格
-    if (a.category === 'hotel' && a.extra_config?.rooms?.length > 0) {
-      const roomQtyMap = addonRoomQuantities[a.id] || {}
-      const roomSum = a.extra_config.rooms.reduce((rSum: number, room: any) => {
-        const qty = roomQtyMap[room.name] || 0
-        return rSum + room.price * qty
-      }, 0)
-      return sum + roomSum
-    }
-    const qty = addonQuantities[a.id] || 0
-    return sum + a.price * qty
-  }, 0)
-  // 新价格逻辑：基础价(1人1宠) + 加人 + 加宠；未配置增量时回退到老逻辑
-  const useNewPricing = extraPersonPrice > 0 || extraPetPrice > 0
-  const routePrice = useNewPricing
-    ? unitPrice + Math.max(0, selectedTravelers.length - 1) * extraPersonPrice + Math.max(0, selectedPetIds.length - 1) * extraPetPrice
-    : unitPrice * selectedTravelers.length
-  const total = routePrice + petInsuranceTotal + personInsuranceTotal + addonTotal
+
+  // 行程选配合计（从 bookingParams.addons）
+  const addonTotal = (bookingParams?.addons || []).reduce((sum: number, a: any) => sum + (a.price || 0) * (a.quantity || 1), 0)
+
+  // 总计
+  const total = routePrice + addonTotal + petInsuranceTotal + personInsuranceTotal
   const canSubmit = selectedTravelers.length > 0 && selectedPetIds.length > 0 && (agreements.length === 0 || agreed)
 
   // 加载可用优惠券
@@ -536,7 +600,7 @@ export default function OrderConfirm() {
   selectedCouponIdRef.current = selectedCouponId
 
   useEffect(() => {
-    if (!route?.id || total <= 0) return
+    if (!route?.id) return
     const loadCoupons = async () => {
       try {
         const res = await getAvailableCoupons({ route_id: route.id, amount: total })
@@ -581,308 +645,261 @@ export default function OrderConfirm() {
     setShowCouponModal(false)
   }
 
-  const finalTotal = selectedTravelers.length === 0
-    ? unitPrice
-    : Math.max(0, Math.round((total - couponDiscount) * 100) / 100)
+  const finalTotal = Math.max(0, Math.round((total - couponDiscount) * 100) / 100)
+
+  const pkgLabelMap: any = { couple: '一人一宠', single_person: '单人轻旅（无宠）', two_person_one_pet: '二人一宠', one_person_two_pet: '一人两宠', single_pet: '毛孩专属接送（无主人陪同）' }
 
   return (
-    <View className='order-confirm' style={{ paddingTop: '140rpx' }}>
-
-        <View className='page-back' onClick={() => Taro.navigateBack()}>
-          <Image className='page-back-icon' src='/assets/icons/return.png' mode='aspectFit' />
-        </View>
-      {/* 橙色头部栏 */}
-      <View className='order-header'>
-        <Text className='header-title'>{route?.name || '路线名称'}</Text>
-        <Text className='header-sub'>
-          {schedule?.schedule_date || '-'} 出发 | {route?.duration || '1天'}
-        </Text>
+    <View className='order-confirm'>
+      {/* 顶部导航栏 */}
+      <View className='top-nav'>
+        <Text className='nav-back' onClick={() => {
+          const pages = Taro.getCurrentPages()
+          if (pages.length <= 1) {
+            Taro.switchTab({ url: '/pages/index/index' })
+          } else {
+            Taro.navigateBack({ delta: 1 })
+          }
+        }}>{'<'}</Text>
+        <Text className='nav-title'>提交订单</Text>
       </View>
+
+      <View className='main-content'>
+        {/* Hero 行程摘要 */}
+        <View className='hero-section'>
+          <Image className='hero-image' src={compressImageUrl(route?.cover_image, 750) || 'https://via.placeholder.com/750x420'} mode='aspectFill' />
+          <View className='hero-overlay'>
+            <View className='hero-tags'>
+              <Text className='hero-tag'>{route?.duration || '1天'}游</Text>
+            </View>
+            <Text className='hero-title'>{route?.name || '路线名称'}</Text>
+            <View className='hero-date'>
+              <Text>📅</Text>
+              <Text>{schedule?.schedule_date || '-'} 出发</Text>
+            </View>
+            <View className='hero-chips'>
+              <Text className='hero-chip'>{pkgLabelMap[bookingParams?.packageType] || '一人一宠'}</Text>
+              <Text className='hero-chip'>{bookingParams?.travelType === 'bus' ? '大巴出行' : '自行前往'}</Text>
+            </View>
+          </View>
+        </View>
 
       {/* 出行人信息 */}
       <View className='section-block'>
         <View className='section-header'>
-          <Text className='section-label'>【出行人信息】</Text>
-          <View className='section-header-actions'>
-            <Text className='section-header-action' onClick={() => setShowTravelerModal(true)}>从档案选择</Text>
-            <Text className='section-header-action primary' onClick={() => Taro.navigateTo({ url: '/pages/profile/traveler-edit/index?from=order' })}>+ 新增出行人</Text>
+          <View className='section-title'>
+            <Text className='section-icon'>👤</Text>
+            <Text>出行人信息</Text>
+          </View>
+          <View className='section-actions'>
+            <Text className='section-action' onClick={() => setShowTravelerModal(true)}>从档案选择</Text>
+            <Text className='section-action' onClick={() => Taro.navigateTo({ url: '/pages/profile/traveler-edit/index?from=order' })}>+ 新增</Text>
           </View>
         </View>
-        {selectedTravelers.map((t, idx) => (
-          <View key={t.id} className='info-card traveler-card'>
-            <View className='info-main'>
-              <Text className='info-name'>
-                {t.name}
-                {t.is_default ? <Text className='default-tag'>默认</Text> : null}
-                {idx === 0 ? '（默认联系人）' : '（同行人）'}
-              </Text>
-              <Text className='info-detail'>{maskPhone(t.phone)} | 身份证:{maskIdCard(t.id_card)}</Text>
-            </View>
-            <View className='card-actions'>
-              <Text className='action-text' onClick={() => goEditTraveler(t.id)}>编辑</Text>
-              <Text className='action-text delete' onClick={() => handleRemoveTraveler(t.id)}>移除</Text>
-            </View>
+        {selectedTravelers.length === 0 ? (
+          <View className='empty-state'>
+            <Text className='empty-icon'>👤</Text>
+            <Text className='empty-text'>尚未选择出行人</Text>
           </View>
-        ))}
-        {selectedTravelers.length === 0 && <Text className='empty-tip'>尚未选择出行人</Text>}
+        ) : (
+          selectedTravelers.map((t) => (
+            <View key={t.id} className='info-card'>
+              <View className='info-left'>
+                <View className='info-name-row'>
+                  <Text className='info-name'>{t.name}</Text>
+                  {t.is_default ? <Text className='default-badge'>默认</Text> : null}
+                </View>
+                <Text className='info-detail'>电话：{maskPhone(t.phone)}</Text>
+                <Text className='info-detail'>身份证：{maskIdCard(t.id_card)}</Text>
+              </View>
+              <View className='info-right'>
+                <Text className='info-action' onClick={() => goEditTraveler(t.id)}>✎ 编辑</Text>
+                <Text className='info-action delete' onClick={() => handleRemoveTraveler(t.id)}>✕ 移除</Text>
+              </View>
+            </View>
+          ))
+        )}
       </View>
 
       {/* 宠物信息 */}
       <View className='section-block'>
         <View className='section-header'>
-          <Text className='section-label'>【宠物信息】</Text>
-          <View className='section-header-actions'>
-            <Text className='section-header-action' onClick={() => setShowPetModal(true)}>从档案选择</Text>
-            <Text className='section-header-action primary' onClick={goAddPet}>+ 新增宠物</Text>
+          <View className='section-title'>
+            <Text className='section-icon'>🐾</Text>
+            <Text>宠物信息</Text>
+          </View>
+          <View className='section-actions'>
+            <Text className='section-action' onClick={() => setShowPetModal(true)}>从档案选择</Text>
+            <Text className='section-action' onClick={goAddPet}>+ 新增</Text>
           </View>
         </View>
-        {selectedPets.map(pet => (
-          <View key={pet.id} className='info-card pet-card active' onClick={() => togglePet(pet.id)}>
-            <Image className='pet-avatar-small' src={compressImageUrl(pet.avatar, 200) || 'https://via.placeholder.com/120'} mode='aspectFill' />
-            <View className='info-main'>
-              <Text className='info-name'>
-                {pet.name}
-                {pet.is_default ? <Text className='default-tag'>默认</Text> : null}
-                （{formatAge(pet.age_str) || (calcAge(pet.birth_date) !== '-' ? calcAge(pet.birth_date) + '岁' : '-')}，{GENDER_MAP[pet.gender] || '-'}）
-              </Text>
-              <Text className='info-detail'>{pet.breed || '-'} · 体重:{pet.weight || '-'}kg</Text>
-            </View>
-            <View className='card-right'>
-              <View className='check-circle checked' />
-              <View className='card-actions-inline'>
-                <Text className='action-text' onClick={(e) => goEditPet(pet.id, e)}>编辑</Text>
-                <Text className='action-text delete' onClick={(e) => handleRemovePet(pet.id, e)}>移除</Text>
+        {selectedPets.length === 0 ? (
+          <View className='empty-state'>
+            <Text className='empty-icon'>🐾</Text>
+            <Text className='empty-text'>尚未选择宠物</Text>
+          </View>
+        ) : (
+          selectedPets.map(pet => (
+            <View key={pet.id} className='info-card'>
+              <View className='pet-avatar-wrap'>
+                <Image className='pet-avatar' src={compressImageUrl(pet.avatar, 200) || 'https://via.placeholder.com/120'} mode='aspectFill' />
+                <View className='info-left'>
+                  <View className='info-name-row'>
+                    <Text className='info-name'>{pet.name}</Text>
+                    <Text className='pet-gender'>{GENDER_MAP[pet.gender] || '-'}</Text>
+                  </View>
+                  <Text className='info-detail'>
+                    {formatAge(pet.age_str) || (calcAge(pet.birth_date) !== '-' ? calcAge(pet.birth_date) + '岁' : '-')} | {pet.weight || '-'}kg | {pet.breed || '-'}
+                  </Text>
+                </View>
+              </View>
+              <View className='info-right'>
+                <Text className='info-action' onClick={(e) => goEditPet(pet.id, e)}>✎ 编辑</Text>
+                <Text className='info-action delete' onClick={(e) => handleRemovePet(pet.id, e)}>✕ 移除</Text>
               </View>
             </View>
-          </View>
-        ))}
-        {selectedPets.length === 0 && <Text className='empty-tip'>尚未选择宠物</Text>}
+          ))
+        )}
       </View>
 
-      {/* 行程选配 */}
-      {addons.length > 0 && (
+      {/* 已选信息（从弹窗传入） */}
+      {bookingParams && (
         <View className='section-block'>
-          <Text className='section-label'>【行程选配】</Text>
-          <View className='addon-tabs'>
-            {ADDON_TABS.map(tab => (
-              <View
-                key={tab.key}
-                className={`addon-tab ${activeAddonTab === tab.key ? 'active' : ''}`}
-                onClick={() => setActiveAddonTab(tab.key)}
-              >
-                <Text>{tab.label}</Text>
-              </View>
-            ))}
-          </View>
-          <View className='addon-list'>
-            {(() => { const list = addons.filter((a: any) => a.category === activeAddonTab); if (list.length === 0) return <Text className='empty-tip'>该分类暂无选配项目</Text>; return list.map((addon: any) => {
-              const limit = addon.limit_per_order || 99
-              // 狗狗票且有选项规格
-              if (addon.category === 'dog_ticket' && addon.extra_config?.options?.length > 0) {
-                const optionQtyMap = addonOptionQuantities[addon.id] || {}
-                return (
-                  <View key={addon.id} className='addon-item addon-with-options'>
-                    <Text className='addon-name'>{addon.name}</Text>
-                    {addon.description ? <Text className='addon-desc'>{addon.description}</Text> : null}
-                    <View className='addon-options-list'>
-                      {addon.extra_config.options.map((opt: any, idx: number) => {
-                        const qty = optionQtyMap[opt.name] || 0
-                        return (
-                          <View key={idx} className='addon-option-row'>
-                            <View className='addon-option-info'>
-                              <Text className='addon-option-name'>{opt.name}</Text>
-                              {opt.description && opt.description !== opt.name ? <Text className='addon-option-desc'>{opt.description}</Text> : null}
-                            </View>
-                            <View className='addon-qty-row'>
-                              {qty > 0 && <Text className='addon-subtotal'>¥{opt.price * qty}</Text>}
-                              <View className='qty-control'>
-                                <Text
-                                  className={`qty-btn ${qty <= 0 ? 'disabled' : ''}`}
-                                  onClick={() => changeAddonOptionQty(addon.id, opt.name, -1, limit)}
-                                >-</Text>
-                                <Text className='qty-value'>{qty}</Text>
-                                <Text
-                                  className={`qty-btn ${qty >= limit ? 'disabled' : ''}`}
-                                  onClick={() => changeAddonOptionQty(addon.id, opt.name, 1, limit)}
-                                >+</Text>
-                              </View>
-                            </View>
-                          </View>
-                        )
-                      })}
-                    </View>
-                  </View>
-                )
-              }
-              // 酒店且有房型
-              if (addon.category === 'hotel' && addon.extra_config?.rooms?.length > 0) {
-                const roomQtyMap = addonRoomQuantities[addon.id] || {}
-                return (
-                  <View key={addon.id} className='addon-item addon-with-options'>
-                    <Text className='addon-name'>{addon.name}</Text>
-                    {addon.description ? <Text className='addon-desc'>{addon.description}</Text> : null}
-                    <View className='hotel-room-cards'>
-                      {addon.extra_config.rooms.map((room: any, idx: number) => {
-                        const qty = roomQtyMap[room.name] || 0
-                        const roomLimit = room.stock || limit
-                        const imgUrl = room.images?.[0] ? compressImageUrl(room.images[0], 400) : 'https://via.placeholder.com/200x150'
-                        return (
-                          <View key={idx} className='hotel-room-card-confirm'>
-                            <View className='hotel-room-top-confirm' onClick={() => setSelectedRoom(room)}>
-                              <Image className='hotel-room-img-confirm' src={imgUrl} mode='aspectFill' />
-                              <View className='hotel-room-tags-under-img'>
-                                {room.tags?.slice(0, 3).map((t: string, i: number) => (
-                                  <Text key={i} className='hotel-room-tag-under'>{t}</Text>
-                                ))}
-                              </View>
-                            </View>
-                            <View className='hotel-room-body-confirm' onClick={() => setSelectedRoom(room)}>
-                              <Text className='hotel-room-name-confirm'>{room.name}</Text>
-                              <View className='hotel-room-specs-confirm'>
-                                {room.area ? <Text className='hotel-room-spec-confirm'>{room.area}</Text> : null}
-                                {room.window ? <Text className='hotel-room-spec-confirm'>{room.window}</Text> : null}
-                                {room.max_guests ? <Text className='hotel-room-spec-confirm'>至多{room.max_guests}人{room.max_pets ? `/${room.max_pets}宠` : ''}</Text> : null}
-                                {room.bed_type ? <Text className='hotel-room-spec-confirm'>{room.bed_type}</Text> : null}
-                              </View>
-                              {room.breakfast ? (
-                                <View className='hotel-room-breakfast-confirm'>
-                                  <Text className='hotel-room-bf-icon'>食</Text>
-                                  <Text className='hotel-room-bf-text'>{room.breakfast}</Text>
-                                </View>
-                              ) : null}
-                            </View>
-                            <View className='hotel-room-action-confirm'>
-                              {room.stock !== undefined ? (
-                                <Text className='hotel-room-stock-confirm'>仅剩{room.stock}间</Text>
-                              ) : null}
-                              <View className='hotel-room-price-row-confirm'>
-                                {room.original_price ? (
-                                  <Text className='hotel-room-op-confirm'>¥{room.original_price}</Text>
-                                ) : null}
-                                <Text className='hotel-room-p-confirm'>¥{room.price}</Text>
-                              </View>
-                              <View className='addon-qty-row' style={{ marginTop: '8rpx' }}>
-                                {qty > 0 && <Text className='addon-subtotal'>¥{room.price * qty}</Text>}
-                                <View className='qty-control'>
-                                  <Text className={`qty-btn ${qty <= 0 ? 'disabled' : ''}`} onClick={() => changeAddonRoomQty(addon.id, room.name, -1, roomLimit)}>-</Text>
-                                  <Text className='qty-value'>{qty}</Text>
-                                  <Text className={`qty-btn ${qty >= roomLimit ? 'disabled' : ''}`} onClick={() => changeAddonRoomQty(addon.id, room.name, 1, roomLimit)}>+</Text>
-                                </View>
-                              </View>
-                            </View>
-                          </View>
-                        )
-                      })}
-                    </View>
-                  </View>
-                )
-              }
-              // 普通选配
-              const qty = addonQuantities[addon.id] || 0
-              return (
-                <View key={addon.id} className='addon-item'>
-                  <View className='addon-info'>
-                    <Text className='addon-name'>{addon.name}</Text>
-                    <Text className='addon-desc'>{addon.description || ''}</Text>
-                    <Text className='addon-price'>¥{addon.price}/{addon.unit}</Text>
-                  </View>
-                  <View className='addon-qty-row'>
-                    {qty > 0 && <Text className='addon-subtotal'>¥{addon.price * qty}</Text>}
-                    <View className='qty-control'>
-                      <Text
-                        className={`qty-btn ${qty <= 0 ? 'disabled' : ''}`}
-                        onClick={() => changeAddonQty(addon.id, -1, limit)}
-                      >-</Text>
-                      <Text className='qty-value'>{qty}</Text>
-                      <Text
-                        className={`qty-btn ${qty >= limit ? 'disabled' : ''}`}
-                        onClick={() => changeAddonQty(addon.id, 1, limit)}
-                      >+</Text>
-                    </View>
-                  </View>
-                </View>
-              )
-            })
-          })()}
-          </View>
-          {addonTotal > 0 && (
-            <View className='addon-total-row'>
-              <Text className='addon-total-label'>行程选配合计</Text>
-              <Text className='addon-total-price'>¥{addonTotal}</Text>
+          <Text className='section-label'>【已选信息】</Text>
+          <View className='selected-info'>
+            <View className='info-row'>
+              <Text className='info-label'>套餐类型</Text>
+              <Text className='info-value'>
+                {{ couple: '一人一宠', single_person: '单人轻旅（无宠）', two_person_one_pet: '二人一宠', one_person_two_pet: '一人两宠', single_pet: '毛孩专属接送（无主人陪同）' }[bookingParams.packageType] || '一人一宠'}
+              </Text>
             </View>
-          )}
+            <View className='info-row'>
+              <Text className='info-label'>交通方式</Text>
+              <Text className='info-value'>
+                {bookingParams.travelType === 'bus' ? '大巴出行' : '自行前往'}
+              </Text>
+            </View>
+            {(bookingParams.extraPerson > 0 || bookingParams.extraPet > 0) && (
+              <View className='info-row'>
+                <Text className='info-label'>额外增加</Text>
+                <Text className='info-value'>
+                  {bookingParams.extraPerson > 0 ? `成人+${bookingParams.extraPerson} ` : ''}
+                  {bookingParams.extraPet > 0 ? `宠物+${bookingParams.extraPet}` : ''}
+                </Text>
+              </View>
+            )}
+            {bookingParams.addons?.length > 0 && (
+              <View className='info-row'>
+                <Text className='info-label'>行程选配</Text>
+                <View className='info-value-column'>
+                  {bookingParams.addons.map((a: any) => (
+                    <Text key={a.id} className='info-addon'>{a.name} x{a.quantity || 1}</Text>
+                  ))}
+                </View>
+              </View>
+            )}
+
+          </View>
         </View>
       )}
 
       {/* 保险服务 */}
-      <View className='section-block'>
-        <Text className='section-label'>【保险服务】（必选）</Text>
-        <View className='insurance-row'>
-          <Text className='insurance-dot'>●</Text>
-          <Text className='insurance-text'>宠物意外险（{selectedPetIds.length}份） | +¥15/份 | 最高赔付5000元/份 | 合计¥{petInsuranceTotal}</Text>
+      <View className='insurance-section'>
+        <View className='insurance-header'>
+          <Text className='insurance-icon'>🛡</Text>
+          <Text className='insurance-title'>保险服务</Text>
+          <Text className='insurance-badge'>必选</Text>
         </View>
-        <View className='insurance-row'>
-          <Text className='insurance-dot'>●</Text>
-          <Text className='insurance-text'>人身意外险（{selectedTravelers.length}份） | +¥10/份 | 最高赔付10万元/份 | 合计¥{personInsuranceTotal}</Text>
+        <View className={`insurance-item ${selectedPetIds.length > 0 ? 'active' : 'disabled'}`}>
+          {selectedPetIds.length > 0 && <View className='insurance-check'>✓</View>}
+          <View className='insurance-left'>
+            <View className='insurance-name-row'>
+              <Text className='insurance-name'>宠物意外险</Text>
+              <Text className='insurance-price'>+¥15</Text>
+            </View>
+            <Text className='insurance-desc'>保障宠物行程中突发意外医疗费用，最高保额¥5000</Text>
+          </View>
+          <Text className='insurance-total'>¥{petInsuranceTotal}</Text>
         </View>
-        <Text className='insurance-tip'>投保须知：按出行人与宠物数量自动计算，不可取消</Text>
+        <View className={`insurance-item ${selectedTravelers.length > 0 ? 'active' : 'disabled'}`}>
+          {selectedTravelers.length > 0 && <View className='insurance-check'>✓</View>}
+          <View className='insurance-left'>
+            <View className='insurance-name-row'>
+              <Text className='insurance-name'>人身意外险</Text>
+              <Text className='insurance-price'>+¥10</Text>
+            </View>
+            <Text className='insurance-desc'>保障出行人意外伤害及医疗，最高保额¥200,000</Text>
+          </View>
+          <Text className='insurance-total'>¥{personInsuranceTotal}</Text>
+        </View>
+        <Text className='insurance-tip'>注：按出行人与宠物数量自动计算，不可取消。</Text>
       </View>
 
-      {/* 优惠券选择 */}
+      {/* 优惠券 */}
       <View className='section-block'>
-        <Text className='section-label'>【优惠券】</Text>
-        <View className='coupon-select-row' onClick={() => setShowCouponModal(true)}>
-          {selectedCouponId && couponDiscount > 0 ? (
-            <>
-              <Text className='coupon-select-name'>
-                {availableCoupons.find((c: any) => c.id === selectedCouponId)?.name || '优惠券'}
+        <View className='coupon-row' onClick={() => setShowCouponModal(true)}>
+          <View className='coupon-left'>
+            <Text className='coupon-icon'>🎫</Text>
+            <Text className='coupon-title'>优惠券</Text>
+          </View>
+          <View className='coupon-right'>
+            {selectedCouponId && couponDiscount > 0 ? (
+              <Text className='coupon-text' style={{ color: '#ba1a1a' }}>-¥{couponDiscount}</Text>
+            ) : (
+              <Text className='coupon-text'>
+                {availableCoupons.length > 0 ? `${availableCoupons.length}张可用` : '暂无可用优惠券'}
               </Text>
-              <Text className='coupon-select-discount'>-¥{couponDiscount}</Text>
-            </>
-          ) : (
-            <Text className='coupon-select-placeholder'>
-              {availableCoupons.length > 0 ? `${availableCoupons.length}张可用` : '暂无可用优惠券'}
-            </Text>
-          )}
-          <Text className='coupon-select-arrow'>›</Text>
+            )}
+            <Text className='coupon-arrow'>›</Text>
+          </View>
         </View>
       </View>
 
-      {/* 协议勾选 */}
+      {/* 协议声明 */}
       {agreements.length > 0 && (
         <View className='agreement-section'>
-          <View className='agreement-checkbox' onClick={() => setAgreed(!agreed)}>
-            <View className={`agreement-check ${agreed ? 'checked' : ''}`}>
+          <View className='agreement-check-wrap' onClick={() => setAgreed(!agreed)}>
+            <View className={`agreement-check-input ${agreed ? 'checked' : ''}`}>
               {agreed && <Text className='agreement-check-icon'>✓</Text>}
             </View>
-            <Text className='agreement-text'>
-              已阅读并同意
-              {agreements.map((a: any, idx: number) => (
-                <Text key={a.id}>
-                  <Text
-                    className='agreement-link'
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      Taro.navigateTo({ url: `/pages/agreements/detail/index?id=${a.id}` })
-                    }}
-                  >
-                    {a.title}
-                  </Text>
-                  {idx < agreements.length - 1 && '、'}
-                </Text>
-              ))}
-            </Text>
           </View>
+          <Text className='agreement-text'>
+            已阅读并同意
+            {agreements.map((a: any, idx: number) => (
+              <Text key={a.id}>
+                <Text
+                  className='agreement-link'
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    Taro.navigateTo({ url: `/pages/agreements/detail/index?id=${a.id}` })
+                  }}
+                >
+                  {a.title}
+                </Text>
+                {idx < agreements.length - 1 && '、'}
+              </Text>
+            ))}
+          </Text>
         </View>
       )}
 
+      </View>
+
       {/* 底部固定栏 */}
       <View className='bottom-bar'>
-        <View className='bottom-price-wrap' onClick={() => setShowPriceDetail(true)}>
-          <Text className='bottom-price-label'>价格明细</Text>
-          <Text className='bottom-price-main'>¥{finalTotal}</Text>
+        <View className='bottom-content'>
+          <View className='bottom-left'>
+            <View className='detail-btn' onClick={() => setShowPriceDetail(true)}>
+              <Text className='detail-icon'>📋</Text>
+              <Text className='detail-label'>明细</Text>
+            </View>
+            <View className='price-wrap'>
+              <Text className='price-label'>合计</Text>
+              <Text className='price-value'>¥{finalTotal}</Text>
+            </View>
+          </View>
+          <View className={`submit-btn ${canSubmit ? '' : 'disabled'}`} onClick={handleSubmit}>提交订单</View>
         </View>
-        <View className={`bottom-submit ${canSubmit ? 'active' : 'disabled'}`} onClick={handleSubmit}>提交订单</View>
       </View>
 
       {/* 价格明细弹窗 */}
@@ -897,24 +914,31 @@ export default function OrderConfirm() {
             <View className='price-detail-body'>
               {/* 基础价 */}
               <View className='price-detail-row'>
-                <Text className='price-detail-name'>
-                  基础价（1人1宠）
-                </Text>
-                <Text className='price-detail-value'>¥{unitPrice}</Text>
+                <Text className='price-detail-name'>基础价（{pkgConfig.label}）</Text>
+                <Text className='price-detail-value'>¥{basePrice}</Text>
               </View>
-              {/* 加人 */}
-              {useNewPricing && selectedTravelers.length > 1 && (
+              {extraPersonCount > 0 && (
                 <View className='price-detail-row sub'>
-                  <Text className='price-detail-name'>　增加{selectedTravelers.length - 1}人</Text>
-                  <Text className='price-detail-value'>¥{(selectedTravelers.length - 1) * extraPersonPrice}</Text>
+                  <Text className='price-detail-name'>　增加{extraPersonCount}成人</Text>
+                  <Text className='price-detail-value'>¥{extraPersonCount * extraPersonUnitPrice}</Text>
                 </View>
               )}
-              {/* 加宠 */}
-              {useNewPricing && selectedPetIds.length > 1 && (
+              {extraPetCount > 0 && (
                 <View className='price-detail-row sub'>
-                  <Text className='price-detail-name'>　增加{selectedPetIds.length - 1}宠</Text>
-                  <Text className='price-detail-value'>¥{(selectedPetIds.length - 1) * extraPetPrice}</Text>
+                  <Text className='price-detail-name'>　增加{extraPetCount}宠物</Text>
+                  <Text className='price-detail-value'>¥{extraPetCount * extraPetUnitPrice}</Text>
                 </View>
+              )}
+              {/* 选配 */}
+              {addonTotal > 0 && (
+                <>
+                  {(bookingParams?.addons || []).map((a: any) => (
+                    <View key={a.id || a.name} className='price-detail-row sub'>
+                      <Text className='price-detail-name'>　{a.name} x{a.quantity || 1}</Text>
+                      <Text className='price-detail-value'>¥{(a.price || 0) * (a.quantity || 1)}</Text>
+                    </View>
+                  ))}
+                </>
               )}
               {/* 保险 */}
               {petInsuranceTotal > 0 && (
@@ -927,13 +951,6 @@ export default function OrderConfirm() {
                 <View className='price-detail-row'>
                   <Text className='price-detail-name'>人身意外险（{selectedTravelers.length}份）</Text>
                   <Text className='price-detail-value'>¥{personInsuranceTotal}</Text>
-                </View>
-              )}
-              {/* 选配 */}
-              {addonTotal > 0 && (
-                <View className='price-detail-row'>
-                  <Text className='price-detail-name'>行程选配</Text>
-                  <Text className='price-detail-value'>¥{addonTotal}</Text>
                 </View>
               )}
               {/* 优惠券 */}

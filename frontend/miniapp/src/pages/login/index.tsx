@@ -1,12 +1,25 @@
 import { useState, useEffect } from 'react'
 import Taro from '@tarojs/taro'
-import { View, Text, Button, Checkbox, Image } from '@tarojs/components'
-import { login, getAgreements } from '../../utils/api'
+import { View, Text, Button, Checkbox, Image, Input } from '@tarojs/components'
+import { login, getAgreements, updateUserProfile, uploadFile } from '../../utils/api'
 import './index.scss'
+
+const BASE_URL = 'https://tailtravel.cn'
+
+function fullImageUrl(url?: string) {
+  if (!url) return ''
+  if (url.startsWith('http')) return url
+  return `${BASE_URL}${url}`
+}
 
 export default function Login() {
   const [agreed, setAgreed] = useState(false)
   const [agreements, setAgreements] = useState<any[]>([])
+  const [showProfileModal, setShowProfileModal] = useState(false)
+  const [nickname, setNickname] = useState('')
+  const [avatarUrl, setAvatarUrl] = useState('')
+  const [avatarFilePath, setAvatarFilePath] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   useEffect(() => {
     loadAgreements()
@@ -53,9 +66,9 @@ export default function Login() {
         icon: 'success',
         duration: 800,
         complete: () => {
-          // 新用户引导完善资料
+          // 新用户引导完善资料（弹窗形式）
           if (isNewUser) {
-            Taro.redirectTo({ url: '/pages/profile/complete-info/index' })
+            setShowProfileModal(true)
             return
           }
 
@@ -81,22 +94,120 @@ export default function Login() {
     }
   }
 
-  const handleLogin = async () => {
+  const handleGetPhoneNumber = async (e: any) => {
+    console.log('[GetPhoneNumber] event:', e)
     if (!agreed) {
       Taro.showToast({ title: '请先同意用户协议', icon: 'none' })
       return
     }
+    // 用户拒绝授权手机号
+    if (e.detail?.errMsg && e.detail.errMsg.includes('fail')) {
+      console.log('[GetPhoneNumber] user denied:', e.detail?.errMsg)
+      Taro.showToast({ title: '需要授权手机号才能登录', icon: 'none' })
+      return
+    }
+
+    const phoneCode = e.detail?.code
+    console.log('[GetPhoneNumber] phoneCode:', phoneCode)
+    if (!phoneCode) {
+      Taro.showToast({ title: '获取手机号失败，请重试', icon: 'none' })
+      return
+    }
+
     try {
-      const res = await Taro.login()
-      console.log('wx.login code:', res.code)
-      const data = await login(res.code)
-      console.log('login response:', data)
+      const wxRes = await Taro.login()
+      console.log('[GetPhoneNumber] wx.login code:', wxRes.code, 'phone_code:', phoneCode)
+      const data = await login(wxRes.code, phoneCode)
+      console.log('[GetPhoneNumber] login response:', data)
       doLoginSuccess(data)
     } catch (err) {
-      console.error('login error:', err)
+      console.error('[GetPhoneNumber] login error:', err)
       Taro.showToast({ title: '登录失败，请检查网络或后端服务', icon: 'none' })
     }
   }
+
+  // --- 完善资料弹窗相关 ---
+  const handleChooseAvatar = async (e: any) => {
+    const tempFilePath = e.detail?.avatarUrl
+    if (!tempFilePath) return
+    setAvatarFilePath(tempFilePath)
+    setAvatarUrl(tempFilePath)
+    try {
+      const uploadRes: any = await uploadFile(tempFilePath)
+      const data = JSON.parse(uploadRes.data)
+      if (data.code === 200 && data.data?.url) {
+        setAvatarUrl(fullImageUrl(data.data.url))
+        setAvatarFilePath('')
+      }
+    } catch (err) {
+      console.error('头像上传失败:', err)
+    }
+  }
+
+  const handleNicknameBlur = (e: any) => {
+    const value = e.detail?.value
+    if (value) setNickname(value)
+  }
+
+  const handleNicknameInput = (e: any) => {
+    setNickname(e.detail?.value || '')
+  }
+
+  const goHome = () => {
+    setShowProfileModal(false)
+    Taro.setStorageSync('active_tab_index', 0)
+    Taro.switchTab({ url: '/pages/index/index' })
+  }
+
+  const handleSubmitProfile = async () => {
+    if (isSubmitting) return
+    if (!nickname.trim() && !avatarUrl) {
+      Taro.showModal({
+        title: '提示',
+        content: '您还没有填写昵称和头像，确定要跳过吗？',
+        confirmText: '去填写',
+        cancelText: '跳过',
+        success: (res) => { if (res.cancel) goHome() }
+      })
+      return
+    }
+    setIsSubmitting(true)
+    try {
+      let finalAvatar = avatarUrl
+      if (avatarFilePath && avatarFilePath.startsWith('wxfile://')) {
+        const uploadRes: any = await uploadFile(avatarFilePath)
+        const data = JSON.parse(uploadRes.data)
+        if (data.code === 200 && data.data?.url) finalAvatar = data.data.url
+      }
+      const res: any = await updateUserProfile({
+        nickname: nickname.trim() || undefined,
+        avatar: finalAvatar || undefined,
+      })
+      if (res.code === 200) {
+        Taro.setStorageSync('user_info', res.data)
+        Taro.showToast({ title: '设置成功', icon: 'success' })
+        setTimeout(() => goHome(), 800)
+      } else {
+        Taro.showToast({ title: res.message || '保存失败', icon: 'none' })
+      }
+    } catch (err) {
+      Taro.showToast({ title: '保存失败', icon: 'none' })
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const handleSkipProfile = () => {
+    Taro.showModal({
+      title: '提示',
+      content: '跳过设置后，您可以在「我的-编辑资料」中随时修改昵称和头像',
+      showCancel: true,
+      confirmText: '去设置',
+      cancelText: '跳过',
+      success: (res) => { if (res.cancel) goHome() }
+    })
+  }
+  // ------------------------
 
   return (
     <View className='login-page' style={{ paddingTop: '140rpx' }}>
@@ -127,7 +238,7 @@ export default function Login() {
       {/* 登录操作区域 */}
       <View className='action-section'>
         <View className='btn-wrapper'>
-          <Button className='wx-login-btn' onClick={handleLogin}>
+          <Button className='wx-login-btn' openType='getPhoneNumber' onGetPhoneNumber={handleGetPhoneNumber}>
             <Text className='btn-icon'>💬</Text>
             <Text className='btn-text'>微信授权手机号登录</Text>
           </Button>
@@ -158,6 +269,56 @@ export default function Login() {
       {/* 背景装饰 */}
       <View className='bg-decoration bg-top-right' />
       <View className='bg-decoration bg-bottom-left' />
+
+      {/* 完善资料弹窗 */}
+      {showProfileModal && (
+        <View className='profile-modal'>
+          <View className='profile-modal-content'>
+            <View className='pm-header'>
+              <Image className='pm-logo' src={require('../../assets/see-throughlogo.png')} mode='aspectFit' />
+              <Text className='pm-title'>欢迎来到尾巴旅行</Text>
+              <Text className='pm-subtitle'>设置您的专属昵称和头像</Text>
+            </View>
+
+            <View className='pm-form'>
+              <View className='pm-avatar-wrap'>
+                <Button className='pm-avatar-btn' openType='chooseAvatar' onChooseAvatar={handleChooseAvatar}>
+                  {avatarUrl ? (
+                    <Image className='pm-avatar-img' src={avatarUrl} mode='aspectFill' />
+                  ) : (
+                    <View className='pm-avatar-placeholder'>
+                      <Text className='pm-avatar-icon'>📷</Text>
+                      <Text className='pm-avatar-text'>点击设置头像</Text>
+                    </View>
+                  )}
+                </Button>
+              </View>
+
+              <View className='pm-nickname-wrap'>
+                <Text className='pm-label'>昵称</Text>
+                <View className='pm-input-box'>
+                  <Input
+                    className='pm-input'
+                    type='nickname'
+                    placeholder='点击输入，或选择键盘上方「使用微信昵称」'
+                    value={nickname}
+                    onInput={handleNicknameInput}
+                    onBlur={handleNicknameBlur}
+                  />
+                </View>
+                <Text className='pm-tip'>点击输入框后，键盘上方会显示「使用微信昵称」</Text>
+              </View>
+            </View>
+
+            <View className='pm-actions'>
+              <Button className={`pm-submit-btn ${(!nickname.trim() && !avatarUrl) ? 'disabled' : ''}`} onClick={handleSubmitProfile}>
+                {isSubmitting ? '保存中...' : '确认设置'}
+              </Button>
+              <Text className='pm-skip' onClick={handleSkipProfile}>稍后再说</Text>
+            </View>
+          </View>
+        </View>
+      )}
     </View>
   )
 }

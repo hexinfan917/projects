@@ -1,6 +1,6 @@
 import { PageContainer } from '@ant-design/pro-components';
 import { Card, Form, Input, Select, InputNumber, Radio, Button, Space, Upload, message, Row, Col, DatePicker, TimePicker, Table, Popconfirm, Tabs, Modal, Spin } from 'antd';
-import { UploadOutlined, PlusOutlined, DeleteOutlined, SaveOutlined } from '@ant-design/icons';
+import { UploadOutlined, PlusOutlined, DeleteOutlined, SaveOutlined, EditOutlined } from '@ant-design/icons';
 import { useState, useEffect } from 'react';
 import { request, useParams, history } from '@umijs/max';
 import dayjs from 'dayjs';
@@ -37,6 +37,7 @@ export default function RouteEdit() {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [schedules, setSchedules] = useState<any[]>([]);
+  const [scheduleAddons, setScheduleAddons] = useState<any[]>([]);
   const [gallery, setGallery] = useState<string[]>([]);
   const [highlights, setHighlights] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState('basic');
@@ -58,6 +59,7 @@ export default function RouteEdit() {
   }, []);
 
   // 富文本内容
+  const [description, setDescription] = useState('');
   const [highlightsDetail, setHighlightsDetail] = useState('');
   const [feeDescription, setFeeDescription] = useState('');
   const [feeInclude, setFeeInclude] = useState('');
@@ -87,12 +89,10 @@ export default function RouteEdit() {
         const data = res.data;
         form.setFieldsValue({
           ...data,
-          base_price: Number(data.base_price),
-          extra_person_price: Number(data.extra_person_price || 0),
-          extra_pet_price: Number(data.extra_pet_price || 0),
         });
         setGallery(data.gallery || []);
         setHighlights(data.highlights || []);
+        setDescription(data.description || '');
         setHighlightsDetail(data.highlights_detail || '');
         setFeeDescription(data.fee_description || '');
         setFeeInclude(data.fee_include || '');
@@ -108,12 +108,18 @@ export default function RouteEdit() {
     }
   };
 
-  // 获取排期列表
+  // 获取排期列表和行程选配
   const fetchSchedules = async () => {
     try {
-      const res = await request(`/api/v1/admin/routes/${id}/schedules`);
-      if (res.code === 200 && res.data) {
-        setSchedules(res.data.schedules || []);
+      const [sRes, aRes] = await Promise.all([
+        request(`/api/v1/admin/routes/${id}/schedules`),
+        request(`/api/v1/routes/${id}/addons`),
+      ]);
+      if (sRes.code === 200 && sRes.data) {
+        setSchedules(sRes.data.schedules || []);
+      }
+      if (aRes.code === 200 && aRes.data) {
+        setScheduleAddons(aRes.data.addons || []);
       }
     } catch (error) {
       console.error('获取排期失败', error);
@@ -130,6 +136,7 @@ export default function RouteEdit() {
         ...values,
         gallery,
         highlights,
+        description,
         highlights_detail: highlightsDetail,
         fee_description: feeDescription,
         fee_include: feeInclude,
@@ -231,12 +238,20 @@ export default function RouteEdit() {
 
   // 批量添加排期
   const [batchModalVisible, setBatchModalVisible] = useState(false);
+  const [editScheduleModalVisible, setEditScheduleModalVisible] = useState(false);
+  const [currentEditingSchedule, setCurrentEditingSchedule] = useState<any>(null);
   const [editingScheduleId, setEditingScheduleId] = useState<number | null>(null);
+  const [editingField, setEditingField] = useState<string | null>(null);
   const [editingPrice, setEditingPrice] = useState<number | null>(null);
   const [editingStock, setEditingStock] = useState<number | null>(null);
   const handleBatchAddSchedules = async (values: any) => {
     try {
-      const { start_date, end_date, start_time, end_time, price, stock, week_days } = values;
+      const { start_date, end_date, start_time, end_time, price, self_drive_price, stock, week_days,
+        single_person_price, two_person_one_pet_price, one_person_two_pet_price, single_pet_price,
+        extra_person_price, extra_pet_price,
+        self_drive_single_person_price, self_drive_two_person_one_pet_price, self_drive_one_person_two_pet_price,
+        self_drive_single_pet_price, self_drive_extra_person_price, self_drive_extra_pet_price
+      } = values;
       
       const res = await request(`/api/v1/admin/routes/${id}/schedules/batch`, {
         method: 'POST',
@@ -246,8 +261,21 @@ export default function RouteEdit() {
           start_time: start_time?.format('HH:mm') || '09:00',
           end_time: end_time?.format('HH:mm') || '17:00',
           price,
+          self_drive_price,
           stock,
           week_days: week_days || [1, 2, 3, 4, 5, 6, 7], // 默认每天
+          single_person_price,
+          two_person_one_pet_price,
+          one_person_two_pet_price,
+          single_pet_price,
+          extra_person_price,
+          extra_pet_price,
+          self_drive_single_person_price,
+          self_drive_two_person_one_pet_price,
+          self_drive_one_person_two_pet_price,
+          self_drive_single_pet_price,
+          self_drive_extra_person_price,
+          self_drive_extra_pet_price,
         },
       });
       
@@ -282,6 +310,7 @@ export default function RouteEdit() {
           start_time: values.start_time?.format('HH:mm') || '09:00',
           end_time: values.end_time?.format('HH:mm') || '17:00',
           price: values.price,
+          self_drive_price: values.self_drive_price,
           stock: values.stock,
           status: 1,
         },
@@ -361,7 +390,7 @@ export default function RouteEdit() {
       dataIndex: 'price',
       key: 'price',
       render: (price: number, record: any) => {
-        if (editingScheduleId === record.id && editingPrice !== null) {
+        if (editingScheduleId === record.id && editingField === 'price') {
           return (
             <InputNumber
               autoFocus
@@ -376,6 +405,7 @@ export default function RouteEdit() {
                   updateSchedule(record.id, { price: editingPrice || 0 });
                 }
                 setEditingScheduleId(null);
+                setEditingField(null);
                 setEditingPrice(null);
               }}
               onPressEnter={() => {
@@ -383,6 +413,7 @@ export default function RouteEdit() {
                   updateSchedule(record.id, { price: editingPrice || 0 });
                 }
                 setEditingScheduleId(null);
+                setEditingField(null);
                 setEditingPrice(null);
               }}
             />
@@ -393,6 +424,7 @@ export default function RouteEdit() {
             style={{ cursor: 'pointer', color: '#1890ff' }}
             onClick={() => {
               setEditingScheduleId(record.id);
+              setEditingField('price');
               setEditingPrice(price || 0);
             }}
           >
@@ -405,7 +437,7 @@ export default function RouteEdit() {
       title: '库存',
       key: 'stock',
       render: (record: any) => {
-        if (editingScheduleId === record.id && editingStock !== null) {
+        if (editingScheduleId === record.id && editingField === 'stock') {
           return (
             <InputNumber
               autoFocus
@@ -418,6 +450,7 @@ export default function RouteEdit() {
                   updateSchedule(record.id, { stock: editingStock || 0 });
                 }
                 setEditingScheduleId(null);
+                setEditingField(null);
                 setEditingStock(null);
               }}
               onPressEnter={() => {
@@ -425,6 +458,7 @@ export default function RouteEdit() {
                   updateSchedule(record.id, { stock: editingStock || 0 });
                 }
                 setEditingScheduleId(null);
+                setEditingField(null);
                 setEditingStock(null);
               }}
             />
@@ -435,6 +469,7 @@ export default function RouteEdit() {
             style={{ cursor: 'pointer', color: '#1890ff' }}
             onClick={() => {
               setEditingScheduleId(record.id);
+              setEditingField('stock');
               setEditingStock(record.stock || 0);
             }}
           >
@@ -456,14 +491,26 @@ export default function RouteEdit() {
       title: '操作',
       key: 'action',
       render: (record: any) => (
-        <Popconfirm
-          title="确认删除"
-          onConfirm={() => deleteSchedule(record.id)}
-        >
-          <Button type="link" danger icon={<DeleteOutlined />}>
-            删除
+        <Space>
+          <Button
+            type="link"
+            icon={<EditOutlined />}
+            onClick={() => {
+              setCurrentEditingSchedule(record);
+              setEditScheduleModalVisible(true);
+            }}
+          >
+            编辑
           </Button>
-        </Popconfirm>
+          <Popconfirm
+            title="确认删除"
+            onConfirm={() => deleteSchedule(record.id)}
+          >
+            <Button type="link" danger icon={<DeleteOutlined />}>
+              删除
+            </Button>
+          </Popconfirm>
+        </Space>
       ),
     },
   ];
@@ -496,8 +543,19 @@ export default function RouteEdit() {
                 min_participants: 4,
                 max_participants: 12,
                 base_price: 0,
+                single_person_price: undefined,
+                two_person_one_pet_price: undefined,
+                one_person_two_pet_price: undefined,
+                single_pet_price: undefined,
                 extra_person_price: 0,
                 extra_pet_price: 0,
+                self_drive_base_price: undefined,
+                self_drive_single_person_price: undefined,
+                self_drive_two_person_one_pet_price: undefined,
+                self_drive_one_person_two_pet_price: undefined,
+                self_drive_single_pet_price: undefined,
+                self_drive_extra_person_price: undefined,
+                self_drive_extra_pet_price: undefined,
               }}
             >
               <Row gutter={24}>
@@ -575,40 +633,6 @@ export default function RouteEdit() {
               <Row gutter={24}>
                 <Col span={8}>
                   <Form.Item
-                    name="base_price"
-                    label="基础价格(1人1宠)"
-                    rules={[{ required: true, message: '请输入基础价格' }]}
-                  >
-                    <InputNumber
-                      style={{ width: '100%' }}
-                      min={0}
-                      precision={2}
-                      prefix="¥"
-                      placeholder="请输入"
-                    />
-                  </Form.Item>
-                </Col>
-                <Col span={8}>
-                  <Form.Item
-                    name="extra_person_price"
-                    label="增加一人价格"
-                  >
-                    <InputNumber style={{ width: '100%' }} min={0} precision={2} prefix="¥" placeholder="0" />
-                  </Form.Item>
-                </Col>
-                <Col span={8}>
-                  <Form.Item
-                    name="extra_pet_price"
-                    label="增加一宠价格"
-                  >
-                    <InputNumber style={{ width: '100%' }} min={0} precision={2} prefix="¥" placeholder="0" />
-                  </Form.Item>
-                </Col>
-              </Row>
-
-              <Row gutter={24}>
-                <Col span={8}>
-                  <Form.Item
                     name="min_participants"
                     label="最少成团人数"
                   >
@@ -654,7 +678,10 @@ export default function RouteEdit() {
                 <InputNumber style={{ width: '100%' }} min={0} placeholder="请输入排序值" />
               </Form.Item>
 
-              <Form.Item label="封面图片">
+              <Form.Item
+                label="封面图片"
+                extra="建议尺寸 750×350px（2:1），主体放中间偏左，避免被裁切"
+              >
                 <Form.Item name="cover_image" noStyle>
                   <Input placeholder="图片URL" style={{ marginBottom: 8 }} />
                 </Form.Item>
@@ -676,7 +703,10 @@ export default function RouteEdit() {
                 </Upload>
               </Form.Item>
 
-              <Form.Item label="路线图集">
+              <Form.Item
+                label="路线图集"
+                extra="建议尺寸 750×420px（16:9），可传 2 倍图（1500×840px）"
+              >
                 <div style={{ marginBottom: 16 }}>
                   <Upload {...uploadProps} showUploadList={false}>
                     <Button icon={<UploadOutlined />}>上传图片</Button>
@@ -734,10 +764,15 @@ export default function RouteEdit() {
                 </Button>
               </Form.Item>
 
-              <Form.Item label="详细介绍">
-                <Form.Item name="description" noStyle>
-                  <TextArea rows={4} placeholder="路线的详细介绍" />
-                </Form.Item>
+              <Form.Item label="详细介绍（富文本）">
+                <ReactQuill
+                  theme="snow"
+                  value={description}
+                  onChange={setDescription}
+                  modules={quillModules}
+                  formats={quillFormats}
+                  style={{ height: 300, marginBottom: 50 }}
+                />
               </Form.Item>
             </Form>
             </Spin>
@@ -864,11 +899,7 @@ export default function RouteEdit() {
 
         {isEdit && (
           <Tabs.TabPane tab="营期管理" key="schedules">
-            <Card title="排期列表" extra={
-              <Button onClick={() => setBatchModalVisible(true)}>
-                批量添加
-              </Button>
-            }>
+            <Card title="排期列表">
               <Form layout="inline" onFinish={addSchedule} style={{ marginBottom: 16 }}>
                 <Form.Item name="schedule_date" rules={[{ required: true }]}>
                   <DatePicker 
@@ -881,9 +912,6 @@ export default function RouteEdit() {
                 </Form.Item>
                 <Form.Item name="end_time">
                   <TimePicker placeholder="结束时间" format="HH:mm" />
-                </Form.Item>
-                <Form.Item name="price">
-                  <InputNumber placeholder="价格" min={0} />
                 </Form.Item>
                 <Form.Item name="stock" initialValue={12}>
                   <InputNumber placeholder="库存" min={1} />
@@ -907,12 +935,188 @@ export default function RouteEdit() {
 
       </Tabs>
 
+      {/* 编辑排期Modal */}
+      <Modal
+        title={`编辑排期 - ${currentEditingSchedule?.schedule_date || ''}`}
+        open={editScheduleModalVisible}
+        onCancel={() => {
+          setEditScheduleModalVisible(false);
+          setCurrentEditingSchedule(null);
+        }}
+        footer={null}
+        width={1400}
+      >
+        <Form
+          key={currentEditingSchedule?.id}
+          onFinish={async (values) => {
+            try {
+              // 过滤掉为空的 addon_prices 项
+              const submitData: any = { ...values };
+              if (submitData.addon_prices) {
+                const filtered: any = {};
+                Object.entries(submitData.addon_prices).forEach(([k, v]) => {
+                  if (v !== undefined && v !== null && v !== '') {
+                    filtered[k] = v;
+                  }
+                });
+                submitData.addon_prices = Object.keys(filtered).length > 0 ? filtered : undefined;
+              }
+              const res = await request(`/api/v1/admin/schedules/${currentEditingSchedule.id}`, {
+                method: 'PUT',
+                data: submitData,
+              });
+              if (res.code === 200) {
+                message.success('排期更新成功');
+                setEditScheduleModalVisible(false);
+                setCurrentEditingSchedule(null);
+                await fetchSchedules();
+              } else {
+                message.error(res.message || '更新失败');
+              }
+            } catch (error: any) {
+              message.error(error?.message || '更新排期失败');
+            }
+          }}
+          layout="vertical"
+          initialValues={currentEditingSchedule}
+        >
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item label="开始时间" name="start_time">
+                <Input placeholder="09:00" />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item label="结束时间" name="end_time">
+                <Input placeholder="18:00" />
+              </Form.Item>
+            </Col>
+          </Row>
+          <Tabs type="card" style={{ marginBottom: 16 }}>
+            <Tabs.TabPane tab="大巴出行价格" key="bus">
+              <Row gutter={16}>
+                <Col span={8}>
+                  <Form.Item label="价格(1人1宠)" name="price">
+                    <InputNumber placeholder="价格" min={0} style={{ width: '100%' }} />
+                  </Form.Item>
+                </Col>
+                <Col span={8}>
+                  <Form.Item label="一人两宠" name="one_person_two_pet_price">
+                    <InputNumber placeholder="路线默认价" min={0} style={{ width: '100%' }} />
+                  </Form.Item>
+                </Col>
+                <Col span={8}>
+                  <Form.Item label="二人一宠" name="two_person_one_pet_price">
+                    <InputNumber placeholder="路线默认价" min={0} style={{ width: '100%' }} />
+                  </Form.Item>
+                </Col>
+              </Row>
+              <Row gutter={16}>
+                <Col span={8}>
+                  <Form.Item label="单人轻旅（无宠）" name="single_person_price">
+                    <InputNumber placeholder="路线默认价" min={0} style={{ width: '100%' }} />
+                  </Form.Item>
+                </Col>
+                <Col span={8}>
+                  <Form.Item label="毛孩专属接送（无主人陪同）" name="single_pet_price">
+                    <InputNumber placeholder="路线默认价" min={0} style={{ width: '100%' }} />
+                  </Form.Item>
+                </Col>
+                <Col span={8}>
+                  <Form.Item label="增加一人" name="extra_person_price">
+                    <InputNumber placeholder="路线默认价" min={0} style={{ width: '100%' }} />
+                  </Form.Item>
+                </Col>
+              </Row>
+              <Row gutter={16}>
+                <Col span={8}>
+                  <Form.Item label="增加一宠" name="extra_pet_price">
+                    <InputNumber placeholder="路线默认价" min={0} style={{ width: '100%' }} />
+                  </Form.Item>
+                </Col>
+              </Row>
+            </Tabs.TabPane>
+            <Tabs.TabPane tab="自驾出行价格" key="self_drive">
+              <Row gutter={16}>
+                <Col span={8}>
+                  <Form.Item label="自驾价格(1人1宠)" name="self_drive_price">
+                    <InputNumber placeholder="自驾价格" min={0} style={{ width: '100%' }} />
+                  </Form.Item>
+                </Col>
+                <Col span={8}>
+                  <Form.Item label="一人两宠" name="self_drive_one_person_two_pet_price">
+                    <InputNumber placeholder="路线默认价" min={0} style={{ width: '100%' }} />
+                  </Form.Item>
+                </Col>
+                <Col span={8}>
+                  <Form.Item label="二人一宠" name="self_drive_two_person_one_pet_price">
+                    <InputNumber placeholder="路线默认价" min={0} style={{ width: '100%' }} />
+                  </Form.Item>
+                </Col>
+              </Row>
+              <Row gutter={16}>
+                <Col span={8}>
+                  <Form.Item label="单人轻旅（无宠）" name="self_drive_single_person_price">
+                    <InputNumber placeholder="路线默认价" min={0} style={{ width: '100%' }} />
+                  </Form.Item>
+                </Col>
+                <Col span={8}>
+                  <Form.Item label="增加一人" name="self_drive_extra_person_price">
+                    <InputNumber placeholder="路线默认价" min={0} style={{ width: '100%' }} />
+                  </Form.Item>
+                </Col>
+                <Col span={8}>
+                  <Form.Item label="增加一宠" name="self_drive_extra_pet_price">
+                    <InputNumber placeholder="路线默认价" min={0} style={{ width: '100%' }} />
+                  </Form.Item>
+                </Col>
+              </Row>
+            </Tabs.TabPane>
+          </Tabs>
+          {scheduleAddons.length > 0 && (
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ fontWeight: 600, marginBottom: 12, borderBottom: '1px solid #f0f0f0', paddingBottom: 8 }}>
+                行程选配价格（不填使用路线默认价）
+              </div>
+              <Row gutter={16}>
+                {scheduleAddons.map((addon: any) => (
+                  <Col span={8} key={addon.id}>
+                    <Form.Item label={addon.name} name={['addon_prices', addon.code || `addon_${addon.id}`]}>
+                      <InputNumber placeholder={`路线默认价 ¥${addon.price || 0}`} min={0} style={{ width: '100%' }} />
+                    </Form.Item>
+                  </Col>
+                ))}
+              </Row>
+            </div>
+          )}
+          <Form.Item label="库存" name="stock">
+            <InputNumber placeholder="库存" min={1} style={{ width: '100%' }} />
+          </Form.Item>
+          <Form.Item label="状态" name="status">
+            <Select
+              options={[
+                { label: '已关闭', value: 0 },
+                { label: '可售', value: 1 },
+                { label: '已满', value: 2 },
+                { label: '已结束', value: 3 },
+              ]}
+            />
+          </Form.Item>
+          <Form.Item>
+            <Button type="primary" htmlType="submit" block>
+              保存
+            </Button>
+          </Form.Item>
+        </Form>
+      </Modal>
+
       {/* 批量添加排期Modal */}
       <Modal
         title="批量添加排期"
         open={batchModalVisible}
         onCancel={() => setBatchModalVisible(false)}
         footer={null}
+        width={1400}
       >
         <Form onFinish={handleBatchAddSchedules} layout="vertical">
           <Form.Item label="开始日期" name="start_date" rules={[{ required: true }]}>
@@ -935,12 +1139,52 @@ export default function RouteEdit() {
           <Form.Item label="结束时间" name="end_time">
             <TimePicker placeholder="结束时间" format="HH:mm" style={{ width: '100%' }} />
           </Form.Item>
-          <Form.Item label="价格" name="price">
+          <Form.Item label="价格(1人1宠)" name="price">
             <InputNumber placeholder="价格" min={0} style={{ width: '100%' }} />
+          </Form.Item>
+          <Form.Item label="自驾价格(1人1宠)" name="self_drive_price">
+            <InputNumber placeholder="自驾价格" min={0} style={{ width: '100%' }} />
           </Form.Item>
           <Form.Item label="库存" name="stock" initialValue={12}>
             <InputNumber placeholder="库存" min={1} style={{ width: '100%' }} />
           </Form.Item>
+          <Card size="small" title="大巴套餐价格（可选）" style={{ marginBottom: 16 }}>
+            <Form.Item label="一人两宠" name="one_person_two_pet_price">
+              <InputNumber placeholder="路线默认价" min={0} style={{ width: '100%' }} />
+            </Form.Item>
+            <Form.Item label="二人一宠" name="two_person_one_pet_price">
+              <InputNumber placeholder="路线默认价" min={0} style={{ width: '100%' }} />
+            </Form.Item>
+            <Form.Item label="单人轻旅（无宠）" name="single_person_price">
+              <InputNumber placeholder="路线默认价" min={0} style={{ width: '100%' }} />
+            </Form.Item>
+            <Form.Item label="毛孩专属接送（无主人陪同）" name="single_pet_price">
+              <InputNumber placeholder="路线默认价" min={0} style={{ width: '100%' }} />
+            </Form.Item>
+            <Form.Item label="增加一人" name="extra_person_price">
+              <InputNumber placeholder="路线默认价" min={0} style={{ width: '100%' }} />
+            </Form.Item>
+            <Form.Item label="增加一宠" name="extra_pet_price">
+              <InputNumber placeholder="路线默认价" min={0} style={{ width: '100%' }} />
+            </Form.Item>
+          </Card>
+          <Card size="small" title="自驾套餐价格（可选）" style={{ marginBottom: 16 }}>
+            <Form.Item label="一人两宠" name="self_drive_one_person_two_pet_price">
+              <InputNumber placeholder="路线默认价" min={0} style={{ width: '100%' }} />
+            </Form.Item>
+            <Form.Item label="二人一宠" name="self_drive_two_person_one_pet_price">
+              <InputNumber placeholder="路线默认价" min={0} style={{ width: '100%' }} />
+            </Form.Item>
+            <Form.Item label="单人轻旅（无宠）" name="self_drive_single_person_price">
+              <InputNumber placeholder="路线默认价" min={0} style={{ width: '100%' }} />
+            </Form.Item>
+            <Form.Item label="增加一人" name="self_drive_extra_person_price">
+              <InputNumber placeholder="路线默认价" min={0} style={{ width: '100%' }} />
+            </Form.Item>
+            <Form.Item label="增加一宠" name="self_drive_extra_pet_price">
+              <InputNumber placeholder="路线默认价" min={0} style={{ width: '100%' }} />
+            </Form.Item>
+          </Card>
           <Form.Item>
             <Button type="primary" htmlType="submit" block>
               批量创建

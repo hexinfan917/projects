@@ -146,6 +146,7 @@ class CreateOrderRequest(BaseModel):
     coupon_id: Optional[int] = None
     addons: List[dict] = []
     addon_amount: float = 0
+    travel_type: Optional[str] = None
 
 @app.get("/health")
 async def health_check():
@@ -209,6 +210,7 @@ async def get_orders(
             "route_price": float(o.route_price),
             "insurance_price": float(o.insurance_price),
             "addon_amount": float(o.addon_amount),
+            "travel_type": o.travel_type,
             "pay_amount": float(o.pay_amount),
             "status": o.status,
             "status_name": STATUS_MAP.get(o.status, "未知"),
@@ -263,6 +265,7 @@ async def get_order_detail(
         "equipment_price": float(o.equipment_price),
         "addon_amount": float(o.addon_amount),
         "addons": o.addons or [],
+        "travel_type": o.travel_type,
         "total_amount": float(o.total_amount),
         "discount_amount": float(o.discount_amount),
         "pay_amount": float(o.pay_amount),
@@ -495,6 +498,7 @@ async def create_order(
         equipment_price=data.equipment_price,
         addon_amount=data.addon_amount,
         addons=data.addons,
+        travel_type=data.travel_type,
         total_amount=total_amount,
         discount_amount=discount_amount,
         coupon_id=coupon_id,

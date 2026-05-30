@@ -33,7 +33,8 @@ import { useRef, useState, useEffect } from 'react';
 import { request } from '@umijs/max';
 import dayjs from 'dayjs';
 
-const categoryMap: Record<string, { text: string; color: string }> = {
+// 分类映射，动态加载后填充
+let categoryMap: Record<string, { text: string; color: string }> = {
   dog_ticket: { text: '狗狗票', color: 'blue' },
   hotel: { text: '酒店', color: 'green' },
   amusement: { text: '游乐项目', color: 'purple' },
@@ -140,9 +141,11 @@ export default function AddonManage() {
   const editDataRef = useRef<any>(null);
   const [form] = Form.useForm();
   const [routes, setRoutes] = useState<any[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
 
   useEffect(() => {
     loadRoutes();
+    loadCategories();
   }, []);
 
   const loadRoutes = async () => {
@@ -152,6 +155,23 @@ export default function AddonManage() {
       setRoutes(list.map((r: any) => ({ label: r.name, value: r.id })));
     } catch (err) {
       console.error('加载路线列表失败:', err);
+    }
+  };
+
+  const loadCategories = async () => {
+    try {
+      const res = await request('/api/v1/admin/addon-categories', { params: { status: 1 } });
+      const list = res.data?.categories || [];
+      setCategories(list.map((c: any) => ({ label: c.name, value: c.code })));
+      // 同步更新 categoryMap
+      const map: Record<string, { text: string; color: string }> = {};
+      const colors = ['blue', 'green', 'purple', 'orange', 'cyan', 'magenta', 'gold', 'lime'];
+      list.forEach((c: any, idx: number) => {
+        map[c.code] = { text: c.name, color: colors[idx % colors.length] };
+      });
+      categoryMap = map;
+    } catch (err) {
+      console.error('加载分类列表失败:', err);
     }
   };
 
@@ -249,11 +269,10 @@ export default function AddonManage() {
       title: '分类',
       dataIndex: 'category',
       width: 100,
-      valueEnum: {
-        dog_ticket: { text: '狗狗票' },
-        hotel: { text: '酒店' },
-        amusement: { text: '游乐项目' },
-      },
+      valueEnum: categories.reduce((acc: any, c: any) => {
+        acc[c.value] = { text: c.label };
+        return acc;
+      }, {}),
       render: (_: any, record: any) => {
         const category = record.category;
         const config = categoryMap[category] || { text: category, color: 'default' };
@@ -440,11 +459,7 @@ export default function AddonManage() {
         <ProFormSelect
           name="category"
           label="分类"
-          options={[
-            { label: '狗狗票', value: 'dog_ticket' },
-            { label: '酒店', value: 'hotel' },
-            { label: '游乐项目', value: 'amusement' },
-          ]}
+          options={categories}
           rules={[{ required: true }]}
         />
 

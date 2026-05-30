@@ -10,7 +10,7 @@
 
 /* 顶部内容区 */
 .routes-header {
-  padding: 200rpx 24rpx 24rpx;
+  padding: 240rpx 24rpx 24rpx;
   background: #f5f7f5;
 }
 
@@ -22,26 +22,26 @@
 .routes-search-input {
   display: flex;
   align-items: center;
-  height: 80rpx;
+  height: 72rpx;
   background: #fff;
-  border-radius: 40rpx;
+  border-radius: 36rpx;
   padding: 0 24rpx;
   box-shadow: 0 8rpx 30rpx rgba(0, 0, 0, 0.04);
 }
 
 .routes-search-icon {
-  font-size: 32rpx;
+  font-size: 28rpx;
   margin-right: 12rpx;
 }
 
 .routes-search-text {
   flex: 1;
-  font-size: 28rpx;
+  font-size: 26rpx;
   color: #2c2f2e;
 }
 
 .routes-search-clear {
-  font-size: 28rpx;
+  font-size: 26rpx;
   color: #999;
   padding: 0 8rpx;
   margin-left: 8rpx;

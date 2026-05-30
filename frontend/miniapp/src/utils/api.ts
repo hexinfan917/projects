@@ -78,8 +78,8 @@ export async function request(path: string, options: any = {}) {
 }
 
 // 用户
-export function login(code: string) {
-  return request('/api/v1/auth/wechat/login', { method: 'POST', data: { code } })
+export function login(code: string, phoneCode?: string) {
+  return request('/api/v1/auth/wechat/login', { method: 'POST', data: { code, phone_code: phoneCode } })
 }
 
 export function testLogin(testId?: string) {
@@ -255,6 +255,10 @@ export function getCharityRegisterStatus(activityId: number) {
 // 行程选配
 export function getRouteAddons(routeId: number, category?: string) {
   return request(`/api/v1/routes/${routeId}/addons`, { data: category ? { category } : {}, skipAuthModal: true })
+}
+
+export function getAddonCategories() {
+  return request('/api/v1/addon-categories', { skipAuthModal: true })
 }
 
 // 优惠券

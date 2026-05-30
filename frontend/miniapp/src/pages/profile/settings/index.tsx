@@ -7,9 +7,12 @@ import './index.scss'
 export default function Settings() {
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [agreements, setAgreements] = useState<any[]>([])
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
 
   useEffect(() => {
     loadAgreements()
+    const token = Taro.getStorageSync('access_token')
+    setIsLoggedIn(!!token)
   }, [])
 
   const loadAgreements = async () => {
@@ -94,14 +97,16 @@ export default function Settings() {
         </View>
       </View>
 
-      <View className='settings-group'>
-        <View className='settings-list'>
-          <View className='settings-item' onClick={() => setShowDeleteModal(true)}>
-            <Text className='settings-label danger-text'>注销账号</Text>
-            <Text className='settings-arrow'>{'>'}</Text>
+      {isLoggedIn && (
+        <View className='settings-group'>
+          <View className='settings-list'>
+            <View className='settings-item' onClick={() => setShowDeleteModal(true)}>
+              <Text className='settings-label danger-text'>注销账号</Text>
+              <Text className='settings-arrow'>{'>'}</Text>
+            </View>
           </View>
         </View>
-      </View>
+      )}
 
       <View className='version-section'>
         <Text className='version-text'>Version 1.0.0</Text>

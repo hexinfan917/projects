@@ -126,11 +126,11 @@ export default function RouteList() {
       valueEnum: routeTypeEnum,
     },
     {
-      title: '价格',
-      dataIndex: 'base_price',
+      title: '起价',
+      dataIndex: 'schedule_price',
       search: false,
       width: 100,
-      render: (text: number) => `¥${text}`,
+      render: (text: number) => text ? `¥${text}` : '-',
     },
     {
       title: '时长',

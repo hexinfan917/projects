@@ -62,9 +62,20 @@
   margin-bottom: 16rpx;
 }
 
+.order-no-wrap {
+  display: flex;
+  align-items: center;
+}
+
 .order-no {
   font-size: 24rpx;
   color: #999;
+}
+
+.copy-icon {
+  font-size: 22rpx;
+  margin-left: 8rpx;
+  color: #22C55E;
 }
 
 .order-status {

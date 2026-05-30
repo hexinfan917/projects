@@ -55,6 +55,7 @@ PUBLIC_PATHS = [
     r"^/api/v1/popups/member-activity$",
     r"^/api/v1/popups/\d+/log$",
     r"^/api/v1/settings/public$",
+    r"^/api/v1/addon-categories$",
 ]
 
 
@@ -111,6 +112,8 @@ LOCAL_SERVICE_ROUTES = {
     "/api/v1/admin/route-types": "http://localhost:8033",
     "/api/v1/admin/routes": "http://localhost:8033",
     "/api/v1/admin/addons": "http://localhost:8033",
+    "/api/v1/admin/addon-categories": "http://localhost:8033",
+    "/api/v1/addon-categories": "http://localhost:8033",
     "/api/v1/admin/schedules": "http://localhost:8033",
     "/api/v1/routes": "http://localhost:8033",
     "/api/v1/admin/orders": "http://localhost:8003",
@@ -218,7 +221,8 @@ async def proxy(request: Request, path: str):
             logger.warning(f"Unauthorized access to {current_path}: missing token")
             return JSONResponse(
                 status_code=401,
-                content={"code": 401, "message": "未登录或登录已过期", "data": None}
+                content={"code": 401, "message": "未登录或登录已过期", "data": None},
+                media_type="application/json; charset=utf-8"
             )
         
         token = auth_header[7:]  # 去掉 "Bearer "
@@ -230,7 +234,8 @@ async def proxy(request: Request, path: str):
             logger.warning(f"Unauthorized access to {current_path}: {e}")
             return JSONResponse(
                 status_code=401,
-                content={"code": 401, "message": str(e), "data": None}
+                content={"code": 401, "message": str(e), "data": None},
+                media_type="application/json; charset=utf-8"
             )
     
     # 查找目标服务
@@ -244,7 +249,8 @@ async def proxy(request: Request, path: str):
         logger.warning(f"Service not found for path: {current_path}")
         return JSONResponse(
             status_code=404,
-            content={"code": 404, "message": "Service not found", "data": None}
+            content={"code": 404, "message": "Service not found", "data": None},
+            media_type="application/json; charset=utf-8"
         )
     
     # 构建目标URL
@@ -291,22 +297,25 @@ async def proxy(request: Request, path: str):
         
         # JSON 响应正常解析转发
         try:
-            return JSONResponse(
+            body = json.dumps(response.json(), ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+            return Response(
                 status_code=response.status_code,
-                content=response.json()
+                content=body,
+                headers={"content-type": "application/json; charset=utf-8"}
             )
         except Exception:
             # 非 JSON 文本响应
             return Response(
                 status_code=response.status_code,
-                content=response.text,
+                content=response.content,
                 headers={"content-type": content_type}
             )
     except Exception as e:
         logger.error(f"Proxy error: {e}")
         return JSONResponse(
             status_code=500,
-            content={"code": 500, "message": "Service unavailable", "data": None}
+            content={"code": 500, "message": "Service unavailable", "data": None},
+            media_type="application/json; charset=utf-8"
         )
 
 

@@ -56,6 +56,9 @@ class Order(Base):
     addons: Mapped[Optional[list]] = mapped_column(JSON, comment="行程选配列表")
     addon_amount: Mapped[float] = mapped_column(DECIMAL(10, 2), default=0, comment="行程选配合计金额")
     
+    # 出行方式
+    travel_type: Mapped[Optional[str]] = mapped_column(String(20), nullable=True, comment="出行方式")
+    
     # 其他
     remark: Mapped[Optional[str]] = mapped_column(Text, nullable=True, comment="用户备注")
     qrcode: Mapped[Optional[str]] = mapped_column(String(500), nullable=True, comment="核销二维码")

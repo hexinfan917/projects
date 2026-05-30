@@ -1,5 +1,5 @@
 import { PageContainer, ProTable, ModalForm, ProFormDatePicker, ProFormText, ProFormDigit, ProFormSelect } from '@ant-design/pro-components';
-import { Button, Tag, message, Popconfirm, Card, Calendar, Badge, Radio, Row, Col } from 'antd';
+import { Button, Tag, message, Popconfirm, Card, Calendar, Badge, Radio, Row, Col, Tabs } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, CalendarOutlined, TableOutlined } from '@ant-design/icons';
 import { useRef, useState, useEffect } from 'react';
 import { request } from '@umijs/max';
@@ -127,6 +127,13 @@ export default function ScheduleManage() {
     {
       title: '价格',
       dataIndex: 'price',
+      width: 100,
+      search: false,
+      render: (price: number) => price ? `¥${price}` : '-',
+    },
+    {
+      title: '自驾价格',
+      dataIndex: 'self_drive_price',
       width: 100,
       search: false,
       render: (price: number) => price ? `¥${price}` : '-',
@@ -288,6 +295,7 @@ export default function ScheduleManage() {
         onOpenChange={setModalVisible}
         onFinish={handleSubmit}
         initialValues={editData}
+        width={1400}
       >
         {!editData && (
           <ProFormSelect
@@ -313,12 +321,70 @@ export default function ScheduleManage() {
         </Row>
         <Row gutter={16}>
           <Col span={12}>
-            <ProFormDigit name="price" label="当日价格" min={0} placeholder="不填使用路线默认价格" />
+            <ProFormDigit name="price" label="当日价格(1人1宠)" min={0} placeholder="不填使用路线默认价格" />
           </Col>
           <Col span={12}>
             <ProFormDigit name="stock" label="库存数量" min={1} rules={[{ required: true }]} />
           </Col>
         </Row>
+        <ProFormDigit name="self_drive_price" label="当日自驾价格(1人1宠)" min={0} placeholder="不填使用路线默认自驾价格" />
+
+        <Tabs type="card" style={{ marginTop: 16 }}>
+          <Tabs.TabPane tab="大巴出行价格" key="bus">
+            <Row gutter={16}>
+              <Col span={8}>
+                <ProFormDigit name="price" label="价格(1人1宠)" min={0} placeholder="路线默认价" />
+              </Col>
+              <Col span={8}>
+                <ProFormDigit name="one_person_two_pet_price" label="一人两宠" min={0} placeholder="路线默认价" />
+              </Col>
+              <Col span={8}>
+                <ProFormDigit name="two_person_one_pet_price" label="二人一宠" min={0} placeholder="路线默认价" />
+              </Col>
+            </Row>
+            <Row gutter={16}>
+              <Col span={8}>
+                <ProFormDigit name="single_person_price" label="单人轻旅（无宠）" min={0} placeholder="路线默认价" />
+              </Col>
+              <Col span={8}>
+                <ProFormDigit name="single_pet_price" label="毛孩专属接送（无主人陪同）" min={0} placeholder="路线默认价" />
+              </Col>
+              <Col span={8}>
+                <ProFormDigit name="extra_person_price" label="增加一人" min={0} placeholder="路线默认价" />
+              </Col>
+            </Row>
+            <Row gutter={16}>
+              <Col span={8}>
+                <ProFormDigit name="extra_pet_price" label="增加一宠" min={0} placeholder="路线默认价" />
+              </Col>
+            </Row>
+          </Tabs.TabPane>
+          <Tabs.TabPane tab="自驾出行价格" key="self_drive">
+            <Row gutter={16}>
+              <Col span={8}>
+                <ProFormDigit name="self_drive_price" label="自驾价格(1人1宠)" min={0} placeholder="路线默认价" />
+              </Col>
+              <Col span={8}>
+                <ProFormDigit name="self_drive_one_person_two_pet_price" label="一人两宠" min={0} placeholder="路线默认价" />
+              </Col>
+              <Col span={8}>
+                <ProFormDigit name="self_drive_two_person_one_pet_price" label="二人一宠" min={0} placeholder="路线默认价" />
+              </Col>
+            </Row>
+            <Row gutter={16}>
+              <Col span={8}>
+                <ProFormDigit name="self_drive_single_person_price" label="单人轻旅（无宠）" min={0} placeholder="路线默认价" />
+              </Col>
+              <Col span={8}>
+                <ProFormDigit name="self_drive_extra_person_price" label="增加一人" min={0} placeholder="路线默认价" />
+              </Col>
+              <Col span={8}>
+                <ProFormDigit name="self_drive_extra_pet_price" label="增加一宠" min={0} placeholder="路线默认价" />
+              </Col>
+            </Row>
+          </Tabs.TabPane>
+        </Tabs>
+
         <ProFormSelect
           name="status"
           label="状态"
@@ -329,6 +395,7 @@ export default function ScheduleManage() {
             { label: '已结束', value: 3 },
           ]}
           initialValue={1}
+          style={{ marginTop: 16 }}
         />
       </ModalForm>
     </PageContainer>

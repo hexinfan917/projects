@@ -44,6 +44,7 @@ class UserResponse(UserBase):
 class UserLogin(BaseModel):
     """用户登录"""
     code: str = Field(..., description="微信登录code")
+    phone_code: Optional[str] = Field(None, description="微信手机号凭证code")
 
 
 class WechatLoginResponse(BaseModel):

@@ -113,18 +113,17 @@
   left: 0;
   right: 0;
   background: #fff;
-  padding: 20rpx 30rpx;
+  padding: 0 30rpx;
+  height: 112rpx;
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: space-between;
   box-shadow: 0 -4rpx 16rpx rgba(0,0,0,0.05);
 }
 
 .footer-left {
-  position: absolute;
-  left: 30rpx;
-  top: 50%;
-  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
 }
 
 .footer-price {
@@ -136,9 +135,18 @@
 .book-btn {
   background: #22C55E;
   color: #fff;
-  font-size: 30rpx;
-  padding: 0 48rpx;
+  font-size: 32rpx;
+  font-weight: bold;
+  padding: 0 64rpx;
+  height: 72rpx;
+  line-height: 72rpx;
   border-radius: 40rpx;
+  text-align: center;
+  &.disabled {
+    background: #ccc;
+    color: #fff;
+    pointer-events: none;
+  }
   margin: 0;
 }
 
@@ -697,4 +705,109 @@
   font-size: 34rpx;
   color: #666;
   line-height: 1.5;
+}
+
+
+/* ---------- 行程选配（路线详情页） ---------- */
+.detail-addon-section {
+  background: #fff;
+  margin: 20rpx 0;
+  padding: 30rpx;
+}
+
+.detail-addon-title {
+  display: block;
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 20rpx;
+}
+
+.detail-addon-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.detail-addon-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #fafbfc;
+  border: 2rpx solid #e5e6eb;
+  border-radius: 16rpx;
+  padding: 20rpx;
+}
+
+.detail-addon-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.detail-addon-name {
+  display: block;
+  font-size: 30rpx;
+  color: #222;
+  font-weight: 600;
+  margin-bottom: 6rpx;
+}
+
+.detail-addon-desc {
+  display: block;
+  font-size: 24rpx;
+  color: #888;
+  margin-bottom: 6rpx;
+  line-height: 1.4;
+}
+
+.detail-addon-price {
+  font-size: 28rpx;
+  color: #ba1a1a;
+  font-weight: 700;
+}
+
+.detail-addon-qty-row {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  flex-shrink: 0;
+}
+
+.detail-addon-subtotal {
+  font-size: 26rpx;
+  color: #ba1a1a;
+  font-weight: 700;
+  margin-right: 8rpx;
+}
+
+.detail-qty-control {
+  display: flex;
+  align-items: center;
+  gap: 4rpx;
+}
+
+.detail-qty-btn {
+  width: 48rpx;
+  height: 48rpx;
+  line-height: 44rpx;
+  text-align: center;
+  border-radius: 8rpx;
+  font-size: 32rpx;
+  color: #333;
+  background: #f0f0f0;
+  border: 2rpx solid #ddd;
+
+  &.disabled {
+    color: #ccc;
+    background: #f5f5f5;
+    border-color: #eee;
+  }
+}
+
+.detail-qty-value {
+  min-width: 48rpx;
+  text-align: center;
+  font-size: 28rpx;
+  color: #333;
+  font-weight: 600;
 }

@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from 'react'
 import Taro from '@tarojs/taro'
 import { View, Text, Image, ScrollView, Button, RichText, Swiper, SwiperItem } from '@tarojs/components'
 import { getRouteDetail, getRouteSchedules } from '../../../utils/api'
+import BookingPopup from '../../../components/BookingPopup'
 import './index.scss'
 
 const WEEK_DAYS = ['日', '一', '二', '三', '四', '五', '六']
@@ -67,6 +68,7 @@ export default function RouteDetail() {
   const [schedules, setSchedules] = useState<any[]>([])
   const [showCalendar, setShowCalendar] = useState(false)
   const [selectedDay, setSelectedDay] = useState<number | null>(null)
+  const [showBookingPopup, setShowBookingPopup] = useState(false)
 
   const now = new Date()
   const [year, setYear] = useState(now.getFullYear())
@@ -141,19 +143,7 @@ export default function RouteDetail() {
       Taro.showToast({ title: '当前暂无营期', icon: 'none' })
       return
     }
-    // 如果当月没有营期，自动切换到有营期的最近月份
-    if (availableCount === 0) {
-      const currentMonthStr = `${year}-${String(month).padStart(2, '0')}`
-      const nextAvailable = availableMonths.find(m => {
-        const mStr = `${m.year}-${String(m.month).padStart(2, '0')}`
-        return mStr > currentMonthStr
-      })
-      if (nextAvailable) {
-        setYear(nextAvailable.year)
-        setMonth(nextAvailable.month)
-      }
-    }
-    setShowCalendar(true)
+    setShowBookingPopup(true)
   }
 
   const handleSelectDate = (day: number) => {
@@ -165,6 +155,24 @@ export default function RouteDetail() {
       setShowCalendar(false)
       Taro.navigateTo({ url: `/pages/orders/confirm/index?routeId=${route.id}&scheduleId=${schedule.id}` })
     }, 150)
+  }
+
+  const handleBookingNext = (bookingData: any) => {
+    setShowBookingPopup(false)
+    // 携带弹窗选择的数据跳转到订单确认页
+    const params = new URLSearchParams()
+    params.set('routeId', String(route.id))
+    params.set('scheduleId', String(bookingData.scheduleId))
+    params.set('travelDate', bookingData.travelDate)
+    params.set('packageType', bookingData.packageType)
+    params.set('basePerson', String(bookingData.basePerson))
+    params.set('basePet', String(bookingData.basePet))
+    params.set('extraPerson', String(bookingData.extraPerson))
+    params.set('extraPet', String(bookingData.extraPet))
+    params.set('travelType', bookingData.travelType)
+    params.set('addons', JSON.stringify(bookingData.addons))
+    params.set('totalPrice', String(bookingData.totalPrice))
+    Taro.navigateTo({ url: `/pages/orders/confirm/index?${params.toString()}` })
   }
 
   const monthTitle = `${year}年${month}月`
@@ -181,7 +189,7 @@ export default function RouteDetail() {
       <View className='page-back' onClick={() => Taro.navigateBack()}>
         <Image className='page-back-icon' src='/assets/icons/return.png' mode='aspectFit' />
       </View>
-      <ScrollView className='detail-scroll' scrollY>
+      <ScrollView className='detail-scroll' scrollY={!showBookingPopup}>
         {images.length === 1 ? (
           <Image
             className='cover-image'
@@ -216,7 +224,7 @@ export default function RouteDetail() {
               ))}
             </View>
           )}
-          <Text className='route-price'>￥{route.base_price}起/人</Text>
+          <Text className='route-price'>￥{route.schedule_price || '暂无营期'}起/人</Text>
         </View>
 
         {route.description ? (
@@ -264,13 +272,19 @@ export default function RouteDetail() {
           </View>
         ) : null}
 
-      </ScrollView>
+        </ScrollView>
 
       <View className='detail-footer'>
         <View className='footer-left'>
-          <Text className='footer-price'>￥{route.base_price}起</Text>
+          <Text className='footer-price'>
+            {hasAnySchedule ? `￥${route.schedule_price || '暂无营期'}起` : '暂无营期'}
+          </Text>
         </View>
-        <View className='book-btn' onClick={handleOpenCalendar}>立即预订</View>
+        {hasAnySchedule ? (
+          <View className='book-btn' onClick={handleOpenCalendar}>立即预订</View>
+        ) : (
+          <View className='book-btn disabled'>暂无营期</View>
+        )}
       </View>
 
       {showCalendar && (
@@ -317,6 +331,16 @@ export default function RouteDetail() {
           </View>
         </View>
       )}
+
+
+
+      <BookingPopup
+        visible={showBookingPopup}
+        route={route}
+        schedules={schedules}
+        onClose={() => setShowBookingPopup(false)}
+        onNext={handleBookingNext}
+      />
     </View>
   )
 }

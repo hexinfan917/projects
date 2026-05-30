@@ -102,7 +102,7 @@ export default function Index() {
           id: r.id,
           name: r.name,
           type: r.route_type_name || r.type_name || '精选',
-          price: r.base_price || r.price || 0,
+          price: r.schedule_price || r.price || 0,
           cover_image: r.cover_image ? (r.cover_image.startsWith('http') ? r.cover_image : `https://tailtravel.cn${r.cover_image}`) + '?w=750&q=75' : 'https://via.placeholder.com/620x420/CCCCCC/FFFFFF?text=No+Image',
           subtitle: r.subtitle || ''
         })))

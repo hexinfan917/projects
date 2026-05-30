@@ -52,7 +52,7 @@ export default function Routes() {
       if (kw) params.keyword = kw
       if (activeCategory) params.route_type = parseInt(activeCategory, 10)
       const res = await getRoutes(params)
-      const list = (res.data?.routes || []).map((r: any) => ({ ...r, price: r.base_price || 0, cover_image: r.cover_image ? (r.cover_image.startsWith('http') ? r.cover_image : `https://tailtravel.cn${r.cover_image}`) + '?w=750&q=75' : '' }))
+      const list = (res.data?.routes || []).map((r: any) => ({ ...r, price: r.schedule_price || 0, has_schedule: (r.schedule_price || 0) > 0, cover_image: r.cover_image ? (r.cover_image.startsWith('http') ? r.cover_image : `https://tailtravel.cn${r.cover_image}`) + '?w=750&q=75' : '' }))
       setRoutes(prev => refresh ? list : [...prev, ...list])
       setNoMore(list.length < pageSize)
       if (!refresh) setPage(currentPage + 1)
@@ -110,7 +110,7 @@ export default function Routes() {
         </View>
 
         {/* 分类筛选 */}
-        <ScrollView className='routes-categories' scrollX>
+        <ScrollView className='routes-categories' scrollX enableFlex>
           {categories.map(cat => (
             <View
               key={cat.id}

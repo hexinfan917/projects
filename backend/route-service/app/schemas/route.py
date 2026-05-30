@@ -21,9 +21,8 @@ class RouteResponse(BaseModel):
     difficulty: int
     min_participants: int
     max_participants: int
-    base_price: float
-    extra_person_price: Optional[float] = 0
-    extra_pet_price: Optional[float] = 0
+    schedule_price: float = 0
+    schedule_self_drive_price: Optional[float] = None
     rating: float
     review_count: int
     distance: Optional[int]
@@ -76,9 +75,8 @@ class RouteDetailResponse(BaseModel):
     difficulty_name: str
     min_participants: int
     max_participants: int
-    base_price: float
-    extra_person_price: Optional[float] = 0
-    extra_pet_price: Optional[float] = 0
+    schedule_price: float = 0
+    schedule_self_drive_price: Optional[float] = None
     rating: float
     review_count: int
     suitable_breeds: Optional[List[str]]
