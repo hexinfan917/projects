@@ -354,8 +354,8 @@ async def admin_delete_user(
         if pet_count > 0:
             return {"code": 400, "message": f"该用户名下还有 {pet_count} 只宠物，请先处理宠物后再删除用户", "data": None}
         
-        # 软删除：将状态设为 0
-        user.status = 0
+        # 物理删除用户
+        await db.delete(user)
         await db.commit()
         
         return {"code": 200, "message": "删除成功", "data": None}
