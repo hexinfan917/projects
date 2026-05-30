@@ -89,3 +89,11 @@ redis_data/
 *.pid
 *.seed
 *.pid.lock
+
+# Backups & temporary files
+*.bak
+backups/
+*.sql
+backup_*.py
+tmp/*.py
+tmp/*.tsx
