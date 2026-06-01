@@ -326,14 +326,23 @@ export default function Index() {
                 ))}
               </View>
             )}
+            {popupData.content?.price_display && (
+              <View className='member-popup-price-row'>
+                <Text className='member-popup-price'>{popupData.content.price_display}</Text>
+                {popupData.content.original_price && <Text className='member-popup-original'>{popupData.content.original_price}</Text>}
+              </View>
+            )}
             <View className='member-popup-footer'>
               <View 
                 className='member-popup-btn' 
                 style={{ backgroundColor: popupData.primary_btn_color || '#FF6B35' }}
-                onClick={handlePopupClose}
+                onClick={handlePopupOpen}
               >
-                <Text className='member-popup-btn-text'>我知道了</Text>
+                <Text className='member-popup-btn-text'>{popupData.primary_btn_text || '立即开通'}</Text>
               </View>
+              {popupData.close_btn_text && (
+                <Text className='member-popup-close-text' onClick={handlePopupClose}>{popupData.close_btn_text}</Text>
+              )}
             </View>
           </View>
         </View>

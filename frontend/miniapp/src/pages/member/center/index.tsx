@@ -154,31 +154,54 @@ export default function MemberCenter() {
         /* ========== 未开通会员 ========== */
         <>
           <View className='member-card'>
-            <Text className='member-card-title'>尾巴旅行权益卡</Text>
-            <Text className='member-card-sub'>出行享专属折扣 · 每月领券包 · 优先退改</Text>
-            <Text className='member-card-tip'>详情咨询客服了解</Text>
+            <Text className='member-card-title'>开通会员享专属权益</Text>
+            <Text className='member-card-sub'>每月领券包 · 专属折扣 · 优先退改</Text>
           </View>
 
           <View className='section plan-section'>
-            <Text className='section-title'>权益说明</Text>
+            <Text className='section-title'>选择套餐</Text>
             <View className='plan-scroll-wrap'>
               {data?.plans?.map((plan: any) => (
                 <View
                   key={plan.id}
-                  className='plan-card'
+                  className={`plan-card ${selectedPlanId === plan.id ? 'active' : ''}`}
+                  onClick={() => setSelectedPlanId(plan.id)}
                 >
                   {plan.tag && <Text className='plan-tag'>{plan.tag}</Text>}
                   <Text className='plan-name'>{plan.name}</Text>
+                  <View className='plan-price-row'>
+                    <Text className='plan-price'>¥{plan.sale_price}</Text>
+                    {plan.original_price > plan.sale_price && (
+                      <Text className='plan-original'>¥{plan.original_price}</Text>
+                    )}
+                  </View>
                   <Text className='plan-duration'>{plan.duration_days}天</Text>
                   <View className='plan-benefits'>
                     {plan.benefits?.slice(0, 3).map((b: any, i: number) => (
                       <Text key={i} className='plan-benefit'>✓ {b.title}</Text>
                     ))}
                   </View>
+                  <View className='plan-check'>
+                    <View className={`check-circle ${selectedPlanId === plan.id ? 'checked' : ''}`} />
+                  </View>
                 </View>
               ))}
             </View>
           </View>
+
+          {selectedPlan && (
+            <View className='bottom-bar'>
+              <View className='bottom-price-wrap'>
+                <Text className='bottom-price'>应付 ¥{selectedPlan.sale_price}</Text>
+                {selectedPlan.coupon_package?.total_value > 0 && (
+                  <Text className='bottom-sub'>赠¥{selectedPlan.coupon_package.total_value}券包</Text>
+                )}
+              </View>
+              <View className={`bottom-submit ${loading ? 'disabled' : ''}`} onClick={handleBuy}>
+                {loading ? '处理中...' : '立即开通'}
+              </View>
+            </View>
+          )}
         </>
       )}
     </View>
