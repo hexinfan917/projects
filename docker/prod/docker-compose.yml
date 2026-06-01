@@ -207,6 +207,10 @@ services:
       - WECHAT_CERT_PATH=/app/certs/apiclient_cert.pem
       - WECHAT_KEY_PATH=/app/certs/apiclient_key.pem
       - WECHAT_CERT_SERIAL_NO=578981595A43F2E58B46B5C4416E53937C7C5659
+      - VIRTUAL_PAY_OFFER_ID=${VIRTUAL_PAY_OFFER_ID}
+      - VIRTUAL_PAY_APP_KEY_PROD=${VIRTUAL_PAY_APP_KEY_PROD}
+      - VIRTUAL_PAY_APP_KEY_SANDBOX=${VIRTUAL_PAY_APP_KEY_SANDBOX}
+      - VIRTUAL_PAY_ENV=${VIRTUAL_PAY_ENV:-0}
       - APP_ENV=production
       - TZ=Asia/Shanghai
     volumes:

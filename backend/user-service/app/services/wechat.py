@@ -71,9 +71,15 @@ class WechatService:
         # 更新手机号（如果获取到了且用户当前没有手机号）
         if phone and not user.phone:
             user.phone = phone
-            await db.commit()
-            await db.refresh(user)
             logger.info(f"[Login] Updated user phone: {phone}")
+        
+        # 保存/更新 session_key（虚拟支付签名需要）
+        if session_key and session_key != "mock_session_key":
+            user.session_key = session_key
+            logger.info(f"[Login] Updated user session_key")
+        
+        await db.commit()
+        await db.refresh(user)
         
         # 生成token
         tokens = self._generate_tokens(user.id, openid)

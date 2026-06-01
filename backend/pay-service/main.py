@@ -56,7 +56,17 @@ PAYMENT_METHODS = {
     "wechat_native": "微信支付-Native",
     "wechat_h5": "微信支付-H5",
     "alipay": "支付宝",
-    "mock": "模拟支付"
+    "mock": "模拟支付",
+    "virtual": "微信虚拟支付"
+}
+
+# 虚拟支付配置
+VIRTUAL_PAY_CONFIG = {
+    "offer_id": os.getenv("VIRTUAL_PAY_OFFER_ID", ""),
+    "app_key_prod": os.getenv("VIRTUAL_PAY_APP_KEY_PROD", ""),
+    "app_key_sandbox": os.getenv("VIRTUAL_PAY_APP_KEY_SANDBOX", ""),
+    "env": int(os.getenv("VIRTUAL_PAY_ENV", "0")),  # 0=正式, 1=沙箱
+    "notify_url": os.getenv("VIRTUAL_PAY_NOTIFY_URL", "")
 }
 
 
@@ -711,6 +721,240 @@ async def mock_pay_confirm(data: dict):
         logger.error(f"Mock confirm failed: {e}")
     
     return success({"status": "not_found"})
+
+
+# ==================== 虚拟支付模块 ====================
+
+def hmac_sha256_hex(key: str, data: str) -> str:
+    """HMAC-SHA256 签名，返回 hex 字符串"""
+    mac = hmac.new(key.encode('utf-8'), data.encode('utf-8'), hashlib.sha256)
+    return mac.hexdigest()
+
+
+def hmac_sha256_hex_with_bytes(key_bytes: bytes, data: str) -> str:
+    """HMAC-SHA256 签名，key 为 bytes，返回 hex 字符串"""
+    mac = hmac.new(key_bytes, data.encode('utf-8'), hashlib.sha256)
+    return mac.hexdigest()
+
+
+def build_virtual_sign_data(
+    offer_id: str,
+    product_id: str,
+    goods_price: int,
+    out_trade_no: str,
+    buy_quantity: int = 1,
+    env: int = 0,
+    currency_type: str = "CNY",
+    attach: str = ""
+) -> str:
+    """
+    构建虚拟支付 signData JSON 字符串
+    字段按字母顺序排列，与微信签名要求一致
+    """
+    data = {}
+    if attach:
+        data["attach"] = attach
+    data["buyQuantity"] = buy_quantity
+    data["currencyType"] = currency_type
+    data["env"] = env
+    data["goodsPrice"] = goods_price
+    data["offerId"] = offer_id
+    data["outTradeNo"] = out_trade_no
+    data["productId"] = product_id
+    # 紧凑 JSON，无空格，按字母顺序输出
+    return json.dumps(data, separators=(',', ':'), ensure_ascii=False)
+
+
+def calc_virtual_payment_sign(sign_data: str, session_key: str, app_key: str) -> dict:
+    """
+    计算虚拟支付签名
+    
+    Returns:
+        {"paySig": "xxx", "signature": "xxx"}
+    """
+    # paySig 用 appKey 计算
+    pay_sig = hmac_sha256_hex(app_key, f"requestVirtualPayment&{sign_data}")
+    
+    # signature 用 session_key 计算（直接使用原始字符串，不 base64 解码）
+    signature = hmac_sha256_hex(session_key, sign_data)
+    
+    logger.info(f"Virtual pay sign: signData={sign_data}, paySig={pay_sig[:16]}..., signature={signature[:16]}...")
+    return {"paySig": pay_sig, "signature": signature}
+
+
+@app.post("/api/v1/pay/virtual/create")
+async def create_virtual_payment(
+    data: dict,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    创建虚拟支付订单
+    
+    Request Body:
+        - order_no: 业务订单号
+        - product_id: 虚拟支付道具ID
+        - amount: 支付金额（元）
+        - session_key: 用户微信session_key
+        - description: 商品描述（可选）
+        - attach: 附加数据（可选）
+    
+    Response:
+        - pay_order_no: 支付订单号
+        - signData: 虚拟支付签名数据（JSON字符串）
+        - paySig: 商户侧签名
+        - signature: 用户态签名
+    """
+    order_no = data.get("order_no")
+    product_id = data.get("product_id")
+    amount = data.get("amount")
+    session_key = data.get("session_key")
+    attach = data.get("attach", "")
+    
+    if not order_no or not product_id or amount is None:
+        raise HTTPException(status_code=400, detail="缺少必要参数: order_no, product_id, amount")
+    
+    config = VIRTUAL_PAY_CONFIG
+    offer_id = config.get("offer_id", "")
+    app_key = config.get("app_key_sandbox", "") if config.get("env") == 1 else config.get("app_key_prod", "")
+    
+    if not offer_id or not app_key:
+        logger.warning("Virtual pay config not set, using mock mode")
+        # Mock 模式：返回模拟的 signData
+        return success({
+            "pay_order_no": f"MOCKVP{generate_nonce_str(16)}",
+            "signData": json.dumps({"mock": True, "order_no": order_no}),
+            "paySig": "mock_pay_sig",
+            "signature": "mock_signature",
+            "mock": True
+        })
+    
+    if not session_key:
+        raise HTTPException(status_code=400, detail="缺少 session_key，无法计算用户态签名")
+    
+    # 金额转换为分（整数）
+    goods_price = round(float(amount) * 100)
+    pay_order_no = generate_out_trade_no()
+    
+    # 构建 signData（attach 内部 JSON 必须紧凑无空格）
+    compact_attach = json.dumps(json.loads(attach), separators=(',', ':')) if attach else ""
+    sign_data = build_virtual_sign_data(
+        offer_id=offer_id,
+        product_id=product_id,
+        goods_price=goods_price,
+        out_trade_no=pay_order_no,
+        env=config.get("env", 0),
+        attach=compact_attach
+    )
+    
+    # 计算签名
+    signs = calc_virtual_payment_sign(sign_data, session_key, app_key)
+    
+    # 保存支付订单到 Redis
+    pay_order_data = {
+        "pay_order_no": pay_order_no,
+        "order_no": order_no,
+        "user_id": current_user.get("user_id"),
+        "product_id": product_id,
+        "amount": float(amount),
+        "amount_fen": goods_price,
+        "method": "virtual",
+        "status": "pending",
+        "created_at": datetime.now().isoformat()
+    }
+    try:
+        await redis_client.set(f"pay:order:{pay_order_no}", json.dumps(pay_order_data), expire=3600)
+    except:
+        logger.warning("Failed to save virtual pay order to redis")
+    
+    logger.info(f"Virtual payment created: {pay_order_no} for order: {order_no}, product: {product_id}, amount: {amount}")
+    
+    return success({
+        "pay_order_no": pay_order_no,
+        "signData": sign_data,
+        "paySig": signs["paySig"],
+        "signature": signs["signature"],
+        "mock": False
+    })
+
+
+@app.post("/api/v1/pay/virtual/notify")
+async def virtual_pay_notify(request: Request, background_tasks: BackgroundTasks):
+    """
+    微信虚拟支付回调通知
+    
+    微信发送 JSON 格式数据
+    """
+    try:
+        body = await request.json()
+    except Exception as e:
+        logger.error(f"Failed to parse virtual pay notify: {e}")
+        return JSONResponse({"code": "FAIL", "message": "Invalid JSON"}, status_code=200)
+    
+    logger.info(f"Virtual pay notify received: {body}")
+    
+    out_trade_no = body.get("outTradeNo")
+    result_code = body.get("payStatus", "")
+    
+    if result_code == "SUCCESS":
+        background_tasks.add_task(update_order_paid, out_trade_no, body)
+        logger.info(f"Virtual payment success for order: {out_trade_no}")
+    else:
+        logger.warning(f"Virtual payment failed for order: {out_trade_no}, status: {result_code}")
+    
+    return JSONResponse({"code": "SUCCESS", "message": "OK"})
+
+
+@app.post("/api/v1/pay/virtual/confirm")
+async def virtual_pay_confirm(data: dict):
+    """
+    虚拟支付前端确认（支付成功后调用）
+    
+    Request Body:
+        - pay_order_no: 支付订单号
+    
+    由于虚拟支付回调可能延迟，前端 success 回调中主动调用此接口确认支付
+    """
+    pay_order_no = data.get("pay_order_no")
+    if not pay_order_no:
+        raise HTTPException(status_code=400, detail="缺少 pay_order_no")
+    
+    try:
+        # 从 Redis 获取支付订单
+        pay_data = await redis_client.get(f"pay:order:{pay_order_no}")
+        if not pay_data:
+            logger.warning(f"Virtual pay confirm: order not found in redis: {pay_order_no}")
+            return {"code": 404, "message": "支付订单不存在或已过期", "data": None}
+        
+        pay_info = json.loads(pay_data)
+        order_no = pay_info.get("order_no")
+        
+        # 如果已经处理过，直接返回成功
+        if pay_info.get("status") == "paid":
+            return success({"order_no": order_no, "status": "paid"})
+        
+        # 通知 order-service 开通会员/更新订单
+        notified = await notify_order_service(
+            order_no=order_no,
+            transaction_id=pay_order_no,
+            pay_channel="virtual"
+        )
+        
+        if not notified:
+            logger.error(f"Virtual pay confirm: notify order-service failed for {order_no}")
+            return {"code": 500, "message": "订单处理失败", "data": None}
+        
+        # 更新 Redis 状态
+        pay_info["status"] = "paid"
+        pay_info["paid_at"] = datetime.now().isoformat()
+        pay_info["transaction_id"] = pay_order_no
+        await redis_client.set(f"pay:order:{pay_order_no}", json.dumps(pay_info))
+        
+        logger.info(f"Virtual pay confirmed: {pay_order_no} for order: {order_no}")
+        return success({"order_no": order_no, "status": "paid"})
+    
+    except Exception as e:
+        logger.error(f"Virtual pay confirm failed: {e}")
+        return {"code": 500, "message": f"确认失败: {str(e)}", "data": None}
 
 
 if __name__ == "__main__":

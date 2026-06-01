@@ -15,6 +15,7 @@ class User(Base):
     
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True, comment="用户ID")
     openid: Mapped[str] = mapped_column(String(64), unique=True, nullable=False, comment="微信openid")
+    session_key: Mapped[Optional[str]] = mapped_column(String(64), nullable=True, comment="微信session_key（虚拟支付签名用）")
     unionid: Mapped[Optional[str]] = mapped_column(String(64), nullable=True, comment="微信unionid")
     nickname: Mapped[Optional[str]] = mapped_column(String(50), nullable=True, comment="昵称")
     avatar: Mapped[Optional[str]] = mapped_column(String(500), nullable=True, comment="头像URL")

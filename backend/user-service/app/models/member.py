@@ -14,6 +14,7 @@ class MemberPlan(Base):
     
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(50), nullable=False, comment="套餐名称")
+    product_id: Mapped[Optional[str]] = mapped_column(String(64), nullable=True, comment="微信虚拟支付道具ID")
     subtitle: Mapped[Optional[str]] = mapped_column(String(200), nullable=True, comment="副标题")
     original_price: Mapped[float] = mapped_column(DECIMAL(10, 2), nullable=False, comment="原价")
     sale_price: Mapped[float] = mapped_column(DECIMAL(10, 2), nullable=False, comment="售价")

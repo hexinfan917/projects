@@ -2376,54 +2376,58 @@ async def pay_member_order(
     if order["status"] != 10:
         return {"code": 400, "message": "订单状态不允许支付", "data": None}
     
-    # 查询用户openid
+    # 查询用户openid和session_key
     user_result = await db.execute(
-        text("SELECT openid FROM users WHERE id = :user_id"),
+        text("SELECT openid, session_key FROM users WHERE id = :user_id"),
         {"user_id": user_id}
     )
     user_row = user_result.mappings().one_or_none()
     openid = user_row["openid"] if user_row else current_user.get("openid", "")
+    session_key = user_row["session_key"] if user_row else ""
     
     if not openid:
         return {"code": 400, "message": "用户未绑定微信，无法发起支付", "data": None}
     
-    # 查询套餐名称
+    # 查询套餐信息
     plan_result = await db.execute(
         text("SELECT * FROM member_plans WHERE id = :plan_id"),
         {"plan_id": order["plan_id"]}
     )
     plan = plan_result.mappings().one_or_none()
     plan_name = plan["name"] if plan else "会员套餐"
+    product_id = plan["product_id"] if plan else None
     
-    # 调用 pay-service 创建支付订单
+    # 调用 pay-service 创建虚拟支付订单
     pay_service_url = os.getenv("PAY_SERVICE_URL", "http://pay-service:8000")
     pay_payload = {
         "order_no": order["order_no"],
+        "product_id": product_id or f"member_plan_{order['plan_id']}",
         "amount": float(order["pay_amount"]),
-        "description": f"尾巴旅行-{plan_name}",
-        "method": "wechat_jsapi",
-        "openid": openid
+        "session_key": session_key,
+        "attach": json.dumps({"plan_id": order["plan_id"], "user_id": user_id})
     }
     
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
             pay_response = await client.post(
-                f"{pay_service_url}/api/v1/pay/create",
+                f"{pay_service_url}/api/v1/pay/virtual/create",
                 json=pay_payload,
                 headers={"Authorization": f"Bearer {current_user.get('token', '')}"}
             )
             pay_result = pay_response.json()
     except Exception as e:
-        logger.error(f"Call pay-service failed: {e}")
+        logger.error(f"Call pay-service virtual pay failed: {e}")
         return {"code": 500, "message": f"支付服务调用失败: {str(e)}"}
     
     if pay_result.get("code") != 200:
-        return {"code": 500, "message": pay_result.get("message", "支付下单失败")}
+        return {"code": 500, "message": pay_result.get("message", "虚拟支付下单失败")}
     
     pay_data = pay_result.get("data", {})
     return success({
         "pay_order_no": pay_data.get("pay_order_no"),
-        "pay_params": pay_data.get("pay_params"),
+        "signData": pay_data.get("signData"),
+        "paySig": pay_data.get("paySig"),
+        "signature": pay_data.get("signature"),
         "mock": pay_data.get("mock", False)
     })
 

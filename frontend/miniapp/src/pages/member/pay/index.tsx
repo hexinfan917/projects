@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import Taro from '@tarojs/taro'
 import { View, Text , Image } from '@tarojs/components'
-import { getMemberPlans, createMemberOrder, payMemberOrder } from '../../../utils/api'
+import { getMemberPlans, createMemberOrder, payMemberOrder, request } from '../../../utils/api'
 import './index.scss'
 
 export default function MemberPay() {
@@ -65,13 +65,13 @@ export default function MemberPay() {
       }
 
       const payData = payRes.data
-      if (!payData || !payData.pay_params) {
+      if (!payData) {
         Taro.showToast({ title: '获取支付参数失败', icon: 'none' })
         setLoading(false)
         return
       }
 
-      // Mock 模式直接跳过真实支付（未配置微信支付时）
+      // Mock 模式直接跳过真实支付（未配置虚拟支付时）
       if (payData.mock) {
         Taro.showToast({ title: '模拟支付成功', icon: 'success' })
         setTimeout(() => {
@@ -81,25 +81,57 @@ export default function MemberPay() {
         return
       }
 
-      const params = payData.pay_params
+      // 虚拟支付参数校验
+      if (!payData.signData || !payData.paySig || !payData.signature) {
+        Taro.showToast({ title: '虚拟支付参数缺失', icon: 'none' })
+        setLoading(false)
+        return
+      }
 
-      // 调用微信支付
-      Taro.requestPayment({
-        timeStamp: params.timeStamp,
-        nonceStr: params.nonceStr,
-        package: params.package,
-        signType: params.signType || 'MD5',
-        paySign: params.paySign,
-        success: () => {
+      // 调用微信虚拟支付
+      const virtualPay = (wx as any).requestVirtualPayment || (Taro as any).requestVirtualPayment
+      if (!virtualPay) {
+        Taro.showToast({ title: '当前环境不支持虚拟支付', icon: 'none' })
+        setLoading(false)
+        return
+      }
+
+      virtualPay({
+        signData: payData.signData,
+        paySig: payData.paySig,
+        signature: payData.signature,
+        mode: 'short_series_goods',
+        success: async (res: any) => {
+          console.log('虚拟支付成功:', res)
+          // 通知后端确认支付并开通会员
+          try {
+            await request('/api/v1/pay/virtual/confirm', {
+              method: 'POST',
+              data: { pay_order_no: payData.pay_order_no }
+            })
+          } catch (e) {
+            console.error('支付确认请求失败:', e)
+          }
           Taro.showToast({ title: '支付成功', icon: 'success' })
           setTimeout(() => {
             Taro.redirectTo({ url: '/pages/member/center/index?payment_success=1' })
           }, 1200)
         },
         fail: (err: any) => {
-          console.error('支付失败:', err)
+          console.error('虚拟支付失败:', err)
           const isCancel = err.errMsg?.includes('cancel')
-          Taro.showToast({ title: isCancel ? '已取消支付' : '支付失败', icon: 'none' })
+          const errCode = err.errCode || err.errno
+          let msg = '支付失败'
+          if (isCancel) {
+            msg = '已取消支付'
+          } else if (errCode === -15005) {
+            msg = '支付签名错误(SIGNATURE_INVALID)'
+          } else if (errCode === -15006) {
+            msg = '商户签名错误(PAY_SIG_INVALID)'
+          } else if (errCode === -15001) {
+            msg = '道具未发布或不存在'
+          }
+          Taro.showToast({ title: msg, icon: 'none' })
           setTimeout(() => {
             Taro.redirectTo({ url: '/pages/member/center/index' })
           }, 1000)
