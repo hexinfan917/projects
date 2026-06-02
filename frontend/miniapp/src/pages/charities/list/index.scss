@@ -1,6 +1,9 @@
 .charity-list-page {
-  min-height: 100vh;
+  height: 100vh;
+  box-sizing: border-box;
   background: #f5f7f5;
+  display: flex;
+  flex-direction: column;
 
   .list-header {
     display: flex;
@@ -35,7 +38,7 @@
   }
 
   .scroll-container {
-    height: calc(100vh - 220px);
+    flex: 1;
   }
 
   .charity-list {

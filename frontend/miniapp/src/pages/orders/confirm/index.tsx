@@ -430,21 +430,33 @@ export default function OrderConfirm() {
       Taro.showToast({ title: '请至少选择1位出行人', icon: 'none' })
       return
     }
-    // 单人轻旅（无宠）不需要宠物
-    if (bookingParams?.packageType !== 'single_person' && selectedPetIds.length === 0) {
-      Taro.showToast({ title: '请至少选择1只宠物', icon: 'none' })
-      return
-    }
-    // 校验人数是否满足套餐基础数 + BookingPopup 中的额外选择数
-    const requiredPersons = pkgConfig.basePerson + (bookingParams?.extraPerson || 0)
-    const requiredPets = pkgConfig.basePet + (bookingParams?.extraPet || 0)
-    if (selectedTravelers.length < requiredPersons) {
-      Taro.showToast({ title: `您选择了增加${bookingParams?.extraPerson || 0}人，请至少添加${requiredPersons}位出行人`, icon: 'none' })
-      return
-    }
-    if (bookingParams?.packageType !== 'single_person' && selectedPetIds.length < requiredPets) {
-      Taro.showToast({ title: `您选择了增加${bookingParams?.extraPet || 0}宠，请至少添加${requiredPets}只宠物`, icon: 'none' })
-      return
+    // 免费路线只需要1人1宠（不显示增加人宠模块）
+    if (route?.is_free) {
+      if (selectedTravelers.length < 1) {
+        Taro.showToast({ title: '请至少选择1位出行人', icon: 'none' })
+        return
+      }
+      if (selectedPetIds.length < 1) {
+        Taro.showToast({ title: '请至少选择1只宠物', icon: 'none' })
+        return
+      }
+    } else {
+      // 单人轻旅（无宠）不需要宠物
+      if (bookingParams?.packageType !== 'single_person' && selectedPetIds.length === 0) {
+        Taro.showToast({ title: '请至少选择1只宠物', icon: 'none' })
+        return
+      }
+      // 校验人数是否满足套餐基础数 + BookingPopup 中的额外选择数
+      const requiredPersons = pkgConfig.basePerson + (bookingParams?.extraPerson || 0)
+      const requiredPets = pkgConfig.basePet + (bookingParams?.extraPet || 0)
+      if (selectedTravelers.length < requiredPersons) {
+        Taro.showToast({ title: `您选择了增加${bookingParams?.extraPerson || 0}人，请至少添加${requiredPersons}位出行人`, icon: 'none' })
+        return
+      }
+      if (bookingParams?.packageType !== 'single_person' && selectedPetIds.length < requiredPets) {
+        Taro.showToast({ title: `您选择了增加${bookingParams?.extraPet || 0}宠，请至少添加${requiredPets}只宠物`, icon: 'none' })
+        return
+      }
     }
     if (!schedule || !route) {
       Taro.showToast({ title: '路线或排期信息加载失败', icon: 'none' })
@@ -531,20 +543,26 @@ export default function OrderConfirm() {
         pets: selectedPets.map(p => ({ id: p.id, name: p.name, breed: p.breed, weight: p.weight, gender: p.gender })),
         participant_count: selectedTravelers.length,
         pet_count: selectedPetIds.length,
-        route_price: routePrice,
-        insurance_price: petInsuranceTotal + personInsuranceTotal,
+        route_price: route?.is_free ? 0 : routePrice,
+        insurance_price: route?.is_free ? 0 : petInsuranceTotal + personInsuranceTotal,
         equipment_price: 0,
-        discount_amount: couponDiscount,
-        coupon_id: selectedCouponId,
-        addons: [...(bookingParams?.addons || []), ...selectedAddons],
-        addon_amount: addonTotal,
-        travel_type: bookingParams?.travelType
+        discount_amount: route?.is_free ? 0 : couponDiscount,
+        coupon_id: route?.is_free ? null : selectedCouponId,
+        addons: route?.is_free ? [] : [...(bookingParams?.addons || []), ...selectedAddons],
+        addon_amount: route?.is_free ? 0 : addonTotal,
+        travel_type: route?.is_free ? 'bus' : bookingParams?.travelType,
+        is_free: route?.is_free ? 1 : 0
       })
       if (res.code !== 200) {
         throw new Error(res.message || '创建订单失败')
       }
       if (res.data?.order_id) {
-        Taro.navigateTo({ url: `/pages/orders/pay/index?id=${res.data.order_id}` })
+        // 免费路线直接跳转订单详情（无需支付）
+        if (route?.is_free || res.data.pay_amount === 0) {
+          Taro.redirectTo({ url: `/pages/orders/detail/index?id=${res.data.order_id}` })
+        } else {
+          Taro.navigateTo({ url: `/pages/orders/pay/index?id=${res.data.order_id}` })
+        }
       } else {
         Taro.showToast({ title: '订单创建异常，请重试', icon: 'none' })
       }
@@ -596,7 +614,10 @@ export default function OrderConfirm() {
 
   // 总计
   const total = routePrice + addonTotal + petInsuranceTotal + personInsuranceTotal
-  const canSubmit = selectedTravelers.length > 0 && selectedPetIds.length > 0 && (agreements.length === 0 || agreed)
+  // 免费路线只需1人1宠，付费路线按原逻辑
+  const canSubmit = selectedTravelers.length > 0
+    && (route?.is_free ? selectedPetIds.length > 0 : selectedPetIds.length > 0)
+    && (agreements.length === 0 || agreed)
 
   // 加载可用优惠券
   const selectedCouponIdRef = useRef(selectedCouponId)
@@ -680,10 +701,12 @@ export default function OrderConfirm() {
               <Text>📅</Text>
               <Text>{schedule?.schedule_date || '-'} 出发</Text>
             </View>
-            <View className='hero-chips'>
-              <Text className='hero-chip'>{pkgLabelMap[bookingParams?.packageType] || '一人一宠'}</Text>
-              <Text className='hero-chip'>{bookingParams?.travelType === 'bus' ? '大巴出行' : '自行前往'}</Text>
-            </View>
+            {!route?.is_free && (
+              <View className='hero-chips'>
+                <Text className='hero-chip'>{pkgLabelMap[bookingParams?.packageType] || '一人一宠'}</Text>
+                <Text className='hero-chip'>{bookingParams?.travelType === 'bus' ? '大巴出行' : '自行前往'}</Text>
+              </View>
+            )}
           </View>
         </View>
 
@@ -765,8 +788,8 @@ export default function OrderConfirm() {
         )}
       </View>
 
-      {/* 已选信息（从弹窗传入） */}
-      {bookingParams && (
+      {/* 已选信息（从弹窗传入）—— 免费路线隐藏 */}
+      {!route?.is_free && bookingParams && (
         <View className='section-block'>
           <Text className='section-label'>【已选信息】</Text>
           <View className='selected-info'>
@@ -801,13 +824,13 @@ export default function OrderConfirm() {
                 </View>
               </View>
             )}
-
           </View>
         </View>
       )}
 
-      {/* 保险服务 */}
-      <View className='insurance-section'>
+      {/* 保险服务 —— 免费路线隐藏 */}
+      {!route?.is_free && (
+        <View className='insurance-section'>
         <View className='insurance-header'>
           <Text className='insurance-icon'>🛡</Text>
           <Text className='insurance-title'>保险服务</Text>
@@ -837,8 +860,10 @@ export default function OrderConfirm() {
         </View>
         <Text className='insurance-tip'>注：按出行人与宠物数量自动计算，不可取消。</Text>
       </View>
+      )}
 
-      {/* 优惠券 */}
+      {/* 优惠券 —— 免费路线隐藏 */}
+      {!route?.is_free && (
       <View className='section-block'>
         <View className='coupon-row' onClick={() => setShowCouponModal(true)}>
           <View className='coupon-left'>
@@ -857,6 +882,7 @@ export default function OrderConfirm() {
           </View>
         </View>
       </View>
+      )}
 
       {/* 协议声明 */}
       {agreements.length > 0 && (
@@ -892,16 +918,20 @@ export default function OrderConfirm() {
       <View className='bottom-bar'>
         <View className='bottom-content'>
           <View className='bottom-left'>
-            <View className='detail-btn' onClick={() => setShowPriceDetail(true)}>
-              <Text className='detail-icon'>📋</Text>
-              <Text className='detail-label'>明细</Text>
-            </View>
+            {!route?.is_free && (
+              <View className='detail-btn' onClick={() => setShowPriceDetail(true)}>
+                <Text className='detail-icon'>📋</Text>
+                <Text className='detail-label'>明细</Text>
+              </View>
+            )}
             <View className='price-wrap'>
-              <Text className='price-label'>合计</Text>
-              <Text className='price-value'>¥{finalTotal}</Text>
+              <Text className='price-label'>{route?.is_free ? '费用' : '合计'}</Text>
+              <Text className='price-value'>{route?.is_free ? '免费' : `¥${finalTotal}`}</Text>
             </View>
           </View>
-          <View className={`submit-btn ${canSubmit ? '' : 'disabled'}`} onClick={handleSubmit}>提交订单</View>
+          <View className={`submit-btn ${canSubmit ? '' : 'disabled'}`} onClick={handleSubmit}>
+            {route?.is_free ? '确认报名' : '提交订单'}
+          </View>
         </View>
       </View>
 

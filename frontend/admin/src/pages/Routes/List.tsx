@@ -126,11 +126,26 @@ export default function RouteList() {
       valueEnum: routeTypeEnum,
     },
     {
+      title: '类型标签',
+      search: false,
+      width: 120,
+      render: (record: any) => (
+        <Space>
+          {record.is_free === 1 && <Tag color="green">免费</Tag>}
+          {record.is_hot === 1 && <Tag color="red">热门</Tag>}
+          {record.is_free !== 1 && record.is_hot !== 1 && <Tag>普通</Tag>}
+        </Space>
+      ),
+    },
+    {
       title: '起价',
       dataIndex: 'schedule_price',
       search: false,
       width: 100,
-      render: (text: number) => text ? `¥${text}` : '-',
+      render: (text: number, record: any) => {
+        if (record.is_free === 1) return <Tag color="green">免费</Tag>;
+        return text ? `¥${text}` : '-';
+      },
     },
     {
       title: '时长',
@@ -145,19 +160,13 @@ export default function RouteList() {
       render: (record: any) => `${record.min_participants}-${record.max_participants}人`,
     },
     {
-      title: '热门',
-      dataIndex: 'is_hot',
-      width: 80,
-      search: false,
+      title: '是否免费',
+      dataIndex: 'is_free',
+      width: 100,
       valueEnum: {
-        0: { text: '普通', status: 'Default' },
-        1: { text: '热门', status: 'Success' },
+        0: { text: '付费', status: 'Default' },
+        1: { text: '免费', status: 'Success' },
       },
-      render: (_: any, record: any) => (
-        <Tag color={record.is_hot === 1 ? 'red' : 'default'}>
-          {record.is_hot === 1 ? '热门' : '普通'}
-        </Tag>
-      ),
     },
     {
       title: '状态',

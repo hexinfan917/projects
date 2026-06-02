@@ -1,11 +1,13 @@
 .charity-detail-page {
-  min-height: 100vh;
+  height: 100vh;
+  box-sizing: border-box;
   background: #f5f7f5;
-  padding-bottom: 120px;
+  display: flex;
+  flex-direction: column;
 
   .scroll-container {
-    padding-top: 0;
-    padding-bottom: 40px;
+    flex: 1;
+    overflow-y: auto;
   }
 
   .status-bar-placeholder {

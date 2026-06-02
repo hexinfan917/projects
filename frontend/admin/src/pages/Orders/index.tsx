@@ -1,6 +1,6 @@
 import { PageContainer, ProTable, ModalForm, ProFormSelect, ProFormTextArea } from '@ant-design/pro-components';
 import { Button, Tag, Modal, Descriptions, message, Image, Card, Row, Col, Divider, Table } from 'antd';
-import { EyeOutlined, ExportOutlined, MoneyCollectOutlined } from '@ant-design/icons';
+import { EyeOutlined, ExportOutlined, MoneyCollectOutlined, CheckCircleOutlined } from '@ant-design/icons';
 import { useRef, useState } from 'react';
 import { request } from '@umijs/max';
 import dayjs from 'dayjs';
@@ -12,7 +12,7 @@ const statusMap: Record<number, { text: string; color: string }> = {
   40: { text: '退款中', color: 'red' },
   50: { text: '已退款', color: 'default' },
   60: { text: '已完成', color: 'green' },
-  70: { text: '已评价', color: 'purple' },
+  70: { text: '已完成', color: 'green' },
 };
 
 const statusOptions = [
@@ -22,7 +22,7 @@ const statusOptions = [
   { label: '退款中', value: 40 },
   { label: '已退款', value: 50 },
   { label: '已完成', value: 60 },
-  { label: '已评价', value: 70 },
+  { label: '已完成', value: 70 },
 ];
 
 export default function OrderList() {
@@ -56,6 +56,30 @@ export default function OrderList() {
   const handleRefund = (record: any) => {
     setCurrentOrder(record);
     setRefundModalVisible(true);
+  };
+
+  const handleVerify = async (record: any) => {
+    Modal.confirm({
+      title: '确认完成订单',
+      content: `确认将订单 ${record.order_no} 标记为已完成？用户将可以进行评价。`,
+      okText: '确认',
+      cancelText: '取消',
+      onOk: async () => {
+        try {
+          const res = await request('/api/v1/admin/orders/' + record.id + '/verify', {
+            method: 'POST',
+          });
+          if (res.code === 200) {
+            message.success('订单已确认完成');
+            tableRef.current?.reload();
+          } else {
+            message.error(res.message || '确认失败');
+          }
+        } catch (error) {
+          message.error('确认失败');
+        }
+      },
+    });
   };
 
   const submitRefund = async (values: any) => {
@@ -159,6 +183,20 @@ export default function OrderList() {
       render: (record: any) => `${record.participant_count}人/${record.pet_count}宠`,
     },
     {
+      title: '类型',
+      dataIndex: 'is_free',
+      width: 80,
+      valueEnum: {
+        0: { text: '付费' },
+        1: { text: '免费' },
+      },
+      render: (_: any, record: any) => (
+        <Tag color={record.is_free ? 'green' : 'blue'}>
+          {record.is_free ? '免费' : '付费'}
+        </Tag>
+      ),
+    },
+    {
       title: '金额',
       dataIndex: 'pay_amount',
       width: 100,
@@ -176,7 +214,7 @@ export default function OrderList() {
         40: { text: '退款中' },
         50: { text: '已退款' },
         60: { text: '已完成' },
-        70: { text: '已评价' },
+        70: { text: '已完成' },
       },
       render: (_: any, record: any) => {
         const status = Number(record.status);
@@ -204,7 +242,12 @@ export default function OrderList() {
         <Button key="view" type="link" size="small" icon={<EyeOutlined />} onClick={() => handleViewDetail(record)}>
           查看
         </Button>,
-        ([20, 60, 70].includes(record.status)) && (
+        record.status === 20 && (
+          <Button key="verify" type="link" size="small" style={{ color: '#52c41a' }} icon={<CheckCircleOutlined />} onClick={() => handleVerify(record)}>
+            确认完成
+          </Button>
+        ),
+        (!record.is_free && [20, 60, 70].includes(record.status)) && (
           <Button key="refund" type="link" size="small" danger icon={<MoneyCollectOutlined />} onClick={() => handleRefund(record)}>
             退款
           </Button>

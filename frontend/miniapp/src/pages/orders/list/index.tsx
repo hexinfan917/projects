@@ -8,6 +8,7 @@ const TABS = [
   { key: 'all', label: '全部' },
   { key: '10', label: '待支付' },
   { key: '20', label: '待出行' },
+  { key: 'completed', label: '已完成' },
   { key: 'refund', label: '退款/售后' },
 ]
 
@@ -17,7 +18,8 @@ const STATUS_MAP: any = {
   30: '已取消',
   40: '退款中',
   45: '退款驳回',
-  50: '已退款'
+  50: '已退款',
+  60: '已完成'
 }
 
 const COUNTDOWN_24H = 24 * 60 * 60 * 1000
@@ -49,6 +51,19 @@ export default function OrderList() {
           getOrders({ status: 50 })
         ])
         const list = [...(res1.data?.orders || []), ...(res2.data?.orders || []), ...(res3.data?.orders || [])]
+        if (currentRequestId === requestIdRef.current) {
+          setOrders(list)
+        }
+        return
+      }
+
+      if (tabKey === 'completed') {
+        const [res1, res2] = await Promise.all([
+          getOrders({ status: 60 }),
+          getOrders({ status: 70 }),
+        ])
+        const list = [...(res1.data?.orders || []), ...(res2.data?.orders || [])]
+        list.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
         if (currentRequestId === requestIdRef.current) {
           setOrders(list)
         }
@@ -135,6 +150,11 @@ export default function OrderList() {
 
   const goRefund = (id: number) => {
     Taro.navigateTo({ url: `/pages/orders/refund/index?id=${id}` })
+  }
+
+  const goEvaluate = (id: number, e: any) => {
+    e && e.stopPropagation()
+    Taro.navigateTo({ url: `/pages/orders/evaluate/index?id=${id}` })
   }
 
   const handleCancel = async (id: number, e: any) => {
@@ -227,9 +247,11 @@ export default function OrderList() {
                     <View className='mini-btn default' onClick={(e) => showCustomerService(e)}>
                       <Text>联系客服</Text>
                     </View>
-                    <View className='mini-btn default' onClick={() => goRefund(order.id)}>
-                      <Text>申请退款</Text>
-                    </View>
+                    {order.pay_amount > 0 && (
+                      <View className='mini-btn default' onClick={() => goRefund(order.id)}>
+                        <Text>申请退款</Text>
+                      </View>
+                    )}
                   </View>
                 )}
                 {order.status === 45 && (
@@ -237,12 +259,21 @@ export default function OrderList() {
                     <View className='mini-btn default' onClick={(e) => showCustomerService(e)}>
                       <Text>联系客服</Text>
                     </View>
-                    <View className='mini-btn default' onClick={() => goRefund(order.id)}>
-                      <Text>重新申请</Text>
-                    </View>
+                    {order.pay_amount > 0 && (
+                      <View className='mini-btn default' onClick={() => goRefund(order.id)}>
+                        <Text>重新申请</Text>
+                      </View>
+                    )}
                   </View>
                 )}
                 {(order.status === 40 || order.status === 50) && (
+                  <View className='action-btns'>
+                    <View className='mini-btn default' onClick={(e) => showCustomerService(e)}>
+                      <Text>联系客服</Text>
+                    </View>
+                  </View>
+                )}
+                {order.status === 60 && (
                   <View className='action-btns'>
                     <View className='mini-btn default' onClick={(e) => showCustomerService(e)}>
                       <Text>联系客服</Text>

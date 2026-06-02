@@ -41,6 +41,7 @@ export default function RouteEdit() {
   const [gallery, setGallery] = useState<string[]>([]);
   const [highlights, setHighlights] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState('basic');
+  const [isFree, setIsFree] = useState(false);
   const [routeTypes, setRouteTypes] = useState<{ id: number; name: string }[]>([
     { id: 1, name: '山野厨房' },
     { id: 2, name: '海边度假' },
@@ -99,6 +100,7 @@ export default function RouteEdit() {
         setFeeExclude(data.fee_exclude || '');
         setNotice(data.notice || '');
         setContentModules(data.content_modules || []);
+        setIsFree(data.is_free === 1);
         fetchSchedules();
       }
     } catch (error) {
@@ -373,7 +375,7 @@ export default function RouteEdit() {
     }
   };
 
-  // 排期表格列
+  // 排期表格列（根据是否免费动态生成）
   const scheduleColumns = [
     {
       title: '日期',
@@ -385,7 +387,7 @@ export default function RouteEdit() {
       key: 'time',
       render: (record: any) => `${record.start_time} - ${record.end_time}`,
     },
-    {
+    ...(!isFree ? [{
       title: '价格',
       dataIndex: 'price',
       key: 'price',
@@ -432,7 +434,7 @@ export default function RouteEdit() {
           </span>
         );
       },
-    },
+    }] : []),
     {
       title: '库存',
       key: 'stock',
@@ -538,6 +540,7 @@ export default function RouteEdit() {
               layout="vertical"
               initialValues={{
                 status: 1,
+                is_free: 0,
                 is_hot: 0,
                 difficulty: 3,
                 min_participants: 4,
@@ -558,6 +561,24 @@ export default function RouteEdit() {
                 self_drive_extra_pet_price: undefined,
               }}
             >
+              <Form.Item
+                name="is_free"
+                label="是否免费活动"
+                tooltip="免费活动将简化表单，不展示价格相关信息"
+              >
+                <Radio.Group onChange={(e) => {
+                  const free = e.target.value === 1;
+                  setIsFree(free);
+                  // 切换到免费时，如果当前在已隐藏的Tab，自动回到基本信息
+                  if (free && ['highlights', 'fee', 'notice', 'content_modules'].includes(activeTab)) {
+                    setActiveTab('basic');
+                  }
+                }}>
+                  <Radio.Button value={0}>付费路线</Radio.Button>
+                  <Radio.Button value={1}>免费活动</Radio.Button>
+                </Radio.Group>
+              </Form.Item>
+
               <Row gutter={24}>
                 <Col span={12}>
                   <Form.Item
@@ -607,20 +628,22 @@ export default function RouteEdit() {
                     </Select>
                   </Form.Item>
                 </Col>
-                <Col span={8}>
-                  <Form.Item
-                    name="difficulty"
-                    label="难度等级"
-                  >
-                    <Radio.Group>
-                      <Radio.Button value={1}>入门</Radio.Button>
-                      <Radio.Button value={2}>简单</Radio.Button>
-                      <Radio.Button value={3}>中等</Radio.Button>
-                      <Radio.Button value={4}>困难</Radio.Button>
-                      <Radio.Button value={5}>挑战</Radio.Button>
-                    </Radio.Group>
-                  </Form.Item>
-                </Col>
+                {!isFree && (
+                  <Col span={8}>
+                    <Form.Item
+                      name="difficulty"
+                      label="难度等级"
+                    >
+                      <Radio.Group>
+                        <Radio.Button value={1}>入门</Radio.Button>
+                        <Radio.Button value={2}>简单</Radio.Button>
+                        <Radio.Button value={3}>中等</Radio.Button>
+                        <Radio.Button value={4}>困难</Radio.Button>
+                        <Radio.Button value={5}>挑战</Radio.Button>
+                      </Radio.Group>
+                    </Form.Item>
+                  </Col>
+                )}
               </Row>
 
               <Form.Item
@@ -630,24 +653,26 @@ export default function RouteEdit() {
                 <Input placeholder="一句话描述路线特色" />
               </Form.Item>
 
-              <Row gutter={24}>
-                <Col span={8}>
-                  <Form.Item
-                    name="min_participants"
-                    label="最少成团人数"
-                  >
-                    <InputNumber style={{ width: '100%' }} min={1} />
-                  </Form.Item>
-                </Col>
-                <Col span={8}>
-                  <Form.Item
-                    name="max_participants"
-                    label="最大人数"
-                  >
-                    <InputNumber style={{ width: '100%' }} min={1} />
-                  </Form.Item>
-                </Col>
-              </Row>
+              {!isFree && (
+                <Row gutter={24}>
+                  <Col span={8}>
+                    <Form.Item
+                      name="min_participants"
+                      label="最少成团人数"
+                    >
+                      <InputNumber style={{ width: '100%' }} min={1} />
+                    </Form.Item>
+                  </Col>
+                  <Col span={8}>
+                    <Form.Item
+                      name="max_participants"
+                      label="最大人数"
+                    >
+                      <InputNumber style={{ width: '100%' }} min={1} />
+                    </Form.Item>
+                  </Col>
+                </Row>
+              )}
 
               <Form.Item
                 name="status"
@@ -792,110 +817,114 @@ export default function RouteEdit() {
           </Card>
         </Tabs.TabPane>
 
-        <Tabs.TabPane tab="费用说明" key="fee">
-          <Card title="费用说明">
-            <Form layout="vertical">
-              <Form.Item label="费用说明概述">
-                <ReactQuill
-                  theme="snow"
-                  value={feeDescription}
-                  onChange={setFeeDescription}
-                  modules={quillModules}
-                  formats={quillFormats}
-                  style={{ height: 200, marginBottom: 50 }}
-                />
-              </Form.Item>
-              <Form.Item label="费用包含">
-                <ReactQuill
-                  theme="snow"
-                  value={feeInclude}
-                  onChange={setFeeInclude}
-                  modules={quillModules}
-                  formats={quillFormats}
-                  style={{ height: 200, marginBottom: 50 }}
-                />
-              </Form.Item>
-              <Form.Item label="费用不包含">
-                <ReactQuill
-                  theme="snow"
-                  value={feeExclude}
-                  onChange={setFeeExclude}
-                  modules={quillModules}
-                  formats={quillFormats}
-                  style={{ height: 200, marginBottom: 50 }}
-                />
-              </Form.Item>
-            </Form>
-          </Card>
-        </Tabs.TabPane>
+        {!isFree && (
+          <>
+            <Tabs.TabPane tab="费用说明" key="fee">
+              <Card title="费用说明">
+                <Form layout="vertical">
+                  <Form.Item label="费用说明概述">
+                    <ReactQuill
+                      theme="snow"
+                      value={feeDescription}
+                      onChange={setFeeDescription}
+                      modules={quillModules}
+                      formats={quillFormats}
+                      style={{ height: 200, marginBottom: 50 }}
+                    />
+                  </Form.Item>
+                  <Form.Item label="费用包含">
+                    <ReactQuill
+                      theme="snow"
+                      value={feeInclude}
+                      onChange={setFeeInclude}
+                      modules={quillModules}
+                      formats={quillFormats}
+                      style={{ height: 200, marginBottom: 50 }}
+                    />
+                  </Form.Item>
+                  <Form.Item label="费用不包含">
+                    <ReactQuill
+                      theme="snow"
+                      value={feeExclude}
+                      onChange={setFeeExclude}
+                      modules={quillModules}
+                      formats={quillFormats}
+                      style={{ height: 200, marginBottom: 50 }}
+                    />
+                  </Form.Item>
+                </Form>
+              </Card>
+            </Tabs.TabPane>
 
-        <Tabs.TabPane tab="注意事项" key="notice">
-          <Card title="注意事项">
-            <ReactQuill
-              theme="snow"
-              value={notice}
-              onChange={setNotice}
-              modules={quillModules}
-              formats={quillFormats}
-              style={{ height: 400, marginBottom: 50 }}
-            />
-          </Card>
-        </Tabs.TabPane>
-
-        <Tabs.TabPane tab="内容模块" key="content_modules">
-          <Card title="内容模块（小程序标签页展示）" extra={
-            <Button type="primary" onClick={addContentModule} icon={<PlusOutlined />}>
-              添加模块
-            </Button>
-          }>
-            {contentModules.length === 0 && (
-              <div style={{ textAlign: 'center', padding: '40px 0', color: '#999' }}>
-                暂无内容模块，点击右上角添加
-              </div>
-            )}
-            {contentModules.map((mod, index) => (
-              <div key={index} style={{ marginBottom: 24, padding: 16, border: '1px solid #f0f0f0', borderRadius: 8 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                  <span style={{ fontWeight: 500 }}>模块 {index + 1}</span>
-                  <Space>
-                    <Button size="small" disabled={index === 0} onClick={() => moveContentModule(index, -1)}>上移</Button>
-                    <Button size="small" disabled={index === contentModules.length - 1} onClick={() => moveContentModule(index, 1)}>下移</Button>
-                    <Button size="small" danger onClick={() => removeContentModule(index)} icon={<DeleteOutlined />}>删除</Button>
-                  </Space>
-                </div>
-                <Row gutter={16} style={{ marginBottom: 12 }}>
-                  <Col span={12}>
-                    <Form.Item label="标签名称" style={{ marginBottom: 0 }}>
-                      <Input
-                        value={mod.label}
-                        onChange={(e) => updateContentModule(index, 'label', e.target.value)}
-                        placeholder="如：行程亮点"
-                      />
-                    </Form.Item>
-                  </Col>
-                  <Col span={12}>
-                    <Form.Item label="图标 Emoji" style={{ marginBottom: 0 }}>
-                      <Input
-                        value={mod.icon}
-                        onChange={(e) => updateContentModule(index, 'icon', e.target.value)}
-                        placeholder="如：✨"
-                      />
-                    </Form.Item>
-                  </Col>
-                </Row>
-                <div style={{ marginBottom: 8, color: '#666' }}>内容（富文本）</div>
+            <Tabs.TabPane tab="注意事项" key="notice">
+              <Card title="注意事项">
                 <ReactQuill
                   theme="snow"
-                  value={mod.content}
-                  onChange={(value) => updateContentModule(index, 'content', value)}
+                  value={notice}
+                  onChange={setNotice}
                   modules={quillModules}
                   formats={quillFormats}
-                  style={{ height: 300, marginBottom: 40 }}
+                  style={{ height: 400, marginBottom: 50 }}
                 />
-              </div>
-            ))}
-          </Card>
-        </Tabs.TabPane>
+              </Card>
+            </Tabs.TabPane>
+
+            <Tabs.TabPane tab="内容模块" key="content_modules">
+              <Card title="内容模块（小程序标签页展示）" extra={
+                <Button type="primary" onClick={addContentModule} icon={<PlusOutlined />}>
+                  添加模块
+                </Button>
+              }>
+                {contentModules.length === 0 && (
+                  <div style={{ textAlign: 'center', padding: '40px 0', color: '#999' }}>
+                    暂无内容模块，点击右上角添加
+                  </div>
+                )}
+                {contentModules.map((mod, index) => (
+                  <div key={index} style={{ marginBottom: 24, padding: 16, border: '1px solid #f0f0f0', borderRadius: 8 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                      <span style={{ fontWeight: 500 }}>模块 {index + 1}</span>
+                      <Space>
+                        <Button size="small" disabled={index === 0} onClick={() => moveContentModule(index, -1)}>上移</Button>
+                        <Button size="small" disabled={index === contentModules.length - 1} onClick={() => moveContentModule(index, 1)}>下移</Button>
+                        <Button size="small" danger onClick={() => removeContentModule(index)} icon={<DeleteOutlined />}>删除</Button>
+                      </Space>
+                    </div>
+                    <Row gutter={16} style={{ marginBottom: 12 }}>
+                      <Col span={12}>
+                        <Form.Item label="标签名称" style={{ marginBottom: 0 }}>
+                          <Input
+                            value={mod.label}
+                            onChange={(e) => updateContentModule(index, 'label', e.target.value)}
+                            placeholder="如：行程亮点"
+                          />
+                        </Form.Item>
+                      </Col>
+                      <Col span={12}>
+                        <Form.Item label="图标 Emoji" style={{ marginBottom: 0 }}>
+                          <Input
+                            value={mod.icon}
+                            onChange={(e) => updateContentModule(index, 'icon', e.target.value)}
+                            placeholder="如：✨"
+                          />
+                        </Form.Item>
+                      </Col>
+                    </Row>
+                    <div style={{ marginBottom: 8, color: '#666' }}>内容（富文本）</div>
+                    <ReactQuill
+                      theme="snow"
+                      value={mod.content}
+                      onChange={(value) => updateContentModule(index, 'content', value)}
+                      modules={quillModules}
+                      formats={quillFormats}
+                      style={{ height: 300, marginBottom: 40 }}
+                    />
+                  </div>
+                ))}
+              </Card>
+            </Tabs.TabPane>
+          </>
+        )}
 
         {isEdit && (
           <Tabs.TabPane tab="营期管理" key="schedules">
@@ -992,8 +1021,9 @@ export default function RouteEdit() {
               </Form.Item>
             </Col>
           </Row>
-          <Tabs type="card" style={{ marginBottom: 16 }}>
-            <Tabs.TabPane tab="大巴出行价格" key="bus">
+          {!isFree && (
+            <Tabs type="card" style={{ marginBottom: 16 }}>
+              <Tabs.TabPane tab="大巴出行价格" key="bus">
               <Row gutter={16}>
                 <Col span={8}>
                   <Form.Item label="价格(1人1宠)" name="price">
@@ -1071,8 +1101,9 @@ export default function RouteEdit() {
                   </Form.Item>
                 </Col>
               </Row>
-            </Tabs.TabPane>
-          </Tabs>
+              </Tabs.TabPane>
+            </Tabs>
+          )}
           {scheduleAddons.length > 0 && (
             <div style={{ marginBottom: 16 }}>
               <div style={{ fontWeight: 600, marginBottom: 12, borderBottom: '1px solid #f0f0f0', paddingBottom: 8 }}>

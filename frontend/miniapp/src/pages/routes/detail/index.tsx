@@ -224,7 +224,11 @@ export default function RouteDetail() {
               ))}
             </View>
           )}
-          <Text className='route-price'>￥{route.schedule_price || '暂无营期'}起/人</Text>
+          <Text className='route-price'>
+            {route.schedule_price !== undefined && route.schedule_price !== null
+              ? (route.schedule_price === 0 ? '免费' : `￥${route.schedule_price}起/人`)
+              : '暂无营期'}
+          </Text>
         </View>
 
         {route.description ? (
@@ -241,7 +245,7 @@ export default function RouteDetail() {
           </View>
         ) : null}
 
-        {(route.fee_description || route.fee_include || route.fee_exclude) ? (
+        {!route.is_free && (route.fee_description || route.fee_include || route.fee_exclude) ? (
           <View className='section'>
             <Text className='section-title'>费用说明</Text>
             {route.fee_description && (
@@ -265,7 +269,7 @@ export default function RouteDetail() {
           </View>
         ) : null}
 
-        {route.notice ? (
+        {!route.is_free && route.notice ? (
           <View className='section'>
             <Text className='section-title'>注意事项</Text>
             <RichText className='rich-text' nodes={processRichText(route.notice)} />
@@ -277,11 +281,17 @@ export default function RouteDetail() {
       <View className='detail-footer'>
         <View className='footer-left'>
           <Text className='footer-price'>
-            {hasAnySchedule ? `￥${route.schedule_price || '暂无营期'}起` : '暂无营期'}
+            {hasAnySchedule
+              ? (route.schedule_price !== undefined && route.schedule_price !== null
+                  ? (route.schedule_price === 0 ? '免费' : `￥${route.schedule_price}起`)
+                  : '暂无营期')
+              : '暂无营期'}
           </Text>
         </View>
         {hasAnySchedule ? (
-          <View className='book-btn' onClick={handleOpenCalendar}>立即预订</View>
+          <View className='book-btn' onClick={handleOpenCalendar}>
+            {route?.is_free ? '免费报名' : '立即预订'}
+          </View>
         ) : (
           <View className='book-btn disabled'>暂无营期</View>
         )}
@@ -321,7 +331,9 @@ export default function RouteDetail() {
                   >
                     <Text className='day-num'>{day}</Text>
                     {hasSchedule && (
-                      <Text className='day-price'>￥{schedule.price}</Text>
+                      <Text className='day-price'>
+                        {schedule.price === 0 ? '免费' : `￥${schedule.price}`}
+                      </Text>
                     )}
                     {isSelected && <Text className='selected-tag'>出发</Text>}
                   </View>

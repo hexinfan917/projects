@@ -17,6 +17,7 @@ class Order(Base):
     user_id: Mapped[int] = mapped_column(Integer, nullable=False, comment="用户ID")
     schedule_id: Mapped[int] = mapped_column(Integer, nullable=False, comment="排期ID")
     route_id: Mapped[int] = mapped_column(Integer, nullable=False, comment="路线ID")
+    is_free: Mapped[int] = mapped_column(Integer, default=0, comment="0付费路线 1免费路线")
     route_name: Mapped[str] = mapped_column(String(100), nullable=False, comment="路线名称")
     route_cover: Mapped[Optional[str]] = mapped_column(String(500), comment="路线封面图")
     travel_date: Mapped[date] = mapped_column(Date, nullable=False, comment="出行日期")

@@ -52,7 +52,15 @@ export default function Routes() {
       if (kw) params.keyword = kw
       if (activeCategory) params.route_type = parseInt(activeCategory, 10)
       const res = await getRoutes(params)
-      const list = (res.data?.routes || []).map((r: any) => ({ ...r, price: r.schedule_price || 0, has_schedule: (r.schedule_price || 0) > 0, cover_image: r.cover_image ? (r.cover_image.startsWith('http') ? r.cover_image : `https://tailtravel.cn${r.cover_image}`) + '?w=750&q=75' : '' }))
+      const list = (res.data?.routes || []).map((r: any) => {
+        const hasSchedule = r.schedule_price !== undefined && r.schedule_price !== null
+        return {
+          ...r,
+          price: hasSchedule ? r.schedule_price : 0,
+          has_schedule: hasSchedule,
+          cover_image: r.cover_image ? (r.cover_image.startsWith('http') ? r.cover_image : `https://tailtravel.cn${r.cover_image}`) + '?w=750&q=75' : ''
+        }
+      })
       setRoutes(prev => refresh ? list : [...prev, ...list])
       setNoMore(list.length < pageSize)
       if (!refresh) setPage(currentPage + 1)
@@ -72,7 +80,7 @@ export default function Routes() {
   const goToDetail = (item: any) => {
     const footprints = Taro.getStorageSync('footprint_routes') || []
     const filtered = footprints.filter((f: any) => f.id !== item.id)
-    const record = { id: item.id, name: item.name, cover_image: item.cover_image, type_name: item.type_name, subtitle: item.subtitle || '', price: item.price || 0, timestamp: Date.now() }
+    const record = { id: item.id, name: item.name, cover_image: item.cover_image, type_name: item.type_name, subtitle: item.subtitle || '', price: item.price, has_schedule: item.has_schedule, timestamp: Date.now() }
     Taro.setStorageSync('footprint_routes', [record, ...filtered].slice(0, 100))
     Taro.navigateTo({ url: `/pages/routes/detail/index?id=${item.id}` })
   }

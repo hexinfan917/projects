@@ -88,7 +88,7 @@ async def _get_route_name_to_id_map(db: AsyncSession) -> dict:
 async def _get_nearest_schedule_prices(db: AsyncSession, route_ids: list) -> dict:
     """批量查询每个路线的最近排期价格 {route_id: {price, self_drive_price}}
     
-    跳过价格为0或未配置的排期，取第一个有有效价格的排期
+    取第一个有价格配置（含免费活动 price=0）的排期
     """
     from datetime import date
     from app.models.route import RouteSchedule
@@ -100,7 +100,7 @@ async def _get_nearest_schedule_prices(db: AsyncSession, route_ids: list) -> dic
             .where(RouteSchedule.route_id.in_(route_ids))
             .where(RouteSchedule.status == 1)
             .where(RouteSchedule.schedule_date >= date.today())
-            .where(RouteSchedule.price > 0)
+            .where(RouteSchedule.price.is_not(None))  # 价格已配置（含0元免费活动）
             .order_by(RouteSchedule.route_id, RouteSchedule.schedule_date.asc())
         )
         schedule_map = {}
@@ -108,8 +108,8 @@ async def _get_nearest_schedule_prices(db: AsyncSession, route_ids: list) -> dic
             rid = row.route_id
             if rid not in schedule_map:
                 schedule_map[rid] = {
-                    "price": float(row.price) if row.price else None,
-                    "self_drive_price": float(row.self_drive_price) if row.self_drive_price else None
+                    "price": float(row.price) if row.price is not None else None,
+                    "self_drive_price": float(row.self_drive_price) if row.self_drive_price is not None else None
                 }
         return schedule_map
     except Exception as e:
@@ -152,7 +152,7 @@ async def get_routes(
                 Route.self_drive_two_person_one_pet_price, Route.self_drive_one_person_two_pet_price,
                 Route.self_drive_single_pet_price, Route.self_drive_extra_person_price,
                 Route.self_drive_extra_pet_price,
-                Route.highlights, Route.sort_order,
+                Route.highlights, Route.sort_order, Route.is_free,
                 Route.created_at
             )
         )
@@ -229,7 +229,7 @@ async def get_routes(
                         Route.title, Route.subtitle, Route.cover_image, Route.description,
                         Route.duration, Route.difficulty, Route.min_participants,
                         Route.max_participants, Route.highlights, Route.sort_order,
-                        Route.created_at
+                        Route.is_free, Route.created_at
                     )
                 )
             )
@@ -280,7 +280,8 @@ async def get_routes(
                 "rating": avg_rating,
                 "review_count": review_count,
                 "distance": None,
-                "tags": r.highlights[:3] if r.highlights else []
+                "tags": r.highlights[:3] if r.highlights else [],
+                "is_free": r.is_free
             })
         
         return success({
@@ -400,6 +401,7 @@ async def get_route_detail(
             "safety_video_duration": r.safety_video_duration or 180,
             "is_safety_required": bool(r.is_safety_required),
             "status": r.status,
+            "is_free": r.is_free,
             "schedule": [
                 {"time": "09:00", "activity": "集合出发", "detail": "在指定地点集合，签到领取物资"},
                 {"time": "10:30", "activity": "到达活动地，自由活动", "detail": "狗狗们尽情玩耍，主人拍照留念"},
@@ -477,20 +479,20 @@ async def get_route_schedules(
                 "schedule_date": s.schedule_date.isoformat() if s.schedule_date else "",
                 "start_time": _format_time(s.start_time) or "09:00",
                 "end_time": _format_time(s.end_time) or "17:00",
-                "price": float(s.price) if s.price else 0,
-                "self_drive_price": float(s.self_drive_price) if s.self_drive_price else None,
-                "single_person_price": float(s.single_person_price) if s.single_person_price else None,
-                "two_person_one_pet_price": float(s.two_person_one_pet_price) if s.two_person_one_pet_price else None,
-                "one_person_two_pet_price": float(s.one_person_two_pet_price) if s.one_person_two_pet_price else None,
-                "single_pet_price": float(s.single_pet_price) if s.single_pet_price else None,
-                "extra_person_price": float(s.extra_person_price) if s.extra_person_price else None,
-                "extra_pet_price": float(s.extra_pet_price) if s.extra_pet_price else None,
-                "self_drive_single_person_price": float(s.self_drive_single_person_price) if s.self_drive_single_person_price else None,
-                "self_drive_two_person_one_pet_price": float(s.self_drive_two_person_one_pet_price) if s.self_drive_two_person_one_pet_price else None,
-                "self_drive_one_person_two_pet_price": float(s.self_drive_one_person_two_pet_price) if s.self_drive_one_person_two_pet_price else None,
-                "self_drive_single_pet_price": float(s.self_drive_single_pet_price) if s.self_drive_single_pet_price else None,
-                "self_drive_extra_person_price": float(s.self_drive_extra_person_price) if s.self_drive_extra_person_price else None,
-                "self_drive_extra_pet_price": float(s.self_drive_extra_pet_price) if s.self_drive_extra_pet_price else None,
+                "price": float(s.price) if s.price is not None else 0,
+                "self_drive_price": float(s.self_drive_price) if s.self_drive_price is not None else None,
+                "single_person_price": float(s.single_person_price) if s.single_person_price is not None else None,
+                "two_person_one_pet_price": float(s.two_person_one_pet_price) if s.two_person_one_pet_price is not None else None,
+                "one_person_two_pet_price": float(s.one_person_two_pet_price) if s.one_person_two_pet_price is not None else None,
+                "single_pet_price": float(s.single_pet_price) if s.single_pet_price is not None else None,
+                "extra_person_price": float(s.extra_person_price) if s.extra_person_price is not None else None,
+                "extra_pet_price": float(s.extra_pet_price) if s.extra_pet_price is not None else None,
+                "self_drive_single_person_price": float(s.self_drive_single_person_price) if s.self_drive_single_person_price is not None else None,
+                "self_drive_two_person_one_pet_price": float(s.self_drive_two_person_one_pet_price) if s.self_drive_two_person_one_pet_price is not None else None,
+                "self_drive_one_person_two_pet_price": float(s.self_drive_one_person_two_pet_price) if s.self_drive_one_person_two_pet_price is not None else None,
+                "self_drive_single_pet_price": float(s.self_drive_single_pet_price) if s.self_drive_single_pet_price is not None else None,
+                "self_drive_extra_person_price": float(s.self_drive_extra_person_price) if s.self_drive_extra_person_price is not None else None,
+                "self_drive_extra_pet_price": float(s.self_drive_extra_pet_price) if s.self_drive_extra_pet_price is not None else None,
                 "stock": s.stock or 0,
                 "sold": s.sold or 0,
                 "status": s.status or 1,
@@ -641,6 +643,7 @@ class RouteCreateUpdate(BaseModel):
     is_safety_required: int = 1
     is_hot: int = 0
     status: int = 1
+    is_free: Optional[int] = 0
     sort_order: Optional[int] = None
 
 class ScheduleCreateUpdate(BaseModel):
@@ -782,6 +785,7 @@ async def admin_create_route(
             is_safety_required=data.is_safety_required,
             is_hot=data.is_hot,
             status=data.status,
+            is_free=data.is_free if data.is_free is not None else 0,
             sort_order=data.sort_order if data.sort_order is not None else 0
         )
         
@@ -834,7 +838,7 @@ async def admin_update_route(
         for field in price_fields:
             update_data.pop(field, None)
         for field, value in update_data.items():
-            if value is not None or field in ['subtitle', 'title', 'description', 'is_hot', 'status', 'content_modules']:  # 允许清空这些字段
+            if value is not None or field in ['subtitle', 'title', 'description', 'is_hot', 'status', 'content_modules', 'is_free']:  # 允许清空这些字段
                 setattr(route, field, value)
         
         await db.commit()
@@ -912,7 +916,7 @@ async def admin_get_routes(
             Route.self_drive_extra_pet_price,
             Route.duration,
             Route.min_participants, Route.max_participants,
-            Route.is_hot, Route.status, Route.sort_order, Route.created_at, Route.updated_at
+            Route.is_hot, Route.status, Route.is_free, Route.sort_order, Route.created_at, Route.updated_at
         )
         if status is not None:
             query = select(Route).where(Route.status == status).options(load_only_cols)
@@ -983,6 +987,7 @@ async def admin_get_routes(
                 "max_participants": r.max_participants,
                 "is_hot": r.is_hot,
                 "status": r.status,
+                "is_free": r.is_free,
                 "sort_order": r.sort_order,
                 "created_at": r.created_at.isoformat() if r.created_at else None,
                 "updated_at": r.updated_at.isoformat() if r.updated_at else None
@@ -1050,6 +1055,7 @@ async def admin_get_route_detail(
             "is_safety_required": r.is_safety_required,
             "is_hot": r.is_hot,
             "status": r.status,
+            "is_free": r.is_free,
             "sort_order": r.sort_order,
             "created_at": r.created_at.isoformat() if r.created_at else None,
             "updated_at": r.updated_at.isoformat() if r.updated_at else None
@@ -1281,22 +1287,22 @@ async def admin_get_schedules(
                 "schedule_date": s.schedule_date.isoformat() if s.schedule_date else "",
                 "start_time": _format_time(s.start_time) or "09:00",
                 "end_time": _format_time(s.end_time) or "17:00",
-                "price": float(s.price) if s.price else 0,
-                "self_drive_price": float(s.self_drive_price) if s.self_drive_price else None,
+                "price": float(s.price) if s.price is not None else 0,
+                "self_drive_price": float(s.self_drive_price) if s.self_drive_price is not None else None,
                 # 大巴套餐价格
-                "single_person_price": float(s.single_person_price) if s.single_person_price else None,
-                "two_person_one_pet_price": float(s.two_person_one_pet_price) if s.two_person_one_pet_price else None,
-                "one_person_two_pet_price": float(s.one_person_two_pet_price) if s.one_person_two_pet_price else None,
-                "single_pet_price": float(s.single_pet_price) if s.single_pet_price else None,
-                "extra_person_price": float(s.extra_person_price) if s.extra_person_price else None,
-                "extra_pet_price": float(s.extra_pet_price) if s.extra_pet_price else None,
+                "single_person_price": float(s.single_person_price) if s.single_person_price is not None else None,
+                "two_person_one_pet_price": float(s.two_person_one_pet_price) if s.two_person_one_pet_price is not None else None,
+                "one_person_two_pet_price": float(s.one_person_two_pet_price) if s.one_person_two_pet_price is not None else None,
+                "single_pet_price": float(s.single_pet_price) if s.single_pet_price is not None else None,
+                "extra_person_price": float(s.extra_person_price) if s.extra_person_price is not None else None,
+                "extra_pet_price": float(s.extra_pet_price) if s.extra_pet_price is not None else None,
                 # 自驾套餐价格
-                "self_drive_single_person_price": float(s.self_drive_single_person_price) if s.self_drive_single_person_price else None,
-                "self_drive_two_person_one_pet_price": float(s.self_drive_two_person_one_pet_price) if s.self_drive_two_person_one_pet_price else None,
-                "self_drive_one_person_two_pet_price": float(s.self_drive_one_person_two_pet_price) if s.self_drive_one_person_two_pet_price else None,
-                "self_drive_single_pet_price": float(s.self_drive_single_pet_price) if s.self_drive_single_pet_price else None,
-                "self_drive_extra_person_price": float(s.self_drive_extra_person_price) if s.self_drive_extra_person_price else None,
-                "self_drive_extra_pet_price": float(s.self_drive_extra_pet_price) if s.self_drive_extra_pet_price else None,
+                "self_drive_single_person_price": float(s.self_drive_single_person_price) if s.self_drive_single_person_price is not None else None,
+                "self_drive_two_person_one_pet_price": float(s.self_drive_two_person_one_pet_price) if s.self_drive_two_person_one_pet_price is not None else None,
+                "self_drive_one_person_two_pet_price": float(s.self_drive_one_person_two_pet_price) if s.self_drive_one_person_two_pet_price is not None else None,
+                "self_drive_single_pet_price": float(s.self_drive_single_pet_price) if s.self_drive_single_pet_price is not None else None,
+                "self_drive_extra_person_price": float(s.self_drive_extra_person_price) if s.self_drive_extra_person_price is not None else None,
+                "self_drive_extra_pet_price": float(s.self_drive_extra_pet_price) if s.self_drive_extra_pet_price is not None else None,
                 "stock": s.stock or 0,
                 "sold": s.sold or 0,
                 "status": s.status or 1,
@@ -1318,11 +1324,19 @@ async def admin_create_schedule(
 ):
     """创建排期"""
     try:
-        from app.models.route import RouteSchedule
+        from app.models.route import RouteSchedule, Route
         from datetime import datetime
         from sqlalchemy import and_
         
         schedule_date = datetime.strptime(data.schedule_date, "%Y-%m-%d").date()
+        
+        # 查询路线信息，免费路线自动设置 price=0
+        route_result = await db.execute(select(Route).where(Route.id == route_id))
+        route = route_result.scalar_one_or_none()
+        is_free = route.is_free if route else 0
+        
+        # 免费路线排期价格自动为0
+        schedule_price = 0 if is_free else data.price
         
         # 检查该日期是否已存在排期（不区分状态，数据库唯一键限制）
         existing_result = await db.execute(
@@ -1341,8 +1355,8 @@ async def admin_create_schedule(
             schedule_date=schedule_date,
             start_time=data.start_time,
             end_time=data.end_time,
-            price=data.price,
-            self_drive_price=data.self_drive_price,
+            price=schedule_price,
+            self_drive_price=None if is_free else data.self_drive_price,
             single_person_price=data.single_person_price,
             two_person_one_pet_price=data.two_person_one_pet_price,
             one_person_two_pet_price=data.one_person_two_pet_price,
@@ -1457,17 +1471,22 @@ async def admin_batch_create_schedules(
 ):
     """批量创建排期"""
     try:
-        from app.models.route import RouteSchedule
+        from app.models.route import RouteSchedule, Route
         from datetime import datetime, timedelta
         from sqlalchemy import and_
+        
+        # 查询路线信息，免费路线自动设置 price=0
+        route_result = await db.execute(select(Route).where(Route.id == route_id))
+        route = route_result.scalar_one_or_none()
+        is_free = route.is_free if route else 0
         
         start_date = data.get('start_date')
         end_date = data.get('end_date')
         week_days = data.get('week_days', [1, 2, 3, 4, 5, 6, 7])
         start_time = data.get('start_time', '09:00')
         end_time = data.get('end_time', '17:00')
-        price = data.get('price')
-        self_drive_price = data.get('self_drive_price')
+        price = 0 if is_free else data.get('price')
+        self_drive_price = None if is_free else data.get('self_drive_price')
         # 大巴套餐价格
         single_person_price = data.get('single_person_price')
         two_person_one_pet_price = data.get('two_person_one_pet_price')

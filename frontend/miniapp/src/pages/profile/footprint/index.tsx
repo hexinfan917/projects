@@ -57,7 +57,9 @@ export default function Footprint() {
             <View className='footprint-info'>
               <Text className='footprint-name'>{item.name}</Text>
               {item.subtitle ? <Text className='footprint-subtitle'>{item.subtitle}</Text> : null}
-              <Text className='footprint-meta'>{item.type_name || '线路'} · ￥{item.price || 0}起</Text>
+              <Text className='footprint-meta'>
+                {item.type_name || '线路'} · {item.has_schedule ? (item.price === 0 ? '免费' : `￥${item.price}起`) : '暂无营期'}
+              </Text>
             </View>
           </View>
         ))}

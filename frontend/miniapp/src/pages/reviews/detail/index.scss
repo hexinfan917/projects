@@ -1,9 +1,13 @@
 .review-detail-page {
-  min-height: 100vh;
+  height: 100vh;
+  box-sizing: border-box;
   background: #f5f7f5;
+  display: flex;
+  flex-direction: column;
 
   .scroll-container {
-    padding-top: 0;
+    flex: 1;
+    overflow-y: auto;
   }
 
   .detail-cover {

@@ -25,6 +25,7 @@ interface BookingPopupProps {
 }
 
 export default function BookingPopup({ visible, route, schedules, onClose, onNext }: BookingPopupProps) {
+  const isFree = route?.is_free === 1
   const [selectedPackage, setSelectedPackage] = useState('couple')
   const [extraPerson, setExtraPerson] = useState(0)
   const [extraPet, setExtraPet] = useState(0)
@@ -264,6 +265,23 @@ export default function BookingPopup({ visible, route, schedules, onClose, onNex
       .filter(a => (addonQuantities[a.id] || 0) > 0)
       .map(a => ({ ...a, quantity: addonQuantities[a.id], price: getAddonPrice(a) }))
 
+    // 免费路线固定参数
+    if (isFree) {
+      onNext({
+        scheduleId: schedule.id,
+        travelDate: selectedDate,
+        packageType: 'couple',
+        basePerson: 1,
+        basePet: 1,
+        extraPerson,
+        extraPet,
+        travelType: 'bus',
+        addons: [],
+        totalPrice: 0,
+      })
+      return
+    }
+
     onNext({
       scheduleId: schedule.id,
       travelDate: selectedDate,
@@ -303,11 +321,13 @@ export default function BookingPopup({ visible, route, schedules, onClose, onNex
             {coverUrl && <Image className='route-cover' src={coverUrl} mode='aspectFill' />}
             <View className='route-info'>
               <Text className='route-name'>{route?.name || ''}</Text>
+              {!isFree && (
               <View className='route-price-row'>
                 <Text className='route-price-label'>销售价</Text>
                 <Text className='route-price'>¥{basePrice}</Text>
                 <Text className='route-price-unit'>起</Text>
               </View>
+            )}
               {selectedDate && (
                 <Text className='route-selected-date'>
                   已选 {selectedDate.slice(5).replace('-', '月')}日
@@ -353,86 +373,92 @@ export default function BookingPopup({ visible, route, schedules, onClose, onNex
                   <Text className='date-day'>{String(activeMonth?.month || 0).padStart(2, '0')}/{String(day).padStart(2, '0')}</Text>
                   <View className='date-week-price'>
                     <Text>周{week}</Text>
-                    <Text className='date-price-text'>¥{getDisplayPrice(schedule)}起</Text>
+                    <Text className='date-price-text'>{isFree ? '免费' : `¥${getDisplayPrice(schedule)}起`}</Text>
                   </View>
                 </View>
               ))}
             </ScrollView>
           </View>
 
-          {/* 交通方式 */}
-          <View className='section'>
-            <Text className='section-title'>交通方式</Text>
-            <View className='travel-type-list'>
-              <View
-                className={`travel-type-item ${travelType === 'bus' ? 'active' : ''}`}
-                onClick={() => handleTravelTypeChange('bus')}
-              >
-                <Text className='travel-type-name'>大巴出行</Text>
-                <Text className='travel-type-desc'>含往返大巴费用</Text>
-              </View>
-              <View
-                className={`travel-type-item ${travelType === 'self_drive' ? 'active' : ''}`}
-                onClick={() => handleTravelTypeChange('self_drive')}
-              >
-                <Text className='travel-type-name'>自行前往</Text>
-                <Text className='travel-type-desc'>自驾前往集合点</Text>
+          {/* 交通方式 —— 免费路线隐藏 */}
+          {!isFree && (
+            <View className='section'>
+              <Text className='section-title'>交通方式</Text>
+              <View className='travel-type-list'>
+                <View
+                  className={`travel-type-item ${travelType === 'bus' ? 'active' : ''}`}
+                  onClick={() => handleTravelTypeChange('bus')}
+                >
+                  <Text className='travel-type-name'>大巴出行</Text>
+                  <Text className='travel-type-desc'>含往返大巴费用</Text>
+                </View>
+                <View
+                  className={`travel-type-item ${travelType === 'self_drive' ? 'active' : ''}`}
+                  onClick={() => handleTravelTypeChange('self_drive')}
+                >
+                  <Text className='travel-type-name'>自行前往</Text>
+                  <Text className='travel-type-desc'>自驾前往集合点</Text>
+                </View>
               </View>
             </View>
-          </View>
+          )}
 
-          {/* 尾巴出行 */}
+          {/* 尾巴出行 —— 免费路线只保留增加人宠 */}
           <View className='section'>
-            <Text className='section-title'>尾巴出行</Text>
-            <View className='package-list'>
-              {PACKAGE_OPTIONS.filter(pkg => !(travelType === 'self_drive' && pkg.key === 'single_pet')).map(pkg => {
-                const pkgPriceField = travelType === 'self_drive'
-                  ? `self_drive_${pkg.priceField}`
-                  : pkg.priceField
-                const scheduleField = pkg.priceField === 'base_price'
-                  ? (travelType === 'self_drive' ? 'self_drive_price' : 'price')
-                  : pkgPriceField
-                let price = 0
-                let hasPrice = false
-                if (selectedDate) {
-                  const schedule = scheduleMap[selectedDate]
-                  if (schedule) {
-                    const field = pkg.priceField === 'base_price'
+            {!isFree && (
+              <>
+                <Text className='section-title'>尾巴出行</Text>
+                <View className='package-list'>
+                  {PACKAGE_OPTIONS.filter(pkg => !(travelType === 'self_drive' && pkg.key === 'single_pet')).map(pkg => {
+                    const pkgPriceField = travelType === 'self_drive'
+                      ? `self_drive_${pkg.priceField}`
+                      : pkg.priceField
+                    const scheduleField = pkg.priceField === 'base_price'
                       ? (travelType === 'self_drive' ? 'self_drive_price' : 'price')
-                      : (travelType === 'self_drive' ? `self_drive_${pkg.priceField}` : pkg.priceField)
-                    if (schedule[field] != null) {
-                      price = schedule[field]
-                      hasPrice = true
+                      : pkgPriceField
+                    let price = 0
+                    let hasPrice = false
+                    if (selectedDate) {
+                      const schedule = scheduleMap[selectedDate]
+                      if (schedule) {
+                        const field = pkg.priceField === 'base_price'
+                          ? (travelType === 'self_drive' ? 'self_drive_price' : 'price')
+                          : (travelType === 'self_drive' ? `self_drive_${pkg.priceField}` : pkg.priceField)
+                        if (schedule[field] != null) {
+                          price = schedule[field]
+                          hasPrice = true
+                        }
+                      }
                     }
-                  }
-                }
-                const isActive = selectedPackage === pkg.key
-                return (
-                  <View
-                    key={pkg.key}
-                    className={`package-item ${isActive ? 'active' : ''} ${!hasPrice ? 'disabled' : ''} ${pkg.key === 'single_pet' ? 'full-width' : ''}`}
-                    onClick={() => hasPrice && handlePackageChange(pkg.key)}
-                  >
-                    <View className='package-left'>
-                      <View className='package-check'>
-                        {isActive && <Text className='package-check-icon'>✓</Text>}
+                    const isActive = selectedPackage === pkg.key
+                    return (
+                      <View
+                        key={pkg.key}
+                        className={`package-item ${isActive ? 'active' : ''} ${!hasPrice ? 'disabled' : ''} ${pkg.key === 'single_pet' ? 'full-width' : ''}`}
+                        onClick={() => hasPrice && handlePackageChange(pkg.key)}
+                      >
+                        <View className='package-left'>
+                          <View className='package-check'>
+                            {isActive && <Text className='package-check-icon'>✓</Text>}
+                          </View>
+                          <Text className='package-label'>{pkg.label}</Text>
+                        </View>
+                        <View className='package-right'>
+                          {hasPrice ? (
+                            <Text className='package-price'>¥{price}</Text>
+                          ) : (
+                            <Text className='package-unconfigured'>未配置</Text>
+                          )}
+                        </View>
                       </View>
-                      <Text className='package-label'>{pkg.label}</Text>
-                    </View>
-                    <View className='package-right'>
-                      {hasPrice ? (
-                        <Text className='package-price'>¥{price}</Text>
-                      ) : (
-                        <Text className='package-unconfigured'>未配置</Text>
-                      )}
-                    </View>
-                  </View>
-                )
-              })}
-            </View>
+                    )
+                  })}
+                </View>
+              </>
+            )}
 
-            {/* 额外人员 */}
-            {(canAddPerson || canAddPet) && (
+            {/* 额外人员 —— 免费路线隐藏 */}
+            {!isFree && (canAddPerson || canAddPet) && (
               <View className='counter-wrap'>
                 {canAddPerson && (
                   <View className='counter-row'>
@@ -470,8 +496,8 @@ export default function BookingPopup({ visible, route, schedules, onClose, onNex
             )}
           </View>
 
-          {/* 大巴费用 - 行程选配（仅座位分类） */}
-          {travelType === 'bus' && addons.filter((a: any) => a.category === 'seat' || (a.name || '').includes('座位')).length > 0 && (
+          {/* 大巴费用 - 行程选配（仅座位分类） —— 免费路线隐藏 */}
+          {!isFree && travelType === 'bus' && addons.filter((a: any) => a.category === 'seat' || (a.name || '').includes('座位')).length > 0 && (
             <View className='addon-section'>
               <Text className='section-title'>大巴费用（往返）</Text>
               <View className='addon-list'>
@@ -500,8 +526,8 @@ export default function BookingPopup({ visible, route, schedules, onClose, onNex
             </View>
           )}
 
-          {/* 其他行程选配（非座位类） */}
-          {addons.filter((a: any) => a.category !== 'seat' && !(a.name || '').includes('座位')).length > 0 && (
+          {/* 其他行程选配（非座位类） —— 免费路线隐藏 */}
+          {!isFree && addons.filter((a: any) => a.category !== 'seat' && !(a.name || '').includes('座位')).length > 0 && (
             <View className='addon-section'>
               <Text className='section-title'>行程选配</Text>
               <View className='addon-list'>
@@ -535,7 +561,7 @@ export default function BookingPopup({ visible, route, schedules, onClose, onNex
         {/* 底部汇总 */}
         <View className='popup-footer'>
           <View className='footer-info'>
-            <Text className='footer-tag'>{selectedPkgLabel}</Text>
+            {!isFree && <Text className='footer-tag'>{selectedPkgLabel}</Text>}
             <Text className='footer-tag'>{route?.duration || ''}</Text>
             {selectedDate && (
               <Text className='footer-tag-green'>{selectedDate}</Text>
@@ -544,15 +570,15 @@ export default function BookingPopup({ visible, route, schedules, onClose, onNex
           <View className='footer-price-row'>
             <View className='footer-price-left'>
               <View className='footer-price-main'>
-                <Text className='footer-price-label'>合计</Text>
-                <Text className='footer-total'>¥{totalPrice}</Text>
+                <Text className='footer-price-label'>{isFree ? '费用' : '合计'}</Text>
+                <Text className='footer-total'>{isFree ? '免费' : `¥${totalPrice}`}</Text>
               </View>
             </View>
             <View
               className={`next-btn ${!selectedDate ? 'disabled' : ''}`}
               onClick={handleNext}
             >
-              <Text>下一步</Text>
+              <Text>{isFree ? '确认报名' : '下一步'}</Text>
               <Text className='next-btn-arrow'>→</Text>
             </View>
           </View>
@@ -590,7 +616,7 @@ export default function BookingPopup({ visible, route, schedules, onClose, onNex
                         >
                           <Text className='cd-day'>{day}</Text>
                           <Text className='cd-week'>周{week}</Text>
-                          <Text className='cd-price'>¥{getDisplayPrice(schedule)}起</Text>
+                          <Text className='cd-price'>{isFree ? '免费' : `¥${getDisplayPrice(schedule)}起`}</Text>
                         </View>
                       ))}
                     </View>

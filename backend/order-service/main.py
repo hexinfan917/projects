@@ -147,6 +147,7 @@ class CreateOrderRequest(BaseModel):
     addons: List[dict] = []
     addon_amount: float = 0
     travel_type: Optional[str] = None
+    is_free: int = 0
 
 @app.get("/health")
 async def health_check():
@@ -199,6 +200,7 @@ async def get_orders(
             "order_no": o.order_no,
             "user_id": o.user_id,
             "route_id": o.route_id,
+            "is_free": o.is_free,
             "route_name": o.route_name,
             "route_cover": o.route_cover,
             "travel_date": o.travel_date.isoformat(),
@@ -252,6 +254,7 @@ async def get_order_detail(
         "user_id": o.user_id,
         "schedule_id": o.schedule_id,
         "route_id": o.route_id,
+        "is_free": o.is_free,
         "route_name": o.route_name,
         "route_cover": o.route_cover,
         "travel_date": o.travel_date.isoformat(),
@@ -455,7 +458,13 @@ async def create_order(
             coupon_id = None
             discount_amount = 0
     
-    pay_amount = max(0.01, round(total_amount - discount_amount, 2))
+    # 免费路线（金额为0）直接标记为已支付
+    if total_amount <= 0:
+        pay_amount = 0
+        order_status = 20  # 待出行（已支付）
+    else:
+        pay_amount = max(0.01, round(total_amount - discount_amount, 2))
+        order_status = 10  # 待支付
     
     # 生成订单号
     order_no = generate_order_no()
@@ -486,6 +495,7 @@ async def create_order(
         user_id=user_id,
         schedule_id=data.schedule_id,
         route_id=data.route_id,
+        is_free=getattr(data, 'is_free', 0),
         route_name=data.route_name,
         travel_date=travel_date,
         participant_count=data.participant_count,
@@ -504,7 +514,7 @@ async def create_order(
         coupon_id=coupon_id,
         coupon_name=coupon_name,
         pay_amount=pay_amount,
-        status=10,
+        status=order_status,
         qrcode=generate_verify_code(order_no)
     )
     
@@ -1010,6 +1020,7 @@ async def admin_get_orders(
                 "order_no": o.order_no,
                 "user_id": o.user_id,
                 "route_id": o.route_id,
+                "is_free": o.is_free,
                 "route_name": o.route_name,
                 "route_cover": o.route_cover,
                 "travel_date": o.travel_date.isoformat() if o.travel_date else None,
@@ -1085,6 +1096,7 @@ async def admin_get_order_detail(
             "order_no": o.order_no,
             "user_id": o.user_id,
             "route_id": o.route_id,
+            "is_free": o.is_free,
             "route_name": o.route_name,
             "route_cover": route_cover,
             "travel_date": o.travel_date.isoformat() if o.travel_date else None,

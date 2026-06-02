@@ -11,8 +11,8 @@ const STATUS_MAP: any = {
   40: '退款中',
   45: '退款驳回',
   50: '已退款',
-  60: '待评价',
-  70: '已评价'
+  60: '已完成',
+  70: '已完成'
 }
 
 export default function OrderDetail() {
@@ -138,13 +138,17 @@ export default function OrderDetail() {
         {order.status === 20 && (
           <View className='action-btns'>
             <Button className='btn-default' onClick={() => setQrModalVisible(true)}>联系客服</Button>
-            <Button className='btn-default' onClick={goRefund}>申请退款</Button>
+            {order.pay_amount > 0 && (
+              <Button className='btn-default' onClick={goRefund}>申请退款</Button>
+            )}
           </View>
         )}
         {order.status === 45 && (
           <View className='action-btns'>
             <Button className='btn-default' onClick={() => setQrModalVisible(true)}>联系客服</Button>
-            <Button className='btn-default' onClick={goRefund}>重新申请</Button>
+            {order.pay_amount > 0 && (
+              <Button className='btn-default' onClick={goRefund}>重新申请</Button>
+            )}
           </View>
         )}
         {(order.status === 40 || order.status === 50) && (
@@ -153,7 +157,9 @@ export default function OrderDetail() {
           </View>
         )}
         {order.status === 60 && (
-          <Button className='btn-primary' onClick={() => Taro.navigateTo({ url: `/pages/orders/evaluate/index?id=${order.id}` })}>评价</Button>
+          <View className='action-btns'>
+            <Button className='btn-default' onClick={() => setQrModalVisible(true)}>联系客服</Button>
+          </View>
         )}
       </View>
 

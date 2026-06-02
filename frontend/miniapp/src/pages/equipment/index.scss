@@ -1,6 +1,9 @@
 .equipment-page {
-  min-height: 100vh;
+  height: 100vh;
+  box-sizing: border-box;
   background: #f5f5f5;
+  display: flex;
+  flex-direction: column;
 }
 
 .cat-scroll {
@@ -26,7 +29,7 @@
 }
 
 .product-scroll {
-  height: calc(100vh - 120rpx);
+  flex: 1;
   padding: 20rpx;
 }
 

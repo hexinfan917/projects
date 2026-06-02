@@ -28,6 +28,7 @@ class RouteResponse(BaseModel):
     distance: Optional[int]
     tags: Optional[List[str]]
     sort_order: int = 0
+    is_free: int = 0
     
     class Config:
         from_attributes = True
@@ -85,6 +86,7 @@ class RouteDetailResponse(BaseModel):
     safety_video_duration: int
     is_safety_required: bool
     status: int
+    is_free: int = 0
     schedule: List[ScheduleItem]
     cost_include: List[str]
     cost_exclude: List[str]

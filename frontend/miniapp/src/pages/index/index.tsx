@@ -102,7 +102,7 @@ export default function Index() {
           id: r.id,
           name: r.name,
           type: r.route_type_name || r.type_name || '精选',
-          price: r.schedule_price || r.price || 0,
+          price: (r.schedule_price !== undefined && r.schedule_price !== null) ? r.schedule_price : (r.price || 0),
           cover_image: r.cover_image ? (r.cover_image.startsWith('http') ? r.cover_image : `https://tailtravel.cn${r.cover_image}`) + '?w=750&q=75' : 'https://via.placeholder.com/620x420/CCCCCC/FFFFFF?text=No+Image',
           subtitle: r.subtitle || ''
         })))
@@ -147,7 +147,7 @@ export default function Index() {
   const goToRouteDetail = (route: any) => {
     const footprints = Taro.getStorageSync('footprint_routes') || []
     const filtered = footprints.filter((f: any) => f.id !== route.id)
-    const record = { id: route.id, name: route.name, cover_image: route.cover_image, type_name: route.type || '', subtitle: route.subtitle || '', price: route.price || 0, timestamp: Date.now() }
+    const record = { id: route.id, name: route.name, cover_image: route.cover_image, type_name: route.type || '', subtitle: route.subtitle || '', price: route.price, has_schedule: route.price !== undefined && route.price !== null, timestamp: Date.now() }
     Taro.setStorageSync('footprint_routes', [record, ...filtered].slice(0, 100))
     Taro.navigateTo({ url: `/pages/routes/detail/index?id=${route.id}` })
   }

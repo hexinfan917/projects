@@ -18,6 +18,7 @@ const ICON_MAP: Record<string, string> = {
   '设置': '/assets/icons/profile/settings.png',
   '待支付': '/assets/icons/profile/pending.png',
   '待出行': '/assets/icons/profile/travel.png',
+  '已完成': '/assets/icons/profile/Departed.png',
   '待评价': '/assets/icons/profile/review.png',
   '退款/售后': '/assets/icons/profile/refund.png',
   '默认头像': '/assets/icons/profile/head.png',
@@ -43,6 +44,7 @@ const MORE = [
 const ORDER_ENTRIES = [
   { label: '待支付', status: '10' },
   { label: '待出行', status: '20' },
+  { label: '已完成', status: 'completed' },
   { label: '退款/售后', action: 'refund' },
 ]
 
@@ -98,7 +100,10 @@ export default function Profile() {
     try {
       const res = await getMemberPlans()
       if (res.code === 200 && res.data?.list?.length > 0) {
-        setMemberPlan(res.data.list[0])
+        // 优先取年度会员(365天)，否则取第一个
+        const list = res.data.list
+        const annual = list.find((p: any) => p.duration_days === 365)
+        setMemberPlan(annual || list[0])
       }
     } catch (e) {
       // ignore
@@ -249,7 +254,11 @@ export default function Profile() {
               {/* 下半部分 */}
               <View className='vip-card-bottom'>
                 <View className='vip-desc'>
-                  <Text className='vip-desc-price'>{memberPlan?.subtitle || '¥39.9/年，开通年度会员'}</Text>
+                  <Text className='vip-desc-price'>
+                    {memberPlan?.sale_price !== undefined
+                      ? `¥${memberPlan.sale_price}/${memberPlan?.duration_days === 365 ? '年' : memberPlan?.duration_days === 30 ? '月' : '季'}，开通${memberPlan?.name || '会员'}`
+                      : '¥39.9/年，开通年度会员'}
+                  </Text>
                   {memberPlan?.original_price ? (
                     <Text className='vip-desc-original'>¥{memberPlan.original_price}</Text>
                   ) : null}

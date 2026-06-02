@@ -1,6 +1,9 @@
 .review-list-page {
-  min-height: 100vh;
+  height: 100vh;
+  box-sizing: border-box;
   background: #f5f7f5;
+  display: flex;
+  flex-direction: column;
 
   // 导航栏（和首页一致）
   .custom-navbar {
@@ -62,9 +65,7 @@
 
   // 滚动区域（留出导航栏高度）
   .card-scroll {
-    padding-top: 200rpx;
-    height: 100vh;
-    box-sizing: border-box;
+    flex: 1;
   }
 
   .page-header {

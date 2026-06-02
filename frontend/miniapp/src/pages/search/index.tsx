@@ -16,13 +16,17 @@ export default function Search() {
     try {
       const res = await getRoutes({ keyword: word, page_size: 20 })
       if (res.code === 200 && res.data?.routes) {
-        setResults(res.data.routes.map((r: any) => ({
-          id: r.id,
-          name: r.name,
-          price: r.schedule_price || r.price || 0,
-          cover_image: r.cover_image ? (r.cover_image.startsWith('http') ? r.cover_image : `https://tailtravel.cn${r.cover_image}`) + '?w=750&q=75' : '',
-          type_name: r.route_type_name || r.type_name || '',
-        })))
+        setResults(res.data.routes.map((r: any) => {
+          const hasSchedule = r.schedule_price !== undefined && r.schedule_price !== null
+          return {
+            id: r.id,
+            name: r.name,
+            price: hasSchedule ? r.schedule_price : null,
+            has_schedule: hasSchedule,
+            cover_image: r.cover_image ? (r.cover_image.startsWith('http') ? r.cover_image : `https://tailtravel.cn${r.cover_image}`) + '?w=750&q=75' : '',
+            type_name: r.route_type_name || r.type_name || '',
+          }
+        }))
         if (!res.data.routes.length) {
           Taro.showToast({ title: '未找到相关路线', icon: 'none' })
         }
@@ -72,7 +76,11 @@ export default function Search() {
             <View className='result-info'>
               <Text className='result-name'>{r.name}</Text>
               <Text className='result-type'>{r.type_name}</Text>
-              <Text className='result-price'>￥{r.price}起</Text>
+              <Text className='result-price'>
+                {r.has_schedule
+                  ? (r.price === 0 ? '免费' : `￥${r.price}起`)
+                  : '暂无营期'}
+              </Text>
             </View>
           </View>
         ))}
