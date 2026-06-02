@@ -106,10 +106,8 @@ export default function OrderList() {
   const handleExport = async () => {
     try {
       message.loading('正在导出...', 0);
-      // 获取当前筛选条件下的所有订单（最多5000条）
-      const params = tableRef.current?.getParams() || {};
       const res = await request('/api/v1/admin/orders', {
-        params: { ...params, page: 1, page_size: 5000 },
+        params: { page: 1, page_size: 5000 },
       });
       message.destroy();
       
@@ -121,23 +119,26 @@ export default function OrderList() {
       const orders = res.data.orders;
       const headers = ['订单号', '类型', '状态', '路线名称', '出行日期', '联系人', '联系电话', '联系人身份证', '出行人列表', '宠物列表', '出行人数', '宠物数', '订单金额', '实付金额', '创建时间'];
       const rows = orders.map((o: any) => {
-        const travelers = (o.participants || []).map((p: any) => `${p.name || ''}${p.phone ? '(' + p.phone + ')' : ''}`).join('；') || '';
-        const pets = (o.pets || []).map((p: any) => `${p.name || ''}${p.breed ? '(' + p.breed + ')' : ''}`).join('；') || '';
+        const participants = Array.isArray(o.participants) ? o.participants : [];
+        const petsArr = Array.isArray(o.pets) ? o.pets : [];
+        const travelers = participants.map((p: any) => `${p?.name || ''}${p?.phone ? '(' + p.phone + ')' : ''}`).join('；') || '';
+        const pets = petsArr.map((p: any) => `${p?.name || ''}${p?.breed ? '(' + p.breed + ')' : ''}`).join('；') || '';
+        const contact = o.contact && typeof o.contact === 'object' ? o.contact : {};
         return [
-          o.order_no,
+          o.order_no || '',
           o.is_free ? '免费' : '付费',
-          statusMap[o.status]?.text || o.status,
-          o.route_name,
-          o.travel_date,
-          o.contact?.name || '',
-          o.contact?.phone || '',
-          o.contact?.id_card || '',
+          statusMap[o.status]?.text || o.status || '',
+          o.route_name || '',
+          o.travel_date || '',
+          contact.name || '',
+          contact.phone || '',
+          contact.id_card || '',
           travelers,
           pets,
-          o.participant_count,
-          o.pet_count,
-          o.total_amount,
-          o.pay_amount,
+          o.participant_count ?? 0,
+          o.pet_count ?? 0,
+          o.total_amount ?? 0,
+          o.pay_amount ?? 0,
           o.created_at ? dayjs(o.created_at).format('YYYY-MM-DD HH:mm:ss') : '',
         ];
       });
@@ -152,9 +153,10 @@ export default function OrderList() {
       link.click();
       document.body.removeChild(link);
       message.success(`已导出 ${orders.length} 条订单`);
-    } catch (error) {
+    } catch (error: any) {
       message.destroy();
-      message.error('导出失败');
+      console.error('导出失败:', error);
+      message.error('导出失败: ' + (error?.message || '未知错误'));
     }
   };
 
