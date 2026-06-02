@@ -265,7 +265,7 @@ export default function BookingPopup({ visible, route, schedules, onClose, onNex
       .filter(a => (addonQuantities[a.id] || 0) > 0)
       .map(a => ({ ...a, quantity: addonQuantities[a.id], price: getAddonPrice(a) }))
 
-    // 免费路线固定参数
+    // 免费路线固定参数（只能1人1宠，不允许额外增加）
     if (isFree) {
       onNext({
         scheduleId: schedule.id,
@@ -273,8 +273,8 @@ export default function BookingPopup({ visible, route, schedules, onClose, onNex
         packageType: 'couple',
         basePerson: 1,
         basePet: 1,
-        extraPerson,
-        extraPet,
+        extraPerson: 0,
+        extraPet: 0,
         travelType: 'bus',
         addons: [],
         totalPrice: 0,

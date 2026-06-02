@@ -119,20 +119,28 @@ export default function OrderList() {
       }
       
       const orders = res.data.orders;
-      const headers = ['订单号', '状态', '路线名称', '出行日期', '联系人', '联系电话', '出行人数', '宠物数', '订单金额', '实付金额', '创建时间'];
-      const rows = orders.map((o: any) => [
-        o.order_no,
-        statusMap[o.status]?.text || o.status,
-        o.route_name,
-        o.travel_date,
-        o.contact?.name || '',
-        o.contact?.phone || '',
-        o.participant_count,
-        o.pet_count,
-        o.total_amount,
-        o.pay_amount,
-        o.created_at ? dayjs(o.created_at).format('YYYY-MM-DD HH:mm:ss') : '',
-      ]);
+      const headers = ['订单号', '类型', '状态', '路线名称', '出行日期', '联系人', '联系电话', '联系人身份证', '出行人列表', '宠物列表', '出行人数', '宠物数', '订单金额', '实付金额', '创建时间'];
+      const rows = orders.map((o: any) => {
+        const travelers = (o.participants || []).map((p: any) => `${p.name || ''}${p.phone ? '(' + p.phone + ')' : ''}`).join('；') || '';
+        const pets = (o.pets || []).map((p: any) => `${p.name || ''}${p.breed ? '(' + p.breed + ')' : ''}`).join('；') || '';
+        return [
+          o.order_no,
+          o.is_free ? '免费' : '付费',
+          statusMap[o.status]?.text || o.status,
+          o.route_name,
+          o.travel_date,
+          o.contact?.name || '',
+          o.contact?.phone || '',
+          o.contact?.id_card || '',
+          travelers,
+          pets,
+          o.participant_count,
+          o.pet_count,
+          o.total_amount,
+          o.pay_amount,
+          o.created_at ? dayjs(o.created_at).format('YYYY-MM-DD HH:mm:ss') : '',
+        ];
+      });
       
       // 构建 CSV
       const csvContent = [headers, ...rows].map(r => r.map((c: any) => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');

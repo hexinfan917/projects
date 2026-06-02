@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from 'react'
-import Taro from '@tarojs/taro'
+import Taro, { useShareAppMessage, useShareTimeline } from '@tarojs/taro'
 import { View, Text, Image, ScrollView, Button, RichText, Swiper, SwiperItem } from '@tarojs/components'
 import { getRouteDetail, getRouteSchedules } from '../../../utils/api'
 import BookingPopup from '../../../components/BookingPopup'
@@ -92,6 +92,23 @@ export default function RouteDetail() {
       console.error(err)
     }
   }
+
+  // 分享
+  useShareAppMessage(() => {
+    return {
+      title: route?.name ? `${route.name} - 尾巴旅行` : '尾巴旅行',
+      path: `/pages/routes/detail/index?id=${route?.id || ''}`,
+      imageUrl: route?.cover_image || '',
+    }
+  })
+
+  useShareTimeline(() => {
+    return {
+      title: route?.name ? `${route.name} - 尾巴旅行` : '尾巴旅行',
+      query: `id=${route?.id || ''}`,
+      imageUrl: route?.cover_image || '',
+    }
+  })
 
   const today = useMemo(() => {
     const d = new Date()

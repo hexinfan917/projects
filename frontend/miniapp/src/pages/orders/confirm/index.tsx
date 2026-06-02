@@ -430,14 +430,14 @@ export default function OrderConfirm() {
       Taro.showToast({ title: '请至少选择1位出行人', icon: 'none' })
       return
     }
-    // 免费路线只需要1人1宠（不显示增加人宠模块）
+    // 免费路线只能1人1宠
     if (route?.is_free) {
-      if (selectedTravelers.length < 1) {
-        Taro.showToast({ title: '请至少选择1位出行人', icon: 'none' })
+      if (selectedTravelers.length !== 1) {
+        Taro.showToast({ title: '免费活动仅限1位出行人', icon: 'none' })
         return
       }
-      if (selectedPetIds.length < 1) {
-        Taro.showToast({ title: '请至少选择1只宠物', icon: 'none' })
+      if (selectedPetIds.length !== 1) {
+        Taro.showToast({ title: '免费活动仅限1只宠物', icon: 'none' })
         return
       }
     } else {
