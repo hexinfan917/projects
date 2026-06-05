@@ -652,7 +652,7 @@ export default function OrderConfirm() {
       }
     }
     loadCoupons()
-  }, [route?.id, total, selectedTravelers.length, selectedPetIds.length])
+  }, [route?.id, routePrice, total, selectedTravelers.length, selectedPetIds.length])
 
   // 选择优惠券时重新计算优惠
   const handleSelectCoupon = (couponId: number | null) => {

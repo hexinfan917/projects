@@ -436,11 +436,11 @@ async def get_route_schedules(
         
         logger.info(f"Getting schedules for route_id={route_id}, start_date={start_date}, end_date={end_date}")
         
-        # 只返回正常状态的排期（status=1），过滤已删除/关闭的排期
+        # 返回正常状态（status=1）和已满状态（status=2）的排期，过滤已删除/关闭的排期
         query = select(RouteSchedule).where(
             and_(
                 RouteSchedule.route_id == route_id,
-                RouteSchedule.status == 1
+                RouteSchedule.status.in_([1, 2])
             )
         )
         

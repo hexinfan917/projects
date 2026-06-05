@@ -393,25 +393,26 @@ export default function BookingPopup({ visible, route, schedules, onClose, onNex
               scrollWithAnimation
               scrollIntoView={dateScrollId}
             >
-              {monthSchedules.map(({ dateStr, day, week, schedule }) => (
-                <View
-                  key={dateStr}
-                  id={`date-${dateStr}`}
-                  className={`date-card ${selectedDate === dateStr ? 'active' : ''}`}
-                  onClick={() => setSelectedDate(dateStr)}
-                >
-                  <Text className='date-day'>{String(activeMonth?.month || 0).padStart(2, '0')}/{String(day).padStart(2, '0')}</Text>
-                  <View className='date-week-price'>
-                    <Text>周{week}</Text>
-                    <Text className='date-price-text'>{isFree ? '免费' : `¥${getDisplayPrice(schedule)}起`}</Text>
+              {monthSchedules.map(({ dateStr, day, week, schedule }) => {
+                const isFull = schedule.status === 2 || schedule.stock <= 0
+                return (
+                  <View
+                    key={dateStr}
+                    id={`date-${dateStr}`}
+                    className={`date-card ${selectedDate === dateStr ? 'active' : ''} ${isFull ? 'full' : ''}`}
+                    onClick={() => !isFull && setSelectedDate(dateStr)}
+                  >
+                    <Text className='date-day'>{String(activeMonth?.month || 0).padStart(2, '0')}/{String(day).padStart(2, '0')}</Text>
+                    <View className='date-week-price'>
+                      <Text>周{week}</Text>
+                      <Text className='date-price-text'>{isFree ? '免费' : `¥${getDisplayPrice(schedule)}起`}</Text>
+                    </View>
+                    <Text className='date-stock-text'>
+                      {isFull ? '已满' : (schedule.stock !== undefined && schedule.stock !== null ? `余${schedule.stock}` : '')}
+                    </Text>
                   </View>
-                  <Text className='date-stock-text'>
-                    {schedule.stock !== undefined && schedule.stock !== null
-                      ? (schedule.stock <= 0 ? '已售罄' : `余${schedule.stock}`)
-                      : ''}
-                  </Text>
-                </View>
-              ))}
+                )
+              })}
             </ScrollView>
           </View>
 
