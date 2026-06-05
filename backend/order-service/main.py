@@ -63,7 +63,7 @@ async def auto_cancel_expired_orders():
                 # 查询所有待支付且创建时间超过15分钟的订单
                 result = await db.execute(
                     text("""
-                        SELECT id, order_no, schedule_id, participant_count 
+                        SELECT id, order_no, schedule_id 
                         FROM orders 
                         WHERE status = 10 AND created_at < DATE_SUB(NOW(), INTERVAL 15 MINUTE)
                     """)
@@ -73,7 +73,6 @@ async def auto_cancel_expired_orders():
                 for row in expired_orders:
                     order_id = row["id"]
                     schedule_id = row["schedule_id"]
-                    quantity = row["participant_count"]
                     order_no = row["order_no"]
                     
                     # 查询订单是否使用了优惠券
@@ -88,25 +87,28 @@ async def auto_cancel_expired_orders():
                             {"coupon_id": coupon_row["coupon_id"]}
                         )
                     
-                    # 取消订单（必须确认状态仍为待支付，防止竞争条件）
-                    await db.execute(
+                    # 取消订单（原子操作，必须确认状态仍为待支付）
+                    cancel_result = await db.execute(
                         text("UPDATE orders SET status = 30, updated_at = NOW() WHERE id = :order_id AND status = 10"),
                         {"order_id": order_id}
                     )
                     
-                    # 恢复库存
-                    if schedule_id and quantity:
-                        await db.execute(
-                            text("""
-                                UPDATE route_schedules 
-                                SET stock = stock + :quantity, sold = sold - :quantity 
-                                WHERE id = :schedule_id
-                            """),
-                            {"schedule_id": schedule_id, "quantity": quantity}
-                        )
-                    
-                    await db.commit()
-                    logger.info(f"Auto cancelled expired order: {order_no}, restored stock for schedule {schedule_id}")
+                    # 只有订单确实被取消了，才恢复库存（一个订单恢复 1 个）
+                    if cancel_result.rowcount > 0:
+                        if schedule_id:
+                            await db.execute(
+                                text("""
+                                    UPDATE route_schedules 
+                                    SET stock = stock + 1, sold = sold - 1 
+                                    WHERE id = :schedule_id AND sold >= 1
+                                """),
+                                {"schedule_id": schedule_id}
+                            )
+                        await db.commit()
+                        logger.info(f"Auto cancelled expired order: {order_no}, restored stock for schedule {schedule_id}")
+                    else:
+                        await db.commit()
+                        logger.info(f"Auto cancel skipped: {order_no} was already cancelled")
         except Exception as e:
             logger.error(f"Auto cancel task error: {e}")
 
@@ -148,6 +150,17 @@ class CreateOrderRequest(BaseModel):
     addon_amount: float = 0
     travel_type: Optional[str] = None
     is_free: int = 0
+
+
+class AdminUpdateOrderRequest(BaseModel):
+    contact: Optional[dict] = None
+    participants: Optional[List[dict]] = None
+    pets: Optional[List[dict]] = None
+    participant_count: Optional[int] = None
+    pet_count: Optional[int] = None
+    travel_date: Optional[str] = None
+    travel_type: Optional[str] = None
+    remark: Optional[str] = None
 
 @app.get("/health")
 async def health_check():
@@ -432,8 +445,11 @@ async def create_order(
                     applicable_type = template.applicable_type if template else coupon.applicable_type
                     applicable_ids = template.applicable_ids if template else coupon.applicable_ids
                     
+                    # 所有优惠券只减免路线价格，不减保险/装备/选配
+                    discount_base = data.route_price
+                    
                     # 校验金额门槛
-                    if min_amount <= total_amount:
+                    if min_amount <= discount_base:
                         # 校验适用范围
                         applicable = True
                         if applicable_type == 2 and applicable_ids:
@@ -442,7 +458,7 @@ async def create_order(
                         
                         if applicable:
                             discount_amount = calculate_discount(
-                                coupon.type, float(coupon.value), total_amount, max_discount
+                                coupon.type, float(coupon.value), discount_base, max_discount
                             )
                             coupon_name = coupon.name
                         else:
@@ -475,17 +491,15 @@ async def create_order(
     except:
         travel_date = date.today()
     
-    # 校验并扣减库存
-    quantity = data.participant_count or 1
+    # 校验并扣减库存（一个订单扣 1 个库存）
     stock_result = await db.execute(
         text("""
             UPDATE route_schedules 
-            SET stock = stock - :quantity, sold = sold + :quantity 
-            WHERE id = :schedule_id AND stock >= :quantity
+            SET stock = stock - 1, sold = sold + 1 
+            WHERE id = :schedule_id AND stock >= 1
         """),
-        {"schedule_id": data.schedule_id, "quantity": quantity}
+        {"schedule_id": data.schedule_id}
     )
-    
     if stock_result.rowcount == 0:
         raise BadRequestException("该排期库存不足或已售罄，请选择其他日期")
     
@@ -500,6 +514,7 @@ async def create_order(
         travel_date=travel_date,
         participant_count=data.participant_count,
         pet_count=data.pet_count,
+        seat_count=0,
         participants=data.participants,
         pets=data.pets,
         contact=data.contact,
@@ -531,7 +546,7 @@ async def create_order(
             json.dumps({
                 "order_id": order.id,
                 "schedule_id": data.schedule_id,
-                "quantity": data.participant_count
+                "seat_count": seat_count
             })
         )
     except:
@@ -631,21 +646,43 @@ async def cancel_order(
     if not order:
         return success({"message": "订单不存在"})
     
-    if order.status != 10:  # 只能取消待支付订单
+    if order.status not in [10, 20]:  # 只能取消待支付或待出行订单
         return success({"message": "订单状态不允许取消"})
     
-    # 恢复库存
-    if order.schedule_id and order.participant_count:
+    # 根据当前状态决定新状态和退款信息
+    new_status = 40 if (order.status == 20 and float(order.pay_amount or 0) > 0) else 30
+    refund_amount = float(order.pay_amount) if new_status == 40 else None
+    refund_reason = "用户取消订单" if new_status == 40 else None
+    
+    # 原子更新订单状态（防止并发重复取消）
+    status_result = await db.execute(
+        text("""
+            UPDATE orders 
+            SET status = :new_status, refund_amount = :refund_amount, refund_reason = :refund_reason, updated_at = NOW() 
+            WHERE id = :order_id AND user_id = :user_id AND status IN (10, 20)
+        """),
+        {
+            "order_id": order_id,
+            "user_id": user_id,
+            "new_status": new_status,
+            "refund_amount": refund_amount,
+            "refund_reason": refund_reason
+        }
+    )
+    
+    if status_result.rowcount == 0:
+        return success({"message": "订单状态已变更，请刷新后重试"})
+    
+    # 状态更新成功，恢复库存（一个订单恢复 1 个库存）
+    if order.schedule_id:
         await db.execute(
             text("""
                 UPDATE route_schedules 
-                SET stock = stock + :quantity, sold = sold - :quantity 
-                WHERE id = :schedule_id
+                SET stock = stock + 1, sold = sold - 1 
+                WHERE id = :schedule_id AND sold >= 1
             """),
-            {"schedule_id": order.schedule_id, "quantity": order.participant_count}
+            {"schedule_id": order.schedule_id}
         )
-    
-    order.status = 30  # 已取消
     
     # 恢复优惠券
     if order.coupon_id:
@@ -655,11 +692,14 @@ async def cancel_order(
         )
         logger.info(f"Coupon restored: coupon_id={order.coupon_id}, order_id={order_id}")
     
-    await db.flush()
+    if new_status == 40:
+        logger.info(f"Order cancelled with refund: {order_id}, amount={order.pay_amount}")
+    else:
+        logger.info(f"Order cancelled: {order_id}, stock restored for schedule {order.schedule_id}")
+    
     await db.commit()
     
-    logger.info(f"Order cancelled: {order_id}, stock restored for schedule {order.schedule_id}")
-    return success({"message": "取消成功，库存已释放"})
+    return success({"message": "取消成功"})
 
 @app.post("/api/v1/orders/{order_id}/refund")
 async def refund_order(
@@ -973,7 +1013,9 @@ async def pay_callback(data: dict, db: AsyncSession = Depends(get_db)):
 @app.get("/api/v1/admin/orders")
 async def admin_get_orders(
     status: Optional[int] = None,
+    is_free: Optional[int] = None,
     order_no: Optional[str] = None,
+    keyword: Optional[str] = None,
     user_id: Optional[int] = None,
     route_id: Optional[int] = None,
     start_date: Optional[str] = None,
@@ -990,10 +1032,14 @@ async def admin_get_orders(
         query = select(Order)
         
         # 筛选条件
-        if status:
+        if status is not None:
             query = query.where(Order.status == status)
+        if is_free is not None:
+            query = query.where(Order.is_free == is_free)
         if order_no:
             query = query.where(Order.order_no.contains(order_no))
+        if keyword:
+            query = query.where(Order.route_name.contains(keyword))
         if user_id:
             query = query.where(Order.user_id == user_id)
         if route_id:
@@ -1013,8 +1059,26 @@ async def admin_get_orders(
         result = await db.execute(query)
         orders_db = result.scalars().all()
         
+        # 批量查询用户默认出行人身份证号（避免N+1）
+        user_ids = [o.user_id for o in orders_db if o.user_id]
+        id_card_map = {}
+        if user_ids:
+            from sqlalchemy import text
+            traveler_res = await db.execute(
+                text("""
+                    SELECT user_id, id_card FROM travelers 
+                    WHERE user_id IN :user_ids AND is_default = 1 AND status = 1
+                """),
+                {"user_ids": tuple(user_ids)}
+            )
+            for row in traveler_res.fetchall():
+                id_card_map[row[0]] = row[1]
+        
         orders = []
         for o in orders_db:
+            contact = o.contact or {}
+            if isinstance(contact, dict) and o.user_id and o.user_id in id_card_map:
+                contact = {**contact, "id_card": id_card_map[o.user_id]}
             orders.append({
                 "id": o.id,
                 "order_no": o.order_no,
@@ -1028,7 +1092,7 @@ async def admin_get_orders(
                 "pet_count": o.pet_count,
                 "participants": o.participants or [],
                 "pets": o.pets or [],
-                "contact": o.contact or {},
+                "contact": contact,
                 "route_price": float(o.route_price) if o.route_price else 0,
                 "insurance_price": float(o.insurance_price) if o.insurance_price else 0,
                 "pay_amount": float(o.pay_amount) if o.pay_amount else 0,
@@ -1133,6 +1197,171 @@ async def admin_get_order_detail(
         import traceback
         logger.error(traceback.format_exc())
         return {"code": 500, "message": f"查询失败: {str(e)}", "data": None}
+
+
+@app.put("/api/v1/admin/orders/{order_id}")
+async def admin_update_order(
+    order_id: int,
+    data: AdminUpdateOrderRequest,
+    db: AsyncSession = Depends(get_db)
+):
+    """管理后台修改订单信息"""
+    try:
+        from app.models.order import Order
+
+        result = await db.execute(select(Order).where(Order.id == order_id))
+        order = result.scalar_one_or_none()
+
+        if not order:
+            return {"code": 404, "message": "订单不存在", "data": None}
+
+        # 不允许修改已取消/已退款/退款中的订单
+        if order.status in [30, 40, 50]:
+            return {"code": 400, "message": "当前订单状态不允许修改", "data": None}
+
+        # 计算新的 participant_count
+        new_participant_count = order.participant_count
+        if data.participants is not None:
+            new_participant_count = len(data.participants) if len(data.participants) > 0 else (data.participant_count or order.participant_count)
+        if data.participant_count is not None:
+            new_participant_count = data.participant_count
+
+        # 如果更换了排期，需要恢复旧排期库存并扣减新排期库存
+        old_schedule_id = order.schedule_id
+        new_schedule_id = old_schedule_id
+        if data.travel_date is not None:
+            # 根据 route_id 和 travel_date 查找新排期
+            schedule_res = await db.execute(
+                text("SELECT id FROM route_schedules WHERE route_id = :route_id AND schedule_date = :travel_date"),
+                {"route_id": order.route_id, "travel_date": data.travel_date}
+            )
+            schedule_row = schedule_res.fetchone()
+            if not schedule_row:
+                return {"code": 400, "message": "目标日期没有可用排期", "data": None}
+            new_schedule_id = schedule_row[0]
+
+        # 处理库存变化（换排期时恢复旧排期1个库存，扣减新排期1个库存）
+        if old_schedule_id != new_schedule_id:
+            # 恢复旧排期库存
+            await db.execute(
+                text("""
+                    UPDATE route_schedules 
+                    SET stock = stock + 1, sold = sold - 1 
+                    WHERE id = :schedule_id AND sold >= 1
+                """),
+                {"schedule_id": old_schedule_id}
+            )
+            # 扣减新排期库存
+            stock_result = await db.execute(
+                text("""
+                    UPDATE route_schedules 
+                    SET stock = stock - 1, sold = sold + 1 
+                    WHERE id = :schedule_id AND stock >= 1
+                """),
+                {"schedule_id": new_schedule_id}
+            )
+            if stock_result.rowcount == 0:
+                return {"code": 400, "message": "目标排期库存不足", "data": None}
+            order.schedule_id = new_schedule_id
+            order.travel_date = datetime.strptime(data.travel_date, "%Y-%m-%d").date()
+
+        # 更新其他字段
+        if data.contact is not None:
+            order.contact = data.contact
+        if data.participants is not None:
+            order.participants = data.participants
+            order.participant_count = len(data.participants) if len(data.participants) > 0 else (data.participant_count or order.participant_count)
+        if data.pets is not None:
+            order.pets = data.pets
+            order.pet_count = len(data.pets) if len(data.pets) > 0 else (data.pet_count or order.pet_count)
+        if data.participant_count is not None:
+            order.participant_count = data.participant_count
+        if data.pet_count is not None:
+            order.pet_count = data.pet_count
+        if data.travel_type is not None:
+            order.travel_type = data.travel_type
+        if data.remark is not None:
+            order.remark = data.remark
+
+        order.updated_at = datetime.now()
+        await db.commit()
+
+        logger.info(f"Order updated by admin: {order.order_no}, id={order_id}")
+        return success({"order_id": order_id, "order_no": order.order_no}, message="订单修改成功")
+    except Exception as e:
+        logger.error(f"Error updating order: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
+        return {"code": 500, "message": f"修改失败: {str(e)}", "data": None}
+
+
+@app.post("/api/v1/admin/orders/{order_id}/cancel")
+async def admin_cancel_order(
+    order_id: int,
+    db: AsyncSession = Depends(get_db)
+):
+    """管理后台取消订单"""
+    try:
+        from app.models.order import Order
+
+        result = await db.execute(select(Order).where(Order.id == order_id))
+        order = result.scalar_one_or_none()
+
+        if not order:
+            return {"code": 404, "message": "订单不存在", "data": None}
+
+        # 只允许取消待支付和待出行的订单
+        if order.status not in [10, 20]:
+            return {"code": 400, "message": f"当前订单状态({STATUS_MAP.get(order.status, order.status)})不允许取消", "data": None}
+
+        # 对于已支付的待出行订单，提示需先退款
+        if order.status == 20 and float(order.pay_amount or 0) > 0:
+            return {
+                "code": 400,
+                "message": "该订单已支付，请先使用退款功能处理后再取消",
+                "data": {"status": order.status, "pay_amount": float(order.pay_amount)}
+            }
+
+        # 原子更新订单状态（防止并发重复取消）
+        status_result = await db.execute(
+            text("""
+                UPDATE orders 
+                SET status = 30, updated_at = NOW() 
+                WHERE id = :order_id AND status IN (10, 20)
+            """),
+            {"order_id": order_id}
+        )
+        
+        if status_result.rowcount == 0:
+            return {"code": 400, "message": "订单状态已变更，请刷新后重试", "data": None}
+
+        # 状态更新成功，恢复库存（一个订单恢复 1 个库存）
+        if order.schedule_id:
+            await db.execute(
+                text("""
+                    UPDATE route_schedules
+                    SET stock = stock + 1, sold = sold - 1
+                    WHERE id = :schedule_id AND sold >= 1
+                """),
+                {"schedule_id": order.schedule_id}
+            )
+
+        # 恢复优惠券
+        if order.coupon_id:
+            await db.execute(
+                text("UPDATE user_coupons SET status = 1, used_at = NULL, used_order_id = NULL WHERE id = :coupon_id"),
+                {"coupon_id": order.coupon_id}
+            )
+
+        await db.commit()
+
+        logger.info(f"Order cancelled by admin: {order.order_no}, id={order_id}")
+        return success({"order_id": order_id, "order_no": order.order_no, "status": 30}, message="订单已取消")
+    except Exception as e:
+        logger.error(f"Error cancelling order: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
+        return {"code": 500, "message": f"取消失败: {str(e)}", "data": None}
 
 
 @app.post("/api/v1/admin/orders/{order_id}/refund")
@@ -1534,14 +1763,14 @@ def calculate_discount(coupon_type: int, value: float, order_amount: float, max_
     if coupon_type == 4:  # 礼品券不参与订单金额抵扣
         return 0
     if coupon_type == 1:  # 满减券
-        return value
+        return min(value, order_amount)
     elif coupon_type == 2:  # 折扣券
         discount = order_amount * (1 - value)
         if max_discount > 0:
             discount = min(discount, max_discount)
         return round(discount, 2)
     elif coupon_type == 3:  # 立减券
-        return value
+        return min(value, order_amount)
     return 0
 
 
@@ -1795,7 +2024,8 @@ async def claim_coupon(
 @app.get("/api/v1/coupons/available-for-order")
 async def get_available_coupons_for_order(
     route_id: int,
-    amount: float,
+    route_price: float = 0,  # 新参数，优先使用
+    amount: float = 0,       # 旧参数兼容
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
@@ -1830,14 +2060,26 @@ async def get_available_coupons_for_order(
     best_coupon_id = None
     best_discount = 0
     
-    # 查询当前路线的类型（用于路线类型校验）
+    # 查询当前路线的类型和是否免费（用于路线类型校验和免费路线判断）
     route_type = None
+    is_free_route = False
     try:
         from app.models.route import Route
-        route_result = await db.execute(select(Route.route_type).where(Route.id == route_id))
-        route_type = route_result.scalar()
+        route_result = await db.execute(select(Route.route_type, Route.is_free).where(Route.id == route_id))
+        route_row = route_result.first()
+        if route_row:
+            route_type = route_row[0]
+            is_free_route = bool(route_row[1])
     except Exception:
         pass
+    
+    # 确定折扣基础：免费路线始终为0；非免费路线优先用 route_price，旧版回退到 amount
+    if is_free_route:
+        discount_base = 0
+    elif route_price > 0:
+        discount_base = route_price
+    else:
+        discount_base = amount
     
     for c in coupons:
         template = template_map.get(c.template_id)
@@ -1848,8 +2090,8 @@ async def get_available_coupons_for_order(
         applicable_type = template.applicable_type if template else c.applicable_type
         applicable_ids = template.applicable_ids if template else c.applicable_ids
         
-        # 检查金额门槛
-        if min_amount > 0 and amount < min_amount:
+        # 检查金额门槛（只按路线价格校验，不含保险/选配）
+        if min_amount > 0 and discount_base < min_amount:
             unavailable.append({
                 "id": c.id,
                 "name": c.name,
@@ -1894,7 +2136,8 @@ async def get_available_coupons_for_order(
                 })
                 continue
         
-        discount = calculate_discount(c.type, float(c.value), amount, max_discount)
+        # 优惠券只减免路线价格，不减保险/装备/选配
+        discount = calculate_discount(c.type, float(c.value), discount_base, max_discount)
         
         item = {
             "id": c.id,
@@ -1905,6 +2148,7 @@ async def get_available_coupons_for_order(
             "min_amount": min_amount,
             "discount_amount": discount,
             "valid_end_time": c.valid_end_time.isoformat() if c.valid_end_time else None,
+            "description": c.description,
             "is_best": False,
         }
         available.append(item)
@@ -2084,6 +2328,7 @@ async def admin_get_coupon_templates(
             "valid_start_time": t.valid_start_time.isoformat() if t.valid_start_time else None,
             "valid_end_time": t.valid_end_time.isoformat() if t.valid_end_time else None,
             "created_at": t.created_at.isoformat() if t.created_at else None,
+            "description": t.description or "",
         })
     
     return success({"list": data, "total": total, "page": page, "page_size": page_size})
@@ -2293,13 +2538,15 @@ async def create_member_order(
     
     order_no = generate_member_order_no()
     
+    platform = data.get("platform", "")
+    
     # 创建订单
     await db.execute(
         text("""
             INSERT INTO member_orders 
-            (order_no, user_id, plan_id, original_price, discount_amount, pay_amount, status, created_at, updated_at)
+            (order_no, user_id, plan_id, original_price, discount_amount, pay_amount, status, platform, created_at, updated_at)
             VALUES 
-            (:order_no, :user_id, :plan_id, :original_price, :discount_amount, :pay_amount, 10, NOW(), NOW())
+            (:order_no, :user_id, :plan_id, :original_price, :discount_amount, :pay_amount, 10, :platform, NOW(), NOW())
         """),
         {
             "order_no": order_no,
@@ -2308,6 +2555,7 @@ async def create_member_order(
             "original_price": plan["original_price"],
             "discount_amount": float(plan["original_price"]) - float(plan["sale_price"]),
             "pay_amount": plan["sale_price"],
+            "platform": platform,
         }
     )
     await db.commit()
@@ -2412,38 +2660,236 @@ async def pay_member_order(
     plan_name = plan["name"] if plan else "会员套餐"
     product_id = plan["product_id"] if plan else None
     
-    # 调用 pay-service 创建虚拟支付订单
+    # 调用 pay-service 创建普通微信支付订单
+    # 使用业务订单号作为微信商户单号，确保微信支付后台和系统订单号一致
     pay_service_url = os.getenv("PAY_SERVICE_URL", "http://pay-service:8000")
     pay_payload = {
         "order_no": order["order_no"],
-        "product_id": product_id or f"member_plan_{order['plan_id']}",
         "amount": float(order["pay_amount"]),
-        "session_key": session_key,
-        "attach": json.dumps({"plan_id": order["plan_id"], "user_id": user_id})
+        "description": f"尾巴旅行-{plan_name}",
+        "method": "wechat_jsapi",
+        "openid": openid,
+        "out_trade_no": order["order_no"]
     }
     
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
             pay_response = await client.post(
-                f"{pay_service_url}/api/v1/pay/virtual/create",
+                f"{pay_service_url}/api/v1/pay/create",
                 json=pay_payload,
                 headers={"Authorization": f"Bearer {current_user.get('token', '')}"}
             )
             pay_result = pay_response.json()
     except Exception as e:
-        logger.error(f"Call pay-service virtual pay failed: {e}")
+        logger.error(f"Call pay-service create payment failed: {e}")
         return {"code": 500, "message": f"支付服务调用失败: {str(e)}"}
     
     if pay_result.get("code") != 200:
-        return {"code": 500, "message": pay_result.get("message", "虚拟支付下单失败")}
+        return {"code": 500, "message": pay_result.get("message", "支付下单失败")}
     
     pay_data = pay_result.get("data", {})
     return success({
         "pay_order_no": pay_data.get("pay_order_no"),
-        "signData": pay_data.get("signData"),
-        "paySig": pay_data.get("paySig"),
-        "signature": pay_data.get("signature"),
+        "pay_params": pay_data.get("pay_params"),
         "mock": pay_data.get("mock", False)
     })
+
+
+@app.get("/api/v1/admin/member-orders")
+async def admin_get_member_orders(
+    keyword: Optional[str] = None,
+    status: Optional[int] = None,
+    page: int = 1,
+    page_size: int = 10,
+    db: AsyncSession = Depends(get_db)
+):
+    """管理后台获取会员订单列表"""
+    try:
+        where_clauses = ["1=1"]
+        params: dict = {}
+
+        if status is not None:
+            where_clauses.append("mo.status = :status")
+            params["status"] = status
+
+        if keyword:
+            where_clauses.append("(mo.order_no LIKE :keyword OR u.nickname LIKE :keyword OR u.phone LIKE :keyword)")
+            params["keyword"] = f"%{keyword}%"
+
+        where_sql = " AND ".join(where_clauses)
+
+        count_sql = f"""
+            SELECT COUNT(*)
+            FROM member_orders mo
+            LEFT JOIN users u ON mo.user_id = u.id
+            LEFT JOIN member_plans mp ON mo.plan_id = mp.id
+            WHERE {where_sql}
+        """
+        total_result = await db.execute(text(count_sql), params)
+        total = total_result.scalar() or 0
+
+        list_sql = f"""
+            SELECT
+                mo.id, mo.order_no, mo.user_id, mo.plan_id, mo.original_price,
+                mo.discount_amount, mo.pay_amount, mo.status, mo.pay_time,
+                mo.pay_channel, mo.pay_trade_no, mo.platform, mo.refund_amount, mo.refund_time,
+                mo.created_at, mo.updated_at,
+                u.nickname, u.phone, u.avatar,
+                mp.name as plan_name
+            FROM member_orders mo
+            LEFT JOIN users u ON mo.user_id = u.id
+            LEFT JOIN member_plans mp ON mo.plan_id = mp.id
+            WHERE {where_sql}
+            ORDER BY mo.created_at DESC
+            LIMIT :limit OFFSET :offset
+        """
+        params["limit"] = page_size
+        params["offset"] = (page - 1) * page_size
+
+        result = await db.execute(text(list_sql), params)
+        rows = result.mappings().all()
+
+        orders = []
+        for row in rows:
+            orders.append({
+                "id": row.id,
+                "order_no": row.order_no,
+                "user_id": row.user_id,
+                "nickname": row.nickname,
+                "phone": row.phone,
+                "avatar": row.avatar,
+                "plan_id": row.plan_id,
+                "plan_name": row.plan_name,
+                "original_price": float(row.original_price) if row.original_price else 0,
+                "discount_amount": float(row.discount_amount) if row.discount_amount else 0,
+                "pay_amount": float(row.pay_amount) if row.pay_amount else 0,
+                "status": row.status,
+                "pay_time": row.pay_time.isoformat() if row.pay_time else None,
+                "pay_channel": row.pay_channel,
+                "pay_trade_no": row.pay_trade_no,
+                "platform": row.platform,
+                "refund_amount": float(row.refund_amount) if row.refund_amount else 0,
+                "refund_time": row.refund_time.isoformat() if row.refund_time else None,
+                "created_at": row.created_at.isoformat() if row.created_at else None,
+            })
+
+        return success({
+            "total": total,
+            "page": page,
+            "page_size": page_size,
+            "list": orders
+        })
+    except Exception as e:
+        logger.error(f"Error getting member orders: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
+        return {"code": 500, "message": f"查询失败: {str(e)}", "data": None}
+
+
+@app.post("/api/v1/admin/member-orders/{order_id}/refund")
+async def admin_refund_member_order(
+    order_id: int,
+    authorization: Optional[str] = Header(None),
+    db: AsyncSession = Depends(get_db)
+):
+    """管理后台会员订单退款"""
+    try:
+        order_result = await db.execute(
+            text("SELECT * FROM member_orders WHERE id = :order_id"),
+            {"order_id": order_id}
+        )
+        order = order_result.mappings().one_or_none()
+
+        if not order:
+            return {"code": 404, "message": "订单不存在", "data": None}
+
+        if order.status != 20:
+            return {"code": 400, "message": "订单不是已支付状态，无法退款", "data": None}
+
+        now = datetime.now()
+
+        # 调用 pay-service 退款（统一走普通微信支付退款）
+        # 使用业务订单号作为 out_trade_no，确保微信支付能找到订单
+        pay_service_url = os.getenv("PAY_SERVICE_URL", "http://pay-service:8000")
+        refund_payload = {
+            "order_no": order.order_no,
+            "refund_amount": float(order.pay_amount),
+            "reason": "管理员后台退款",
+            "total_amount": float(order.pay_amount),
+            "out_trade_no": order.order_no
+        }
+
+        headers = {}
+        if authorization:
+            headers["Authorization"] = authorization
+
+        try:
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                pay_response = await client.post(
+                    f"{pay_service_url}/api/v1/pay/refund",
+                    json=refund_payload,
+                    headers=headers
+                )
+                pay_result = pay_response.json()
+        except Exception as e:
+            logger.error(f"Call pay-service refund failed: {e}")
+            return {"code": 500, "message": f"退款服务调用失败: {str(e)}", "data": None}
+
+        if pay_result.get("code") != 200:
+            logger.error(f"Pay-service refund error: {pay_result}")
+            return {"code": 500, "message": f"退款失败: {pay_result.get('message', '退款服务返回错误')}", "data": None}
+
+        # 更新订单状态为已退款
+        await db.execute(
+            text("""
+                UPDATE member_orders
+                SET status = 40, refund_amount = :pay_amount, refund_time = :now, updated_at = :now
+                WHERE id = :order_id
+            """),
+            {"order_id": order_id, "pay_amount": float(order.pay_amount), "now": now}
+        )
+
+        # 更新会员状态为已退款
+        await db.execute(
+            text("""
+                UPDATE user_memberships
+                SET status = 3, updated_at = :now
+                WHERE order_id = :order_id
+            """),
+            {"order_id": order_id, "now": now}
+        )
+
+        # 将会员订单发放的未使用优惠券作废（status=4 已作废）
+        coupon_result = await db.execute(
+            text("""
+                SELECT id, status FROM user_coupons 
+                WHERE user_id = :user_id AND source_type = 2 AND source_id = :order_id
+            """),
+            {"user_id": order.user_id, "order_id": order_id}
+        )
+        coupons = coupon_result.mappings().all()
+        invalidated_count = 0
+        for c in coupons:
+            if c.status == 1:  # 仅作废未使用的券
+                await db.execute(
+                    text("UPDATE user_coupons SET status = 4, updated_at = :now WHERE id = :id"),
+                    {"id": c.id, "now": now}
+                )
+                invalidated_count += 1
+        if coupons:
+            logger.info(f"Member order refund: invalidated {invalidated_count}/{len(coupons)} coupons for order {order_id}")
+
+        await db.commit()
+
+        return success({
+            "order_id": order_id,
+            "status": 40,
+            "refund_time": now.isoformat()
+        }, message="退款成功")
+    except Exception as e:
+        logger.error(f"Error refunding member order: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
+        return {"code": 500, "message": f"退款失败: {str(e)}", "data": None}
 
 

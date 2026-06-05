@@ -1,10 +1,15 @@
 import { useEffect, useState } from 'react'
-import Taro, { useDidShow } from '@tarojs/taro'
+import Taro, { useDidShow, useShareAppMessage, useShareTimeline } from '@tarojs/taro'
 import { setActiveTab, getRoutes, getCharityActivities, getReviews, getBanners, getMemberPopup, logPopupAction, BASE_URL } from '../../utils/api'
 import { View, Text, Swiper, SwiperItem, Image, ScrollView, Input } from '@tarojs/components'
 const logoIcon = '/assets/toplogo.png'
 
 import './index.scss'
+
+definePageConfig({
+  enableShareAppMessage: true,
+  enableShareTimeline: true,
+})
 
 // 首页（发现页）
 export default function Index() {
@@ -16,6 +21,24 @@ export default function Index() {
   const [searchKeyword, setSearchKeyword] = useState('')
   const [popupVisible, setPopupVisible] = useState(false)
   const [popupData, setPopupData] = useState<any>(null)
+
+  // 分享给好友
+  useShareAppMessage(() => {
+    return {
+      title: '尾巴旅行 - 带宠出行首选',
+      path: '/pages/index/index',
+      imageUrl: routes[0]?.cover_image || logoIcon,
+    }
+  })
+
+  // 分享到朋友圈
+  useShareTimeline(() => {
+    return {
+      title: '尾巴旅行 - 带宠出行首选',
+      query: '',
+      imageUrl: routes[0]?.cover_image || logoIcon,
+    }
+  })
 
   useDidShow(() => {
     console.log('[Index] useDidShow triggered')

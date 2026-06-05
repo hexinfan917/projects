@@ -25,6 +25,7 @@ class Order(Base):
     # 人数统计
     participant_count: Mapped[int] = mapped_column(Integer, default=1, comment="出行人数")
     pet_count: Mapped[int] = mapped_column(Integer, default=0, comment="宠物数量")
+    seat_count: Mapped[int] = mapped_column(Integer, default=0, comment="占用活动名额(人+宠)")
     participants: Mapped[Optional[list]] = mapped_column(JSON, comment="出行人信息")
     pets: Mapped[Optional[list]] = mapped_column(JSON, comment="宠物信息")
     contact: Mapped[Optional[dict]] = mapped_column(JSON, comment="联系人信息")

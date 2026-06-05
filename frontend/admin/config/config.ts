@@ -120,6 +120,11 @@ const routes = [
       path: '/member',
       routes: [
         {
+          name: '会员订单',
+          path: '/member/orders',
+          component: './MemberOrders/List',
+        },
+        {
           name: '会员套餐',
           path: '/member/plans',
           component: './MemberPlans/List',

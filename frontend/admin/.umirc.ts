@@ -173,6 +173,11 @@ export default defineConfig({
       path: '/member',
       routes: [
         {
+          name: '会员订单',
+          path: '/member/orders',
+          component: './MemberOrders/List',
+        },
+        {
           name: '会员列表',
           path: '/member/list',
           component: './MemberShips/List',

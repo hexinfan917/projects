@@ -244,14 +244,12 @@ export default function OrderList() {
                 )}
                 {order.status === 20 && (
                   <View className='action-btns'>
+                    <View className='mini-btn default' onClick={(e) => handleCancel(order.id, e)}>
+                      <Text>取消订单</Text>
+                    </View>
                     <View className='mini-btn default' onClick={(e) => showCustomerService(e)}>
                       <Text>联系客服</Text>
                     </View>
-                    {order.pay_amount > 0 && (
-                      <View className='mini-btn default' onClick={() => goRefund(order.id)}>
-                        <Text>申请退款</Text>
-                      </View>
-                    )}
                   </View>
                 )}
                 {order.status === 45 && (

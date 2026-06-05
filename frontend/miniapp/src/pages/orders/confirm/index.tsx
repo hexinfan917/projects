@@ -550,7 +550,7 @@ export default function OrderConfirm() {
         coupon_id: route?.is_free ? null : selectedCouponId,
         addons: route?.is_free ? [] : [...(bookingParams?.addons || []), ...selectedAddons],
         addon_amount: route?.is_free ? 0 : addonTotal,
-        travel_type: route?.is_free ? 'bus' : bookingParams?.travelType,
+        travel_type: route?.is_free ? 'self_drive' : bookingParams?.travelType,
         is_free: route?.is_free ? 1 : 0
       })
       if (res.code !== 200) {
@@ -627,7 +627,7 @@ export default function OrderConfirm() {
     if (!route?.id) return
     const loadCoupons = async () => {
       try {
-        const res = await getAvailableCoupons({ route_id: route.id, amount: total })
+        const res = await getAvailableCoupons({ route_id: route.id, route_price: routePrice })
         if (res.code === 200) {
           const available = res.data?.available || []
           setAvailableCoupons(available)
@@ -881,6 +881,7 @@ export default function OrderConfirm() {
             <Text className='coupon-arrow'>›</Text>
           </View>
         </View>
+        <Text className='coupon-tip'>优惠券仅减免路线价格，保险/选配不参与优惠</Text>
       </View>
       )}
 
@@ -1053,6 +1054,9 @@ export default function OrderConfirm() {
               <Text className='modal-close' onClick={() => setShowCouponModal(false)}>✕</Text>
             </View>
             <View className='modal-body'>
+              <View className='coupon-modal-tip'>
+                <Text className='coupon-modal-tip-text'>💡 优惠券仅减免路线价格，保险/选配不参与优惠</Text>
+              </View>
               <View className='modal-item' onClick={() => handleSelectCoupon(null)}>
                 <View className='modal-item-info'>
                   <Text className='modal-item-name'>不使用优惠券</Text>
@@ -1066,6 +1070,9 @@ export default function OrderConfirm() {
                     <Text className='modal-item-sub'>
                       优惠¥{c.discount_amount} · {c.min_amount > 0 ? `满${c.min_amount}可用` : '无门槛'}
                     </Text>
+                    {c.description && (
+                      <Text className='modal-item-desc'>{c.description}</Text>
+                    )}
                   </View>
                   {selectedCouponId === c.id && <View className='check-circle checked' />}
                 </View>

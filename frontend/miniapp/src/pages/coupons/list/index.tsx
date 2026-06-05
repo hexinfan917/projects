@@ -57,6 +57,10 @@ export default function CouponList() {
         ))}
       </View>
 
+      <View className='coupon-notice'>
+        <Text className='coupon-notice-text'>💡 优惠券仅减免路线价格，保险/选配不参与优惠</Text>
+      </View>
+
       <View className='coupon-list'>
         {list.length === 0 && (
           <View className='empty-state'>
@@ -89,6 +93,9 @@ export default function CouponList() {
                   : (item.min_amount > 0 ? `满${item.min_amount}元可用` : '无门槛')
                 }
               </Text>
+              {item.description && item.type !== 4 && (
+                <Text className='coupon-desc-detail'>{item.description}</Text>
+              )}
               <Text className='coupon-valid'>有效期至 {formatDate(item.valid_end_time)}</Text>
               {item.coupon_no && item.type !== 4 && (
                 <Text className='coupon-no'>券码: {item.coupon_no}</Text>

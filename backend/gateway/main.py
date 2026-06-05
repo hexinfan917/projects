@@ -148,7 +148,7 @@ LOCAL_SERVICE_ROUTES = {
     "/api/v1/admin/member-plans": "http://localhost:8001",
     "/api/v1/admin/popups": "http://localhost:8001",
     "/api/v1/admin/memberships": "http://localhost:8001",
-    "/api/v1/admin/member-orders": "http://localhost:8001",
+    "/api/v1/admin/member-orders": "http://localhost:8003",
 }
 
 
@@ -238,9 +238,9 @@ async def proxy(request: Request, path: str):
                 media_type="application/json; charset=utf-8"
             )
     
-    # 查找目标服务
+    # 查找目标服务（按路径长度降序匹配，确保长路径优先）
     target_service = None
-    for route_prefix, service_url in SERVICE_ROUTES.items():
+    for route_prefix, service_url in sorted(SERVICE_ROUTES.items(), key=lambda x: -len(x[0])):
         if current_path.startswith(route_prefix):
             target_service = service_url
             break

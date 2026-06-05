@@ -300,12 +300,13 @@ async def create_payment(
     description = data.get("description", "尾巴旅行-订单支付")
     method = data.get("method", "mock")
     openid = data.get("openid", current_user.get("openid", ""))
+    out_trade_no = data.get("out_trade_no", "")
     
     if not order_no or not amount:
         raise HTTPException(status_code=400, detail="缺少必要参数: order_no, amount")
     
-    # 生成支付订单号
-    pay_order_no = generate_out_trade_no()
+    # 使用业务订单号作为微信商户单号，确保两边一致
+    pay_order_no = out_trade_no or generate_out_trade_no()
     
     # 金额转换为分（使用 round 避免浮点误差）
     amount_fen = round(float(amount) * 100)
@@ -542,6 +543,7 @@ async def create_refund(
     reason = data.get("reason", "")
     transaction_id = data.get("transaction_id", "")
     total_amount = data.get("total_amount", refund_amount)
+    out_trade_no = data.get("out_trade_no", "")
     
     if not order_no or not refund_amount:
         raise HTTPException(status_code=400, detail="缺少必要参数")
@@ -575,6 +577,8 @@ async def create_refund(
             
             if transaction_id:
                 refund_body["transaction_id"] = transaction_id
+            elif out_trade_no:
+                refund_body["out_trade_no"] = out_trade_no
             else:
                 refund_body["out_trade_no"] = order_no
             
@@ -833,7 +837,8 @@ async def create_virtual_payment(
     
     # 金额转换为分（整数）
     goods_price = round(float(amount) * 100)
-    pay_order_no = generate_out_trade_no()
+    # 使用业务订单号作为微信商户单号，确保微信支付后台和系统订单号一致
+    pay_order_no = order_no
     
     # 构建 signData（attach 内部 JSON 必须紧凑无空格）
     compact_attach = json.dumps(json.loads(attach), separators=(',', ':')) if attach else ""

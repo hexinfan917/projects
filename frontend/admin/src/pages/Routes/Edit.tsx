@@ -466,16 +466,34 @@ export default function RouteEdit() {
             />
           );
         }
+        const stock = record.stock || 0;
+        const sold = record.sold || 0;
+        const total = stock + sold;
+        const isLow = stock <= 10 && total > 0;
+        const isSoldOut = stock <= 0;
         return (
           <span
-            style={{ cursor: 'pointer', color: '#1890ff' }}
+            style={{ cursor: 'pointer', color: isSoldOut ? '#999' : (isLow ? '#ff4d4f' : '#1890ff') }}
             onClick={() => {
               setEditingScheduleId(record.id);
               setEditingField('stock');
               setEditingStock(record.stock || 0);
             }}
           >
-            {record.stock - record.sold}/{record.stock}
+            {record.stock !== undefined && record.stock !== null
+              ? (
+                <span>
+                  <span style={{ fontWeight: 600 }}>{stock}</span>
+                  <span style={{ color: '#999', fontSize: 12 }}> 余 / </span>
+                  <span>{total}</span>
+                  <span style={{ color: '#999', fontSize: 12 }}> 总 / </span>
+                  <span style={{ color: '#52c41a' }}>{sold}</span>
+                  <span style={{ color: '#999', fontSize: 12 }}> 已售</span>
+                </span>
+              )
+              : '-'}
+            {isSoldOut && <span style={{ marginLeft: 4, color: '#999', fontWeight: 600 }}>(已售罄)</span>}
+            {isLow && !isSoldOut && <span style={{ marginLeft: 4, color: '#ff4d4f', fontWeight: 600 }}>(库存紧张)</span>}
           </span>
         );
       },
@@ -651,6 +669,14 @@ export default function RouteEdit() {
                 label="副标题"
               >
                 <Input placeholder="一句话描述路线特色" />
+              </Form.Item>
+
+              <Form.Item
+                name="display_price"
+                label="详情页价格文案"
+                extra="如：￥299起/人、限时特惠价、免费。填写后将直接显示在小程序详情页，不填则显示排期最低价格"
+              >
+                <Input placeholder="填写后优先显示此文案，如：￥299起/人" />
               </Form.Item>
 
               {!isFree && (
@@ -1022,6 +1048,20 @@ export default function RouteEdit() {
             </Col>
           </Row>
           {!isFree && (
+            <>
+            <Row gutter={16} style={{ marginBottom: 16 }}>
+              <Col span={8}>
+                <Form.Item label="出行方式限制" name="travel_type">
+                  <Select
+                    options={[
+                      { label: '两者都支持', value: 0 },
+                      { label: '仅大巴', value: 1 },
+                      { label: '仅自驾', value: 2 },
+                    ]}
+                  />
+                </Form.Item>
+              </Col>
+            </Row>
             <Tabs type="card" style={{ marginBottom: 16 }}>
               <Tabs.TabPane tab="大巴出行价格" key="bus">
               <Row gutter={16}>
@@ -1103,6 +1143,7 @@ export default function RouteEdit() {
               </Row>
               </Tabs.TabPane>
             </Tabs>
+            </>
           )}
           {scheduleAddons.length > 0 && (
             <div style={{ marginBottom: 16 }}>
@@ -1169,6 +1210,15 @@ export default function RouteEdit() {
           </Form.Item>
           <Form.Item label="结束时间" name="end_time">
             <TimePicker placeholder="结束时间" format="HH:mm" style={{ width: '100%' }} />
+          </Form.Item>
+          <Form.Item label="出行方式限制" name="travel_type" initialValue={0}>
+            <Select
+              options={[
+                { label: '两者都支持', value: 0 },
+                { label: '仅大巴', value: 1 },
+                { label: '仅自驾', value: 2 },
+              ]}
+            />
           </Form.Item>
           <Form.Item label="价格(1人1宠)" name="price">
             <InputNumber placeholder="价格" min={0} style={{ width: '100%' }} />

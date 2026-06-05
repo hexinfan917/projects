@@ -242,9 +242,11 @@ export default function RouteDetail() {
             </View>
           )}
           <Text className='route-price'>
-            {route.schedule_price !== undefined && route.schedule_price !== null
-              ? (route.schedule_price === 0 ? '免费' : `￥${route.schedule_price}起/人`)
-              : '暂无营期'}
+            {route.display_price || (
+              route.schedule_price !== undefined && route.schedule_price !== null
+                ? (route.schedule_price === 0 ? '免费' : `￥${route.schedule_price}起/人`)
+                : '暂无营期'
+            )}
           </Text>
         </View>
 
@@ -298,11 +300,13 @@ export default function RouteDetail() {
       <View className='detail-footer'>
         <View className='footer-left'>
           <Text className='footer-price'>
-            {hasAnySchedule
-              ? (route.schedule_price !== undefined && route.schedule_price !== null
-                  ? (route.schedule_price === 0 ? '免费' : `￥${route.schedule_price}起`)
-                  : '暂无营期')
-              : '暂无营期'}
+            {route.display_price || (
+              hasAnySchedule
+                ? (route.schedule_price !== undefined && route.schedule_price !== null
+                    ? (route.schedule_price === 0 ? '免费' : `￥${route.schedule_price}起`)
+                    : '暂无营期')
+                : '暂无营期'
+            )}
           </Text>
         </View>
         {hasAnySchedule ? (

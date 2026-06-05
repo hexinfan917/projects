@@ -308,8 +308,8 @@ export function getMemberCoupons(params?: any) {
   return request('/api/v1/member/coupons', { data: params })
 }
 
-export function createMemberOrder(planId: number) {
-  return request('/api/v1/member/orders', { method: 'POST', data: { plan_id: planId } })
+export function createMemberOrder(planId: number, platform?: string) {
+  return request('/api/v1/member/orders', { method: 'POST', data: { plan_id: planId, platform } })
 }
 
 export function getMemberOrder(orderId: number) {

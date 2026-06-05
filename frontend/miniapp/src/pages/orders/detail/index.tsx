@@ -137,10 +137,8 @@ export default function OrderDetail() {
         )}
         {order.status === 20 && (
           <View className='action-btns'>
+            <Button className='btn-default' onClick={handleCancel}>取消订单</Button>
             <Button className='btn-default' onClick={() => setQrModalVisible(true)}>联系客服</Button>
-            {order.pay_amount > 0 && (
-              <Button className='btn-default' onClick={goRefund}>申请退款</Button>
-            )}
           </View>
         )}
         {order.status === 45 && (
@@ -157,6 +155,11 @@ export default function OrderDetail() {
           </View>
         )}
         {order.status === 60 && (
+          <View className='action-btns'>
+            <Button className='btn-default' onClick={() => setQrModalVisible(true)}>联系客服</Button>
+          </View>
+        )}
+        {order.status === 30 && (
           <View className='action-btns'>
             <Button className='btn-default' onClick={() => setQrModalVisible(true)}>联系客服</Button>
           </View>

@@ -558,6 +558,13 @@
     font-weight: 700;
   }
 
+  .date-stock-text {
+    font-size: 20rpx;
+    color: #999;
+    margin-top: 2rpx;
+    text-align: center;
+  }
+
   /* ---------- 底部操作栏 ---------- */
   .popup-footer {
     padding: 20rpx 30rpx 40rpx;
@@ -797,6 +804,12 @@
       color: #994700;
       font-weight: 700;
       margin-top: 6rpx;
+    }
+
+    .cd-stock {
+      font-size: 20rpx;
+      color: #999;
+      margin-top: 2rpx;
     }
   }
 }

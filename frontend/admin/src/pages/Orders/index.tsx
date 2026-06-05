@@ -1,6 +1,6 @@
-import { PageContainer, ProTable, ModalForm, ProFormSelect, ProFormTextArea } from '@ant-design/pro-components';
+import { PageContainer, ProTable, ModalForm, ProFormSelect, ProFormTextArea, ProFormText } from '@ant-design/pro-components';
 import { Button, Tag, Modal, Descriptions, message, Image, Card, Row, Col, Divider, Table } from 'antd';
-import { EyeOutlined, ExportOutlined, MoneyCollectOutlined, CheckCircleOutlined } from '@ant-design/icons';
+import { EyeOutlined, ExportOutlined, MoneyCollectOutlined, CheckCircleOutlined, EditOutlined, CloseCircleOutlined } from '@ant-design/icons';
 import { useRef, useState } from 'react';
 import { request } from '@umijs/max';
 import dayjs from 'dayjs';
@@ -27,10 +27,16 @@ const statusOptions = [
 
 export default function OrderList() {
   const tableRef = useRef<any>(null);
+  const formRef = useRef<any>(null);
   const [detailModalVisible, setDetailModalVisible] = useState(false);
   const [refundModalVisible, setRefundModalVisible] = useState(false);
   const [currentOrder, setCurrentOrder] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
+  const [selectedRows, setSelectedRows] = useState<any[]>([]);
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const editFormRef = useRef<any>(null);
+  const lastSearchRef = useRef<string>('__init__');
 
   // 从 URL 获取 order_no 参数（会员列表跳转过来时携带）
   const urlParams = new URLSearchParams(window.location.search);
@@ -51,6 +57,101 @@ export default function OrderList() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleEdit = async (record: any) => {
+    try {
+      setLoading(true);
+      const res = await request('/api/v1/admin/orders/' + record.id);
+      if (res.code === 200 && res.data) {
+        setCurrentOrder(res.data);
+        setEditModalVisible(true);
+        // 等待 Modal 打开后设置表单值
+        setTimeout(() => {
+          const data = res.data;
+          editFormRef.current?.setFieldsValue?.({
+            contact_name: data.contact?.name || '',
+            contact_phone: data.contact?.phone || '',
+            contact_id_card: data.contact?.id_card || '',
+            travel_date: data.travel_date || '',
+            remark: data.remark || '',
+            participants_json: data.participants?.length ? JSON.stringify(data.participants, null, 2) : '',
+            pets_json: data.pets?.length ? JSON.stringify(data.pets, null, 2) : '',
+          });
+        }, 100);
+      } else {
+        message.error(res.message || '获取订单详情失败');
+      }
+    } catch (error) {
+      message.error('获取订单详情失败');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const submitEdit = async (values: any) => {
+    try {
+      const payload: any = {};
+      payload.contact = {
+        name: values.contact_name,
+        phone: values.contact_phone,
+        id_card: values.contact_id_card,
+      };
+      if (values.travel_date) payload.travel_date = values.travel_date;
+      if (values.remark !== undefined) payload.remark = values.remark;
+      if (values.participants_json?.trim()) {
+        try { payload.participants = JSON.parse(values.participants_json); } catch { message.error('出行人 JSON 格式错误'); return false; }
+      } else {
+        payload.participants = [];
+      }
+      if (values.pets_json?.trim()) {
+        try { payload.pets = JSON.parse(values.pets_json); } catch { message.error('宠物 JSON 格式错误'); return false; }
+      } else {
+        payload.pets = [];
+      }
+
+      const res = await request('/api/v1/admin/orders/' + currentOrder.id, {
+        method: 'PUT',
+        data: payload,
+      });
+      if (res.code === 200) {
+        message.success('订单修改成功');
+        setEditModalVisible(false);
+        tableRef.current?.reload();
+        return true;
+      } else {
+        message.error(res.message || '修改失败');
+        return false;
+      }
+    } catch (error) {
+      message.error('修改失败');
+      return false;
+    }
+  };
+
+  const handleCancelOrder = (record: any) => {
+    Modal.confirm({
+      title: '确认取消订单',
+      content: `确认取消订单 ${record.order_no}？取消后将恢复库存。`,
+      okText: '确认取消',
+      cancelText: '再想想',
+      okButtonProps: { danger: true },
+      onOk: async () => {
+        try {
+          const res = await request('/api/v1/admin/orders/' + record.id + '/cancel', {
+            method: 'POST',
+          });
+          if (res.code === 200) {
+            message.success('订单已取消');
+            tableRef.current?.reload();
+          } else {
+            message.error(res.message || '取消失败');
+          }
+        } catch (error) {
+          message.error('取消失败');
+        }
+      },
+    });
   };
 
   const handleRefund = (record: any) => {
@@ -103,56 +204,100 @@ export default function OrderList() {
     }
   };
 
+  const buildCSV = (rawOrders: any[]) => {
+    // 过滤无效数据
+    const orders = (rawOrders || []).filter(o => o && typeof o === 'object');
+    if (!orders.length) {
+      message.warning('暂无有效数据可导出');
+      return;
+    }
+
+    // 按出行日期分组汇总
+    const dateSummary: Record<string, { people: number; pets: number; count: number }> = {};
+    let totalPeople = 0;
+    let totalPets = 0;
+    orders.forEach((o: any) => {
+      const date = o.travel_date || '未指定';
+      if (!dateSummary[date]) dateSummary[date] = { people: 0, pets: 0, count: 0 };
+      dateSummary[date].people += Number(o.participant_count || 0);
+      dateSummary[date].pets += Number(o.pet_count || 0);
+      dateSummary[date].count += 1;
+      totalPeople += Number(o.participant_count || 0);
+      totalPets += Number(o.pet_count || 0);
+    });
+
+    // 隐私脱敏工具
+    const maskPhone = (phone?: string) => {
+      if (!phone || phone.length < 7) return phone || '';
+      return phone.slice(0, 3) + '****' + phone.slice(-4);
+    };
+    const headers = ['报名订单号', '用户ID', '路线名称', '出行日期', '联系人', '联系电话', '宠物列表', '出行人数', '宠物数'];
+    const rows = orders.map((o: any) => {
+      const petsArr = Array.isArray(o.pets) ? o.pets : [];
+      const pets = petsArr.map((p: any) => `${p?.name || ''}${p?.breed ? '(' + p.breed + ')' : ''}`).join('；') || '';
+      const contact = o.contact && typeof o.contact === 'object' ? o.contact : {};
+      return [
+        o.order_no || '',
+        o.user_id ?? '',
+        o.route_name || '',
+        o.travel_date || '',
+        contact.name || '',
+        maskPhone(contact.phone),
+        pets,
+        o.participant_count ?? 0,
+        o.pet_count ?? 0,
+      ];
+    });
+
+    // 按日期添加小计行
+    Object.entries(dateSummary).forEach(([date, summary]) => {
+      rows.push(['', '', '', date, '', '', `${date} 小计 (${summary.count}笔)`, summary.people, summary.pets]);
+    });
+    // 总计行
+    rows.push(['', '', '', '', '', '', `总计 (${orders.length}笔)`, totalPeople, totalPets]);
+
+    const csvContent = [headers, ...rows].map(r => r.map((c: any) => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `订单导出_${dayjs().format('YYYYMMDD_HHmmss')}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const handleExport = async () => {
     try {
       message.loading('正在导出...', 0);
+
+      // 优先导出选中的订单
+      if (selectedRows.length > 0) {
+        buildCSV(selectedRows);
+        message.destroy();
+        message.success(`已导出 ${selectedRows.length} 条选中订单`);
+        return;
+      }
+
+      const filterValues = formRef.current?.getFieldsValue?.() || {};
       const res = await request('/api/v1/admin/orders', {
-        params: { page: 1, page_size: 5000 },
+        params: {
+          page: 1,
+          page_size: 5000,
+          status: filterValues.status,
+          is_free: filterValues.is_free,
+          keyword: filterValues.route_name,
+          order_no: orderNoFromUrl || undefined,
+        },
       });
       message.destroy();
-      
+
       if (res.code !== 200 || !res.data?.orders?.length) {
         message.warning('暂无数据可导出');
         return;
       }
-      
-      const orders = res.data.orders;
-      const headers = ['订单号', '类型', '状态', '路线名称', '出行日期', '联系人', '联系电话', '联系人身份证', '出行人列表', '宠物列表', '出行人数', '宠物数', '订单金额', '实付金额', '创建时间'];
-      const rows = orders.map((o: any) => {
-        const participants = Array.isArray(o.participants) ? o.participants : [];
-        const petsArr = Array.isArray(o.pets) ? o.pets : [];
-        const travelers = participants.map((p: any) => `${p?.name || ''}${p?.phone ? '(' + p.phone + ')' : ''}`).join('；') || '';
-        const pets = petsArr.map((p: any) => `${p?.name || ''}${p?.breed ? '(' + p.breed + ')' : ''}`).join('；') || '';
-        const contact = o.contact && typeof o.contact === 'object' ? o.contact : {};
-        return [
-          o.order_no || '',
-          o.is_free ? '免费' : '付费',
-          statusMap[o.status]?.text || o.status || '',
-          o.route_name || '',
-          o.travel_date || '',
-          contact.name || '',
-          contact.phone || '',
-          contact.id_card || '',
-          travelers,
-          pets,
-          o.participant_count ?? 0,
-          o.pet_count ?? 0,
-          o.total_amount ?? 0,
-          o.pay_amount ?? 0,
-          o.created_at ? dayjs(o.created_at).format('YYYY-MM-DD HH:mm:ss') : '',
-        ];
-      });
-      
-      // 构建 CSV
-      const csvContent = [headers, ...rows].map(r => r.map((c: any) => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
-      const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
-      const link = document.createElement('a');
-      link.href = URL.createObjectURL(blob);
-      link.download = `订单导出_${dayjs().format('YYYYMMDD_HHmmss')}.csv`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      message.success(`已导出 ${orders.length} 条订单`);
+
+      buildCSV(res.data.orders);
+      message.success(`已导出 ${res.data.orders.length} 条订单`);
     } catch (error: any) {
       message.destroy();
       console.error('导出失败:', error);
@@ -252,6 +397,14 @@ export default function OrderList() {
         <Button key="view" type="link" size="small" icon={<EyeOutlined />} onClick={() => handleViewDetail(record)}>
           查看
         </Button>,
+        <Button key="edit" type="link" size="small" icon={<EditOutlined />} onClick={() => handleEdit(record)}>
+          编辑
+        </Button>,
+        [10, 20].includes(record.status) && (
+          <Button key="cancel" type="link" size="small" danger icon={<CloseCircleOutlined />} onClick={() => handleCancelOrder(record)}>
+            取消
+          </Button>
+        ),
         record.status === 20 && (
           <Button key="verify" type="link" size="small" style={{ color: '#52c41a' }} icon={<CheckCircleOutlined />} onClick={() => handleVerify(record)}>
             确认完成
@@ -271,6 +424,7 @@ export default function OrderList() {
       <ProTable
         columns={columns}
         actionRef={tableRef}
+        formRef={formRef}
         request={async (params) => {
           const res = await request('/api/v1/admin/orders', {
             params: {
@@ -281,19 +435,79 @@ export default function OrderList() {
               order_no: orderNoFromUrl || undefined,
             },
           });
+          const data = res.data?.orders || [];
+
+          // 只有筛选条件变化时才自动全选（搜索/重置），初始加载和翻页时不触发
+          const searchKey = JSON.stringify({
+            status: params.status,
+            route_name: params.route_name,
+            is_free: params.is_free,
+          });
+          if (lastSearchRef.current === '__init__') {
+            // 首次加载，记录参数但不选中
+            lastSearchRef.current = searchKey;
+          } else if (lastSearchRef.current !== searchKey) {
+            // 筛选条件变化（用户点击了查询/重置），拉取全部数据并全选
+            lastSearchRef.current = searchKey;
+            const allRes = await request('/api/v1/admin/orders', {
+              params: {
+                page: 1,
+                page_size: 5000,
+                status: params.status,
+                keyword: params.route_name,
+                is_free: params.is_free,
+                order_no: orderNoFromUrl || undefined,
+              },
+            });
+            const allData = allRes.data?.orders || [];
+            setSelectedRowKeys(allData.map((o: any) => o.id));
+            setSelectedRows(allData);
+          }
+
           return {
-            data: res.data?.orders || [],
+            data,
             success: res.code === 200,
             total: res.data?.total || 0,
           };
         }}
         rowKey="id"
         search={{ labelWidth: 'auto' }}
-        pagination={{ pageSize: 10, showSizeChanger: true }}
+        pagination={{ defaultPageSize: 10, showSizeChanger: true, pageSizeOptions: [10, 20, 50, 100] }}
         scroll={{ x: 1300 }}
+        rowSelection={{
+          selectedRowKeys,
+          onChange: (keys, rows) => {
+            setSelectedRowKeys(keys);
+            // rows 只包含当前页，需和之前已选跨页数据合并
+            setSelectedRows(prev => {
+              const map = new Map();
+              (prev || []).forEach((o: any) => { if (o && o.id != null) map.set(o.id, o); });
+              (rows || []).forEach((o: any) => { if (o && o.id != null) map.set(o.id, o); });
+              return (keys || []).map((id: any) => map.get(id)).filter(Boolean);
+            });
+          },
+          preserveSelectedRowKeys: true,
+        }}
         toolBarRender={() => [
+          <Button
+            key="selectAll"
+            onClick={() => {
+              const data = tableRef.current?.pageData?.data || [];
+              if (!data.length) return;
+              const pageKeys = data.map((o: any) => o.id);
+              setSelectedRowKeys(prev => Array.from(new Set([...prev, ...pageKeys])));
+              setSelectedRows(prev => {
+                const map = new Map();
+                prev.forEach((o: any) => map.set(o.id, o));
+                data.forEach((o: any) => map.set(o.id, o));
+                return Array.from(map.values());
+              });
+            }}
+          >
+            全选本页
+          </Button>,
           <Button key="export" icon={<ExportOutlined />} onClick={handleExport}>
-            导出订单
+            {selectedRows.length > 0 ? `导出选中订单 (${selectedRows.length})` : '导出订单'}
           </Button>,
         ]}
       />
@@ -444,6 +658,35 @@ export default function OrderList() {
           placeholder="请输入退款原因"
           rules={[{ required: true, message: '请输入退款原因' }]}
         />
+      </ModalForm>
+
+      {/* 编辑订单 */}
+      <ModalForm
+        title={`编辑订单 - ${currentOrder?.order_no || ''}`}
+        open={editModalVisible}
+        onOpenChange={setEditModalVisible}
+        onFinish={submitEdit}
+        formRef={editFormRef}
+        width={600}
+      >
+        <p style={{ color: '#999', marginBottom: 16 }}>订单状态: {statusMap[currentOrder?.status]?.text || '-'}</p>
+        <ProFormText name="contact_name" label="联系人姓名" placeholder="请输入联系人姓名" />
+        <ProFormText name="contact_phone" label="联系人电话" placeholder="请输入联系人电话" />
+        <ProFormText name="contact_id_card" label="联系人身份证" placeholder="请输入联系人身份证" />
+        <ProFormText name="travel_date" label="出行日期" placeholder="YYYY-MM-DD" />
+        <ProFormTextArea
+          name="participants_json"
+          label="出行人列表 (JSON)"
+          placeholder={`[{"name":"张三","phone":"13800138000","id_card":"","gender":1}]`}
+          fieldProps={{ rows: 4 }}
+        />
+        <ProFormTextArea
+          name="pets_json"
+          label="宠物列表 (JSON)"
+          placeholder={`[{"name":"旺财","breed":"金毛","gender":1,"weight":25}]`}
+          fieldProps={{ rows: 4 }}
+        />
+        <ProFormTextArea name="remark" label="备注" placeholder="订单备注" />
       </ModalForm>
     </PageContainer>
   );

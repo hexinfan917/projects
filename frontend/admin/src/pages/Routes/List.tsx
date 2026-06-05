@@ -19,14 +19,16 @@ export default function RouteList() {
 
   useEffect(() => {
     request('/api/v1/admin/route-types').then((res: any) => {
-      if (res.code === 200 && res.data) {
+      if (res.code === 200 && Array.isArray(res.data)) {
         const enumMap: Record<string, { text: string }> = {};
         res.data.forEach((item: any) => {
-          enumMap[String(item.id)] = { text: item.name };
+          if (item && item.id != null) {
+            enumMap[String(item.id)] = { text: item.name || '' };
+          }
         });
         setRouteTypeEnum(enumMap);
       }
-    });
+    }).catch(() => {});
   }, []);
 
   const columns = [
@@ -278,7 +280,7 @@ export default function RouteList() {
           pageSize: 10,
           showSizeChanger: true,
         }}
-        scroll={{ x: 1200 }}
+        scroll={{ x: 1800 }}
       />
     </PageContainer>
   );

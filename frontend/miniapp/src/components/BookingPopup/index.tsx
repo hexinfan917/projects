@@ -88,6 +88,36 @@ export default function BookingPopup({ visible, route, schedules, onClose, onNex
     return map
   }, [schedules])
 
+  // 当前选中排期的出行方式限制 0两者都支持 1仅大巴 2仅自驾
+  const scheduleTravelType = useMemo(() => {
+    if (selectedDate) {
+      const schedule = scheduleMap[selectedDate]
+      return schedule?.travel_type ?? 0
+    }
+    return 0
+  }, [selectedDate, scheduleMap])
+
+  // 根据排期的 travel_type 自动调整交通方式
+  useEffect(() => {
+    if (!isFree && selectedDate) {
+      const type = scheduleTravelType
+      if (type === 1 && travelType !== 'bus') {
+        setTravelType('bus')
+      } else if (type === 2 && travelType !== 'self_drive') {
+        setTravelType('self_drive')
+        // 清理座位类 addon
+        setAddonQuantities(prev => {
+          const next = { ...prev }
+          addons.forEach((a: any) => {
+            const isSeatAddon = a.category === 'seat' || (a.name || '').includes('座位')
+            if (isSeatAddon) next[a.id] = 0
+          })
+          return next
+        })
+      }
+    }
+  }, [scheduleTravelType, isFree, selectedDate, addons])
+
   // 可选月份
   const availableMonths = useMemo(() => {
     const monthSet = new Set<string>()
@@ -265,7 +295,7 @@ export default function BookingPopup({ visible, route, schedules, onClose, onNex
       .filter(a => (addonQuantities[a.id] || 0) > 0)
       .map(a => ({ ...a, quantity: addonQuantities[a.id], price: getAddonPrice(a) }))
 
-    // 免费路线固定参数（只能1人1宠，不允许额外增加）
+    // 免费路线固定参数（只能1人1宠，不允许额外增加，全部自驾）
     if (isFree) {
       onNext({
         scheduleId: schedule.id,
@@ -275,7 +305,7 @@ export default function BookingPopup({ visible, route, schedules, onClose, onNex
         basePet: 1,
         extraPerson: 0,
         extraPet: 0,
-        travelType: 'bus',
+        travelType: 'self_drive',
         addons: [],
         totalPrice: 0,
       })
@@ -375,13 +405,18 @@ export default function BookingPopup({ visible, route, schedules, onClose, onNex
                     <Text>周{week}</Text>
                     <Text className='date-price-text'>{isFree ? '免费' : `¥${getDisplayPrice(schedule)}起`}</Text>
                   </View>
+                  <Text className='date-stock-text'>
+                    {schedule.stock !== undefined && schedule.stock !== null
+                      ? (schedule.stock <= 0 ? '已售罄' : `余${schedule.stock}`)
+                      : ''}
+                  </Text>
                 </View>
               ))}
             </ScrollView>
           </View>
 
           {/* 交通方式 —— 免费路线隐藏 */}
-          {!isFree && (
+          {!isFree && scheduleTravelType !== 1 && scheduleTravelType !== 2 && (
             <View className='section'>
               <Text className='section-title'>交通方式</Text>
               <View className='travel-type-list'>
@@ -396,6 +431,28 @@ export default function BookingPopup({ visible, route, schedules, onClose, onNex
                   className={`travel-type-item ${travelType === 'self_drive' ? 'active' : ''}`}
                   onClick={() => handleTravelTypeChange('self_drive')}
                 >
+                  <Text className='travel-type-name'>自行前往</Text>
+                  <Text className='travel-type-desc'>自驾前往集合点</Text>
+                </View>
+              </View>
+            </View>
+          )}
+          {!isFree && scheduleTravelType === 1 && (
+            <View className='section'>
+              <Text className='section-title'>交通方式</Text>
+              <View className='travel-type-list'>
+                <View className='travel-type-item active'>
+                  <Text className='travel-type-name'>大巴出行</Text>
+                  <Text className='travel-type-desc'>含往返大巴费用</Text>
+                </View>
+              </View>
+            </View>
+          )}
+          {!isFree && scheduleTravelType === 2 && (
+            <View className='section'>
+              <Text className='section-title'>交通方式</Text>
+              <View className='travel-type-list'>
+                <View className='travel-type-item active'>
                   <Text className='travel-type-name'>自行前往</Text>
                   <Text className='travel-type-desc'>自驾前往集合点</Text>
                 </View>
@@ -617,6 +674,11 @@ export default function BookingPopup({ visible, route, schedules, onClose, onNex
                           <Text className='cd-day'>{day}</Text>
                           <Text className='cd-week'>周{week}</Text>
                           <Text className='cd-price'>{isFree ? '免费' : `¥${getDisplayPrice(schedule)}起`}</Text>
+                          <Text className='cd-stock'>
+                            {schedule.stock !== undefined && schedule.stock !== null
+                              ? (schedule.stock <= 0 ? '已售罄' : `余${schedule.stock}`)
+                              : ''}
+                          </Text>
                         </View>
                       ))}
                     </View>

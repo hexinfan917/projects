@@ -45,7 +45,6 @@ export default function CouponTemplateList() {
 
   const openModal = async (record?: any) => {
     setEditData(record || null);
-    setModalVisible(true);
     const type = record?.applicable_type || 1;
     setApplicableType(type);
     const ct = record?.type || 1;
@@ -62,12 +61,7 @@ export default function CouponTemplateList() {
       }
     }
     setUserOptions(userOpts);
-    setTimeout(() => {
-      const values = record
-        ? { ...record, applicable_ids: record.applicable_ids || [] }
-        : { type: 1, status: 1, valid_type: 1, valid_days: 7, per_user_limit: 1, total_count: 0, source_type: 1, applicable_type: 1 };
-      formRef.current?.setFieldsValue(values);
-    }, 0);
+    setModalVisible(true);
   };
 
   const handleDelete = async (id: number) => {
@@ -229,6 +223,12 @@ export default function CouponTemplateList() {
         onFinish={handleSubmit}
         formRef={formRef}
         width={600}
+        modalProps={{ destroyOnClose: true }}
+        initialValues={
+          editData
+            ? { ...editData, applicable_ids: editData.applicable_ids || [] }
+            : { type: 1, status: 1, valid_type: 1, valid_days: 7, per_user_limit: 1, total_count: 0, source_type: 1, applicable_type: 1 }
+        }
       >
         <ProFormText name="name" label="券名称" rules={[{ required: true }]} placeholder="如：新人专享券" />
         <ProFormSelect

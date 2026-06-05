@@ -393,6 +393,7 @@ async def get_route_detail(
             "max_participants": r.max_participants,
             "schedule_price": sp_val.get("price") if sp_val.get("price") else 0,
             "schedule_self_drive_price": sp_val.get("self_drive_price") if sp_val.get("self_drive_price") else None,
+            "display_price": r.display_price,
             "rating": avg_rating,
             "review_count": review_count,
             "suitable_breeds": r.suitable_breeds or [],
@@ -496,6 +497,7 @@ async def get_route_schedules(
                 "stock": s.stock or 0,
                 "sold": s.sold or 0,
                 "status": s.status or 1,
+                "travel_type": s.travel_type or 0,
                 "guide_name": user_names.get(s.guide_id, "") if s.guide_id else "",
                 "trainer_name": user_names.get(s.trainer_id, "") if s.trainer_id else "",
                 "addon_prices": s.addon_prices or {},
@@ -638,6 +640,7 @@ class RouteCreateUpdate(BaseModel):
     self_drive_single_pet_price: Optional[float] = None
     self_drive_extra_person_price: Optional[float] = None
     self_drive_extra_pet_price: Optional[float] = None
+    display_price: Optional[str] = None
     safety_video_url: Optional[str] = None
     safety_video_duration: int = 180
     is_safety_required: int = 1
@@ -672,6 +675,7 @@ class ScheduleCreateUpdate(BaseModel):
     guide_id: Optional[int] = None
     trainer_id: Optional[int] = None
     addon_prices: Optional[dict] = None
+    travel_type: Optional[int] = 0
 
 
 def _format_time(time_val) -> str:
@@ -838,7 +842,7 @@ async def admin_update_route(
         for field in price_fields:
             update_data.pop(field, None)
         for field, value in update_data.items():
-            if value is not None or field in ['subtitle', 'title', 'description', 'is_hot', 'status', 'content_modules', 'is_free']:  # 允许清空这些字段
+            if value is not None or field in ['subtitle', 'title', 'description', 'is_hot', 'status', 'content_modules', 'is_free', 'display_price']:  # 允许清空这些字段
                 setattr(route, field, value)
         
         await db.commit()
@@ -1050,6 +1054,7 @@ async def admin_get_route_detail(
             "max_participants": r.max_participants,
             "schedule_price": sp_val.get("price") if sp_val.get("price") else 0,
             "schedule_self_drive_price": sp_val.get("self_drive_price") if sp_val.get("self_drive_price") else None,
+            "display_price": r.display_price,
             "safety_video_url": r.safety_video_url,
             "safety_video_duration": r.safety_video_duration,
             "is_safety_required": r.is_safety_required,
@@ -1306,6 +1311,7 @@ async def admin_get_schedules(
                 "stock": s.stock or 0,
                 "sold": s.sold or 0,
                 "status": s.status or 1,
+                "travel_type": s.travel_type or 0,
                 "guide_id": s.guide_id,
                 "trainer_id": s.trainer_id,
             })
@@ -1373,7 +1379,8 @@ async def admin_create_schedule(
             stock=data.stock,
             status=data.status,
             guide_id=data.guide_id,
-            trainer_id=data.trainer_id
+            trainer_id=data.trainer_id,
+            travel_type=data.travel_type
         )
         
         db.add(schedule)
@@ -1501,6 +1508,7 @@ async def admin_batch_create_schedules(
         self_drive_single_pet_price = data.get('self_drive_single_pet_price')
         self_drive_extra_person_price = data.get('self_drive_extra_person_price')
         self_drive_extra_pet_price = data.get('self_drive_extra_pet_price')
+        travel_type = data.get('travel_type', 0)
         stock = data.get('stock', 12)
         
         if not start_date or not end_date:
@@ -1550,6 +1558,7 @@ async def admin_batch_create_schedules(
                     self_drive_extra_person_price=self_drive_extra_person_price,
                     self_drive_extra_pet_price=self_drive_extra_pet_price,
                     stock=stock,
+                    travel_type=travel_type,
                     status=1,
                     guide_id=None,
                     trainer_id=None

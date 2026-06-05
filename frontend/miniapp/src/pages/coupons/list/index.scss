@@ -67,6 +67,17 @@
   }
 }
 
+.coupon-notice {
+  padding: 16rpx 30rpx;
+  background: #fff8f0;
+
+  .coupon-notice-text {
+    font-size: 24rpx;
+    color: #994700;
+    line-height: 1.5;
+  }
+}
+
 .coupon-list {
   padding: 20rpx 30rpx;
 }
@@ -116,6 +127,13 @@
       color: #6b7280;
       display: block;
       margin-bottom: 8rpx;
+    }
+    .coupon-desc-detail {
+      font-size: 22rpx;
+      color: #994700;
+      display: block;
+      margin-bottom: 8rpx;
+      line-height: 1.4;
     }
     .coupon-valid {
       font-size: 22rpx;

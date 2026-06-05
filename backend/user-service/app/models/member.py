@@ -63,6 +63,7 @@ class MemberOrder(Base):
     pay_time: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     pay_channel: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
     pay_trade_no: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    platform: Mapped[Optional[str]] = mapped_column(String(20), nullable=True, comment="下单平台 ios/android")
     refund_amount: Mapped[float] = mapped_column(DECIMAL(10, 2), default=0)
     refund_time: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
