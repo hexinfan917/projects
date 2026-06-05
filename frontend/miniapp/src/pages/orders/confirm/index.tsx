@@ -229,8 +229,8 @@ export default function OrderConfirm() {
       const defaultQty: Record<number, number> = {}
       const defaultOptionQty: Record<number, Record<string, number>> = {}
       const defaultRoomQty: Record<number, Record<string, number>> = {}
-      // 恢复从路线详情页传入的 addon 数量
-      const preAddons = bookingParams?.addons || []
+      // 恢复从路线详情页传入的 addon 数量（使用参数 bp 而非异步 state）
+      const preAddons = bp?.addons || []
       preAddons.forEach((a: any) => {
         const id = a.addon_id || a.id
         if (id) {
@@ -615,8 +615,11 @@ export default function OrderConfirm() {
   // 总计
   const total = routePrice + addonTotal + petInsuranceTotal + personInsuranceTotal
   // 免费路线只需1人1宠，付费路线按原逻辑
+  // 免费路线严格限制1人1宠，付费路线只需有出行人和宠物
   const canSubmit = selectedTravelers.length > 0
-    && (route?.is_free ? selectedPetIds.length > 0 : selectedPetIds.length > 0)
+    && (route?.is_free
+      ? (selectedTravelers.length === 1 && selectedPetIds.length === 1)
+      : selectedPetIds.length > 0)
     && (agreements.length === 0 || agreed)
 
   // 加载可用优惠券

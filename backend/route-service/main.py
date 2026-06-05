@@ -461,11 +461,12 @@ async def get_route_schedules(
         guide_ids = [s.guide_id for s in schedules_db if s.guide_id]
         trainer_ids = [s.trainer_id for s in schedules_db if s.trainer_id]
         user_names = {}
-        if guide_ids or trainer_ids:
+        all_user_ids = list(set(guide_ids + trainer_ids))
+        if all_user_ids:
             try:
                 user_result = await db.execute(
                     text("SELECT id, nickname FROM users WHERE id IN :ids"),
-                    {"ids": tuple(set(guide_ids + trainer_ids))}
+                    {"ids": tuple(all_user_ids)}
                 )
                 for row in user_result.mappings().all():
                     user_names[row["id"]] = row["nickname"]

@@ -298,7 +298,7 @@ async def create_payment(
     order_no = data.get("order_no")
     amount = data.get("amount")
     description = data.get("description", "尾巴旅行-订单支付")
-    method = data.get("method", "mock")
+    method = data.get("method", "wechat_jsapi")
     openid = data.get("openid", current_user.get("openid", ""))
     out_trade_no = data.get("out_trade_no", "")
     

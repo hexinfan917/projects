@@ -6,6 +6,7 @@ import './index.scss'
 
 export default function OrderPay() {
   const [order, setOrder] = useState<any>(null)
+  const [paying, setPaying] = useState(false)
 
   useEffect(() => {
     const instance = Taro.getCurrentInstance()
@@ -16,6 +17,8 @@ export default function OrderPay() {
   }, [])
 
   const handlePay = async () => {
+    if (paying) return
+    setPaying(true)
     try {
       Taro.showLoading({ title: '正在发起支付...' })
       const res: any = await payOrder(order.id)
@@ -64,6 +67,8 @@ export default function OrderPay() {
       Taro.hideLoading()
       console.error('支付请求失败:', err)
       Taro.showToast({ title: err.message || '支付失败', icon: 'none' })
+    } finally {
+      setPaying(false)
     }
   }
 

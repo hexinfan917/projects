@@ -551,6 +551,23 @@
       background: rgba(108, 248, 187, 0.1);
       box-shadow: 0 4rpx 12rpx rgba(0, 108, 73, 0.08);
     }
+
+    &.full {
+      opacity: 0.45;
+      background: #f5f5f5;
+      border-color: #ddd;
+      pointer-events: none;
+
+      .date-day,
+      .date-week-price,
+      .date-price-text {
+        color: #999;
+      }
+
+      .date-stock-text {
+        color: #ff4d4f;
+      }
+    }
   }
 
   .date-day {
@@ -795,6 +812,23 @@
       &.active {
         border-color: #006c49;
         background: rgba(108, 248, 187, 0.1);
+      }
+
+      &.full {
+        opacity: 0.45;
+        background: #f5f5f5;
+        border-color: #ddd;
+        pointer-events: none;
+
+        .cd-day,
+        .cd-week,
+        .cd-price {
+          color: #999;
+        }
+
+        .cd-stock {
+          color: #ff4d4f;
+        }
       }
 
       &.disabled {

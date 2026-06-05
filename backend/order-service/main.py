@@ -488,8 +488,8 @@ async def create_order(
     # 解析日期
     try:
         travel_date = date.fromisoformat(data.travel_date)
-    except:
-        travel_date = date.today()
+    except Exception:
+        raise BadRequestException("出行日期格式错误")
     
     # 校验并扣减库存（一个订单扣 1 个库存）
     stock_result = await db.execute(
@@ -514,7 +514,7 @@ async def create_order(
         travel_date=travel_date,
         participant_count=data.participant_count,
         pet_count=data.pet_count,
-        seat_count=0,
+        seat_count=(1 if getattr(data, 'is_free', 0) else (data.participant_count + data.pet_count if data.travel_type == 'bus' else 0)),
         participants=data.participants,
         pets=data.pets,
         contact=data.contact,
@@ -535,6 +535,15 @@ async def create_order(
     
     db.add(order)
     await db.flush()
+    
+    # 免费订单直接核销优惠券（绕过支付回调）
+    if total_amount <= 0 and coupon_id:
+        await db.execute(
+            text("UPDATE user_coupons SET status = 2, used_at = NOW(), used_order_id = :order_id WHERE id = :coupon_id"),
+            {"coupon_id": coupon_id, "order_id": order.id}
+        )
+        logger.info(f"Free order coupon written off: coupon_id={coupon_id}, order_id={order.id}")
+    
     await db.commit()
     
     # 设置支付超时自动取消（15分钟）
@@ -546,7 +555,7 @@ async def create_order(
             json.dumps({
                 "order_id": order.id,
                 "schedule_id": data.schedule_id,
-                "seat_count": seat_count
+                "seat_count": (1 if getattr(data, 'is_free', 0) else (data.participant_count + data.pet_count if data.travel_type == 'bus' else 0))
             })
         )
     except:
@@ -599,7 +608,8 @@ async def pay_order(
         "amount": float(order.pay_amount),
         "description": f"尾巴旅行-{order.route_name or '订单支付'}",
         "method": "wechat_jsapi",
-        "openid": openid
+        "openid": openid,
+        "out_trade_no": order.order_no  # 使用业务订单号作为微信商户单号，确保支付和退款一致
     }
     
     try:
@@ -868,15 +878,22 @@ async def pay_callback(data: dict, db: AsyncSession = Depends(get_db)):
         order = result.scalar_one_or_none()
         
         if order:
-            # 普通订单处理
-            if order.status != 10:
+            # 普通订单处理 —— 处理竞态：订单可能已被自动取消但用户已付款
+            if order.status == 30:
+                # 订单被自动取消但用户已付款，恢复为已支付
+                logger.warning(f"Order was auto-cancelled but paid, restoring: {order_no}")
+                order.status = 20
+                order.pay_time = datetime.now()
+                order.pay_channel = pay_channel
+                order.pay_trade_no = transaction_id or f"WX{datetime.now().strftime('%Y%m%d%H%M%S')}"
+            elif order.status != 10:
                 logger.warning(f"Pay callback order status invalid: {order_no}, status={order.status}")
                 return {"code": "SUCCESS", "message": "Order already processed"}
-            
-            order.status = 20
-            order.pay_time = datetime.now()
-            order.pay_channel = pay_channel
-            order.pay_trade_no = transaction_id or f"WX{datetime.now().strftime('%Y%m%d%H%M%S')}"
+            else:
+                order.status = 20
+                order.pay_time = datetime.now()
+                order.pay_channel = pay_channel
+                order.pay_trade_no = transaction_id or f"WX{datetime.now().strftime('%Y%m%d%H%M%S')}"
             
             # 核销优惠券
             if order.coupon_id:
@@ -898,15 +915,27 @@ async def pay_callback(data: dict, db: AsyncSession = Depends(get_db)):
         member_order = member_result.mappings().one_or_none()
         
         if member_order:
-            # 会员订单处理
-            if member_order["status"] != 10:
-                return {"code": "SUCCESS", "message": "Member order already processed"}
-            
-            # Update member order status
-            await db.execute(
-                text("UPDATE member_orders SET status = 20, pay_time = NOW(), pay_channel = :pay_channel, pay_trade_no = :trade_no, updated_at = NOW() WHERE id = :order_id"),
+            # 会员订单处理 —— 使用原子UPDATE确保幂等性
+            update_result = await db.execute(
+                text("UPDATE member_orders SET status = 20, pay_time = NOW(), pay_channel = :pay_channel, pay_trade_no = :trade_no, updated_at = NOW() WHERE id = :order_id AND status = 10"),
                 {"order_id": member_order["id"], "pay_channel": pay_channel, "trade_no": transaction_id or f"WX{datetime.now().strftime('%Y%m%d%H%M%S')}"}
             )
+            
+            if update_result.rowcount == 0:
+                # 订单可能已被处理过，或已被取消/退款
+                if member_order["status"] == 20:
+                    logger.info(f"Member order already paid, skipping: {order_no}")
+                    return {"code": "SUCCESS", "message": "Member order already processed"}
+                elif member_order["status"] == 30:
+                    # 订单被自动取消了但用户已付款，恢复为已支付
+                    await db.execute(
+                        text("UPDATE member_orders SET status = 20, pay_time = NOW(), pay_channel = :pay_channel, pay_trade_no = :trade_no, updated_at = NOW() WHERE id = :order_id"),
+                        {"order_id": member_order["id"], "pay_channel": pay_channel, "trade_no": transaction_id or f"WX{datetime.now().strftime('%Y%m%d%H%M%S')}"}
+                    )
+                    logger.warning(f"Member order was cancelled but paid, restored: {order_no}")
+                else:
+                    logger.info(f"Member order status not payable: {order_no}, status={member_order['status']}")
+                    return {"code": "SUCCESS", "message": "Member order status not payable"}
             
             # Process membership
             plan_result = await db.execute(

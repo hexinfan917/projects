@@ -666,22 +666,29 @@ export default function BookingPopup({ visible, route, schedules, onClose, onNex
                   <View key={prefix} className='calendar-month-block'>
                     <Text className='calendar-month-title'>{m.year}年{m.month}月</Text>
                     <View className='calendar-days-grid'>
-                      {days.map(({ dateStr, day, week, schedule }) => (
-                        <View
-                          key={dateStr}
-                          className={`calendar-day-item ${selectedDate === dateStr ? 'active' : ''}`}
-                          onClick={() => { setSelectedDate(dateStr); setShowCalendar(false); }}
-                        >
-                          <Text className='cd-day'>{day}</Text>
-                          <Text className='cd-week'>周{week}</Text>
-                          <Text className='cd-price'>{isFree ? '免费' : `¥${getDisplayPrice(schedule)}起`}</Text>
-                          <Text className='cd-stock'>
-                            {schedule.stock !== undefined && schedule.stock !== null
-                              ? (schedule.stock <= 0 ? '已售罄' : `余${schedule.stock}`)
-                              : ''}
-                          </Text>
-                        </View>
-                      ))}
+                      {days.map(({ dateStr, day, week, schedule }) => {
+                        const isFull = schedule.status === 2 || schedule.stock <= 0
+                        return (
+                          <View
+                            key={dateStr}
+                            className={`calendar-day-item ${selectedDate === dateStr ? 'active' : ''} ${isFull ? 'full' : ''}`}
+                            onClick={() => {
+                              if (isFull) return
+                              setSelectedDate(dateStr)
+                              setShowCalendar(false)
+                            }}
+                          >
+                            <Text className='cd-day'>{day}</Text>
+                            <Text className='cd-week'>周{week}</Text>
+                            <Text className='cd-price'>{isFree ? '免费' : `¥${getDisplayPrice(schedule)}起`}</Text>
+                            <Text className='cd-stock'>
+                              {schedule.stock !== undefined && schedule.stock !== null
+                                ? (isFull ? '已满' : `余${schedule.stock}`)
+                                : ''}
+                            </Text>
+                          </View>
+                        )
+                      })}
                     </View>
                   </View>
                 )
