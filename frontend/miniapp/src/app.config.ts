@@ -7,7 +7,6 @@ export default defineAppConfig({
     'pages/routes/detail/index',
     'pages/map/index',
     'pages/community/index',
-    'pages/equipment/index',
     'pages/login/index',
     'pages/profile/pet-edit/index',
     'pages/profile/travelers/index',
