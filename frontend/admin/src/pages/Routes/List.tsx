@@ -133,8 +133,10 @@ export default function RouteList() {
       width: 120,
       render: (record: any) => (
         <Space>
-          {record.is_free === 1 && <Tag color="green">免费</Tag>}
-          {record.is_hot === 1 && <Tag color="red">热门</Tag>}
+          {record.is_free === 1 && record.is_member_only === 1 && record.is_insurance_required === 0 && <Tag color="gold">会员专享 · 免保险</Tag>}
+          {record.is_free === 1 && record.is_member_only === 1 && record.is_insurance_required === 1 && <Tag color="gold">会员专享 · 需保险</Tag>}
+          {record.is_free === 1 && record.is_member_only !== 1 && <Tag color="green">全员免费</Tag>}
+          {record.is_free !== 1 && record.is_hot === 1 && <Tag color="red">热门</Tag>}
           {record.is_free !== 1 && record.is_hot !== 1 && <Tag>普通</Tag>}
         </Space>
       ),

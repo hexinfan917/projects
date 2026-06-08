@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react'
 import Taro, { useDidShow } from '@tarojs/taro'
 import { View, Text, Image, Swiper, SwiperItem, ScrollView } from '@tarojs/components'
-import { getRouteDetail, getRouteSchedules, getPets, getTravelers, createOrder, getRouteAddons, getAddonCategories, getAvailableCoupons, calculateCoupon, getAgreements, compressImageUrl } from '../../../utils/api'
+import { getRouteDetail, getRouteSchedules, getPets, getTravelers, createOrder, getRouteAddons, getAddonCategories, getAvailableCoupons, calculateCoupon, getAgreements, getMemberCenter, compressImageUrl } from '../../../utils/api'
 import './index.scss'
 
 const GENDER_MAP: any = { 0: '母', 1: '公' }
@@ -123,6 +123,7 @@ export default function OrderConfirm() {
   const [selectedPetIds, setSelectedPetIds] = useState<number[]>([])
   const [showTravelerModal, setShowTravelerModal] = useState(false)
   const [showPetModal, setShowPetModal] = useState(false)
+  const [isMember, setIsMember] = useState(false)
 
   // 行程选配
   const [addonTabs, setAddonTabs] = useState<any[]>([])
@@ -207,8 +208,12 @@ export default function OrderConfirm() {
 
   const loadRouteData = async (routeId: number, scheduleId: number, bp?: any) => {
     try {
-      const rres = await getRouteDetail(routeId)
+      const [rres, mres] = await Promise.all([
+        getRouteDetail(routeId),
+        getMemberCenter().catch(() => ({ data: { is_member: false } }))
+      ])
       setRoute(rres.data || {})
+      setIsMember(!!mres.data?.is_member)
       const sres = await getRouteSchedules(routeId)
       const schedules = sres.data?.schedules || []
       const found = schedules.find((s: any) => String(s.id) === String(scheduleId))
@@ -533,6 +538,7 @@ export default function OrderConfirm() {
             unit: a.unit
           }
         })
+      const isFreeOrder = (memberFree || isActuallyFree) ? 1 : 0
       const res: any = await createOrder({
         route_id: route.id,
         schedule_id: schedule.id,
@@ -543,15 +549,17 @@ export default function OrderConfirm() {
         pets: selectedPets.map(p => ({ id: p.id, name: p.name, breed: p.breed, weight: p.weight, gender: p.gender })),
         participant_count: selectedTravelers.length,
         pet_count: selectedPetIds.length,
-        route_price: route?.is_free ? 0 : routePrice,
-        insurance_price: route?.is_free ? 0 : petInsuranceTotal + personInsuranceTotal,
+        route_price: routePrice,
+        insurance_price: petInsuranceTotal + personInsuranceTotal,
         equipment_price: 0,
-        discount_amount: route?.is_free ? 0 : couponDiscount,
-        coupon_id: route?.is_free ? null : selectedCouponId,
-        addons: route?.is_free ? [] : [...(bookingParams?.addons || []), ...selectedAddons],
-        addon_amount: route?.is_free ? 0 : addonTotal,
-        travel_type: route?.is_free ? 'self_drive' : bookingParams?.travelType,
-        is_free: route?.is_free ? 1 : 0
+        discount_amount: isFreeOrder ? 0 : couponDiscount,
+        coupon_id: isFreeOrder ? null : selectedCouponId,
+        addons: isFreeOrder ? [] : [...(bookingParams?.addons || []), ...selectedAddons],
+        addon_amount: isFreeOrder ? 0 : addonTotal,
+        travel_type: isFreeOrder ? 'self_drive' : bookingParams?.travelType,
+        is_free: isFreeOrder,
+        is_member_only: route?.is_member_only ?? 0,
+        is_insurance_required: route?.is_insurance_required ?? 1
       })
       if (res.code !== 200) {
         throw new Error(res.message || '创建订单失败')
@@ -602,22 +610,35 @@ export default function OrderConfirm() {
   const extraPersonCount = Math.max(bookingParams?.extraPerson || 0, actualExtraPerson)
   const extraPetCount = Math.max(bookingParams?.extraPet || 0, actualExtraPet)
 
-  // 路线价格（基础价 + 加人 + 加宠，不含保险）
-  const routePrice = basePrice + extraPersonCount * extraPersonUnitPrice + extraPetCount * extraPetUnitPrice
+  // 路线配置
+  const isMemberOnly = route?.is_member_only === 1
+  const isInsuranceRequired = route?.is_insurance_required !== 0
+  const petInsuranceUnit = route?.pet_insurance_price ?? 15
+  const personInsuranceUnit = route?.person_insurance_price ?? 10
 
-  // 保险（按实际选中的出行人/宠物计算）
-  const petInsuranceTotal = 15 * selectedPetIds.length
-  const personInsuranceTotal = 10 * selectedTravelers.length
+  // 是否享受免费（会员专享免费路线 + 会员）
+  const memberFree = route?.is_free === 1 && isMemberOnly && isMember
+  const isActuallyFree = route?.is_free === 1 && !isMemberOnly
+
+  // 路线价格（基础价 + 加人 + 加宠，不含保险）
+  const rawRoutePrice = basePrice + extraPersonCount * extraPersonUnitPrice + extraPetCount * extraPetUnitPrice
+  const routePrice = (memberFree || isActuallyFree) ? 0 : rawRoutePrice
+
+  // 保险（按路线配置和实际选中的出行人/宠物计算）
+  const petInsuranceTotal = isInsuranceRequired ? petInsuranceUnit * selectedPetIds.length : 0
+  const personInsuranceTotal = isInsuranceRequired ? personInsuranceUnit * selectedTravelers.length : 0
 
   // 行程选配合计（从 bookingParams.addons）
-  const addonTotal = (bookingParams?.addons || []).reduce((sum: number, a: any) => sum + (a.price || 0) * (a.quantity || 1), 0)
+  const addonTotal = (memberFree || isActuallyFree)
+    ? 0
+    : (bookingParams?.addons || []).reduce((sum: number, a: any) => sum + (a.price || 0) * (a.quantity || 1), 0)
 
   // 总计
   const total = routePrice + addonTotal + petInsuranceTotal + personInsuranceTotal
   // 免费路线只需1人1宠，付费路线按原逻辑
-  // 免费路线严格限制1人1宠，付费路线只需有出行人和宠物
+  // 全员免费路线严格限制1人1宠，会员专享免费/付费路线只需有出行人和宠物
   const canSubmit = selectedTravelers.length > 0
-    && (route?.is_free
+    && ((route?.is_free && !isMemberOnly)
       ? (selectedTravelers.length === 1 && selectedPetIds.length === 1)
       : selectedPetIds.length > 0)
     && (agreements.length === 0 || agreed)
@@ -630,7 +651,7 @@ export default function OrderConfirm() {
     if (!route?.id) return
     const loadCoupons = async () => {
       try {
-        const res = await getAvailableCoupons({ route_id: route.id, route_price: routePrice })
+        const res = await getAvailableCoupons({ route_id: route.id, route_price: rawRoutePrice })
         if (res.code === 200) {
           const available = res.data?.available || []
           setAvailableCoupons(available)
@@ -792,7 +813,7 @@ export default function OrderConfirm() {
       </View>
 
       {/* 已选信息（从弹窗传入）—— 免费路线隐藏 */}
-      {!route?.is_free && bookingParams && (
+      {!isFreeOrder && bookingParams && (
         <View className='section-block'>
           <Text className='section-label'>【已选信息】</Text>
           <View className='selected-info'>
@@ -866,7 +887,7 @@ export default function OrderConfirm() {
       )}
 
       {/* 优惠券 —— 免费路线隐藏 */}
-      {!route?.is_free && (
+      {!isFreeOrder && (
       <View className='section-block'>
         <View className='coupon-row' onClick={() => setShowCouponModal(true)}>
           <View className='coupon-left'>
@@ -922,19 +943,19 @@ export default function OrderConfirm() {
       <View className='bottom-bar'>
         <View className='bottom-content'>
           <View className='bottom-left'>
-            {!route?.is_free && (
+            {!isFreeOrder && (
               <View className='detail-btn' onClick={() => setShowPriceDetail(true)}>
                 <Text className='detail-icon'>📋</Text>
                 <Text className='detail-label'>明细</Text>
               </View>
             )}
             <View className='price-wrap'>
-              <Text className='price-label'>{route?.is_free ? '费用' : '合计'}</Text>
-              <Text className='price-value'>{route?.is_free ? '免费' : `¥${finalTotal}`}</Text>
+              <Text className='price-label'>{isFreeOrder ? '费用' : '合计'}</Text>
+              <Text className='price-value'>{isFreeOrder && total === 0 ? '免费' : `¥${finalTotal}`}</Text>
             </View>
           </View>
           <View className={`submit-btn ${canSubmit ? '' : 'disabled'}`} onClick={handleSubmit}>
-            {route?.is_free ? '确认报名' : '提交订单'}
+            {isFreeOrder ? '确认报名' : '提交订单'}
           </View>
         </View>
       </View>

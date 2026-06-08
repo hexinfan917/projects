@@ -42,6 +42,7 @@ export default function RouteEdit() {
   const [highlights, setHighlights] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState('basic');
   const [isFree, setIsFree] = useState(false);
+  const [isInsuranceRequired, setIsInsuranceRequired] = useState(true);
   const [routeTypes, setRouteTypes] = useState<{ id: number; name: string }[]>([
     { id: 1, name: '山野厨房' },
     { id: 2, name: '海边度假' },
@@ -101,6 +102,7 @@ export default function RouteEdit() {
         setNotice(data.notice || '');
         setContentModules(data.content_modules || []);
         setIsFree(data.is_free === 1);
+        setIsInsuranceRequired(data.is_insurance_required !== 0);
         fetchSchedules();
       }
     } catch (error) {
@@ -559,6 +561,10 @@ export default function RouteEdit() {
               initialValues={{
                 status: 1,
                 is_free: 0,
+                is_member_only: 0,
+                is_insurance_required: 1,
+                pet_insurance_price: 15.00,
+                person_insurance_price: 10.00,
                 is_hot: 0,
                 difficulty: 3,
                 min_participants: 4,
@@ -596,6 +602,52 @@ export default function RouteEdit() {
                   <Radio.Button value={1}>免费活动</Radio.Button>
                 </Radio.Group>
               </Form.Item>
+
+              {isFree && (
+                <Form.Item
+                  name="is_member_only"
+                  label="仅限会员免费"
+                  tooltip="开启后，非会员需按正常价格支付路线费用"
+                >
+                  <Radio.Group>
+                    <Radio.Button value={0}>所有人可免费</Radio.Button>
+                    <Radio.Button value={1}>仅限会员免费</Radio.Button>
+                  </Radio.Group>
+                </Form.Item>
+              )}
+
+              <Form.Item
+                name="is_insurance_required"
+                label="是否需要保险"
+              >
+                <Radio.Group onChange={(e) => setIsInsuranceRequired(e.target.value === 1)}>
+                  <Radio.Button value={0}>不需要保险</Radio.Button>
+                  <Radio.Button value={1}>需要保险</Radio.Button>
+                </Radio.Group>
+              </Form.Item>
+
+              {isInsuranceRequired && (
+                <Row gutter={24}>
+                  <Col span={12}>
+                    <Form.Item
+                      name="pet_insurance_price"
+                      label="宠物保险单价（元/只）"
+                      rules={[{ required: true, message: '请输入宠物保险单价' }]}
+                    >
+                      <InputNumber min={0} precision={2} style={{ width: '100%' }} />
+                    </Form.Item>
+                  </Col>
+                  <Col span={12}>
+                    <Form.Item
+                      name="person_insurance_price"
+                      label="人身保险单价（元/人）"
+                      rules={[{ required: true, message: '请输入人身保险单价' }]}
+                    >
+                      <InputNumber min={0} precision={2} style={{ width: '100%' }} />
+                    </Form.Item>
+                  </Col>
+                </Row>
+              )}
 
               <Row gutter={24}>
                 <Col span={12}>

@@ -150,6 +150,8 @@ class CreateOrderRequest(BaseModel):
     addon_amount: float = 0
     travel_type: Optional[str] = None
     is_free: int = 0
+    is_member_only: Optional[int] = 0
+    is_insurance_required: Optional[int] = 1
 
 
 class AdminUpdateOrderRequest(BaseModel):
@@ -401,9 +403,35 @@ async def create_order(
     
     user_id = current_user.get("user_id", 1)
     
+    # 判断用户是否会员
+    member_result = await db.execute(
+        text("""
+            SELECT 1 FROM user_memberships 
+            WHERE user_id = :user_id AND status = 1 AND end_date >= CURDATE()
+            LIMIT 1
+        """),
+        {"user_id": user_id}
+    )
+    is_member = member_result.scalar() is not None
+    
+    # 会员专享免费路线：非会员按付费处理
+    route_is_member_only = getattr(data, 'is_member_only', 0) or 0
+    route_is_insurance_required = getattr(data, 'is_insurance_required', 1) or 1
+    order_is_free = data.is_free
+    actual_route_price = data.route_price
+    actual_insurance_price = data.insurance_price
+    
+    if order_is_free == 1 and route_is_member_only == 1 and not is_member:
+        # 非会员购买会员专享免费路线 = 按原价
+        order_is_free = 0
+    
+    # 保险配置：不需要保险则保险费为0
+    if route_is_insurance_required == 0:
+        actual_insurance_price = 0
+    
     # 计算金额
-    total_amount = (data.route_price + 
-                   data.insurance_price + 
+    total_amount = (actual_route_price + 
+                   actual_insurance_price + 
                    data.equipment_price +
                    data.addon_amount)
     
@@ -446,7 +474,7 @@ async def create_order(
                     applicable_ids = template.applicable_ids if template else coupon.applicable_ids
                     
                     # 所有优惠券只减免路线价格，不减保险/装备/选配
-                    discount_base = data.route_price
+                    discount_base = actual_route_price
                     
                     # 校验金额门槛
                     if min_amount <= discount_base:
@@ -509,17 +537,17 @@ async def create_order(
         user_id=user_id,
         schedule_id=data.schedule_id,
         route_id=data.route_id,
-        is_free=getattr(data, 'is_free', 0),
+        is_free=order_is_free,
         route_name=data.route_name,
         travel_date=travel_date,
         participant_count=data.participant_count,
         pet_count=data.pet_count,
-        seat_count=(1 if getattr(data, 'is_free', 0) else (data.participant_count + data.pet_count if data.travel_type == 'bus' else 0)),
+        seat_count=(1 if order_is_free else (data.participant_count + data.pet_count if data.travel_type == 'bus' else 0)),
         participants=data.participants,
         pets=data.pets,
         contact=data.contact,
-        route_price=data.route_price,
-        insurance_price=data.insurance_price,
+        route_price=actual_route_price,
+        insurance_price=actual_insurance_price,
         equipment_price=data.equipment_price,
         addon_amount=data.addon_amount,
         addons=data.addons,
@@ -2089,22 +2117,45 @@ async def get_available_coupons_for_order(
     best_coupon_id = None
     best_discount = 0
     
-    # 查询当前路线的类型和是否免费（用于路线类型校验和免费路线判断）
+    # 查询当前路线的类型和是否免费/会员专享（用于路线类型校验和免费路线判断）
     route_type = None
     is_free_route = False
+    route_is_member_only = 0
     try:
         from app.models.route import Route
-        route_result = await db.execute(select(Route.route_type, Route.is_free).where(Route.id == route_id))
+        route_result = await db.execute(select(Route.route_type, Route.is_free, Route.is_member_only).where(Route.id == route_id))
         route_row = route_result.first()
         if route_row:
             route_type = route_row[0]
             is_free_route = bool(route_row[1])
+            route_is_member_only = route_row[2] or 0
     except Exception:
         pass
     
-    # 确定折扣基础：免费路线始终为0；非免费路线优先用 route_price，旧版回退到 amount
+    # 判断用户是否会员
+    is_member = False
+    try:
+        member_result = await db.execute(
+            text("""
+                SELECT 1 FROM user_memberships 
+                WHERE user_id = :user_id AND status = 1 AND end_date >= CURDATE()
+                LIMIT 1
+            """),
+            {"user_id": user_id}
+        )
+        is_member = member_result.scalar() is not None
+    except Exception:
+        pass
+    
+    # 确定折扣基础：
+    # - 全员免费路线始终为0
+    # - 会员专享免费路线：会员为0，非会员按 route_price
+    # - 非免费路线优先用 route_price，旧版回退到 amount
     if is_free_route:
-        discount_base = 0
+        if route_is_member_only and not is_member:
+            discount_base = route_price
+        else:
+            discount_base = 0
     elif route_price > 0:
         discount_base = route_price
     else:

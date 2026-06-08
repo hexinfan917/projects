@@ -120,9 +120,15 @@ export default function OrderDetail() {
 
       <View className='info-card'>
         <Text className='card-title'>费用明细</Text>
-        <Text className='info-row'>路线费用: ￥{order.route_price}</Text>
-        <Text className='info-row'>保险费用: ￥{order.insurance_price}</Text>
-        <Text className='info-row'>优惠金额: -￥{order.discount_amount}</Text>
+        <Text className='info-row'>
+          路线费用: {order.is_free === 1 ? '￥0（免费）' : `￥${order.route_price}`}
+        </Text>
+        {order.insurance_price > 0 && (
+          <Text className='info-row'>保险费用: ￥{order.insurance_price}</Text>
+        )}
+        {order.discount_amount > 0 && (
+          <Text className='info-row'>优惠金额: -￥{order.discount_amount}</Text>
+        )}
         <View className='divider' />
         <Text className='total-row'>实付金额: ￥{order.pay_amount}</Text>
       </View>

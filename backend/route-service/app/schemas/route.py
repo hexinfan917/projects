@@ -29,6 +29,10 @@ class RouteResponse(BaseModel):
     tags: Optional[List[str]]
     sort_order: int = 0
     is_free: int = 0
+    is_member_only: int = 0
+    is_insurance_required: int = 1
+    pet_insurance_price: float = 15.00
+    person_insurance_price: float = 10.00
     
     class Config:
         from_attributes = True
@@ -87,6 +91,10 @@ class RouteDetailResponse(BaseModel):
     is_safety_required: bool
     status: int
     is_free: int = 0
+    is_member_only: int = 0
+    is_insurance_required: int = 1
+    pet_insurance_price: float = 15.00
+    person_insurance_price: float = 10.00
     schedule: List[ScheduleItem]
     cost_include: List[str]
     cost_exclude: List[str]

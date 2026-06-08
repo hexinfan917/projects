@@ -248,6 +248,18 @@ export default function RouteDetail() {
                 : '暂无营期'
             )}
           </Text>
+          {route.is_free === 1 && route.is_member_only === 1 && (
+            <View className='highlights-row' style={{ marginTop: '12rpx' }}>
+              <Text className='highlight-tag' style={{ background: '#FFF7E6', color: '#D48806', border: '1rpx solid #FFD591' }}>会员专享免费</Text>
+            </View>
+          )}
+          {route.is_insurance_required === 1 && (
+            <View className='highlights-row' style={{ marginTop: '8rpx' }}>
+              <Text className='highlight-tag' style={{ background: '#F6FFED', color: '#389E0D', border: '1rpx solid #B7EB8F' }}>
+                保险 宠物¥{route.pet_insurance_price || 15}/只 人身¥{route.person_insurance_price || 10}/人
+              </Text>
+            </View>
+          )}
         </View>
 
         {route.description ? (
@@ -264,7 +276,7 @@ export default function RouteDetail() {
           </View>
         ) : null}
 
-        {!route.is_free && (route.fee_description || route.fee_include || route.fee_exclude) ? (
+        {(!route.is_free || route.is_insurance_required === 1) && (route.fee_description || route.fee_include || route.fee_exclude) ? (
           <View className='section'>
             <Text className='section-title'>费用说明</Text>
             {route.fee_description && (
@@ -288,7 +300,7 @@ export default function RouteDetail() {
           </View>
         ) : null}
 
-        {!route.is_free && route.notice ? (
+        {(!route.is_free || route.is_insurance_required === 1) && route.notice ? (
           <View className='section'>
             <Text className='section-title'>注意事项</Text>
             <RichText className='rich-text' nodes={processRichText(route.notice)} />
