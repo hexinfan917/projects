@@ -208,7 +208,14 @@ export default function RouteDetail() {
 
   return (
     <View className='route-detail' style={{ paddingTop: '140rpx' }}>
-      <View className='page-back' onClick={() => Taro.navigateBack()}>
+      <View className='page-back' onClick={() => {
+        const pages = Taro.getCurrentPages()
+        if (pages.length <= 1) {
+          Taro.switchTab({ url: '/pages/index/index' })
+        } else {
+          Taro.navigateBack()
+        }
+      }}>
         <Image className='page-back-icon' src='/assets/icons/return.png' mode='aspectFit' />
       </View>
       <ScrollView className='detail-scroll' scrollY={!showBookingPopup}>
