@@ -5,7 +5,7 @@ const logoIcon = '/assets/toplogo.png'
 import { getPets, deletePet, setActiveTab, compressImageUrl } from '../../../utils/api'
 import './index.scss'
 
-const BASE_URL = 'https://tailtravel.cn'
+import { BASE_URL } from '../../../utils/api'
 
 function fullImageUrl(url?: string) {
   if (!url) return ''

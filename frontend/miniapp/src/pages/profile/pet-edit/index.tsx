@@ -4,7 +4,7 @@ import { View, Text, Input, Button, Image, Picker } from '@tarojs/components'
 import { getPet, getPets, createPet, updatePet, uploadFile, compressImageUrl } from '../../../utils/api'
 import './index.scss'
 
-const BASE_URL = 'https://tailtravel.cn'
+import { BASE_URL } from '../../../utils/api'
 
 function fullImageUrl(url?: string) {
   if (!url) return ''

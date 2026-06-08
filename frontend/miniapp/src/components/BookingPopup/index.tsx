@@ -5,7 +5,7 @@ import { getRouteAddons, getAddonCategories } from '../../utils/api'
 import './index.scss'
 
 const WEEK_DAYS = ['日', '一', '二', '三', '四', '五', '六']
-const FILE_BASE_URL = 'https://tailtravel.cn'
+const FILE_BASE_URL = BASE_URL
 
 // 套餐选项配置
 const PACKAGE_OPTIONS = [

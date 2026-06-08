@@ -26,7 +26,7 @@ export default function CharityList() {
           date: a.start_date || '',
           location: a.location || '',
           status: a.status_name || '报名中',
-          image: a.cover_image ? (a.cover_image.startsWith('http') ? a.cover_image : `https://tailtravel.cn${a.cover_image}`) + '?w=750&q=75' : '',
+          image: a.cover_image ? (a.cover_image.startsWith('http') ? a.cover_image : `${BASE_URL}${a.cover_image}`) + '?w=750&q=75' : '',
         }))
         if (p === 1) {
           setList(items)

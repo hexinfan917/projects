@@ -210,7 +210,7 @@ export default function RouteDetail() {
         {images.length === 1 ? (
           <Image
             className='cover-image'
-            src={(images[0].startsWith('http') ? images[0] : `https://tailtravel.cn${images[0]}`) + '?w=750&q=75'}
+            src={(images[0].startsWith('http') ? images[0] : `${BASE_URL}${images[0]}`) + '?w=750&q=75'}
             mode='aspectFill'
             lazyLoad
             onError={() => console.warn('封面图加载失败:', images[0])}
@@ -221,7 +221,7 @@ export default function RouteDetail() {
               <SwiperItem key={idx}>
                 <Image
                   className='cover-image'
-                  src={(img.startsWith('http') ? img : `https://tailtravel.cn${img}`) + '?w=750&q=75'}
+                  src={(img.startsWith('http') ? img : `${BASE_URL}${img}`) + '?w=750&q=75'}
                   mode='aspectFill'
                   lazyLoad
                   onError={() => console.warn('轮播图加载失败:', img)}

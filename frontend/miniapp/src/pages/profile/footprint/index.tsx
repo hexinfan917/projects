@@ -53,7 +53,7 @@ export default function Footprint() {
       <ScrollView className='footprint-list' scrollY>
         {filtered.map(item => (
           <View key={item.id} className='footprint-card' onClick={() => goDetail(item.id)}>
-            <Image className='footprint-image' src={item.cover_image ? (item.cover_image.startsWith('http') ? item.cover_image : `https://tailtravel.cn${item.cover_image}`) + '?w=750&q=75' : ''} mode='aspectFill' />
+            <Image className='footprint-image' src={item.cover_image ? (item.cover_image.startsWith('http') ? item.cover_image : `${BASE_URL}${item.cover_image}`) + '?w=750&q=75' : ''} mode='aspectFill' />
             <View className='footprint-info'>
               <Text className='footprint-name'>{item.name}</Text>
               {item.subtitle ? <Text className='footprint-subtitle'>{item.subtitle}</Text> : null}

@@ -111,7 +111,7 @@ export default function Index() {
       if (bannerRes.code === 200 && bannerRes.data?.banners) {
         setBanners(bannerRes.data.banners.map((b: any) => ({
           id: b.id,
-          image: b.image_url ? (b.image_url.startsWith('http') ? b.image_url : `https://tailtravel.cn${b.image_url}`) + '?w=750&q=75' : '',
+          image: b.image_url ? (b.image_url.startsWith('http') ? b.image_url : `${BASE_URL}${b.image_url}`) + '?w=750&q=75' : '',
           link_url: b.link_url || '',
         })))
       } else {
@@ -126,7 +126,7 @@ export default function Index() {
           name: r.name,
           type: r.route_type_name || r.type_name || '精选',
           price: (r.schedule_price !== undefined && r.schedule_price !== null) ? r.schedule_price : (r.price || 0),
-          cover_image: r.cover_image ? (r.cover_image.startsWith('http') ? r.cover_image : `https://tailtravel.cn${r.cover_image}`) + '?w=750&q=75' : 'https://via.placeholder.com/620x420/CCCCCC/FFFFFF?text=No+Image',
+          cover_image: r.cover_image ? (r.cover_image.startsWith('http') ? r.cover_image : `${BASE_URL}${r.cover_image}`) + '?w=750&q=75' : 'https://via.placeholder.com/620x420/CCCCCC/FFFFFF?text=No+Image',
           subtitle: r.subtitle || ''
         })))
       }
@@ -140,7 +140,7 @@ export default function Index() {
           date: a.event_date || '',
           location: a.location || '',
           participants: a.participants || 0,
-          image: a.cover_image ? (a.cover_image.startsWith('http') ? a.cover_image : `https://tailtravel.cn${a.cover_image}`) + '?w=750&q=75' : 'https://via.placeholder.com/700x380/CCCCCC/FFFFFF?text=No+Image',
+          image: a.cover_image ? (a.cover_image.startsWith('http') ? a.cover_image : `${BASE_URL}${a.cover_image}`) + '?w=750&q=75' : 'https://via.placeholder.com/700x380/CCCCCC/FFFFFF?text=No+Image',
         })))
       }
 
@@ -153,7 +153,7 @@ export default function Index() {
           date: a.start_date || '',
           location: a.location || '',
           status: a.status_name || '报名中',
-          image: a.cover_image ? (a.cover_image.startsWith('http') ? a.cover_image : `https://tailtravel.cn${a.cover_image}`) + '?w=750&q=75' : 'https://via.placeholder.com/700x380/96C93D/FFFFFF?text=Charity',
+          image: a.cover_image ? (a.cover_image.startsWith('http') ? a.cover_image : `${BASE_URL}${a.cover_image}`) + '?w=750&q=75' : 'https://via.placeholder.com/700x380/96C93D/FFFFFF?text=Charity',
         })))
       }
     } catch (error) {
