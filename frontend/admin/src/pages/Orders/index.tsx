@@ -226,11 +226,6 @@ export default function OrderList() {
       totalPets += Number(o.pet_count || 0);
     });
 
-    // 隐私脱敏工具
-    const maskPhone = (phone?: string) => {
-      if (!phone || phone.length < 7) return phone || '';
-      return phone.slice(0, 3) + '****' + phone.slice(-4);
-    };
     const headers = ['报名订单号', '用户ID', '路线名称', '出行日期', '联系人', '联系电话', '宠物列表', '出行人数', '宠物数'];
     const rows = orders.map((o: any) => {
       const petsArr = Array.isArray(o.pets) ? o.pets : [];
@@ -242,7 +237,7 @@ export default function OrderList() {
         o.route_name || '',
         o.travel_date || '',
         contact.name || '',
-        maskPhone(contact.phone),
+        contact.phone || '',
         pets,
         o.participant_count ?? 0,
         o.pet_count ?? 0,
