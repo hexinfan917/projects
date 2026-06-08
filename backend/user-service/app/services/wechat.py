@@ -112,7 +112,7 @@ class WechatService:
                 "WeChat appid/appsecret not configured, using mock openid. "
                 "Set WECHAT__APPID and WECHAT__APPSECRET env vars for production."
             )
-            return f"mock_openid_{code}", "mock_session_key"
+            return "mock_openid_dev", "mock_session_key"
         
         # 真实调用微信 jscode2session 接口
         url = "https://api.weixin.qq.com/sns/jscode2session"
