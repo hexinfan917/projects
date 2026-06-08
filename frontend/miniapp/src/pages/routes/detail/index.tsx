@@ -1,12 +1,12 @@
 import { useEffect, useState, useMemo } from 'react'
 import Taro, { useShareAppMessage, useShareTimeline } from '@tarojs/taro'
 import { View, Text, Image, ScrollView, Button, RichText, Swiper, SwiperItem } from '@tarojs/components'
-import { getRouteDetail, getRouteSchedules } from '../../../utils/api'
+import { getRouteDetail, getRouteSchedules, BASE_URL } from '../../../utils/api'
 import BookingPopup from '../../../components/BookingPopup'
 import './index.scss'
 
 const WEEK_DAYS = ['日', '一', '二', '三', '四', '五', '六']
-const FILE_BASE_URL = 'https://tailtravel.cn'
+const FILE_BASE_URL = BASE_URL
 
 /** 处理富文本中的图片：补全相对路径 + 自适应样式 */
 function processRichText(html: string): string {
