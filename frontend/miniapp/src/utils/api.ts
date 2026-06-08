@@ -3,7 +3,8 @@ import Taro, { eventCenter } from '@tarojs/taro'
 // 环境切换：开发走本地网关，生产走线上域名
 // 小程序开发工具需勾选「设置 → 项目设置 → 不校验合法域名、web-view（业务域名）、TLS版本以及HTTPS证书」
 const isDev = process.env.NODE_ENV === 'development'
-export const BASE_URL = isDev ? 'http://localhost:8000' : 'https://tailtravel.cn'
+// 开发环境使用局域网 IP（支持真机调试），如需纯本地开发可改回 localhost
+export const BASE_URL = isDev ? 'http://192.168.5.133:8000' : 'https://tailtravel.cn'
 
 /** 补全图片 URL 并添加压缩参数 */
 export function compressImageUrl(url?: string, width?: number): string {
