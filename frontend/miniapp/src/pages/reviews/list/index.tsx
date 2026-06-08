@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import Taro from '@tarojs/taro'
 import { View, Text, Image, ScrollView } from '@tarojs/components'
-import { getReviews } from '../../../utils/api'
+import { getReviews, BASE_URL } from '../../../utils/api'
 import './index.scss'
 
 export default function ReviewList() {

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { View, Text, ScrollView, Image, Input } from '@tarojs/components'
 const logoIcon = '/assets/toplogo.png'
 import Taro, { useDidShow } from '@tarojs/taro'
-import { getRoutes, getRouteTypes, setActiveTab } from '../../utils/api'
+import { getRoutes, getRouteTypes, setActiveTab, BASE_URL } from '../../utils/api'
 import './index.scss'
 
 export default function Routes() {

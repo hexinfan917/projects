@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import Taro from '@tarojs/taro'
 import { View, Text, ScrollView, Image } from '@tarojs/components'
-import { getRoutes } from '../../utils/api'
+import { getRoutes, BASE_URL } from '../../utils/api'
 import './index.scss'
 
 export default function Search() {

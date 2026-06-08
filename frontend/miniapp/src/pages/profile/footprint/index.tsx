@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import Taro from '@tarojs/taro'
 import { View, Text, Image, Input, ScrollView } from '@tarojs/components'
+import { BASE_URL } from '../../../utils/api'
 import './index.scss'
 
 export default function Footprint() {

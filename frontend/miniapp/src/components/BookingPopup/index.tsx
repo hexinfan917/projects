@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from 'react'
 import Taro from '@tarojs/taro'
 import { View, Text, Image, ScrollView } from '@tarojs/components'
-import { getRouteAddons, getAddonCategories } from '../../utils/api'
+import { getRouteAddons, getAddonCategories, BASE_URL } from '../../utils/api'
 import './index.scss'
 
 const WEEK_DAYS = ['日', '一', '二', '三', '四', '五', '六']
