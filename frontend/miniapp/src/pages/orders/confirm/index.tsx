@@ -620,8 +620,19 @@ export default function OrderConfirm() {
   const isActuallyFree = route?.is_free === 1 && !isMemberOnly
   const isFreeOrder = (memberFree || isActuallyFree) ? 1 : 0
 
+  // 非会员价格（会员专享免费路线使用）
+  const scheduleNonMemberPrice = schedule?.non_member_price != null
+    ? schedule.non_member_price
+    : (route?.non_member_price || 0)
+
+  // 对于会员专享免费路线，非会员使用非会员价格作为基础价
+  let effectiveBasePrice = basePrice
+  if (route?.is_free === 1 && isMemberOnly && !isMember && scheduleNonMemberPrice > 0) {
+    effectiveBasePrice = scheduleNonMemberPrice
+  }
+
   // 路线价格（基础价 + 加人 + 加宠，不含保险）
-  const rawRoutePrice = basePrice + extraPersonCount * extraPersonUnitPrice + extraPetCount * extraPetUnitPrice
+  const rawRoutePrice = effectiveBasePrice + extraPersonCount * extraPersonUnitPrice + extraPetCount * extraPetUnitPrice
   const routePrice = (memberFree || isActuallyFree) ? 0 : rawRoutePrice
 
   // 保险（按路线配置和实际选中的出行人/宠物计算）
@@ -852,8 +863,8 @@ export default function OrderConfirm() {
         </View>
       )}
 
-      {/* 保险服务 —— 免费路线隐藏 */}
-      {!route?.is_free && (
+      {/* 保险服务 —— 按路线配置显示 */}
+      {isInsuranceRequired && (
         <View className='insurance-section'>
         <View className='insurance-header'>
           <Text className='insurance-icon'>🛡</Text>
@@ -865,7 +876,7 @@ export default function OrderConfirm() {
           <View className='insurance-left'>
             <View className='insurance-name-row'>
               <Text className='insurance-name'>宠物意外险</Text>
-              <Text className='insurance-price'>+¥15/狗</Text>
+              <Text className='insurance-price'>+¥{petInsuranceUnit}/狗</Text>
             </View>
             <Text className='insurance-desc'>保障宠物行程中突发意外医疗费用，最高保额¥5000</Text>
           </View>
@@ -876,7 +887,7 @@ export default function OrderConfirm() {
           <View className='insurance-left'>
             <View className='insurance-name-row'>
               <Text className='insurance-name'>人身意外险</Text>
-              <Text className='insurance-price'>+¥10/人</Text>
+              <Text className='insurance-price'>+¥{personInsuranceUnit}/人</Text>
             </View>
             <Text className='insurance-desc'>保障出行人意外伤害及医疗，最高保额¥200,000</Text>
           </View>

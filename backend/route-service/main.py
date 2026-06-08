@@ -155,7 +155,7 @@ async def get_routes(
                 Route.highlights, Route.sort_order, Route.is_free,
                 Route.is_member_only, Route.is_insurance_required,
                 Route.pet_insurance_price, Route.person_insurance_price,
-                Route.created_at
+                Route.non_member_price, Route.created_at
             )
         )
         
@@ -233,7 +233,7 @@ async def get_routes(
                         Route.max_participants, Route.highlights, Route.sort_order,
                         Route.is_free, Route.is_member_only, Route.is_insurance_required,
                         Route.pet_insurance_price, Route.person_insurance_price,
-                        Route.created_at
+                        Route.non_member_price, Route.created_at
                     )
                 )
             )
@@ -289,7 +289,8 @@ async def get_routes(
                 "is_member_only": r.is_member_only,
                 "is_insurance_required": r.is_insurance_required,
                 "pet_insurance_price": float(r.pet_insurance_price) if r.pet_insurance_price else 0,
-                "person_insurance_price": float(r.person_insurance_price) if r.person_insurance_price else 0
+                "person_insurance_price": float(r.person_insurance_price) if r.person_insurance_price else 0,
+                "non_member_price": float(r.non_member_price) if r.non_member_price else 0
             })
         
         return success({
@@ -415,6 +416,7 @@ async def get_route_detail(
             "is_insurance_required": r.is_insurance_required,
             "pet_insurance_price": float(r.pet_insurance_price) if r.pet_insurance_price else 0,
             "person_insurance_price": float(r.person_insurance_price) if r.person_insurance_price else 0,
+            "non_member_price": float(r.non_member_price) if r.non_member_price else 0,
             "schedule": [
                 {"time": "09:00", "activity": "集合出发", "detail": "在指定地点集合，签到领取物资"},
                 {"time": "10:30", "activity": "到达活动地，自由活动", "detail": "狗狗们尽情玩耍，主人拍照留念"},
@@ -507,6 +509,7 @@ async def get_route_schedules(
                 "self_drive_single_pet_price": float(s.self_drive_single_pet_price) if s.self_drive_single_pet_price is not None else None,
                 "self_drive_extra_person_price": float(s.self_drive_extra_person_price) if s.self_drive_extra_person_price is not None else None,
                 "self_drive_extra_pet_price": float(s.self_drive_extra_pet_price) if s.self_drive_extra_pet_price is not None else None,
+                "non_member_price": float(s.non_member_price) if s.non_member_price is not None else None,
                 "stock": s.stock or 0,
                 "sold": s.sold or 0,
                 "status": s.status or 1,
@@ -664,6 +667,7 @@ class RouteCreateUpdate(BaseModel):
     is_insurance_required: Optional[int] = 1
     pet_insurance_price: Optional[float] = 15.00
     person_insurance_price: Optional[float] = 10.00
+    non_member_price: Optional[float] = 0
     sort_order: Optional[int] = None
 
 class ScheduleCreateUpdate(BaseModel):
@@ -687,6 +691,7 @@ class ScheduleCreateUpdate(BaseModel):
     self_drive_single_pet_price: Optional[float] = None
     self_drive_extra_person_price: Optional[float] = None
     self_drive_extra_pet_price: Optional[float] = None
+    non_member_price: Optional[float] = None
     stock: Optional[int] = None
     status: Optional[int] = None
     guide_id: Optional[int] = None
@@ -811,6 +816,7 @@ async def admin_create_route(
             is_insurance_required=data.is_insurance_required if data.is_insurance_required is not None else 1,
             pet_insurance_price=data.pet_insurance_price if data.pet_insurance_price is not None else 15.00,
             person_insurance_price=data.person_insurance_price if data.person_insurance_price is not None else 10.00,
+            non_member_price=data.non_member_price if data.non_member_price is not None else 0,
             sort_order=data.sort_order if data.sort_order is not None else 0
         )
         
@@ -863,7 +869,7 @@ async def admin_update_route(
         for field in price_fields:
             update_data.pop(field, None)
         for field, value in update_data.items():
-            if value is not None or field in ['subtitle', 'title', 'description', 'is_hot', 'status', 'content_modules', 'is_free', 'display_price', 'is_member_only', 'is_insurance_required', 'pet_insurance_price', 'person_insurance_price']:  # 允许清空这些字段
+            if value is not None or field in ['subtitle', 'title', 'description', 'is_hot', 'status', 'content_modules', 'is_free', 'display_price', 'is_member_only', 'is_insurance_required', 'pet_insurance_price', 'person_insurance_price', 'non_member_price']:  # 允许清空这些字段
                 setattr(route, field, value)
         
         await db.commit()
@@ -943,7 +949,7 @@ async def admin_get_routes(
             Route.min_participants, Route.max_participants,
             Route.is_hot, Route.status, Route.is_free, Route.is_member_only,
             Route.is_insurance_required, Route.pet_insurance_price, Route.person_insurance_price,
-            Route.sort_order, Route.created_at, Route.updated_at
+            Route.non_member_price, Route.sort_order, Route.created_at, Route.updated_at
         )
         if status is not None:
             query = select(Route).where(Route.status == status).options(load_only_cols)
@@ -1019,6 +1025,7 @@ async def admin_get_routes(
                 "is_insurance_required": r.is_insurance_required,
                 "pet_insurance_price": float(r.pet_insurance_price) if r.pet_insurance_price else 0,
                 "person_insurance_price": float(r.person_insurance_price) if r.person_insurance_price else 0,
+                "non_member_price": float(r.non_member_price) if r.non_member_price else 0,
                 "sort_order": r.sort_order,
                 "created_at": r.created_at.isoformat() if r.created_at else None,
                 "updated_at": r.updated_at.isoformat() if r.updated_at else None
@@ -1092,6 +1099,7 @@ async def admin_get_route_detail(
             "is_insurance_required": r.is_insurance_required,
             "pet_insurance_price": float(r.pet_insurance_price) if r.pet_insurance_price else 0,
             "person_insurance_price": float(r.person_insurance_price) if r.person_insurance_price else 0,
+            "non_member_price": float(r.non_member_price) if r.non_member_price else 0,
             "sort_order": r.sort_order,
             "created_at": r.created_at.isoformat() if r.created_at else None,
             "updated_at": r.updated_at.isoformat() if r.updated_at else None
@@ -1406,6 +1414,7 @@ async def admin_create_schedule(
             self_drive_single_pet_price=data.self_drive_single_pet_price,
             self_drive_extra_person_price=data.self_drive_extra_person_price,
             self_drive_extra_pet_price=data.self_drive_extra_pet_price,
+            non_member_price=data.non_member_price,
             addon_prices=data.addon_prices,
             stock=data.stock,
             status=data.status,
@@ -1539,6 +1548,7 @@ async def admin_batch_create_schedules(
         self_drive_single_pet_price = data.get('self_drive_single_pet_price')
         self_drive_extra_person_price = data.get('self_drive_extra_person_price')
         self_drive_extra_pet_price = data.get('self_drive_extra_pet_price')
+        non_member_price = data.get('non_member_price')
         travel_type = data.get('travel_type', 0)
         stock = data.get('stock', 12)
         
@@ -1588,6 +1598,7 @@ async def admin_batch_create_schedules(
                     self_drive_single_pet_price=self_drive_single_pet_price,
                     self_drive_extra_person_price=self_drive_extra_person_price,
                     self_drive_extra_pet_price=self_drive_extra_pet_price,
+                    non_member_price=non_member_price,
                     stock=stock,
                     travel_type=travel_type,
                     status=1,

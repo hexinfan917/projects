@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from 'react'
 import Taro, { useShareAppMessage, useShareTimeline } from '@tarojs/taro'
 import { View, Text, Image, ScrollView, Button, RichText, Swiper, SwiperItem } from '@tarojs/components'
-import { getRouteDetail, getRouteSchedules, BASE_URL } from '../../../utils/api'
+import { getRouteDetail, getRouteSchedules, getMemberCenter, BASE_URL } from '../../../utils/api'
 import BookingPopup from '../../../components/BookingPopup'
 import './index.scss'
 
@@ -69,6 +69,7 @@ export default function RouteDetail() {
   const [showCalendar, setShowCalendar] = useState(false)
   const [selectedDay, setSelectedDay] = useState<number | null>(null)
   const [showBookingPopup, setShowBookingPopup] = useState(false)
+  const [isMember, setIsMember] = useState(false)
 
   const now = new Date()
   const [year, setYear] = useState(now.getFullYear())
@@ -84,8 +85,12 @@ export default function RouteDetail() {
 
   const loadData = async (id: number) => {
     try {
-      const res = await getRouteDetail(id)
-      setRoute(res.data || {})
+      const [rres, mres] = await Promise.all([
+        getRouteDetail(id),
+        getMemberCenter().catch(() => ({ data: { is_member: false } }))
+      ])
+      setRoute(rres.data || {})
+      setIsMember(!!mres.data?.is_member)
       const sres = await getRouteSchedules(id)
       setSchedules(sres.data?.schedules || [])
     } catch (err) {
@@ -244,7 +249,11 @@ export default function RouteDetail() {
           <Text className='route-price'>
             {route.display_price || (
               route.schedule_price !== undefined && route.schedule_price !== null
-                ? (route.schedule_price === 0 ? '免费' : `￥${route.schedule_price}起/人`)
+                ? (route.schedule_price === 0
+                    ? (route.is_member_only === 1
+                        ? (isMember ? '会员免费' : `非会员￥${route.non_member_price || 0}起/人`)
+                        : '免费')
+                    : `￥${route.schedule_price}起/人`)
                 : '暂无营期'
             )}
           </Text>
@@ -315,7 +324,11 @@ export default function RouteDetail() {
             {route.display_price || (
               hasAnySchedule
                 ? (route.schedule_price !== undefined && route.schedule_price !== null
-                    ? (route.schedule_price === 0 ? '免费' : `￥${route.schedule_price}起`)
+                    ? (route.schedule_price === 0
+                        ? (route.is_member_only === 1
+                            ? (isMember ? '会员免费' : `￥${route.non_member_price || 0}起`)
+                            : '免费')
+                        : `￥${route.schedule_price}起`)
                     : '暂无营期')
                 : '暂无营期'
             )}
@@ -365,7 +378,11 @@ export default function RouteDetail() {
                     <Text className='day-num'>{day}</Text>
                     {hasSchedule && (
                       <Text className='day-price'>
-                        {schedule.price === 0 ? '免费' : `￥${schedule.price}`}
+                        {schedule.price === 0
+                          ? (route.is_member_only === 1
+                              ? (isMember ? '会员免费' : `￥${schedule.non_member_price || route.non_member_price || 0}`)
+                              : '免费')
+                          : `￥${schedule.price}`}
                       </Text>
                     )}
                     {isSelected && <Text className='selected-tag'>出发</Text>}
