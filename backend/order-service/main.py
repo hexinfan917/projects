@@ -657,7 +657,16 @@ async def pay_order(
         raise HTTPException(status_code=500, detail=pay_result.get("message", "支付下单失败"))
     
     pay_data = pay_result.get("data", {})
-    logger.info(f"Pay order created: {order.order_no}, pay_order_no={pay_data.get('pay_order_no')}")
+    logger.info(f"Pay order created: {order.order_no}, pay_order_no={pay_data.get('pay_order_no')}, mock={pay_data.get('mock')}")
+    
+    # Mock 模式下直接更新订单为已支付状态（开发环境模拟支付）
+    if pay_data.get("mock"):
+        order.status = 20
+        order.pay_time = datetime.now()
+        order.pay_channel = "mock"
+        order.pay_trade_no = f"MOCK{datetime.now().strftime('%Y%m%d%H%M%S')}"
+        await db.commit()
+        logger.info(f"Mock pay success, order updated: {order.order_no}")
     
     return success({
         "pay_order_no": pay_data.get("pay_order_no"),
