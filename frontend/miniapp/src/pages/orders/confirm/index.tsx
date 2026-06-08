@@ -435,8 +435,8 @@ export default function OrderConfirm() {
       Taro.showToast({ title: '请至少选择1位出行人', icon: 'none' })
       return
     }
-    // 免费路线只能1人1宠
-    if (route?.is_free) {
+    // 全员免费路线只能1人1宠
+    if (route?.is_free && !isMemberOnly) {
       if (selectedTravelers.length !== 1) {
         Taro.showToast({ title: '免费活动仅限1位出行人', icon: 'none' })
         return
