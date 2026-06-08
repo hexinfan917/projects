@@ -630,7 +630,7 @@ async def pay_order(
         raise BadRequestException("用户未绑定微信，无法发起支付")
     
     # 调用 pay-service 创建支付订单
-    pay_service_url = os.getenv("PAY_SERVICE_URL", "http://pay-service:8000")
+    pay_service_url = os.getenv("PAY_SERVICE_URL", "http://localhost:8006")
     pay_payload = {
         "order_no": order.order_no,
         "amount": float(order.pay_amount),
@@ -1556,7 +1556,7 @@ async def admin_approve_refund(
             return {"code": 400, "message": "订单不是退款中状态", "data": None}
         
         # 调用 pay-service 发起退款
-        pay_service_url = os.getenv("PAY_SERVICE_URL", "http://pay-service:8000")
+        pay_service_url = os.getenv("PAY_SERVICE_URL", "http://localhost:8006")
         refund_payload = {
             "order_no": order.order_no,
             "refund_amount": float(order.refund_amount or order.pay_amount),
@@ -2742,7 +2742,7 @@ async def pay_member_order(
     
     # 调用 pay-service 创建普通微信支付订单
     # 使用业务订单号作为微信商户单号，确保微信支付后台和系统订单号一致
-    pay_service_url = os.getenv("PAY_SERVICE_URL", "http://pay-service:8000")
+    pay_service_url = os.getenv("PAY_SERVICE_URL", "http://localhost:8006")
     pay_payload = {
         "order_no": order["order_no"],
         "amount": float(order["pay_amount"]),
@@ -2890,7 +2890,7 @@ async def admin_refund_member_order(
 
         # 调用 pay-service 退款（统一走普通微信支付退款）
         # 使用业务订单号作为 out_trade_no，确保微信支付能找到订单
-        pay_service_url = os.getenv("PAY_SERVICE_URL", "http://pay-service:8000")
+        pay_service_url = os.getenv("PAY_SERVICE_URL", "http://localhost:8006")
         refund_payload = {
             "order_no": order.order_no,
             "refund_amount": float(order.pay_amount),
