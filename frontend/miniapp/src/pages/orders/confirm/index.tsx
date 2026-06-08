@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react'
 import Taro, { useDidShow } from '@tarojs/taro'
 import { View, Text, Image, Swiper, SwiperItem, ScrollView } from '@tarojs/components'
-import { getRouteDetail, getRouteSchedules, getPets, getTravelers, createOrder, getRouteAddons, getAddonCategories, getAvailableCoupons, calculateCoupon, getAgreements, getMemberCenter, compressImageUrl } from '../../../utils/api'
+import { getRouteDetail, getRouteSchedules, getPets, getTravelers, createOrder, getRouteAddons, getAddonCategories, getAvailableCoupons, calculateCoupon, getAgreements, getMemberCenter, compressImageUrl, payOrder } from '../../../utils/api'
 import './index.scss'
 
 const GENDER_MAP: any = { 0: '母', 1: '公' }
@@ -564,11 +564,61 @@ export default function OrderConfirm() {
         throw new Error(res.message || '创建订单失败')
       }
       if (res.data?.order_id) {
-        // 免费路线直接跳转订单详情（无需支付）
-        if (route?.is_free || res.data.pay_amount === 0) {
-          Taro.redirectTo({ url: `/pages/orders/detail/index?id=${res.data.order_id}` })
-        } else {
-          Taro.navigateTo({ url: `/pages/orders/pay/index?id=${res.data.order_id}` })
+        const orderId = res.data.order_id
+        const payAmount = res.data.pay_amount || 0
+        // 实付金额为0，直接跳转订单详情
+        if (payAmount === 0) {
+          Taro.redirectTo({ url: `/pages/orders/detail/index?id=${orderId}` })
+          return
+        }
+        // 实付金额大于0，直接调起微信支付
+        try {
+          Taro.showLoading({ title: '正在发起支付...' })
+          const payRes: any = await payOrder(orderId)
+          Taro.hideLoading()
+          const payData = payRes.data
+          if (!payData || !payData.pay_params) {
+            Taro.showToast({ title: '获取支付参数失败', icon: 'none' })
+            Taro.navigateTo({ url: `/pages/orders/detail/index?id=${orderId}` })
+            return
+          }
+          // Mock 模式直接跳过真实支付
+          if (payData.mock) {
+            Taro.showToast({ title: '模拟支付成功', icon: 'success' })
+            setTimeout(() => {
+              Taro.redirectTo({ url: `/pages/orders/detail/index?id=${orderId}` })
+            }, 1000)
+            return
+          }
+          const params = payData.pay_params
+          Taro.requestPayment({
+            timeStamp: params.timeStamp,
+            nonceStr: params.nonceStr,
+            package: params.package,
+            signType: params.signType || 'MD5',
+            paySign: params.paySign,
+            success: () => {
+              Taro.showToast({ title: '支付成功', icon: 'success' })
+              setTimeout(() => {
+                Taro.redirectTo({ url: `/pages/orders/detail/index?id=${orderId}` })
+              }, 1000)
+            },
+            fail: (err: any) => {
+              console.error('支付失败:', err)
+              const isCancel = err.errMsg?.includes('cancel')
+              Taro.showToast({ title: isCancel ? '已取消支付' : '支付失败', icon: 'none' })
+              setTimeout(() => {
+                Taro.redirectTo({ url: `/pages/orders/detail/index?id=${orderId}` })
+              }, 1000)
+            }
+          })
+        } catch (err: any) {
+          Taro.hideLoading()
+          console.error('支付请求失败:', err)
+          Taro.showToast({ title: err.message || '支付失败', icon: 'none' })
+          setTimeout(() => {
+            Taro.navigateTo({ url: `/pages/orders/detail/index?id=${orderId}` })
+          }, 1000)
         }
       } else {
         Taro.showToast({ title: '订单创建异常，请重试', icon: 'none' })
