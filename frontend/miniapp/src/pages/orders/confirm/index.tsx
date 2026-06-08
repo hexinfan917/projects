@@ -538,7 +538,6 @@ export default function OrderConfirm() {
             unit: a.unit
           }
         })
-      const isFreeOrder = (memberFree || isActuallyFree) ? 1 : 0
       const res: any = await createOrder({
         route_id: route.id,
         schedule_id: schedule.id,
@@ -619,6 +618,7 @@ export default function OrderConfirm() {
   // 是否享受免费（会员专享免费路线 + 会员）
   const memberFree = route?.is_free === 1 && isMemberOnly && isMember
   const isActuallyFree = route?.is_free === 1 && !isMemberOnly
+  const isFreeOrder = (memberFree || isActuallyFree) ? 1 : 0
 
   // 路线价格（基础价 + 加人 + 加宠，不含保险）
   const rawRoutePrice = basePrice + extraPersonCount * extraPersonUnitPrice + extraPetCount * extraPetUnitPrice
