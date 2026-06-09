@@ -103,7 +103,7 @@ ALLOWED_VIDEO_TYPES = {"video/mp4", "video/quicktime", "video/x-msvideo"}
 ALLOWED_FILE_TYPES = {"application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"}
 
 # 最大文件大小 (MB)
-MAX_IMAGE_SIZE = 10 * 1024 * 1024  # 10MB
+MAX_IMAGE_SIZE = 50 * 1024 * 1024  # 10MB
 MAX_VIDEO_SIZE = 100 * 1024 * 1024  # 100MB
 
 
