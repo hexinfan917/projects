@@ -141,6 +141,24 @@ def validate_file(file: UploadFile, file_type: str = "image"):
     """验证文件类型和大小"""
     content_type = file.content_type or ""
     
+    # 如果 content_type 为空，尝试从文件扩展名推断
+    if not content_type and file.filename:
+        ext = Path(file.filename).suffix.lower()
+        ext_to_mime = {
+            '.jpg': 'image/jpeg',
+            '.jpeg': 'image/jpeg',
+            '.png': 'image/png',
+            '.gif': 'image/gif',
+            '.webp': 'image/webp',
+            '.mp4': 'video/mp4',
+            '.mov': 'video/quicktime',
+            '.avi': 'video/x-msvideo',
+            '.pdf': 'application/pdf',
+            '.doc': 'application/msword',
+            '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        }
+        content_type = ext_to_mime.get(ext, "")
+    
     if file_type == "image":
         if content_type not in ALLOWED_IMAGE_TYPES:
             raise HTTPException(status_code=400, detail=f"不支持的图片格式: {content_type}")
