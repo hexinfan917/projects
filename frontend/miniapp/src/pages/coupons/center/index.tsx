@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import Taro, { useDidShow } from '@tarojs/taro'
 import { View, Text , Image } from '@tarojs/components'
-import { getClaimCenter, claimCoupon } from '../../../utils/api'
+import { getClaimCenter, claimCoupon, safeNavigateBack } from '../../../utils/api'
 import './index.scss'
 
 export default function CouponCenter() {
@@ -44,7 +44,7 @@ export default function CouponCenter() {
   return (
     <View className='coupon-center-page'>
       <View className='custom-navbar'>
-        <View className='page-back' onClick={() => Taro.navigateBack()}>
+        <View className='page-back' onClick={() => safeNavigateBack()}>
           <Image className='page-back-icon' src='/assets/icons/return.png' mode='aspectFit' />
         </View>
         <Text className='navbar-title'>领券中心</Text>

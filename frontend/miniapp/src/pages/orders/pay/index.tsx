@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import Taro from '@tarojs/taro'
 import { View, Text, Button , Image } from '@tarojs/components'
-import { getOrderDetail, payOrder } from '../../../utils/api'
+import { getOrderDetail, payOrder, safeNavigateBack } from '../../../utils/api'
 import './index.scss'
 
 export default function OrderPay() {
@@ -76,7 +76,7 @@ export default function OrderPay() {
 
   return (
     <View className='order-pay' style={{ paddingTop: '140rpx' }}>
-      <View className='page-back' onClick={() => Taro.navigateBack()}>
+      <View className='page-back' onClick={() => safeNavigateBack()}>
         <Image className='page-back-icon' src='/assets/icons/return.png' mode='aspectFit' />
       </View>
       <View className='pay-card'>

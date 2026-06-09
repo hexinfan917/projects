@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import Taro from '@tarojs/taro'
 import { View, Text, Image, ScrollView, RichText } from '@tarojs/components'
-import { getReviewDetail, likeArticle, IMAGE_BASE_URL } from '../../../utils/api'
+import { getReviewDetail, likeArticle, IMAGE_BASE_URL, safeNavigateBack } from '../../../utils/api'
 import './index.scss'
 
 export default function ReviewDetail() {
@@ -90,7 +90,7 @@ export default function ReviewDetail() {
 
   return (
     <View className='review-detail-page'>
-      <View className='page-back' onClick={() => Taro.navigateBack()}>
+      <View className='page-back' onClick={() => safeNavigateBack()}>
         <Image className='page-back-icon' src='/assets/icons/return.png' mode='aspectFit' />
       </View>
       <ScrollView className='scroll-container' scrollY>

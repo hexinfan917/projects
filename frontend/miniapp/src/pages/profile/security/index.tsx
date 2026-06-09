@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import Taro from '@tarojs/taro'
 import { View, Text, Input, Button , Image } from '@tarojs/components'
-import { deleteAccount } from '../../../utils/api'
+import { deleteAccount, safeNavigateBack } from '../../../utils/api'
 import './index.scss'
 
 export default function Security() {
@@ -96,7 +96,7 @@ export default function Security() {
   return (
     <View className='security-page' style={{ paddingTop: '140rpx' }}>
 
-        <View className='page-back' onClick={() => Taro.navigateBack()}>
+        <View className='page-back' onClick={() => safeNavigateBack()}>
           <Image className='page-back-icon' src='/assets/icons/return.png' mode='aspectFit' />
         </View>
       <View className='info-section'>

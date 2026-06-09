@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import Taro from '@tarojs/taro'
 import { View, Text, Input, Button , Image } from '@tarojs/components'
-import { getTravelers, createTraveler, updateTraveler, updateUserProfile } from '../../../utils/api'
+import { getTravelers, createTraveler, updateTraveler, updateUserProfile, safeNavigateBack } from '../../../utils/api'
 import './index.scss'
 
 /** 校验手机号 */
@@ -190,12 +190,12 @@ export default function TravelerEdit() {
                     Taro.showToast({ title: '同步失败', icon: 'none' })
                   }
                 }
-                setTimeout(() => Taro.navigateBack(), 800)
+                setTimeout(() => safeNavigateBack(), 800)
               }
             })
           }, 500)
         } else {
-          setTimeout(() => Taro.navigateBack(), 1000)
+          setTimeout(() => safeNavigateBack(), 1000)
         }
       } else {
         // 新建出行人
@@ -237,12 +237,12 @@ export default function TravelerEdit() {
                     Taro.showToast({ title: '同步失败', icon: 'none' })
                   }
                 }
-                setTimeout(() => Taro.navigateBack(), 800)
+                setTimeout(() => safeNavigateBack(), 800)
               }
             })
           }, 500)
         } else {
-          setTimeout(() => Taro.navigateBack(), 1000)
+          setTimeout(() => safeNavigateBack(), 1000)
         }
       }
     } catch (err: any) {
@@ -253,7 +253,7 @@ export default function TravelerEdit() {
   return (
     <View className='traveler-edit' style={{ paddingTop: '140rpx' }}>
 
-        <View className='page-back' onClick={() => Taro.navigateBack()}>
+        <View className='page-back' onClick={() => safeNavigateBack()}>
           <Image className='page-back-icon' src='/assets/icons/return.png' mode='aspectFit' />
         </View>
       <View className='form-section'>

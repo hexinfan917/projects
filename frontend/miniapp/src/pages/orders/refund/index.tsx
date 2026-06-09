@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import Taro from '@tarojs/taro'
 import { View, Text, Button, Textarea , Image } from '@tarojs/components'
-import { getOrderDetail, refundOrder } from '../../../utils/api'
+import { getOrderDetail, refundOrder, safeNavigateBack } from '../../../utils/api'
 import './index.scss'
 
 const REASON_OPTIONS = [
@@ -43,7 +43,7 @@ export default function RefundPage() {
       await refundOrder(order.id, { reason })
       Taro.showToast({ title: '退款申请已提交', icon: 'success' })
       setTimeout(() => {
-        Taro.navigateBack()
+        safeNavigateBack()
       }, 1500)
     } catch (err) {
       Taro.showToast({ title: '提交失败，请重试', icon: 'none' })
@@ -55,7 +55,7 @@ export default function RefundPage() {
   if (!order) {
     return (
       <View className='refund-page' style={{ paddingTop: '140rpx' }}>
-        <View className='page-back' onClick={() => Taro.navigateBack()}>
+        <View className='page-back' onClick={() => safeNavigateBack()}>
           <Image className='page-back-icon' src='/assets/icons/return.png' mode='aspectFit' />
         </View>
         <Text className='loading-text'>加载中...</Text>
@@ -65,7 +65,7 @@ export default function RefundPage() {
 
   return (
     <View className='refund-page' style={{ paddingTop: '140rpx' }}>
-      <View className='page-back' onClick={() => Taro.navigateBack()}>
+      <View className='page-back' onClick={() => safeNavigateBack()}>
         <Image className='page-back-icon' src='/assets/icons/return.png' mode='aspectFit' />
       </View>
 

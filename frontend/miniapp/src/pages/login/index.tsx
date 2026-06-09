@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import Taro from '@tarojs/taro'
 import { View, Text, Button, Checkbox, Image, Input } from '@tarojs/components'
-import { login, getAgreements, updateUserProfile, uploadFile } from '../../utils/api'
+import { login, getAgreements, updateUserProfile, uploadFile, safeNavigateBack } from '../../utils/api'
 import './index.scss'
 
 import { IMAGE_BASE_URL } from '../../utils/api'
@@ -81,7 +81,7 @@ export default function Login() {
           }
           const pages = Taro.getCurrentPages()
           if (pages.length > 1) {
-            Taro.navigateBack()
+            safeNavigateBack()
           } else {
             Taro.setStorageSync('active_tab_index', 0)
             Taro.switchTab({ url: '/pages/index/index' })
@@ -212,7 +212,7 @@ export default function Login() {
   return (
     <View className='login-page' style={{ paddingTop: '140rpx' }}>
 
-        <View className='page-back' onClick={() => Taro.navigateBack()}>
+        <View className='page-back' onClick={() => safeNavigateBack()}>
           <Image className='page-back-icon' src='/assets/icons/return.png' mode='aspectFit' />
         </View>
       {/* 顶部导航栏 */}

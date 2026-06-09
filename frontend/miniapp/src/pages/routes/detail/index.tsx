@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from 'react'
 import Taro, { useShareAppMessage, useShareTimeline } from '@tarojs/taro'
 import { View, Text, Image, ScrollView, Button, RichText, Swiper, SwiperItem } from '@tarojs/components'
-import { getRouteDetail, getRouteSchedules, getMemberCenter, IMAGE_BASE_URL } from '../../../utils/api'
+import { getRouteDetail, getRouteSchedules, getMemberCenter, IMAGE_BASE_URL, safeNavigateBack } from '../../../utils/api'
 import BookingPopup from '../../../components/BookingPopup'
 import './index.scss'
 
@@ -213,7 +213,7 @@ export default function RouteDetail() {
         if (pages.length <= 1) {
           Taro.switchTab({ url: '/pages/index/index' })
         } else {
-          Taro.navigateBack()
+          safeNavigateBack()
         }
       }}>
         <Image className='page-back-icon' src='/assets/icons/return.png' mode='aspectFit' />

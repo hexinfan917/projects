@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import Taro, { useDidShow } from '@tarojs/taro'
 import { View, Text, Image, ScrollView, Button } from '@tarojs/components'
-import { getCharityActivityDetail, getCharityRegisterStatus, IMAGE_BASE_URL } from '../../../utils/api'
+import { getCharityActivityDetail, getCharityRegisterStatus, IMAGE_BASE_URL, safeNavigateBack } from '../../../utils/api'
 import './index.scss'
 
 export default function CharityDetail() {
@@ -145,7 +145,7 @@ export default function CharityDetail() {
         <View className='status-bar-placeholder' />
         {/* Cover 图片 */}
         <View className='cover-wrap'>
-          <View className='detail-back' onClick={() => Taro.navigateBack()}>
+          <View className='detail-back' onClick={() => safeNavigateBack()}>
             <Image className='detail-back-icon' src='/assets/icons/return.png' mode='aspectFit' />
           </View>
           {coverImage && (

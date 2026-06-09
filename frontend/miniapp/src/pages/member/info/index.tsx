@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import Taro from '@tarojs/taro'
 import { View, Text, Input, Button , Image } from '@tarojs/components'
-import { updateUserProfile } from '../../../utils/api'
+import { updateUserProfile, safeNavigateBack } from '../../../utils/api'
 import './index.scss'
 
 export default function MemberInfo() {
@@ -84,7 +84,7 @@ export default function MemberInfo() {
           <View className='page-back' onClick={() => {
             const pages = Taro.getCurrentPages()
             if (pages.length > 1) {
-              Taro.navigateBack()
+              safeNavigateBack()
             } else {
               Taro.redirectTo({ url: '/pages/member/center/index' })
             }

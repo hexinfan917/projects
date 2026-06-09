@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import Taro from '@tarojs/taro'
 import { View, Text, Image, Input, ScrollView } from '@tarojs/components'
-import { IMAGE_BASE_URL } from '../../../utils/api'
+import { IMAGE_BASE_URL, safeNavigateBack } from '../../../utils/api'
 import './index.scss'
 
 export default function Footprint() {
@@ -37,7 +37,7 @@ export default function Footprint() {
   return (
     <View className='footprint-page' style={{ paddingTop: '140rpx' }}>
 
-        <View className='page-back' onClick={() => Taro.navigateBack()}>
+        <View className='page-back' onClick={() => safeNavigateBack()}>
           <Image className='page-back-icon' src='/assets/icons/return.png' mode='aspectFit' />
         </View>
       <View className='search-bar'>

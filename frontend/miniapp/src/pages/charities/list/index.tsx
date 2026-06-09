@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import Taro from '@tarojs/taro'
 import { View, Text, Image, ScrollView } from '@tarojs/components'
-import { getCharityActivities, IMAGE_BASE_URL } from '../../../utils/api'
+import { getCharityActivities, IMAGE_BASE_URL, safeNavigateBack } from '../../../utils/api'
 import './index.scss'
 
 export default function CharityList() {
@@ -56,7 +56,7 @@ export default function CharityList() {
   return (
     <View className='charity-list-page'>
       {/* 返回按钮 - 与回顾详情页一致 */}
-      <View className='page-back' onClick={() => Taro.navigateBack()}>
+      <View className='page-back' onClick={() => safeNavigateBack()}>
         <Image className='page-back-icon' src='/assets/icons/return.png' mode='aspectFit' />
       </View>
       {/* 页面头部 - 与图2设计一致 */}

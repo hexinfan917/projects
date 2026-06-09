@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import Taro, { useRouter } from '@tarojs/taro'
 import { View, Text , Image } from '@tarojs/components'
-import { useCoupon } from '../../../utils/api'
+import { useCoupon, safeNavigateBack } from '../../../utils/api'
 import './index.scss'
 
 const TYPE_TEXT: Record<number, string> = { 1: '满减券', 2: '折扣券', 3: '立减券', 4: '礼品券' }
@@ -56,7 +56,7 @@ export default function CouponDetail() {
     return (
       <View className='coupon-detail-page'>
         <View className='custom-navbar'>
-          <View className='page-back' onClick={() => Taro.navigateBack()}>
+          <View className='page-back' onClick={() => safeNavigateBack()}>
             <Image className='page-back-icon' src='/assets/icons/return.png' mode='aspectFit' />
           </View>
           <Text className='navbar-title'>券详情</Text>
@@ -74,7 +74,7 @@ export default function CouponDetail() {
   return (
     <View className='coupon-detail-page'>
       <View className='custom-navbar'>
-        <View className='page-back' onClick={() => Taro.navigateBack()}>
+        <View className='page-back' onClick={() => safeNavigateBack()}>
           <Image className='page-back-icon' src='/assets/icons/return.png' mode='aspectFit' />
         </View>
         <Text className='navbar-title'>券详情</Text>

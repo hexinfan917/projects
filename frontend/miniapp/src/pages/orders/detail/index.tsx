@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import Taro, { useDidShow } from '@tarojs/taro'
 import { View, Text, Button, Image, ScrollView } from '@tarojs/components'
-import { getOrderDetail, cancelOrder, refundOrder } from '../../../utils/api'
+import { getOrderDetail, cancelOrder, refundOrder, safeNavigateBack } from '../../../utils/api'
 import './index.scss'
 
 const STATUS_MAP: any = {
@@ -72,7 +72,14 @@ export default function OrderDetail() {
   return (
     <View className='order-detail' style={{ paddingTop: '140rpx' }}>
 
-        <View className='page-back' onClick={() => Taro.navigateBack()}>
+        <View className='page-back' onClick={() => {
+          const pages = Taro.getCurrentPages()
+          if (pages.length > 1) {
+            safeNavigateBack()
+          } else {
+            Taro.switchTab({ url: '/pages/index/index' })
+          }
+        }}>
           <Image className='page-back-icon' src='/assets/icons/return.png' mode='aspectFit' />
         </View>
       <ScrollView className='detail-scroll' scrollY refresherEnabled refresherTriggered={refreshing} onRefresherRefresh={onRefresh}>

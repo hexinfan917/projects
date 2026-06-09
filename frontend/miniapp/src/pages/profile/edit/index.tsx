@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import Taro from '@tarojs/taro'
 import { View, Text, Input, Button, Image } from '@tarojs/components'
-import { getUserProfile, updateUserProfile, uploadFile, compressImageUrl } from '../../../utils/api'
+import { getUserProfile, updateUserProfile, uploadFile, compressImageUrl, safeNavigateBack } from '../../../utils/api'
 import './index.scss'
 
 import { BASE_URL } from '../../../utils/api'
@@ -108,7 +108,7 @@ export default function ProfileEdit() {
       if (res.code === 200) {
         Taro.setStorageSync('user_info', res.data)
         Taro.showToast({ title: '提交成功', icon: 'success' })
-        setTimeout(() => Taro.navigateBack(), 1000)
+        setTimeout(() => safeNavigateBack(), 1000)
       } else {
         Taro.showToast({ title: res.message || '保存失败', icon: 'none' })
       }
@@ -122,7 +122,7 @@ export default function ProfileEdit() {
       <View className='custom-navbar'>
         <View className='navbar-bg' />
         <View className='navbar-content'>
-          <View className='page-back' onClick={() => Taro.navigateBack()}>
+          <View className='page-back' onClick={() => safeNavigateBack()}>
             <Image className='page-back-icon' src='/assets/icons/return.png' mode='aspectFit' />
           </View>
           <Text className='navbar-title'>完善个人信息</Text>

@@ -414,9 +414,10 @@ export default function RouteEdit() {
     },
     ...(!isFree ? [{
       title: '价格',
-      dataIndex: 'price',
       key: 'price',
-      render: (price: number, record: any) => {
+      render: (_: any, record: any) => {
+        const isSelfDriveOnly = record.travel_type === 2;
+        const displayPrice = isSelfDriveOnly ? record.self_drive_price : record.price;
         if (editingScheduleId === record.id && editingField === 'price') {
           return (
             <InputNumber
@@ -428,7 +429,7 @@ export default function RouteEdit() {
               style={{ width: 100 }}
               onChange={(val) => setEditingPrice(val)}
               onBlur={() => {
-                if (editingPrice !== price) {
+                if (editingPrice !== displayPrice) {
                   updateSchedule(record.id, { price: editingPrice || 0 });
                 }
                 setEditingScheduleId(null);
@@ -436,7 +437,7 @@ export default function RouteEdit() {
                 setEditingPrice(null);
               }}
               onPressEnter={() => {
-                if (editingPrice !== price) {
+                if (editingPrice !== displayPrice) {
                   updateSchedule(record.id, { price: editingPrice || 0 });
                 }
                 setEditingScheduleId(null);
@@ -452,10 +453,10 @@ export default function RouteEdit() {
             onClick={() => {
               setEditingScheduleId(record.id);
               setEditingField('price');
-              setEditingPrice(price || 0);
+              setEditingPrice(displayPrice || 0);
             }}
           >
-            {price ? `¥${price}` : '-'}
+            {displayPrice ? `¥${displayPrice}` : '-'}
           </span>
         );
       },

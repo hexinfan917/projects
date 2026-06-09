@@ -15,6 +15,16 @@ export const BASE_URL = isDev
 export const IMAGE_BASE_URL = 'https://tailtravel.cn'
 
 /** 补全图片 URL 并添加压缩参数 */
+/** 安全返回：页面栈大于1时正常返回，否则跳转首页 */
+export function safeNavigateBack(fallbackUrl?: string) {
+  const pages = Taro.getCurrentPages()
+  if (pages.length > 1) {
+    Taro.navigateBack()
+  } else {
+    Taro.switchTab({ url: fallbackUrl || '/pages/index/index' })
+  }
+}
+
 export function compressImageUrl(url?: string, width?: number): string {
   if (!url) return ''
   const fullUrl = url.startsWith('http') ? url : `${IMAGE_BASE_URL}${url}`

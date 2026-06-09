@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import Taro from '@tarojs/taro'
 import { View, Text, Image, Button } from '@tarojs/components'
-import { deleteAccount, getAgreements } from '../../../utils/api'
+import { deleteAccount, getAgreements, safeNavigateBack } from '../../../utils/api'
 import './index.scss'
 
 export default function Settings() {
@@ -67,7 +67,7 @@ export default function Settings() {
 
   return (
     <View className='settings-page' style={{ paddingTop: '140rpx' }}>
-      <View className='page-back' onClick={() => Taro.navigateBack()}>
+      <View className='page-back' onClick={() => safeNavigateBack()}>
         <Image className='page-back-icon' src='/assets/icons/return.png' mode='aspectFit' />
       </View>
 

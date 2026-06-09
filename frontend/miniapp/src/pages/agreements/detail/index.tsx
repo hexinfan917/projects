@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import Taro, { useRouter } from '@tarojs/taro'
 import { View, Text, RichText , Image } from '@tarojs/components'
-import { getAgreementDetail } from '../../../utils/api'
+import { getAgreementDetail, safeNavigateBack } from '../../../utils/api'
 import './index.scss'
 
 export default function AgreementDetail() {
@@ -35,7 +35,7 @@ export default function AgreementDetail() {
     return (
       <View className='agreement-detail-page'>
         <View className='custom-navbar'>
-          <View className='page-back' onClick={() => Taro.navigateBack()}>
+          <View className='page-back' onClick={() => safeNavigateBack()}>
             <Image className='page-back-icon' src='/assets/icons/return.png' mode='aspectFit' />
           </View>
           <Text className='navbar-title'>协议详情</Text>
@@ -50,7 +50,7 @@ export default function AgreementDetail() {
   return (
     <View className='agreement-detail-page'>
       <View className='custom-navbar'>
-        <View className='page-back' onClick={() => Taro.navigateBack()}>
+        <View className='page-back' onClick={() => safeNavigateBack()}>
           <Image className='page-back-icon' src='/assets/icons/return.png' mode='aspectFit' />
         </View>
         <Text className='navbar-title'>{agreement?.title || '协议详情'}</Text>

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import Taro, { useDidShow } from '@tarojs/taro'
 import { View, Text, Button , Image } from '@tarojs/components'
-import { getTravelers, deleteTraveler } from '../../../utils/api'
+import { getTravelers, deleteTraveler, safeNavigateBack } from '../../../utils/api'
 import './index.scss'
 
 /** 姓名脱敏 */
@@ -58,7 +58,7 @@ export default function Travelers() {
   return (
     <View className='travelers-page' style={{ paddingTop: '140rpx' }}>
 
-        <View className='page-back' onClick={() => Taro.navigateBack()}>
+        <View className='page-back' onClick={() => safeNavigateBack()}>
           <Image className='page-back-icon' src='/assets/icons/return.png' mode='aspectFit' />
         </View>
       {list.map(item => (

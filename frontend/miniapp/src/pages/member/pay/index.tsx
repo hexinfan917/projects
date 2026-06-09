@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import Taro from '@tarojs/taro'
 import { View, Text , Image } from '@tarojs/components'
-import { getMemberPlans, createMemberOrder, payMemberOrder } from '../../../utils/api'
+import { getMemberPlans, createMemberOrder, payMemberOrder, safeNavigateBack } from '../../../utils/api'
 import './index.scss'
 
 export default function MemberPay() {
@@ -123,7 +123,7 @@ export default function MemberPay() {
     if (pages.length <= 1) {
       Taro.switchTab({ url: '/pages/index/index' })
     } else {
-      Taro.navigateBack()
+      safeNavigateBack()
     }
   }
 

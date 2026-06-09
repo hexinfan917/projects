@@ -1,5 +1,6 @@
 import Taro from '@tarojs/taro'
 import { View, Text , Image } from '@tarojs/components'
+import { safeNavigateBack } from '../../../utils/api'
 import './index.scss'
 
 const WECHAT_ID = 'Petway_'
@@ -21,7 +22,7 @@ export default function About() {
   return (
     <View className='about-page' style={{ paddingTop: '140rpx' }}>
 
-        <View className='page-back' onClick={() => Taro.navigateBack()}>
+        <View className='page-back' onClick={() => safeNavigateBack()}>
           <Image className='page-back-icon' src='/assets/icons/return.png' mode='aspectFit' />
         </View>
       <View className='brand-section'>

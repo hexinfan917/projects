@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import Taro from '@tarojs/taro'
 import { View, Text, Input, Button, Image, Picker } from '@tarojs/components'
-import { getPet, getPets, createPet, updatePet, uploadFile, compressImageUrl } from '../../../utils/api'
+import { getPet, getPets, createPet, updatePet, uploadFile, compressImageUrl, safeNavigateBack } from '../../../utils/api'
 import './index.scss'
 
 import { BASE_URL } from '../../../utils/api'
@@ -156,7 +156,7 @@ export default function PetEdit() {
       }
       Taro.showToast({ title: '保存成功', icon: 'success' })
       setTimeout(() => {
-        Taro.navigateBack()
+        safeNavigateBack()
       }, 1000)
     } catch (err: any) {
       Taro.showToast({ title: err.message || '保存失败', icon: 'none' })
@@ -168,7 +168,7 @@ export default function PetEdit() {
   return (
     <View className='pet-edit-page' style={{ paddingTop: '140rpx' }}>
 
-        <View className='page-back' onClick={() => Taro.navigateBack()}>
+        <View className='page-back' onClick={() => safeNavigateBack()}>
           <Image className='page-back-icon' src='/assets/icons/return.png' mode='aspectFit' />
         </View>
       <View className='pet-edit-modal'>

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import Taro from '@tarojs/taro'
 import { View, Text, Input, Textarea, Picker, Checkbox , Image } from '@tarojs/components'
-import { getCharityActivityDetail, registerCharityActivity } from '../../../utils/api'
+import { getCharityActivityDetail, registerCharityActivity, safeNavigateBack } from '../../../utils/api'
 import './index.scss'
 
 const PARTICIPANT_OPTIONS = Array.from({ length: 10 }, (_, i) => ({
@@ -104,7 +104,7 @@ export default function CharityEnroll() {
       if (res.code === 200) {
         Taro.showToast({ title: '报名成功', icon: 'success' })
         setTimeout(() => {
-          Taro.navigateBack()
+          safeNavigateBack()
         }, 1500)
       } else {
         Taro.showToast({ title: res.message || '报名失败', icon: 'none' })
@@ -122,7 +122,7 @@ export default function CharityEnroll() {
     <View className='charity-enroll-page'>
       <View className='status-bar-placeholder' />
       <View className='page-header'>
-        <View className='page-back' onClick={() => Taro.navigateBack()}>
+        <View className='page-back' onClick={() => safeNavigateBack()}>
           <Image className='page-back-icon' src='/assets/icons/return.png' mode='aspectFit' />
         </View>
         <Text className='page-title'>活动报名</Text>

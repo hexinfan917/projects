@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import Taro from '@tarojs/taro'
 import { View, Text, ScrollView, Image } from '@tarojs/components'
-import { getRoutes, IMAGE_BASE_URL } from '../../utils/api'
+import { getRoutes, IMAGE_BASE_URL, safeNavigateBack } from '../../utils/api'
 import './index.scss'
 
 export default function Search() {
@@ -57,7 +57,7 @@ export default function Search() {
 
   return (
     <View className='search-page' style={{ paddingTop: '140rpx' }}>
-      <View className='page-back' onClick={() => Taro.navigateBack()}>
+      <View className='page-back' onClick={() => safeNavigateBack()}>
         <Image className='page-back-icon' src='/assets/icons/return.png' mode='aspectFit' />
       </View>
 

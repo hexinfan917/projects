@@ -1,5 +1,6 @@
 import Taro from '@tarojs/taro'
 import { View, Text, ScrollView } from '@tarojs/components'
+import { safeNavigateBack } from '../../../utils/api'
 import './index.scss'
 
 export default function PrivacyPolicy() {
@@ -8,7 +9,7 @@ export default function PrivacyPolicy() {
       <View className='custom-navbar'>
         <View className='navbar-bg' />
         <View className='navbar-content'>
-          <View className='page-back' onClick={() => Taro.navigateBack()}>
+          <View className='page-back' onClick={() => safeNavigateBack()}>
             <Text className='page-back-icon'>‹</Text>
           </View>
           <Text className='navbar-title'>隐私政策</Text>

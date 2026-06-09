@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
 import Taro, { useDidShow, useUnload } from '@tarojs/taro'
 import { View, Text, ScrollView, Image } from '@tarojs/components'
-import { getOrders, cancelOrder } from '../../../utils/api'
+import { getOrders, cancelOrder, safeNavigateBack } from '../../../utils/api'
 import './index.scss'
 
 const TABS = [
@@ -192,7 +192,7 @@ export default function OrderList() {
               Taro.switchTab({ url: '/pages/index/index' })
             }
           } else {
-            Taro.navigateBack()
+            safeNavigateBack()
           }
         }}>
           <Image className='page-back-icon' src='/assets/icons/return.png' mode='aspectFit' />

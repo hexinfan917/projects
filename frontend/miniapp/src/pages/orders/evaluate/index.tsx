@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import Taro from '@tarojs/taro'
 import { View, Text, Textarea, Button, Image } from '@tarojs/components'
-import { getOrderDetail, evaluateOrder, uploadFile, compressImageUrl } from '../../../utils/api'
+import { getOrderDetail, evaluateOrder, uploadFile, compressImageUrl, safeNavigateBack } from '../../../utils/api'
 import './index.scss'
 
 const TAGS = ['风景优美', '领队专业', '宠物友好', '餐饮满意', '行程安排合理', '性价比高']
@@ -56,7 +56,7 @@ export default function OrderEvaluate() {
     try {
       await evaluateOrder(order.id, { score, tags: selectedTags, content, images })
       Taro.showToast({ title: '评价成功', icon: 'success' })
-      setTimeout(() => Taro.navigateBack(), 1000)
+      setTimeout(() => safeNavigateBack(), 1000)
     } catch (err) {
       Taro.showToast({ title: '评价失败', icon: 'none' })
     }
@@ -65,7 +65,7 @@ export default function OrderEvaluate() {
   return (
     <View className='evaluate-page' style={{ paddingTop: '140rpx' }}>
 
-        <View className='page-back' onClick={() => Taro.navigateBack()}>
+        <View className='page-back' onClick={() => safeNavigateBack()}>
           <Image className='page-back-icon' src='/assets/icons/return.png' mode='aspectFit' />
         </View>
       <View className='card'>

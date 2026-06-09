@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import Taro, { useDidShow } from '@tarojs/taro'
 import { View, Text, Image, ScrollView } from '@tarojs/components'
-import { getArticles, setActiveTab, IMAGE_BASE_URL } from '../../utils/api'
+import { getArticles, setActiveTab, IMAGE_BASE_URL, safeNavigateBack } from '../../utils/api'
 import './index.scss'
 
 export default function Community() {
@@ -69,7 +69,7 @@ export default function Community() {
   return (
     <View className='community-page' style={{ paddingTop: '140rpx' }}>
 
-        <View className='page-back' onClick={() => Taro.navigateBack()}>
+        <View className='page-back' onClick={() => safeNavigateBack()}>
           <Image className='page-back-icon' src='/assets/icons/return.png' mode='aspectFit' />
         </View>
       <View className='community-tabs'>

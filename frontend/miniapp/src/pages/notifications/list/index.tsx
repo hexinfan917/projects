@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import Taro, { useDidShow } from '@tarojs/taro'
 import { View, Text, ScrollView , Image } from '@tarojs/components'
-import { getNotifications, markNotificationRead, markAllNotificationsRead } from '../../../utils/api'
+import { getNotifications, markNotificationRead, markAllNotificationsRead, safeNavigateBack } from '../../../utils/api'
 import './index.scss'
 
 export default function NotificationList() {
@@ -79,7 +79,7 @@ export default function NotificationList() {
   return (
     <View className='notification-page' style={{ paddingTop: '140rpx' }}>
 
-        <View className='page-back' onClick={() => Taro.navigateBack()}>
+        <View className='page-back' onClick={() => safeNavigateBack()}>
           <Image className='page-back-icon' src='/assets/icons/return.png' mode='aspectFit' />
         </View>
       <View className='notification-header'>

@@ -1,12 +1,13 @@
 import { View, Text , Image } from '@tarojs/components'
 import Taro from '@tarojs/taro'
+import { safeNavigateBack } from '../../../utils/api'
 import './index.scss'
 
 export default function Terms() {
   return (
     <View className='terms-page' style={{ paddingTop: '140rpx' }}>
 
-        <View className='page-back' onClick={() => Taro.navigateBack()}>
+        <View className='page-back' onClick={() => safeNavigateBack()}>
           <Image className='page-back-icon' src='/assets/icons/return.png' mode='aspectFit' />
         </View>
       <View className='content-section'>

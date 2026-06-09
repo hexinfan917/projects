@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import Taro, { useDidShow } from '@tarojs/taro'
 import { View, Text , Image } from '@tarojs/components'
-import { getMemberCoupons } from '../../../utils/api'
+import { getMemberCoupons, safeNavigateBack } from '../../../utils/api'
 import './index.scss'
 
 const STATUS_TABS = [
@@ -40,7 +40,7 @@ export default function MemberCoupons() {
   return (
     <View className='coupon-list-page'>
       <View className='custom-navbar'>
-        <View className='page-back' onClick={() => Taro.navigateBack()}>
+        <View className='page-back' onClick={() => safeNavigateBack()}>
           <Image className='page-back-icon' src='/assets/icons/return.png' mode='aspectFit' />
         </View>
         <Text className='navbar-title'>我的消费券</Text>
