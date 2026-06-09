@@ -101,3 +101,4 @@ tmp/*.tsx
 frontend/admin/src/.umi-production/
 backend/file-service/uploads_prod.tar.gz
 backend/file-service/*.tar.gz
+deploy/migrate_to_cos.py
