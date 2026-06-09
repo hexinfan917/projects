@@ -39,7 +39,8 @@ logs/
 *.log
 
 # Database
-*.sqlite3
+*.sql
+!database/migrations/*.sqlite3
 *.db
 
 # Environment variables
