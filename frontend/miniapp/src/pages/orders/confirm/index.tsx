@@ -125,7 +125,7 @@ export default function OrderConfirm() {
   const [showPetModal, setShowPetModal] = useState(false)
   const [isMember, setIsMember] = useState(false)
 
-  // 行程选配
+  // 活动选配套餐
   const [addonTabs, setAddonTabs] = useState<any[]>([])
   const [addons, setAddons] = useState<any[]>([])
   const [activeAddonTab, setActiveAddonTab] = useState('')
@@ -466,7 +466,7 @@ export default function OrderConfirm() {
       }
     }
     if (!schedule || !route) {
-      Taro.showToast({ title: '路线或排期信息加载失败', icon: 'none' })
+      Taro.showToast({ title: '活动或排期信息加载失败', icon: 'none' })
       return
     }
     if (agreements.length > 0 && !agreed) {
@@ -799,14 +799,14 @@ export default function OrderConfirm() {
       </View>
 
       <View className='main-content'>
-        {/* Hero 行程摘要 */}
+        {/* Hero 活动摘要 */}
         <View className='hero-section'>
           <Image className='hero-image' src={compressImageUrl(route?.cover_image, 750) || 'https://via.placeholder.com/750x420'} mode='aspectFill' />
           <View className='hero-overlay'>
             <View className='hero-tags'>
               <Text className='hero-tag'>{route?.duration || '1天'}游</Text>
             </View>
-            <Text className='hero-title'>{route?.name || '路线名称'}</Text>
+            <Text className='hero-title'>{route?.name || '活动名称'}</Text>
             <View className='hero-date'>
               <Text>📅</Text>
               <Text>{schedule?.schedule_date || '-'} 出发</Text>
@@ -928,7 +928,7 @@ export default function OrderConfirm() {
             )}
             {bookingParams.addons?.length > 0 && (
               <View className='info-row'>
-                <Text className='info-label'>行程选配</Text>
+                <Text className='info-label'>活动选配</Text>
                 <View className='info-value-column'>
                   {bookingParams.addons.map((a: any) => (
                     <Text key={a.id} className='info-addon'>{a.name} x{a.quantity || 1}</Text>
@@ -956,7 +956,7 @@ export default function OrderConfirm() {
               <Text className='insurance-name'>宠物意外险</Text>
               <Text className='insurance-price'>+¥{petInsuranceUnit}/狗</Text>
             </View>
-            <Text className='insurance-desc'>保障宠物行程中突发意外医疗费用，最高保额¥5000</Text>
+            <Text className='insurance-desc'>保障宠物活动中突发意外医疗费用，最高保额¥5000</Text>
           </View>
           <Text className='insurance-total'>¥{petInsuranceTotal}</Text>
         </View>
@@ -996,7 +996,7 @@ export default function OrderConfirm() {
                 <Text className='coupon-arrow'>›</Text>
               </View>
             </View>
-            <Text className='coupon-tip'>优惠券仅减免路线价格，保险/选配不参与优惠</Text>
+            <Text className='coupon-tip'>优惠券仅减免活动价格，保险/选配不参与优惠</Text>
           </>
         ) : (
           <View className='coupon-row' style={{ opacity: 0.6 }}>
@@ -1186,7 +1186,7 @@ export default function OrderConfirm() {
             </View>
             <View className='modal-body'>
               <View className='coupon-modal-tip'>
-                <Text className='coupon-modal-tip-text'>💡 优惠券仅减免路线价格，保险/选配不参与优惠</Text>
+                <Text className='coupon-modal-tip-text'>💡 优惠券仅减免活动价格，保险/选配不参与优惠</Text>
               </View>
               <View className='modal-item' onClick={() => handleSelectCoupon(null)}>
                 <View className='modal-item-info'>

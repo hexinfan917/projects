@@ -5,7 +5,7 @@ import { getOrderDetail, refundOrder, safeNavigateBack } from '../../../utils/ap
 import './index.scss'
 
 const REASON_OPTIONS = [
-  { value: '行程有变，无法出行', label: '行程有变，无法出行' },
+  { value: '计划有变，无法参加', label: '计划有变，无法参加' },
   { value: '重复下单', label: '重复下单' },
   { value: '天气原因', label: '天气原因' },
   { value: '宠物身体不适', label: '宠物身体不适' },

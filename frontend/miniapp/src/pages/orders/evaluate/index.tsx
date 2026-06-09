@@ -4,7 +4,7 @@ import { View, Text, Textarea, Button, Image } from '@tarojs/components'
 import { getOrderDetail, evaluateOrder, uploadFile, compressImageUrl, safeNavigateBack } from '../../../utils/api'
 import './index.scss'
 
-const TAGS = ['风景优美', '领队专业', '宠物友好', '餐饮满意', '行程安排合理', '性价比高']
+const TAGS = ['风景优美', '组织专业', '宠物友好', '餐饮满意', '活动安排合理', '性价比高']
 
 export default function OrderEvaluate() {
   const [order, setOrder] = useState<any>(null)

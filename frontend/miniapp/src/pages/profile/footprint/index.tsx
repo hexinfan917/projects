@@ -44,7 +44,7 @@ export default function Footprint() {
         <Text className='search-icon'>🔍</Text>
         <Input
           className='search-input'
-          placeholder='搜索足迹线路'
+          placeholder='搜索足迹活动'
           value={keyword}
           onInput={(e) => setKeyword(e.detail.value)}
         />
@@ -59,7 +59,7 @@ export default function Footprint() {
               <Text className='footprint-name'>{item.name}</Text>
               {item.subtitle ? <Text className='footprint-subtitle'>{item.subtitle}</Text> : null}
               <Text className='footprint-meta'>
-                {item.type_name || '线路'} · {item.has_schedule ? (item.price === 0 ? '免费' : `￥${item.price}起`) : '暂无营期'}
+                {item.type_name || '活动'} · {item.has_schedule ? (item.price === 0 ? '免费' : `￥${item.price}起`) : '暂无营期'}
               </Text>
             </View>
           </View>
@@ -67,7 +67,7 @@ export default function Footprint() {
 
         {filtered.length === 0 && (
           <View className='empty-state'>
-            <Text className='empty-text'>{keyword ? '未找到相关线路' : '暂无浏览足迹，快去发现精彩线路吧～'}</Text>
+            <Text className='empty-text'>{keyword ? '未找到相关活动' : '暂无浏览足迹，快去发现精彩活动吧～'}</Text>
           </View>
         )}
       </ScrollView>

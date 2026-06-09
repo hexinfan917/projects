@@ -72,7 +72,7 @@ export default function NotificationList() {
   }
 
   const getTypeLabel = (type: string) => {
-    const map: Record<string, string> = { system: '系统', order: '订单', route: '路线' }
+    const map: Record<string, string> = { system: '系统', order: '订单', route: '活动' }
     return map[type] || '通知'
   }
 

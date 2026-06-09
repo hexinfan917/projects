@@ -101,7 +101,7 @@ export default function RouteDetail() {
   // 分享
   useShareAppMessage(() => {
     return {
-      title: route?.name ? `${route.name} - 尾巴旅行` : '尾巴旅行',
+      title: route?.name ? `${route.name} - 尾巴PetWay` : '尾巴PetWay',
       path: `/pages/routes/detail/index?id=${route?.id || ''}`,
       imageUrl: route?.cover_image || '',
     }
@@ -109,7 +109,7 @@ export default function RouteDetail() {
 
   useShareTimeline(() => {
     return {
-      title: route?.name ? `${route.name} - 尾巴旅行` : '尾巴旅行',
+      title: route?.name ? `${route.name} - 尾巴PetWay` : '尾巴PetWay',
       query: `id=${route?.id || ''}`,
       imageUrl: route?.cover_image || '',
     }
@@ -283,7 +283,7 @@ export default function RouteDetail() {
 
         {route.highlights_detail ? (
           <View className='section'>
-            <Text className='section-title'>行程亮点</Text>
+            <Text className='section-title'>活动亮点</Text>
             <RichText className='rich-text' nodes={processRichText(route.highlights_detail)} />
           </View>
         ) : null}

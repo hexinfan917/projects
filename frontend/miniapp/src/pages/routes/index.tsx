@@ -32,7 +32,7 @@ export default function Routes() {
     try {
       const res = await getRouteTypes()
       if (res.code === 200 && res.data) {
-        setCategories([{ id: '', name: '全部线路' }, ...res.data])
+        setCategories([{ id: '', name: '全部活动' }, ...res.data])
       }
     } catch (err) {
       console.error('加载分类失败:', err)
@@ -70,7 +70,7 @@ export default function Routes() {
       setNoMore(list.length < pageSize)
       if (!refresh) setPage(currentPage + 1)
     } catch (err) {
-      console.error('加载路线失败:', err)
+      console.error('加载活动失败:', err)
       Taro.showToast({ title: '加载失败', icon: 'none' })
     } finally {
       setLoading(false)
@@ -98,7 +98,7 @@ export default function Routes() {
         <View className='navbar-content'>
           <View className='navbar-left'>
             <Image className='navbar-icon' src={logoIcon} mode='aspectFit' />
-            <Text className='navbar-title'>尾巴旅行</Text>
+            <Text className='navbar-title'>尾巴PetWay</Text>
           </View>
         </View>
       </View>
@@ -111,7 +111,7 @@ export default function Routes() {
             <Text className='routes-search-icon'>🔍</Text>
             <Input
               className='routes-search-text'
-              placeholder='搜索路线、地点'
+              placeholder='搜索活动、地点'
               value={keyword}
               onInput={(e) => setKeyword(e.detail.value)}
               onConfirm={handleSearch}

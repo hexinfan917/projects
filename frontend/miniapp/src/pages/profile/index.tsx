@@ -186,7 +186,7 @@ export default function Profile() {
         <View className='navbar-content'>
           <View className='navbar-left'>
             <Image className='navbar-icon' src={logoIcon} mode='aspectFit' />
-            <Text className='navbar-title'>尾巴旅行</Text>
+            <Text className='navbar-title'>尾巴PetWay</Text>
           </View>
         </View>
       </View>
@@ -207,7 +207,7 @@ export default function Profile() {
             ) : (
               <View className='login-wrap' onClick={goLogin}>
                 <Text className='login-text'>点击登录/注册</Text>
-                <Text className='login-subtext'>解锁更多宠友旅行精彩内容</Text>
+                <Text className='login-subtext'>解锁更多宠友精彩内容</Text>
               </View>
             )}
           </View>
@@ -237,7 +237,7 @@ export default function Profile() {
               <Text className='vip-member-badge'>生效中</Text>
               <View className='vip-member-main'>
                 <View className='vip-member-left'>
-                  <Text className='vip-member-title'>尾巴旅行会员</Text>
+                  <Text className='vip-member-title'>尾巴PetWay会员</Text>
                   <Text className='vip-member-time'>购买时间：{memberInfo.member_info?.start_date?.split('T')[0] || '-'}</Text>
                 </View>
                 <View className='vip-member-right'>

@@ -230,7 +230,7 @@ export default function Login() {
         </View>
         <View className='brand-text'>
           <Text className='brand-name'>PetWay</Text>
-          <Text className='brand-subname'>尾巴旅行</Text>
+          <Text className='brand-subname'>尾巴PetWay</Text>
           <Text className='brand-slogan'>带着您的毛孩子，探索世界的每一个角落</Text>
         </View>
       </View>
@@ -276,7 +276,7 @@ export default function Login() {
           <View className='profile-modal-content'>
             <View className='pm-header'>
               <Image className='pm-logo' src={require('../../assets/see-throughlogo.png')} mode='aspectFit' />
-              <Text className='pm-title'>欢迎来到尾巴旅行</Text>
+              <Text className='pm-title'>欢迎来到尾巴PetWay</Text>
               <Text className='pm-subtitle'>设置您的专属昵称和头像</Text>
             </View>
 

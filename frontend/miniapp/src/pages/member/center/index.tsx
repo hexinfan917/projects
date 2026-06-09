@@ -73,7 +73,7 @@ export default function MemberCenter() {
             <Text className='member-vip-badge'>生效中</Text>
             <View className='member-vip-main'>
               <View className='member-vip-left'>
-                <Text className='member-vip-title'>尾巴旅行会员</Text>
+                <Text className='member-vip-title'>尾巴PetWay会员</Text>
                 <Text className='member-vip-price'>实付：¥{data.member_info?.pay_amount || '--'}</Text>
                 <Text className='member-vip-time'>购买时间：{data.member_info?.start_date?.split('T')[0] || '-'}</Text>
               </View>

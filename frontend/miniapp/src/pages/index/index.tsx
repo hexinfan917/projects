@@ -26,7 +26,7 @@ export default function Index() {
   // 分享给好友
   useShareAppMessage(() => {
     return {
-      title: '尾巴旅行 - 带宠出行首选',
+      title: '尾巴PetWay - 带宠出行首选',
       path: '/pages/index/index',
       imageUrl: routes[0]?.cover_image || logoIcon,
     }
@@ -35,7 +35,7 @@ export default function Index() {
   // 分享到朋友圈
   useShareTimeline(() => {
     return {
-      title: '尾巴旅行 - 带宠出行首选',
+      title: '尾巴PetWay - 带宠出行首选',
       query: '',
       imageUrl: routes[0]?.cover_image || logoIcon,
     }
@@ -211,7 +211,7 @@ export default function Index() {
         <View className='navbar-content'>
           <View className='navbar-left'>
             <Image className='navbar-icon' src={logoIcon} mode='aspectFit' />
-            <Text className='navbar-title'>尾巴旅行</Text>
+            <Text className='navbar-title'>尾巴PetWay</Text>
           </View>
         </View>
       </View>
@@ -230,7 +230,7 @@ export default function Index() {
             <Text className='search-icon'>🔍</Text>
             <Input
               className='search-text'
-              placeholder='搜索热门路线'
+              placeholder='搜索热门活动'
               value={searchKeyword}
               onInput={(e) => setSearchKeyword(e.detail.value)}
               onConfirm={handleHomeSearch}
@@ -263,15 +263,15 @@ export default function Index() {
 
         {/* 品牌标语 */}
         <View className='brand-slogan'>
-          <Text className='slogan-text'>旅行的意义，是认识新朋友——对它们也是</Text>
+          <Text className='slogan-text'>陪伴的意义，是认识新朋友——对它们也是</Text>
         </View>
 
-        {/* 热门路线 */}
+        {/* 热门活动 */}
         <View className='section-block'>
           <View className='section-header-row'>
             <View>
-              <Text className='section-title-main'>热门路线</Text>
-              <Text className='section-title-sub'>精选最受欢迎的宠物旅行目的地</Text>
+              <Text className='section-title-main'>热门活动</Text>
+              <Text className='section-title-sub'>精选最受欢迎的宠物友好目的地</Text>
             </View>
             <Text className='section-more' onClick={() => Taro.switchTab({ url: '/pages/routes/index' })}>更多 {'>'}</Text>
           </View>
@@ -295,7 +295,7 @@ export default function Index() {
           <View className='section-header-row'>
             <View>
               <Text className='section-title-main'>狗狗回顾</Text>
-              <Text className='section-title-sub'>记录与毛孩子的每一次美好旅程</Text>
+              <Text className='section-title-sub'>记录与毛孩子的每一次美好时光</Text>
             </View>
             <Text className='section-more' onClick={() => Taro.navigateTo({ url: '/pages/reviews/list/index' })}>更多 {'>'}</Text>
           </View>

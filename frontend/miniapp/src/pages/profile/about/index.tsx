@@ -27,7 +27,7 @@ export default function About() {
         </View>
       <View className='brand-section'>
         <View className='logo'>🐾</View>
-        <Text className='app-name'>尾巴旅行 PetWay</Text>
+        <Text className='app-name'>尾巴PetWay</Text>
         <Text className='app-slogan'>与爱宠并肩同行</Text>
         <Text className='version'>Version 1.0.0</Text>
       </View>
@@ -48,7 +48,7 @@ export default function About() {
       <View className='desc-section'>
         <Text className='desc-title'>关于我们</Text>
         <Text className='desc-text'>
-          尾巴旅行 PetWay 是专注于宠物友好旅行的服务平台。我们致力于为爱宠家庭提供安全、舒适、有趣的旅行体验，让每一次出发都能留下与毛孩子的美好回忆。
+          尾巴PetWay 是专注于宠物友好型户外活动的服务平台。我们致力于为爱宠家庭提供安全、舒适、有趣的出行体验，让每一次相聚都能留下与毛孩子的美好回忆。
         </Text>
       </View>
     </View>

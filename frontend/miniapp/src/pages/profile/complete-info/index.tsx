@@ -143,7 +143,7 @@ export default function CompleteInfo() {
       <View className='content-wrap'>
         <View className='brand-section'>
           <Image className='logo' src={require('../../../assets/see-throughlogo.png')} mode='aspectFit' />
-          <Text className='title'>欢迎来到尾巴旅行</Text>
+          <Text className='title'>欢迎来到尾巴PetWay</Text>
           <Text className='subtitle'>设置您的专属昵称和头像，开启旅程</Text>
         </View>
 

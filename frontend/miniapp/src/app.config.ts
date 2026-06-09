@@ -47,7 +47,7 @@ export default defineAppConfig({
     backgroundTextStyle: 'light',
     navigationStyle: 'custom',
     navigationBarBackgroundColor: '#f5f7f5',
-    navigationBarTitleText: '尾巴旅行',
+    navigationBarTitleText: '尾巴PetWay',
     navigationBarTextStyle: 'black'
   },
   tabBar: {
@@ -64,7 +64,7 @@ export default defineAppConfig({
       },
       {
         pagePath: 'pages/routes/index',
-        text: '线路',
+        text: '活动',
         iconPath: 'assets/icons/tab-route.png',
         selectedIconPath: 'assets/icons/tab-route-active.png'
       },

@@ -58,7 +58,7 @@ export default function CouponList() {
       </View>
 
       <View className='coupon-notice'>
-        <Text className='coupon-notice-text'>💡 优惠券仅减免路线价格，保险/选配不参与优惠</Text>
+        <Text className='coupon-notice-text'>💡 优惠券仅减免活动价格，保险/选配不参与优惠</Text>
       </View>
 
       <View className='coupon-list'>

@@ -101,7 +101,7 @@ export default function Pets() {
         <View className='navbar-content'>
           <View className='navbar-left'>
             <Image className='navbar-icon' src={logoIcon} mode='aspectFit' />
-            <Text className='navbar-title'>尾巴旅行</Text>
+            <Text className='navbar-title'>尾巴PetWay</Text>
           </View>
         </View>
       </View>

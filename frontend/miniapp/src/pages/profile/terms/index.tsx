@@ -13,11 +13,11 @@ export default function Terms() {
       <View className='content-section'>
         <Text className='title'>用户协议</Text>
         <Text className='paragraph'>
-          欢迎使用尾巴旅行 PetWay！在您使用我们的服务之前，请仔细阅读本用户协议。
+          欢迎使用尾巴PetWay！在您使用我们的服务之前，请仔细阅读本用户协议。
         </Text>
         <Text className='subtitle'>1. 服务范围</Text>
         <Text className='paragraph'>
-          我们提供宠物友好旅行路线预订、出行人管理、订单跟踪、评价分享等服务。
+          我们提供宠物友好活动报名、出行人管理、订单跟踪、评价分享等服务。
         </Text>
         <Text className='subtitle'>2. 用户责任</Text>
         <Text className='paragraph'>

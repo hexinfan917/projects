@@ -97,7 +97,7 @@ export default function MemberInfo() {
 
       <View className='info-header'>
         <Text className='info-welcome'>欢迎加入</Text>
-        <Text className='info-brand'>尾巴旅行VIP会员</Text>
+        <Text className='info-brand'>尾巴PetWay VIP会员</Text>
         <Text className='info-tip'>完善个人真实信息，不错过生日惊喜</Text>
       </View>
 
