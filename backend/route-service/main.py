@@ -86,7 +86,7 @@ async def _get_route_name_to_id_map(db: AsyncSession) -> dict:
     return {v: k for k, v in _DEFAULT_TYPE_NAME_MAP.items()}
 
 async def _get_nearest_schedule_prices(db: AsyncSession, route_ids: list) -> dict:
-    """批量查询每个路线的最近排期价格 {route_id: {price, self_drive_price}}
+    """批量查询每个路线的最近排期价格 {route_id: {price, self_drive_price, member_price}}
     
     取第一个有价格配置（含免费活动 price=0）的排期
     """
@@ -96,7 +96,10 @@ async def _get_nearest_schedule_prices(db: AsyncSession, route_ids: list) -> dic
         return {}
     try:
         result = await db.execute(
-            select(RouteSchedule.route_id, RouteSchedule.price, RouteSchedule.self_drive_price)
+            select(
+                RouteSchedule.route_id, RouteSchedule.price, RouteSchedule.self_drive_price,
+                RouteSchedule.member_price, RouteSchedule.member_self_drive_price, RouteSchedule.travel_type
+            )
             .where(RouteSchedule.route_id.in_(route_ids))
             .where(RouteSchedule.status == 1)
             .where(RouteSchedule.schedule_date >= date.today())
@@ -107,9 +110,16 @@ async def _get_nearest_schedule_prices(db: AsyncSession, route_ids: list) -> dic
         for row in result.all():
             rid = row.route_id
             if rid not in schedule_map:
+                # 根据出行方式选择展示的会员价
+                is_self_drive = row.travel_type == 2
+                is_bus = row.travel_type == 1
+                member_price = float(row.member_price) if row.member_price is not None else None
+                member_sd_price = float(row.member_self_drive_price) if row.member_self_drive_price is not None else None
+                display_member_price = member_sd_price if is_self_drive else (member_price if is_bus else (member_price if member_price is not None else member_sd_price))
                 schedule_map[rid] = {
                     "price": float(row.price) if row.price is not None else None,
-                    "self_drive_price": float(row.self_drive_price) if row.self_drive_price is not None else None
+                    "self_drive_price": float(row.self_drive_price) if row.self_drive_price is not None else None,
+                    "member_price": display_member_price
                 }
         return schedule_map
     except Exception as e:
@@ -279,8 +289,9 @@ async def get_routes(
                 "difficulty": r.difficulty,
                 "min_participants": r.min_participants,
                 "max_participants": r.max_participants,
-                "schedule_price": sp.get("price") if sp.get("price") else 0,
-                "schedule_self_drive_price": sp.get("self_drive_price") if sp.get("self_drive_price") else None,
+                "schedule_price": sp.get("price") if sp.get("price") is not None else 0,
+                "schedule_self_drive_price": sp.get("self_drive_price") if sp.get("self_drive_price") is not None else None,
+                "schedule_member_price": sp.get("member_price") if sp.get("member_price") is not None else None,
                 "rating": avg_rating,
                 "review_count": review_count,
                 "distance": None,
@@ -400,8 +411,9 @@ async def get_route_detail(
             "difficulty_name": difficulty_map.get(r.difficulty, "简单"),
             "min_participants": r.min_participants,
             "max_participants": r.max_participants,
-            "schedule_price": sp_val.get("price") if sp_val.get("price") else 0,
-            "schedule_self_drive_price": sp_val.get("self_drive_price") if sp_val.get("self_drive_price") else None,
+            "schedule_price": sp_val.get("price") if sp_val.get("price") is not None else 0,
+            "schedule_self_drive_price": sp_val.get("self_drive_price") if sp_val.get("self_drive_price") is not None else None,
+            "schedule_member_price": sp_val.get("member_price") if sp_val.get("member_price") is not None else None,
             "display_price": r.display_price,
             "rating": avg_rating,
             "review_count": review_count,
@@ -510,6 +522,21 @@ async def get_route_schedules(
                 "self_drive_extra_person_price": float(s.self_drive_extra_person_price) if s.self_drive_extra_person_price is not None else None,
                 "self_drive_extra_pet_price": float(s.self_drive_extra_pet_price) if s.self_drive_extra_pet_price is not None else None,
                 "non_member_price": float(s.non_member_price) if s.non_member_price is not None else None,
+                # 会员专属价
+                "member_price": float(s.member_price) if s.member_price is not None else None,
+                "member_single_person_price": float(s.member_single_person_price) if s.member_single_person_price is not None else None,
+                "member_two_person_one_pet_price": float(s.member_two_person_one_pet_price) if s.member_two_person_one_pet_price is not None else None,
+                "member_one_person_two_pet_price": float(s.member_one_person_two_pet_price) if s.member_one_person_two_pet_price is not None else None,
+                "member_single_pet_price": float(s.member_single_pet_price) if s.member_single_pet_price is not None else None,
+                "member_extra_person_price": float(s.member_extra_person_price) if s.member_extra_person_price is not None else None,
+                "member_extra_pet_price": float(s.member_extra_pet_price) if s.member_extra_pet_price is not None else None,
+                "member_self_drive_price": float(s.member_self_drive_price) if s.member_self_drive_price is not None else None,
+                "member_self_drive_single_person_price": float(s.member_self_drive_single_person_price) if s.member_self_drive_single_person_price is not None else None,
+                "member_self_drive_two_person_one_pet_price": float(s.member_self_drive_two_person_one_pet_price) if s.member_self_drive_two_person_one_pet_price is not None else None,
+                "member_self_drive_one_person_two_pet_price": float(s.member_self_drive_one_person_two_pet_price) if s.member_self_drive_one_person_two_pet_price is not None else None,
+                "member_self_drive_single_pet_price": float(s.member_self_drive_single_pet_price) if s.member_self_drive_single_pet_price is not None else None,
+                "member_self_drive_extra_person_price": float(s.member_self_drive_extra_person_price) if s.member_self_drive_extra_person_price is not None else None,
+                "member_self_drive_extra_pet_price": float(s.member_self_drive_extra_pet_price) if s.member_self_drive_extra_pet_price is not None else None,
                 "stock": s.stock or 0,
                 "sold": s.sold or 0,
                 "status": s.status or 1,
@@ -692,6 +719,21 @@ class ScheduleCreateUpdate(BaseModel):
     self_drive_extra_person_price: Optional[float] = None
     self_drive_extra_pet_price: Optional[float] = None
     non_member_price: Optional[float] = None
+    # 会员专属价
+    member_price: Optional[float] = None
+    member_single_person_price: Optional[float] = None
+    member_two_person_one_pet_price: Optional[float] = None
+    member_one_person_two_pet_price: Optional[float] = None
+    member_single_pet_price: Optional[float] = None
+    member_extra_person_price: Optional[float] = None
+    member_extra_pet_price: Optional[float] = None
+    member_self_drive_price: Optional[float] = None
+    member_self_drive_single_person_price: Optional[float] = None
+    member_self_drive_two_person_one_pet_price: Optional[float] = None
+    member_self_drive_one_person_two_pet_price: Optional[float] = None
+    member_self_drive_single_pet_price: Optional[float] = None
+    member_self_drive_extra_person_price: Optional[float] = None
+    member_self_drive_extra_pet_price: Optional[float] = None
     stock: Optional[int] = None
     status: Optional[int] = None
     guide_id: Optional[int] = None
@@ -1347,6 +1389,21 @@ async def admin_get_schedules(
                 "self_drive_single_pet_price": float(s.self_drive_single_pet_price) if s.self_drive_single_pet_price is not None else None,
                 "self_drive_extra_person_price": float(s.self_drive_extra_person_price) if s.self_drive_extra_person_price is not None else None,
                 "self_drive_extra_pet_price": float(s.self_drive_extra_pet_price) if s.self_drive_extra_pet_price is not None else None,
+                # 会员专属价
+                "member_price": float(s.member_price) if s.member_price is not None else None,
+                "member_single_person_price": float(s.member_single_person_price) if s.member_single_person_price is not None else None,
+                "member_two_person_one_pet_price": float(s.member_two_person_one_pet_price) if s.member_two_person_one_pet_price is not None else None,
+                "member_one_person_two_pet_price": float(s.member_one_person_two_pet_price) if s.member_one_person_two_pet_price is not None else None,
+                "member_single_pet_price": float(s.member_single_pet_price) if s.member_single_pet_price is not None else None,
+                "member_extra_person_price": float(s.member_extra_person_price) if s.member_extra_person_price is not None else None,
+                "member_extra_pet_price": float(s.member_extra_pet_price) if s.member_extra_pet_price is not None else None,
+                "member_self_drive_price": float(s.member_self_drive_price) if s.member_self_drive_price is not None else None,
+                "member_self_drive_single_person_price": float(s.member_self_drive_single_person_price) if s.member_self_drive_single_person_price is not None else None,
+                "member_self_drive_two_person_one_pet_price": float(s.member_self_drive_two_person_one_pet_price) if s.member_self_drive_two_person_one_pet_price is not None else None,
+                "member_self_drive_one_person_two_pet_price": float(s.member_self_drive_one_person_two_pet_price) if s.member_self_drive_one_person_two_pet_price is not None else None,
+                "member_self_drive_single_pet_price": float(s.member_self_drive_single_pet_price) if s.member_self_drive_single_pet_price is not None else None,
+                "member_self_drive_extra_person_price": float(s.member_self_drive_extra_person_price) if s.member_self_drive_extra_person_price is not None else None,
+                "member_self_drive_extra_pet_price": float(s.member_self_drive_extra_pet_price) if s.member_self_drive_extra_pet_price is not None else None,
                 "stock": s.stock or 0,
                 "sold": s.sold or 0,
                 "status": s.status or 1,
@@ -1415,6 +1472,21 @@ async def admin_create_schedule(
             self_drive_extra_person_price=data.self_drive_extra_person_price,
             self_drive_extra_pet_price=data.self_drive_extra_pet_price,
             non_member_price=data.non_member_price,
+            # 会员专属价
+            member_price=data.member_price,
+            member_single_person_price=data.member_single_person_price,
+            member_two_person_one_pet_price=data.member_two_person_one_pet_price,
+            member_one_person_two_pet_price=data.member_one_person_two_pet_price,
+            member_single_pet_price=data.member_single_pet_price,
+            member_extra_person_price=data.member_extra_person_price,
+            member_extra_pet_price=data.member_extra_pet_price,
+            member_self_drive_price=data.member_self_drive_price,
+            member_self_drive_single_person_price=data.member_self_drive_single_person_price,
+            member_self_drive_two_person_one_pet_price=data.member_self_drive_two_person_one_pet_price,
+            member_self_drive_one_person_two_pet_price=data.member_self_drive_one_person_two_pet_price,
+            member_self_drive_single_pet_price=data.member_self_drive_single_pet_price,
+            member_self_drive_extra_person_price=data.member_self_drive_extra_person_price,
+            member_self_drive_extra_pet_price=data.member_self_drive_extra_pet_price,
             addon_prices=data.addon_prices,
             stock=data.stock,
             status=data.status,
@@ -1549,6 +1621,21 @@ async def admin_batch_create_schedules(
         self_drive_extra_person_price = data.get('self_drive_extra_person_price')
         self_drive_extra_pet_price = data.get('self_drive_extra_pet_price')
         non_member_price = data.get('non_member_price')
+        # 会员专属价
+        member_price = data.get('member_price')
+        member_single_person_price = data.get('member_single_person_price')
+        member_two_person_one_pet_price = data.get('member_two_person_one_pet_price')
+        member_one_person_two_pet_price = data.get('member_one_person_two_pet_price')
+        member_single_pet_price = data.get('member_single_pet_price')
+        member_extra_person_price = data.get('member_extra_person_price')
+        member_extra_pet_price = data.get('member_extra_pet_price')
+        member_self_drive_price = data.get('member_self_drive_price')
+        member_self_drive_single_person_price = data.get('member_self_drive_single_person_price')
+        member_self_drive_two_person_one_pet_price = data.get('member_self_drive_two_person_one_pet_price')
+        member_self_drive_one_person_two_pet_price = data.get('member_self_drive_one_person_two_pet_price')
+        member_self_drive_single_pet_price = data.get('member_self_drive_single_pet_price')
+        member_self_drive_extra_person_price = data.get('member_self_drive_extra_person_price')
+        member_self_drive_extra_pet_price = data.get('member_self_drive_extra_pet_price')
         travel_type = data.get('travel_type', 0)
         stock = data.get('stock', 12)
         
@@ -1599,6 +1686,21 @@ async def admin_batch_create_schedules(
                     self_drive_extra_person_price=self_drive_extra_person_price,
                     self_drive_extra_pet_price=self_drive_extra_pet_price,
                     non_member_price=non_member_price,
+                    # 会员专属价
+                    member_price=member_price,
+                    member_single_person_price=member_single_person_price,
+                    member_two_person_one_pet_price=member_two_person_one_pet_price,
+                    member_one_person_two_pet_price=member_one_person_two_pet_price,
+                    member_single_pet_price=member_single_pet_price,
+                    member_extra_person_price=member_extra_person_price,
+                    member_extra_pet_price=member_extra_pet_price,
+                    member_self_drive_price=member_self_drive_price,
+                    member_self_drive_single_person_price=member_self_drive_single_person_price,
+                    member_self_drive_two_person_one_pet_price=member_self_drive_two_person_one_pet_price,
+                    member_self_drive_one_person_two_pet_price=member_self_drive_one_person_two_pet_price,
+                    member_self_drive_single_pet_price=member_self_drive_single_pet_price,
+                    member_self_drive_extra_person_price=member_self_drive_extra_person_price,
+                    member_self_drive_extra_pet_price=member_self_drive_extra_pet_price,
                     stock=stock,
                     travel_type=travel_type,
                     status=1,

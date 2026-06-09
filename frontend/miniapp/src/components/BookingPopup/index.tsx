@@ -1,11 +1,11 @@
 import { useState, useMemo, useEffect } from 'react'
 import Taro from '@tarojs/taro'
 import { View, Text, Image, ScrollView } from '@tarojs/components'
-import { getRouteAddons, getAddonCategories, BASE_URL } from '../../utils/api'
+import { getRouteAddons, getAddonCategories, getMemberCenter, IMAGE_BASE_URL } from '../../utils/api'
 import './index.scss'
 
 const WEEK_DAYS = ['日', '一', '二', '三', '四', '五', '六']
-const FILE_BASE_URL = BASE_URL
+const FILE_BASE_URL = IMAGE_BASE_URL
 
 // 套餐选项配置
 const PACKAGE_OPTIONS = [
@@ -35,6 +35,16 @@ export default function BookingPopup({ visible, route, schedules, onClose, onNex
   const [dateScrollId, setDateScrollId] = useState('')
   const [addonQuantities, setAddonQuantities] = useState<Record<number, number>>({})
   const [addons, setAddons] = useState<any[]>([])
+  const [isMember, setIsMember] = useState(false)
+
+  // 获取会员状态
+  useEffect(() => {
+    if (visible) {
+      getMemberCenter().then(res => {
+        setIsMember(!!res.data?.is_member)
+      }).catch(() => setIsMember(false))
+    }
+  }, [visible])
 
   // 弹窗打开时默认选中第一个可用日期
   useEffect(() => {
@@ -176,12 +186,17 @@ export default function BookingPopup({ visible, route, schedules, onClose, onNex
   const schedulePriceField = pkgConfig.priceField === 'base_price'
     ? (travelType === 'self_drive' ? 'self_drive_price' : 'price')
     : priceField
+  const memberPriceField = pkgConfig.priceField === 'base_price'
+    ? (travelType === 'self_drive' ? 'member_self_drive_price' : 'member_price')
+    : `member_${priceField}`
 
   // 价格完全从排期取（不再回退到路线默认价）
   const basePrice = (() => {
     if (selectedDate) {
       const schedule = scheduleMap[selectedDate]
       if (schedule && schedule[schedulePriceField] != null) {
+        const mp = schedule[memberPriceField]
+        if (isMember && mp != null) return mp
         return schedule[schedulePriceField]
       }
     }
@@ -190,9 +205,12 @@ export default function BookingPopup({ visible, route, schedules, onClose, onNex
 
   const extraPersonPrice = (() => {
     const scheduleField = travelType === 'self_drive' ? 'self_drive_extra_person_price' : 'extra_person_price'
+    const memberField = travelType === 'self_drive' ? 'member_self_drive_extra_person_price' : 'member_extra_person_price'
     if (selectedDate) {
       const schedule = scheduleMap[selectedDate]
       if (schedule && schedule[scheduleField] != null) {
+        const mp = schedule[memberField]
+        if (isMember && mp != null) return mp
         return schedule[scheduleField]
       }
     }
@@ -201,9 +219,12 @@ export default function BookingPopup({ visible, route, schedules, onClose, onNex
 
   const extraPetPrice = (() => {
     const scheduleField = travelType === 'self_drive' ? 'self_drive_extra_pet_price' : 'extra_pet_price'
+    const memberField = travelType === 'self_drive' ? 'member_self_drive_extra_pet_price' : 'member_extra_pet_price'
     if (selectedDate) {
       const schedule = scheduleMap[selectedDate]
       if (schedule && schedule[scheduleField] != null) {
+        const mp = schedule[memberField]
+        if (isMember && mp != null) return mp
         return schedule[scheduleField]
       }
     }
@@ -216,7 +237,15 @@ export default function BookingPopup({ visible, route, schedules, onClose, onNex
 
   // 获取日期卡片展示价格（只取排期当日价格）
   const getDisplayPrice = (schedule: any) => {
-    return schedule?.price || 0
+    if (!schedule) return 0
+    // 仅自驾排期用 member_self_drive_price，仅大巴/两者都用 member_price
+    const isSelfDriveOnly = schedule.travel_type === 2
+    const isBusOnly = schedule.travel_type === 1
+    const mp = isSelfDriveOnly ? schedule.member_self_drive_price
+      : (isBusOnly ? schedule.member_price
+      : (schedule.member_price != null ? schedule.member_price : schedule.member_self_drive_price))
+    if (isMember && mp != null) return mp
+    return isSelfDriveOnly ? (schedule.self_drive_price || 0) : (schedule.price || 0)
   }
 
   // 获取 addon 排期级价格（优先）或路线默认价格
@@ -482,9 +511,16 @@ export default function BookingPopup({ visible, route, schedules, onClose, onNex
                         const field = pkg.priceField === 'base_price'
                           ? (travelType === 'self_drive' ? 'self_drive_price' : 'price')
                           : (travelType === 'self_drive' ? `self_drive_${pkg.priceField}` : pkg.priceField)
+                        const memberField = pkg.priceField === 'base_price'
+                          ? (travelType === 'self_drive' ? 'member_self_drive_price' : 'member_price')
+                          : `member_${travelType === 'self_drive' ? `self_drive_${pkg.priceField}` : pkg.priceField}`
                         if (schedule[field] != null) {
                           price = schedule[field]
                           hasPrice = true
+                        }
+                        // 会员优先使用会员价
+                        if (isMember && schedule[memberField] != null) {
+                          price = schedule[memberField]
                         }
                       }
                     }

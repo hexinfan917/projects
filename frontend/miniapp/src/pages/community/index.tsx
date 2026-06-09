@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import Taro, { useDidShow } from '@tarojs/taro'
 import { View, Text, Image, ScrollView } from '@tarojs/components'
-import { getArticles, setActiveTab, BASE_URL } from '../../utils/api'
+import { getArticles, setActiveTab, IMAGE_BASE_URL } from '../../utils/api'
 import './index.scss'
 
 export default function Community() {
@@ -93,7 +93,7 @@ export default function Community() {
           {articles.map(article => (
             <View key={article.id} className='post-card' onClick={() => goToDetail(article.id)}>
               {article.cover_image ? (
-                <Image className='post-image' src={article.cover_image ? (article.cover_image.startsWith('http') ? article.cover_image : `${BASE_URL}${article.cover_image}`) + '?w=750&q=75' : ''} mode='widthFix' />
+                <Image className='post-image' src={article.cover_image ? (article.cover_image.startsWith('http') ? article.cover_image : `${IMAGE_BASE_URL}${article.cover_image}`) + '?w=750&q=75' : ''} mode='widthFix' />
               ) : (
                 <View className='post-image-placeholder' />
               )}

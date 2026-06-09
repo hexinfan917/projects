@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import Taro, { useDidShow } from '@tarojs/taro'
 import { View, Text, Image, ScrollView, Button } from '@tarojs/components'
-import { getCharityActivityDetail, getCharityRegisterStatus, BASE_URL } from '../../../utils/api'
+import { getCharityActivityDetail, getCharityRegisterStatus, IMAGE_BASE_URL } from '../../../utils/api'
 import './index.scss'
 
 export default function CharityDetail() {
@@ -79,7 +79,7 @@ export default function CharityDetail() {
 
   if (!detail) return null
 
-  const coverImage = detail.cover_image ? (detail.cover_image.startsWith('http') ? detail.cover_image : `${BASE_URL}${detail.cover_image}`) + '?w=750&q=75' : ''
+  const coverImage = detail.cover_image ? (detail.cover_image.startsWith('http') ? detail.cover_image : `${IMAGE_BASE_URL}${detail.cover_image}`) + '?w=750&q=75' : ''
   const statusMap: Record<string, string> = {
     '1': '报名中',
     '2': '进行中',
@@ -99,7 +99,7 @@ export default function CharityDetail() {
   }
   galleryImages = galleryImages.filter((url: string) => url !== detail.cover_image)
 
-  const getFullImageUrl = (url: string) => url.startsWith('http') ? url + '?w=800&q=75' : `${BASE_URL}${url}?w=800&q=75`
+  const getFullImageUrl = (url: string) => url.startsWith('http') ? url + '?w=800&q=75' : `${IMAGE_BASE_URL}${url}?w=800&q=75`
 
   // 处理 RichText 内容中的图片，使其自适应宽度
   const processedContent = detail.content

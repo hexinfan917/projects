@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import Taro from '@tarojs/taro'
 import { View, Text, Image, ScrollView } from '@tarojs/components'
-import { getReviews, BASE_URL } from '../../../utils/api'
+import { getReviews, IMAGE_BASE_URL } from '../../../utils/api'
 import './index.scss'
 
 export default function ReviewList() {
@@ -28,7 +28,7 @@ export default function ReviewList() {
           participants: a.participants || 0,
           like_count: a.like_count || 0,
           view_count: a.view_count || 0,
-          image: a.cover_image ? (a.cover_image.startsWith('http') ? a.cover_image : `${BASE_URL}${a.cover_image}`) + '?w=750&q=75' : '',
+          image: a.cover_image ? (a.cover_image.startsWith('http') ? a.cover_image : `${IMAGE_BASE_URL}${a.cover_image}`) + '?w=750&q=75' : '',
           tag: a.location || '精彩回顾',
         }))
         if (p === 1) {

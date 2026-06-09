@@ -23,6 +23,7 @@ class RouteResponse(BaseModel):
     max_participants: int
     schedule_price: float = 0
     schedule_self_drive_price: Optional[float] = None
+    schedule_member_price: Optional[float] = None
     rating: float
     review_count: int
     distance: Optional[int]
@@ -83,6 +84,7 @@ class RouteDetailResponse(BaseModel):
     max_participants: int
     schedule_price: float = 0
     schedule_self_drive_price: Optional[float] = None
+    schedule_member_price: Optional[float] = None
     rating: float
     review_count: int
     suitable_breeds: Optional[List[str]]

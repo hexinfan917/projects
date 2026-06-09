@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import Taro, { useDidShow, useShareAppMessage, useShareTimeline } from '@tarojs/taro'
-import { setActiveTab, getRoutes, getCharityActivities, getReviews, getBanners, getMemberPopup, logPopupAction, BASE_URL } from '../../utils/api'
+import { setActiveTab, getRoutes, getCharityActivities, getReviews, getBanners, getMemberPopup, logPopupAction, getMemberCenter, IMAGE_BASE_URL } from '../../utils/api'
 import { View, Text, Swiper, SwiperItem, Image, ScrollView, Input } from '@tarojs/components'
 const logoIcon = '/assets/toplogo.png'
 
@@ -21,6 +21,7 @@ export default function Index() {
   const [searchKeyword, setSearchKeyword] = useState('')
   const [popupVisible, setPopupVisible] = useState(false)
   const [popupData, setPopupData] = useState<any>(null)
+  const [isMember, setIsMember] = useState(false)
 
   // 分享给好友
   useShareAppMessage(() => {
@@ -45,6 +46,7 @@ export default function Index() {
     loadHomeData()
     setActiveTab(0, 'pages/index/index')
     loadPopup()
+    getMemberCenter().then(res => setIsMember(!!res.data?.is_member)).catch(() => setIsMember(false))
     // 延迟清空搜索框，确保页面完全显示后生效
     setTimeout(() => {
       setSearchKeyword('')
@@ -111,7 +113,7 @@ export default function Index() {
       if (bannerRes.code === 200 && bannerRes.data?.banners) {
         setBanners(bannerRes.data.banners.map((b: any) => ({
           id: b.id,
-          image: b.image_url ? (b.image_url.startsWith('http') ? b.image_url : `${BASE_URL}${b.image_url}`) + '?w=750&q=75' : '',
+          image: b.image_url ? (b.image_url.startsWith('http') ? b.image_url : `${IMAGE_BASE_URL}${b.image_url}`) + '?w=750&q=75' : '',
           link_url: b.link_url || '',
         })))
       } else {
@@ -125,8 +127,10 @@ export default function Index() {
           id: r.id,
           name: r.name,
           type: r.route_type_name || r.type_name || '精选',
-          price: (r.schedule_price !== undefined && r.schedule_price !== null) ? r.schedule_price : (r.price || 0),
-          cover_image: r.cover_image ? (r.cover_image.startsWith('http') ? r.cover_image : `${BASE_URL}${r.cover_image}`) + '?w=750&q=75' : 'https://via.placeholder.com/620x420/CCCCCC/FFFFFF?text=No+Image',
+          price: isMember && r.schedule_member_price != null
+            ? r.schedule_member_price
+            : ((r.schedule_price !== undefined && r.schedule_price !== null) ? r.schedule_price : (r.price || 0)),
+          cover_image: r.cover_image ? (r.cover_image.startsWith('http') ? r.cover_image : `${IMAGE_BASE_URL}${r.cover_image}`) + '?w=750&q=75' : 'https://via.placeholder.com/620x420/CCCCCC/FFFFFF?text=No+Image',
           subtitle: r.subtitle || ''
         })))
       }
@@ -140,7 +144,7 @@ export default function Index() {
           date: a.event_date || '',
           location: a.location || '',
           participants: a.participants || 0,
-          image: a.cover_image ? (a.cover_image.startsWith('http') ? a.cover_image : `${BASE_URL}${a.cover_image}`) + '?w=750&q=75' : 'https://via.placeholder.com/700x380/CCCCCC/FFFFFF?text=No+Image',
+          image: a.cover_image ? (a.cover_image.startsWith('http') ? a.cover_image : `${IMAGE_BASE_URL}${a.cover_image}`) + '?w=750&q=75' : 'https://via.placeholder.com/700x380/CCCCCC/FFFFFF?text=No+Image',
         })))
       }
 
@@ -153,7 +157,7 @@ export default function Index() {
           date: a.start_date || '',
           location: a.location || '',
           status: a.status_name || '报名中',
-          image: a.cover_image ? (a.cover_image.startsWith('http') ? a.cover_image : `${BASE_URL}${a.cover_image}`) + '?w=750&q=75' : 'https://via.placeholder.com/700x380/96C93D/FFFFFF?text=Charity',
+          image: a.cover_image ? (a.cover_image.startsWith('http') ? a.cover_image : `${IMAGE_BASE_URL}${a.cover_image}`) + '?w=750&q=75' : 'https://via.placeholder.com/700x380/96C93D/FFFFFF?text=Charity',
         })))
       }
     } catch (error) {
@@ -339,7 +343,7 @@ export default function Index() {
           <View className='member-popup-mask' onClick={handlePopupClose} />
           <View className='member-popup-content'>
             <Text className='member-popup-close' onClick={handlePopupClose}>✕</Text>
-            <Image className='member-popup-poster' src={popupData.image ? (popupData.image.startsWith('http') ? popupData.image : `${BASE_URL}${popupData.image}`) + '?w=600&q=75' : '/assets/images/member.jpg'} mode='widthFix' />
+            <Image className='member-popup-poster' src={popupData.image ? (popupData.image.startsWith('http') ? popupData.image : `${IMAGE_BASE_URL}${popupData.image}`) + '?w=600&q=75' : '/assets/images/member.jpg'} mode='widthFix' />
             {popupData.title && <Text className='member-popup-title'>{popupData.title}</Text>}
             {popupData.subtitle && <Text className='member-popup-subtitle'>{popupData.subtitle}</Text>}
             {popupData.content?.benefits?.length > 0 && (

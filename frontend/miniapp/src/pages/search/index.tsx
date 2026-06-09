@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import Taro from '@tarojs/taro'
 import { View, Text, ScrollView, Image } from '@tarojs/components'
-import { getRoutes, BASE_URL } from '../../utils/api'
+import { getRoutes, IMAGE_BASE_URL } from '../../utils/api'
 import './index.scss'
 
 export default function Search() {
@@ -23,7 +23,7 @@ export default function Search() {
             name: r.name,
             price: hasSchedule ? r.schedule_price : null,
             has_schedule: hasSchedule,
-            cover_image: r.cover_image ? (r.cover_image.startsWith('http') ? r.cover_image : `${BASE_URL}${r.cover_image}`) + '?w=750&q=75' : '',
+            cover_image: r.cover_image ? (r.cover_image.startsWith('http') ? r.cover_image : `${IMAGE_BASE_URL}${r.cover_image}`) + '?w=750&q=75' : '',
             type_name: r.route_type_name || r.type_name || '',
           }
         }))

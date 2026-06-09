@@ -4,12 +4,12 @@ import { View, Text, Button, Checkbox, Image, Input } from '@tarojs/components'
 import { login, getAgreements, updateUserProfile, uploadFile } from '../../utils/api'
 import './index.scss'
 
-import { BASE_URL } from '../../utils/api'
+import { IMAGE_BASE_URL } from '../../utils/api'
 
 function fullImageUrl(url?: string) {
   if (!url) return ''
   if (url.startsWith('http')) return url
-  return `${BASE_URL}${url}`
+  return `${IMAGE_BASE_URL}${url}`
 }
 
 export default function Login() {

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { View, Text, ScrollView, Image, Input } from '@tarojs/components'
 const logoIcon = '/assets/toplogo.png'
 import Taro, { useDidShow } from '@tarojs/taro'
-import { getRoutes, getRouteTypes, setActiveTab, BASE_URL } from '../../utils/api'
+import { getRoutes, getRouteTypes, getMemberCenter, setActiveTab, IMAGE_BASE_URL } from '../../utils/api'
 import './index.scss'
 
 export default function Routes() {
@@ -14,12 +14,14 @@ export default function Routes() {
   const [activeCategory, setActiveCategory] = useState('')
   const [categories, setCategories] = useState<any[]>([])
   const [refreshing, setRefreshing] = useState(false)
+  const [isMember, setIsMember] = useState(false)
   const pageSize = 10
 
   useDidShow(() => {
     loadRoutes(true)
     loadCategories()
     setActiveTab(1, 'pages/routes/index')
+    getMemberCenter().then(res => setIsMember(!!res.data?.is_member)).catch(() => setIsMember(false))
   })
 
   useEffect(() => {
@@ -54,11 +56,14 @@ export default function Routes() {
       const res = await getRoutes(params)
       const list = (res.data?.routes || []).map((r: any) => {
         const hasSchedule = r.schedule_price !== undefined && r.schedule_price !== null
+        const displayPrice = isMember && r.schedule_member_price != null
+          ? r.schedule_member_price
+          : (hasSchedule ? r.schedule_price : 0)
         return {
           ...r,
-          price: hasSchedule ? r.schedule_price : 0,
+          price: displayPrice,
           has_schedule: hasSchedule,
-          cover_image: r.cover_image ? (r.cover_image.startsWith('http') ? r.cover_image : `${BASE_URL}${r.cover_image}`) + '?w=750&q=75' : ''
+          cover_image: r.cover_image ? (r.cover_image.startsWith('http') ? r.cover_image : `${IMAGE_BASE_URL}${r.cover_image}`) + '?w=750&q=75' : ''
         }
       })
       setRoutes(prev => refresh ? list : [...prev, ...list])

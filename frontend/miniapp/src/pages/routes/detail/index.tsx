@@ -1,12 +1,12 @@
 import { useEffect, useState, useMemo } from 'react'
 import Taro, { useShareAppMessage, useShareTimeline } from '@tarojs/taro'
 import { View, Text, Image, ScrollView, Button, RichText, Swiper, SwiperItem } from '@tarojs/components'
-import { getRouteDetail, getRouteSchedules, getMemberCenter, BASE_URL } from '../../../utils/api'
+import { getRouteDetail, getRouteSchedules, getMemberCenter, IMAGE_BASE_URL } from '../../../utils/api'
 import BookingPopup from '../../../components/BookingPopup'
 import './index.scss'
 
 const WEEK_DAYS = ['日', '一', '二', '三', '四', '五', '六']
-const FILE_BASE_URL = BASE_URL
+const FILE_BASE_URL = IMAGE_BASE_URL
 
 /** 处理富文本中的图片：补全相对路径 + 自适应样式 */
 function processRichText(html: string): string {
@@ -222,7 +222,7 @@ export default function RouteDetail() {
         {images.length === 1 ? (
           <Image
             className='cover-image'
-            src={(images[0].startsWith('http') ? images[0] : `${BASE_URL}${images[0]}`) + '?w=750&q=75'}
+            src={(images[0].startsWith('http') ? images[0] : `${IMAGE_BASE_URL}${images[0]}`) + '?w=750&q=75'}
             mode='aspectFill'
             lazyLoad
             onError={() => console.warn('封面图加载失败:', images[0])}
@@ -233,7 +233,7 @@ export default function RouteDetail() {
               <SwiperItem key={idx}>
                 <Image
                   className='cover-image'
-                  src={(img.startsWith('http') ? img : `${BASE_URL}${img}`) + '?w=750&q=75'}
+                  src={(img.startsWith('http') ? img : `${IMAGE_BASE_URL}${img}`) + '?w=750&q=75'}
                   mode='aspectFill'
                   lazyLoad
                   onError={() => console.warn('轮播图加载失败:', img)}
@@ -260,7 +260,9 @@ export default function RouteDetail() {
                     ? (route.is_member_only === 1
                         ? (isMember ? '会员免费' : `非会员￥${route.non_member_price || 0}起/人`)
                         : '免费')
-                    : `￥${route.schedule_price}起/人`)
+                    : (isMember && route.schedule_member_price != null && route.schedule_member_price > 0
+                        ? `￥${route.schedule_member_price}起/人`
+                        : `￥${route.schedule_price}起/人`))
                 : '暂无营期'
             )}
           </Text>
@@ -269,13 +271,7 @@ export default function RouteDetail() {
               <Text className='highlight-tag' style={{ background: '#FFF7E6', color: '#D48806', border: '1rpx solid #FFD591' }}>会员专享免费</Text>
             </View>
           )}
-          {route.is_insurance_required === 1 && (
-            <View className='highlights-row' style={{ marginTop: '8rpx' }}>
-              <Text className='highlight-tag' style={{ background: '#F6FFED', color: '#389E0D', border: '1rpx solid #B7EB8F' }}>
-                保险 宠物¥{route.pet_insurance_price || 15}/只 人身¥{route.person_insurance_price || 10}/人
-              </Text>
-            </View>
-          )}
+          {/* 保险价格标签已移除 */}
         </View>
 
         {route.description ? (
@@ -389,7 +385,11 @@ export default function RouteDetail() {
                           ? (route.is_member_only === 1
                               ? (isMember ? '会员免费' : `￥${schedule.non_member_price || route.non_member_price || 0}`)
                               : '免费')
-                          : `￥${schedule.price}`}
+                          : (isMember
+                              ? (schedule.travel_type === 2
+                                ? (schedule.member_self_drive_price != null ? `￥${schedule.member_self_drive_price}` : `￥${schedule.self_drive_price || 0}`)
+                                : (schedule.member_price != null ? `￥${schedule.member_price}` : `￥${schedule.price}`))
+                              : (schedule.travel_type === 2 ? `￥${schedule.self_drive_price || 0}` : `￥${schedule.price}`))}
                       </Text>
                     )}
                     {isSelected && <Text className='selected-tag'>出发</Text>}

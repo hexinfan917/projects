@@ -3,13 +3,21 @@ import Taro, { eventCenter } from '@tarojs/taro'
 // 环境切换：开发走本地网关，生产走线上域名
 // 小程序开发工具需勾选「设置 → 项目设置 → 不校验合法域名、web-view（业务域名）、TLS版本以及HTTPS证书」
 const isDev = process.env.NODE_ENV === 'development'
-// 开发环境使用局域网 IP（支持真机调试），如需纯本地开发可改回 localhost
-export const BASE_URL = isDev ? 'http://192.168.5.133:8000' : 'https://tailtravel.cn'
+// 模拟器用 localhost，真机预览用局域网 IP
+const systemInfo = Taro.getSystemInfoSync()
+const isDevtools = systemInfo.platform === 'devtools'
+export const BASE_URL = isDev
+  ? (isDevtools ? 'http://localhost:8000' : 'http://192.168.8.46:8000')
+  : 'https://tailtravel.cn'
+// 图片使用生产域名（微信真机预览/体验版必须走已备案域名，内网IP会被拦截）
+// 注意：本地开发环境新上传的图片在生产服务器上不存在，真机预览时无法显示
+// 如需在真机上测试新图片，请手动将图片同步到生产服务器，或使用 ngrok 内网穿透
+export const IMAGE_BASE_URL = 'https://tailtravel.cn'
 
 /** 补全图片 URL 并添加压缩参数 */
 export function compressImageUrl(url?: string, width?: number): string {
   if (!url) return ''
-  const fullUrl = url.startsWith('http') ? url : `${BASE_URL}${url}`
+  const fullUrl = url.startsWith('http') ? url : `${IMAGE_BASE_URL}${url}`
   const w = width || 800
   return `${fullUrl}?w=${w}&q=75`
 }

@@ -455,11 +455,13 @@ export default function OrderConfirm() {
       const requiredPersons = pkgConfig.basePerson + (bookingParams?.extraPerson || 0)
       const requiredPets = pkgConfig.basePet + (bookingParams?.extraPet || 0)
       if (selectedTravelers.length < requiredPersons) {
-        Taro.showToast({ title: `您选择了增加${bookingParams?.extraPerson || 0}人，请至少添加${requiredPersons}位出行人`, icon: 'none' })
+        const extraHint = (bookingParams?.extraPerson || 0) > 0 ? `（增加${bookingParams?.extraPerson}人）` : ''
+        Taro.showToast({ title: `您选择了${pkgConfig.label}${extraHint}，请至少添加${requiredPersons}位出行人`, icon: 'none' })
         return
       }
       if (bookingParams?.packageType !== 'single_person' && selectedPetIds.length < requiredPets) {
-        Taro.showToast({ title: `您选择了增加${bookingParams?.extraPet || 0}宠，请至少添加${requiredPets}只宠物`, icon: 'none' })
+        const extraHint = (bookingParams?.extraPet || 0) > 0 ? `（增加${bookingParams?.extraPet}宠）` : ''
+        Taro.showToast({ title: `您选择了${pkgConfig.label}${extraHint}，请至少添加${requiredPets}只宠物`, icon: 'none' })
         return
       }
     }
@@ -635,29 +637,44 @@ export default function OrderConfirm() {
   // 套餐配置
   const pkgType = bookingParams?.packageType || 'couple'
   const pkgConfig = PACKAGE_OPTIONS.find(p => p.key === pkgType) || PACKAGE_OPTIONS[0]
+  const isSinglePersonPackage = bookingParams?.packageType === 'single_person'
 
   // 价格完全从排期取（不再回退到路线默认价）
   const priceField = travelType === 'self_drive' ? `self_drive_${pkgConfig.priceField}` : pkgConfig.priceField
   const schedulePriceField = pkgConfig.priceField === 'base_price'
     ? (travelType === 'self_drive' ? 'self_drive_price' : 'price')
     : priceField
+  const memberPriceField = pkgConfig.priceField === 'base_price'
+    ? (travelType === 'self_drive' ? 'member_self_drive_price' : 'member_price')
+    : `member_${priceField}`
   let basePrice = schedule && schedule[schedulePriceField] != null ? schedule[schedulePriceField] : 0
+  // 会员优先使用会员价
+  if (isMember && schedule && schedule[memberPriceField] != null) {
+    basePrice = schedule[memberPriceField]
+  }
 
   // 额外单价：完全从排期取
   const extraPersonScheduleField = travelType === 'self_drive' ? 'self_drive_extra_person_price' : 'extra_person_price'
+  const memberExtraPersonField = travelType === 'self_drive' ? 'member_self_drive_extra_person_price' : 'member_extra_person_price'
   const extraPersonUnitPrice = schedule && schedule[extraPersonScheduleField] != null
-    ? schedule[extraPersonScheduleField] : 0
+    ? (isMember && schedule[memberExtraPersonField] != null
+      ? schedule[memberExtraPersonField] : schedule[extraPersonScheduleField])
+    : 0
 
   const extraPetScheduleField = travelType === 'self_drive' ? 'self_drive_extra_pet_price' : 'extra_pet_price'
+  const memberExtraPetField = travelType === 'self_drive' ? 'member_self_drive_extra_pet_price' : 'member_extra_pet_price'
   const extraPetUnitPrice = schedule && schedule[extraPetScheduleField] != null
-    ? schedule[extraPetScheduleField] : 0
+    ? (isMember && schedule[memberExtraPetField] != null
+      ? schedule[memberExtraPetField] : schedule[extraPetScheduleField])
+    : 0
 
   // 额外数量：取 BookingPopup 中的选择与实际差额的最大值
   // BookingPopup 中的 extraPerson/extraPet 是用户意向（保底），实际带更多人则追加
   const actualExtraPerson = Math.max(0, selectedTravelers.length - pkgConfig.basePerson)
   const actualExtraPet = Math.max(0, selectedPetIds.length - pkgConfig.basePet)
   const extraPersonCount = Math.max(bookingParams?.extraPerson || 0, actualExtraPerson)
-  const extraPetCount = Math.max(bookingParams?.extraPet || 0, actualExtraPet)
+  // 单人轻旅（无宠）套餐不允许额外宠物
+  const extraPetCount = isSinglePersonPackage ? 0 : Math.max(bookingParams?.extraPet || 0, actualExtraPet)
 
   // 路线配置
   const isMemberOnly = route?.is_member_only === 1
@@ -686,7 +703,8 @@ export default function OrderConfirm() {
   const routePrice = (memberFree || isActuallyFree) ? 0 : rawRoutePrice
 
   // 保险（按路线配置和实际选中的出行人/宠物计算）
-  const petInsuranceTotal = isInsuranceRequired ? petInsuranceUnit * selectedPetIds.length : 0
+  // 单人轻旅（无宠）套餐不计算宠物保险
+  const petInsuranceTotal = (isInsuranceRequired && !isSinglePersonPackage) ? petInsuranceUnit * selectedPetIds.length : 0
   const personInsuranceTotal = isInsuranceRequired ? personInsuranceUnit * selectedTravelers.length : 0
 
   // 行程选配合计（从 bookingParams.addons）
@@ -710,6 +728,13 @@ export default function OrderConfirm() {
 
   useEffect(() => {
     if (!route?.id) return
+    // 路线价格≤20时不加载优惠券（小额订单不可用券）
+    if (routePrice <= 20) {
+      setAvailableCoupons([])
+      setSelectedCouponId(null)
+      setCouponDiscount(0)
+      return
+    }
     const loadCoupons = async () => {
       try {
         const res = await getAvailableCoupons({ route_id: route.id, route_price: rawRoutePrice })
@@ -832,7 +857,8 @@ export default function OrderConfirm() {
         )}
       </View>
 
-      {/* 宠物信息 */}
+      {/* 宠物信息 —— 单人轻旅（无宠）套餐隐藏 */}
+      {!isSinglePersonPackage && (
       <View className='section-block'>
         <View className='section-header'>
           <View className='section-title'>
@@ -872,6 +898,7 @@ export default function OrderConfirm() {
           ))
         )}
       </View>
+      )}
 
       {/* 已选信息（从弹窗传入）—— 免费路线隐藏 */}
       {!isFreeOrder && bookingParams && (
@@ -921,6 +948,7 @@ export default function OrderConfirm() {
           <Text className='insurance-title'>保险服务</Text>
           <Text className='insurance-badge'>必选</Text>
         </View>
+        {!isSinglePersonPackage && (
         <View className={`insurance-item ${selectedPetIds.length > 0 ? 'active' : 'disabled'}`}>
           {selectedPetIds.length > 0 && <View className='insurance-check'>✓</View>}
           <View className='insurance-left'>
@@ -932,6 +960,7 @@ export default function OrderConfirm() {
           </View>
           <Text className='insurance-total'>¥{petInsuranceTotal}</Text>
         </View>
+        )}
         <View className={`insurance-item ${selectedTravelers.length > 0 ? 'active' : 'disabled'}`}>
           {selectedTravelers.length > 0 && <View className='insurance-check'>✓</View>}
           <View className='insurance-left'>
@@ -947,28 +976,40 @@ export default function OrderConfirm() {
       </View>
       )}
 
-      {/* 优惠券 —— 免费路线隐藏 */}
-      {!isFreeOrder && (
+      {/* 优惠券 */}
       <View className='section-block'>
-        <View className='coupon-row' onClick={() => setShowCouponModal(true)}>
-          <View className='coupon-left'>
-            <Text className='coupon-icon'>🎫</Text>
-            <Text className='coupon-title'>优惠券</Text>
+        {routePrice > 20 ? (
+          <>
+            <View className='coupon-row' onClick={() => setShowCouponModal(true)}>
+              <View className='coupon-left'>
+                <Text className='coupon-icon'>🎫</Text>
+                <Text className='coupon-title'>优惠券</Text>
+              </View>
+              <View className='coupon-right'>
+                {selectedCouponId && couponDiscount > 0 ? (
+                  <Text className='coupon-text' style={{ color: '#ba1a1a' }}>-¥{couponDiscount}</Text>
+                ) : (
+                  <Text className='coupon-text'>
+                    {availableCoupons.length > 0 ? `${availableCoupons.length}张可用` : '暂无可用优惠券'}
+                  </Text>
+                )}
+                <Text className='coupon-arrow'>›</Text>
+              </View>
+            </View>
+            <Text className='coupon-tip'>优惠券仅减免路线价格，保险/选配不参与优惠</Text>
+          </>
+        ) : (
+          <View className='coupon-row' style={{ opacity: 0.6 }}>
+            <View className='coupon-left'>
+              <Text className='coupon-icon'>🎫</Text>
+              <Text className='coupon-title'>优惠券</Text>
+            </View>
+            <View className='coupon-right'>
+              <Text className='coupon-text' style={{ color: '#999' }}>暂无可用优惠券</Text>
+            </View>
           </View>
-          <View className='coupon-right'>
-            {selectedCouponId && couponDiscount > 0 ? (
-              <Text className='coupon-text' style={{ color: '#ba1a1a' }}>-¥{couponDiscount}</Text>
-            ) : (
-              <Text className='coupon-text'>
-                {availableCoupons.length > 0 ? `${availableCoupons.length}张可用` : '暂无可用优惠券'}
-              </Text>
-            )}
-            <Text className='coupon-arrow'>›</Text>
-          </View>
-        </View>
-        <Text className='coupon-tip'>优惠券仅减免路线价格，保险/选配不参与优惠</Text>
+        )}
       </View>
-      )}
 
       {/* 协议声明 */}
       {agreements.length > 0 && (
@@ -1033,7 +1074,12 @@ export default function OrderConfirm() {
             <View className='price-detail-body'>
               {/* 基础价 */}
               <View className='price-detail-row'>
-                <Text className='price-detail-name'>基础价（{pkgConfig.label}）</Text>
+                <Text className='price-detail-name'>
+                  基础价（{pkgConfig.label}）
+                  {isMember && schedule && schedule[memberPriceField] != null && (
+                    <Text className='member-tag'>会员价</Text>
+                  )}
+                </Text>
                 <Text className='price-detail-value'>¥{basePrice}</Text>
               </View>
               {extraPersonCount > 0 && (

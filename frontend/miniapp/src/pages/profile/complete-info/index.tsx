@@ -4,12 +4,12 @@ import { View, Text, Input, Button, Image } from '@tarojs/components'
 import { updateUserProfile, uploadFile } from '../../../utils/api'
 import './index.scss'
 
-import { BASE_URL } from '../../../utils/api'
+import { IMAGE_BASE_URL } from '../../../utils/api'
 
 function fullImageUrl(url?: string) {
   if (!url) return ''
   if (url.startsWith('http')) return url
-  return `${BASE_URL}${url}`
+  return `${IMAGE_BASE_URL}${url}`
 }
 
 export default function CompleteInfo() {

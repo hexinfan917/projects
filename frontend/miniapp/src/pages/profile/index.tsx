@@ -113,9 +113,16 @@ export default function Profile() {
   useDidShow(() => {
     setActiveTab(3, 'pages/profile/index')
     loadUser()
-    loadMemberInfo()
-    loadCouponCount()
-    loadMemberPlan()
+    const token = Taro.getStorageSync('access_token')
+    if (token) {
+      loadMemberInfo()
+      loadCouponCount()
+      loadMemberPlan()
+    } else {
+      setMemberInfo(null)
+      setCouponCount(0)
+      setMemberPlan(null)
+    }
   })
 
   useEffect(() => {

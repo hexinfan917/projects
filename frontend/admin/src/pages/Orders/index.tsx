@@ -1,4 +1,4 @@
-import { PageContainer, ProTable, ModalForm, ProFormSelect, ProFormTextArea, ProFormText } from '@ant-design/pro-components';
+import { PageContainer, ProTable, ModalForm, ProFormSelect, ProFormTextArea, ProFormText, ProFormDependency } from '@ant-design/pro-components';
 import { Button, Tag, Modal, Descriptions, message, Image, Card, Row, Col, Divider, Table } from 'antd';
 import { EyeOutlined, ExportOutlined, MoneyCollectOutlined, CheckCircleOutlined, EditOutlined, CloseCircleOutlined } from '@ant-design/icons';
 import { useRef, useState } from 'react';
@@ -185,12 +185,12 @@ export default function OrderList() {
 
   const submitRefund = async (values: any) => {
     try {
-      const res = await request('/api/v1/admin/orders/' + currentOrder.id + '/refund', {
+      const res = await request('/api/v1/admin/orders/' + currentOrder.id + '/direct-refund', {
         method: 'POST',
         data: values,
       });
       if (res.code === 200) {
-        message.success('退款申请已提交');
+        message.success('退款成功');
         setRefundModalVisible(false);
         tableRef.current?.reload();
         return true;
@@ -347,6 +347,17 @@ export default function OrderList() {
       ),
     },
     {
+      title: '会员',
+      dataIndex: 'is_member',
+      width: 80,
+      search: false,
+      render: (_: any, record: any) => (
+        <Tag color={record.is_member ? 'gold' : 'default'}>
+          {record.is_member ? '会员' : '非会员'}
+        </Tag>
+      ),
+    },
+    {
       title: '金额',
       dataIndex: 'pay_amount',
       width: 100,
@@ -386,7 +397,7 @@ export default function OrderList() {
     {
       title: '操作',
       valueType: 'option',
-      width: 180,
+      width: 260,
       fixed: 'right',
       render: (_: any, record: any) => [
         <Button key="view" type="link" size="small" icon={<EyeOutlined />} onClick={() => handleViewDetail(record)}>
@@ -405,7 +416,7 @@ export default function OrderList() {
             确认完成
           </Button>
         ),
-        (!record.is_free && [20, 60, 70].includes(record.status)) && (
+        (!record.is_free && [20, 45].includes(record.status)) && (
           <Button key="refund" type="link" size="small" danger icon={<MoneyCollectOutlined />} onClick={() => handleRefund(record)}>
             退款
           </Button>
@@ -631,7 +642,7 @@ export default function OrderList() {
 
       {/* 退款申请 */}
       <ModalForm
-        title="订单退款"
+        title="订单直接退款"
         open={refundModalVisible}
         onOpenChange={setRefundModalVisible}
         onFinish={submitRefund}
@@ -647,6 +658,33 @@ export default function OrderList() {
           ]}
           initialValue="full"
         />
+        <ProFormDependency name={['refund_type']}>
+          {({ refund_type }) => {
+            if (refund_type !== 'partial') return null;
+            return (
+              <ProFormText
+                name="refund_amount"
+                label="退款金额"
+                placeholder="请输入退款金额"
+                rules={[
+                  { required: true, message: '请输入退款金额' },
+                  {
+                    validator: (_, value) => {
+                      const num = parseFloat(value);
+                      if (isNaN(num) || num <= 0) {
+                        return Promise.reject('退款金额必须大于0');
+                      }
+                      if (num > currentOrder?.pay_amount) {
+                        return Promise.reject('退款金额不能大于实付金额');
+                      }
+                      return Promise.resolve();
+                    },
+                  },
+                ]}
+              />
+            );
+          }}
+        </ProFormDependency>
         <ProFormTextArea
           name="refund_reason"
           label="退款原因"

@@ -231,6 +231,7 @@ async def get_orders(
             "pay_amount": float(o.pay_amount),
             "status": o.status,
             "status_name": STATUS_MAP.get(o.status, "未知"),
+                
             "pay_time": o.pay_time.isoformat() if o.pay_time else None,
             "order_time": o.created_at.isoformat(),
             "created_at": o.created_at.isoformat(),
@@ -289,6 +290,7 @@ async def get_order_detail(
         "pay_amount": float(o.pay_amount),
         "status": o.status,
         "status_name": STATUS_MAP.get(o.status, "未知"),
+                
         "pay_time": o.pay_time.isoformat() if o.pay_time else None,
         "pay_channel": o.pay_channel,
         "remark": o.remark,
@@ -666,6 +668,14 @@ async def pay_order(
         order.pay_channel = "mock"
         order.pay_trade_no = f"MOCK{datetime.now().strftime('%Y%m%d%H%M%S')}"
         await db.commit()
+        # 核销优惠券
+        if order.coupon_id:
+            await db.execute(
+                text("UPDATE user_coupons SET status = 2, used_at = NOW(), used_order_id = :order_id WHERE id = :coupon_id"),
+                {"coupon_id": order.coupon_id, "order_id": order.id}
+            )
+            await db.commit()
+            logger.info(f"Mock pay coupon written off: coupon_id={order.coupon_id}, order_id={order.id}")
         logger.info(f"Mock pay success, order updated: {order.order_no}")
     
     return success({
@@ -731,13 +741,13 @@ async def cancel_order(
             {"schedule_id": order.schedule_id}
         )
     
-    # 恢复优惠券
-    if order.coupon_id:
+    # 恢复优惠券：待支付订单直接恢复；已支付订单等退款完成后再恢复
+    if order.coupon_id and order.status == 10:
         await db.execute(
             text("UPDATE user_coupons SET status = 1, used_at = NULL, used_order_id = NULL WHERE id = :coupon_id"),
             {"coupon_id": order.coupon_id}
         )
-        logger.info(f"Coupon restored: coupon_id={order.coupon_id}, order_id={order_id}")
+        logger.info(f"Coupon restored (unpaid order): coupon_id={order.coupon_id}, order_id={order_id}")
     
     if new_status == 40:
         logger.info(f"Order cancelled with refund: {order_id}, amount={order.pay_amount}")
@@ -1128,6 +1138,7 @@ async def admin_get_orders(
         # 批量查询用户默认出行人身份证号（避免N+1）
         user_ids = [o.user_id for o in orders_db if o.user_id]
         id_card_map = {}
+        member_map = {}
         if user_ids:
             from sqlalchemy import text
             traveler_res = await db.execute(
@@ -1139,6 +1150,16 @@ async def admin_get_orders(
             )
             for row in traveler_res.fetchall():
                 id_card_map[row[0]] = row[1]
+            # 批量查询会员状态
+            member_res = await db.execute(
+                text("""
+                    SELECT user_id FROM user_memberships 
+                    WHERE user_id IN :user_ids AND status = 1
+                """),
+                {"user_ids": tuple(user_ids)}
+            )
+            for row in member_res.fetchall():
+                member_map[row[0]] = True
         
         orders = []
         for o in orders_db:
@@ -1151,6 +1172,7 @@ async def admin_get_orders(
                 "user_id": o.user_id,
                 "route_id": o.route_id,
                 "is_free": o.is_free,
+                "is_member": member_map.get(o.user_id, False),
                 "route_name": o.route_name,
                 "route_cover": o.route_cover,
                 "travel_date": o.travel_date.isoformat() if o.travel_date else None,
@@ -1164,6 +1186,7 @@ async def admin_get_orders(
                 "pay_amount": float(o.pay_amount) if o.pay_amount else 0,
                 "status": o.status,
                 "status_name": STATUS_MAP.get(o.status, "未知"),
+                
                 "pay_time": o.pay_time.isoformat() if o.pay_time else None,
                 "created_at": o.created_at.isoformat() if o.created_at else None,
             })
@@ -1248,6 +1271,7 @@ async def admin_get_order_detail(
             "total_amount": float(o.total_amount) if o.total_amount else 0,
             "status": o.status,
             "status_name": STATUS_MAP.get(o.status, "未知"),
+                
             "pay_time": o.pay_time.isoformat() if o.pay_time else None,
             "pay_channel": o.pay_channel,
             "pay_trade_no": o.pay_trade_no,
@@ -1436,7 +1460,7 @@ async def admin_refund_order(
     refund_data: dict,
     db: AsyncSession = Depends(get_db)
 ):
-    """管理后台订单退款"""
+    """管理后台订单退款（仅申请，状态变为40退款中，等待审核）"""
     try:
         from app.models.order import Order
         
@@ -1470,7 +1494,6 @@ async def admin_refund_order(
         
         await db.commit()
         
-        # TODO: 调用微信支付退款接口
         logger.info(f"Order {order_id} refund applied: amount={refund_amount}, reason={refund_reason}")
         
         return {
@@ -1544,6 +1567,120 @@ async def admin_get_refunds(
         return {"code": 500, "message": f"查询失败: {str(e)}", "data": None}
 
 
+@app.post("/api/v1/admin/orders/{order_id}/direct-refund")
+async def admin_direct_refund(
+    order_id: int,
+    refund_data: dict,
+    authorization: Optional[str] = Header(None),
+    db: AsyncSession = Depends(get_db)
+):
+    """管理后台直接退款（不走申请+审核流程，一键完成微信退款）"""
+    try:
+        from app.models.order import Order
+        from datetime import datetime
+        
+        result = await db.execute(select(Order).where(Order.id == order_id))
+        order = result.scalar_one_or_none()
+        
+        if not order:
+            return {"code": 404, "message": "订单不存在", "data": None}
+        
+        # 检查订单状态是否允许退款
+        if order.status not in [20, 60, 70]:
+            return {"code": 400, "message": "当前订单状态不允许退款", "data": None}
+        
+        # 防止重复退款
+        if order.status == 50 or order.refund_time:
+            return {"code": 400, "message": "该订单已退款成功，不可重复退款", "data": None}
+        
+        refund_type = refund_data.get('refund_type', 'full')
+        refund_reason = refund_data.get('refund_reason', '后台直接退款')
+        
+        # 计算退款金额
+        if refund_type == 'full':
+            refund_amount = float(order.pay_amount)
+        else:
+            refund_amount = float(refund_data.get('refund_amount', 0))
+        
+        if refund_amount <= 0:
+            return {"code": 400, "message": "退款金额必须大于0", "data": None}
+        
+        # 先更新为退款中
+        order.status = 40
+        order.refund_amount = refund_amount
+        order.refund_reason = refund_reason
+        await db.commit()
+        
+        # 调用 pay-service 发起微信退款
+        pay_service_url = os.getenv("PAY_SERVICE_URL", "http://localhost:8006")
+        refund_payload = {
+            "order_no": order.order_no,
+            "refund_amount": refund_amount,
+            "reason": refund_reason,
+            "transaction_id": order.pay_transaction_id or order.pay_trade_no or "",
+            "total_amount": float(order.pay_amount or order.total_amount or 0)
+        }
+        
+        headers = {}
+        if authorization:
+            headers["Authorization"] = authorization
+        
+        pay_result = None
+        try:
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                pay_response = await client.post(
+                    f"{pay_service_url}/api/v1/pay/refund",
+                    json=refund_payload,
+                    headers=headers
+                )
+                pay_result = pay_response.json()
+        except Exception as e:
+            logger.error(f"Call pay-service refund failed: {e}")
+            # 退款服务调用失败，回滚状态
+            order.status = 20
+            order.refund_amount = 0
+            order.refund_reason = f"退款服务调用失败: {str(e)}"
+            await db.commit()
+            return {"code": 500, "message": f"退款服务调用失败: {str(e)}", "data": None}
+        
+        if pay_result.get("code") != 200:
+            logger.error(f"Pay-service refund error: {pay_result}")
+            # 微信退款失败，回滚状态
+            order.status = 20
+            order.refund_amount = 0
+            order.refund_reason = f"退款失败: {pay_result.get('message', '未知错误')}"
+            await db.commit()
+            return {"code": 500, "message": f"退款失败: {pay_result.get('message', '微信退款返回错误')}", "data": None}
+        
+        # 退款成功，更新为已退款
+        order.status = 50
+        order.refund_time = datetime.now()
+        await db.commit()
+        
+        # 退款成功，恢复优惠券
+        if order.coupon_id:
+            await db.execute(
+                text("UPDATE user_coupons SET status = 1, used_at = NULL, used_order_id = NULL WHERE id = :coupon_id"),
+                {"coupon_id": order.coupon_id}
+            )
+            await db.commit()
+            logger.info(f"Coupon restored after refund: coupon_id={order.coupon_id}, order_id={order_id}")
+        
+        logger.info(f"Order {order_id} direct refund success: amount={refund_amount}")
+        
+        return success({
+            "order_id": order_id,
+            "refund_amount": refund_amount,
+            "status": 50,
+            "refund_time": order.refund_time.isoformat()
+        }, message="退款成功")
+    except Exception as e:
+        logger.error(f"Error direct refunding order: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
+        return {"code": 500, "message": f"退款失败: {str(e)}", "data": None}
+
+
 @app.post("/api/v1/admin/refunds/{order_id}/approve")
 async def admin_approve_refund(
     order_id: int,
@@ -1603,6 +1740,15 @@ async def admin_approve_refund(
         order.status = 50
         order.refund_time = datetime.now()
         await db.commit()
+        
+        # 退款成功，恢复优惠券
+        if order.coupon_id:
+            await db.execute(
+                text("UPDATE user_coupons SET status = 1, used_at = NULL, used_order_id = NULL WHERE id = :coupon_id"),
+                {"coupon_id": order.coupon_id}
+            )
+            await db.commit()
+            logger.info(f"Coupon restored after refund approve: coupon_id={order.coupon_id}, order_id={order_id}")
         
         return success({
             "order_id": order_id,

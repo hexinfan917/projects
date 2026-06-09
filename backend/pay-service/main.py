@@ -553,7 +553,8 @@ async def create_refund(
     config = WECHAT_PAY_CONFIG
     
     # 检查是否配置了微信支付
-    if config["mchid"]:
+    if config["mchid"] and not config.get("sandbox", True):
+        # sandbox 模式不走真实微信退款，直接 mock 成功（开发测试环境）
         if not WECHAT_KEY_PATH or not os.path.exists(WECHAT_KEY_PATH):
             logger.error(f"WeChat refund certificate missing: {WECHAT_KEY_PATH}")
             return {"code": 500, "message": "微信退款证书缺失，无法发起退款", "data": None}

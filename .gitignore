@@ -98,3 +98,5 @@ backup_*.py
 tmp/*.py
 tmp/*.tsx
 frontend/admin/src/.umi-production/
+backend/file-service/uploads_prod.tar.gz
+backend/file-service/*.tar.gz

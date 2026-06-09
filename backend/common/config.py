@@ -56,6 +56,16 @@ class OSSConfig(BaseSettings):
     bucket: str = ""
 
 
+class COSConfig(BaseSettings):
+    """腾讯云COS配置"""
+    model_config = {"env_prefix": "COS_"}
+    secret_id: str = ""
+    secret_key: str = ""
+    bucket: str = ""
+    region: str = ""
+    domain: str = ""  # 自定义域名（可选）
+
+
 class Settings(BaseSettings):
     """全局配置"""
     # 服务配置
@@ -70,6 +80,7 @@ class Settings(BaseSettings):
     jwt: JWTConfig = JWTConfig()
     wechat: WechatConfig = WechatConfig()
     oss: OSSConfig = OSSConfig()
+    cos: COSConfig = COSConfig()
     
     class Config:
         env_file = str(Path(__file__).parent.parent / ".env")

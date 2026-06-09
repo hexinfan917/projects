@@ -4,7 +4,7 @@
   "description": "尾巴旅行PetWay - 宠物友好型出行平台",
   "appid": "wxdf099f340581f93d",
   "setting": {
-    "urlCheck": true,
+    "urlCheck": false,
     "es6": false,
     "enhance": true,
     "postcss": false,

@@ -36,6 +36,7 @@ OSS_BUCKET = None
 OSS_BUCKET_NAME = ""
 OSS_ENDPOINT = ""
 
+# 尝试初始化阿里云OSS
 try:
     import oss2
     oss_config = settings.oss
@@ -47,11 +48,49 @@ try:
         OSS_ENABLED = True
         logger.info(f"OSS initialized: {oss_config.bucket} @ {oss_config.endpoint}")
     else:
-        logger.warning("OSS not configured, using local storage")
+        logger.warning("OSS not configured")
 except ImportError:
-    logger.warning("oss2 not installed, using local storage")
+    logger.warning("oss2 not installed")
 except Exception as e:
-    logger.error(f"OSS init failed: {e}, using local storage")
+    logger.error(f"OSS init failed: {e}")
+
+# 腾讯云COS支持
+COS_CLIENT = None
+COS_BUCKET = ""
+COS_REGION = ""
+COS_DOMAIN = ""
+COS_ENABLED = False
+
+try:
+    from qcloud_cos import CosConfig, CosS3Client
+    cos_config = settings.cos
+    if cos_config.secret_id and cos_config.secret_key and cos_config.bucket and cos_config.region:
+        cos_conf = CosConfig(
+            Region=cos_config.region,
+            SecretId=cos_config.secret_id,
+            SecretKey=cos_config.secret_key,
+        )
+        COS_CLIENT = CosS3Client(cos_conf)
+        COS_BUCKET = cos_config.bucket
+        COS_REGION = cos_config.region
+        COS_DOMAIN = cos_config.domain
+        COS_ENABLED = True
+        logger.info(f"COS initialized: {cos_config.bucket} @ {cos_config.region}")
+    else:
+        logger.warning("COS not configured")
+except ImportError:
+    logger.warning("cos-python-sdk-v5 not installed")
+except Exception as e:
+    logger.error(f"COS init failed: {e}")
+
+# 优先使用COS，其次是OSS，最后是本地
+CLOUD_STORAGE_ENABLED = COS_ENABLED or OSS_ENABLED
+if COS_ENABLED:
+    logger.info("Using Tencent Cloud COS as cloud storage")
+elif OSS_ENABLED:
+    logger.info("Using Alibaba Cloud OSS as cloud storage")
+else:
+    logger.warning("No cloud storage configured, using local storage")
 
 # 上传配置
 UPLOAD_DIR = Path(os.getenv("UPLOAD_DIR", str(Path(__file__).parent / "uploads")))
@@ -117,8 +156,8 @@ def validate_file(file: UploadFile, file_type: str = "image"):
 
 
 async def save_upload_file(upload_file: UploadFile, folder: str = "") -> dict:
-    """保存上传文件（优先OSS，未配置则本地存储）"""
-    global OSS_ENABLED
+    """保存上传文件（优先COS > OSS > 本地存储）"""
+    global OSS_ENABLED, COS_ENABLED
     # 生成唯一文件名
     unique_filename = generate_unique_filename(upload_file.filename or "unknown")
     
@@ -133,22 +172,44 @@ async def save_upload_file(upload_file: UploadFile, folder: str = "") -> dict:
     content = await upload_file.read()
     file_size = len(content)
     
-    # 上传到OSS或本地
-    if OSS_ENABLED and OSS_BUCKET:
+    file_url = ""
+    storage_type = "local"
+    
+    # 优先上传到腾讯云COS
+    if COS_ENABLED and COS_CLIENT:
+        try:
+            from qcloud_cos.cos_exception import CosServiceError
+            COS_CLIENT.put_object(
+                Bucket=COS_BUCKET,
+                Body=content,
+                Key=object_key,
+            )
+            # 构建COS访问URL
+            if COS_DOMAIN:
+                file_url = f"{COS_DOMAIN.rstrip('/')}/{object_key}"
+            else:
+                file_url = f"https://{COS_BUCKET}.cos.{COS_REGION}.myqcloud.com/{object_key}"
+            storage_type = "cos"
+            logger.info(f"File uploaded to COS: {object_key}")
+        except Exception as e:
+            logger.error(f"COS upload failed: {e}, falling back")
+            COS_ENABLED = False
+    
+    # 其次上传到阿里云OSS
+    if not file_url and OSS_ENABLED and OSS_BUCKET:
         try:
             OSS_BUCKET.put_object(object_key, content)
             # 构建OSS访问URL（公读或CDN域名）
-            # 如果配置了自定义域名，优先使用自定义域名
             oss_domain = os.getenv("OSS_CUSTOM_DOMAIN", f"{OSS_BUCKET_NAME}.{OSS_ENDPOINT}")
             file_url = f"https://{oss_domain}/{object_key}"
+            storage_type = "oss"
             logger.info(f"File uploaded to OSS: {object_key}")
         except Exception as e:
             logger.error(f"OSS upload failed: {e}, falling back to local storage")
-            # 回退到本地存储
             OSS_ENABLED = False
     
-    if not OSS_ENABLED:
-        # 本地存储
+    # 本地存储兜底
+    if not file_url:
         if folder:
             save_dir = UPLOAD_DIR / folder / date_folder
         else:
@@ -177,12 +238,12 @@ async def save_upload_file(upload_file: UploadFile, folder: str = "") -> dict:
         "size": file_size,
         "content_type": upload_file.content_type,
         "path": object_key,
-        "storage": "oss" if OSS_ENABLED else "local"
+        "storage": storage_type
     }
 
 
 async def save_base64_file(base64_str: str, folder: str = "images") -> dict:
-    """保存 base64 图片（优先OSS，未配置则本地存储）"""
+    """保存 base64 图片（优先COS > OSS > 本地存储）"""
     match = re.match(r'data:(image/\w+);base64,(.+)', base64_str)
     if not match:
         raise HTTPException(status_code=400, detail="无效的 base64 格式")
@@ -218,17 +279,41 @@ async def save_base64_file(base64_str: str, folder: str = "images") -> dict:
     date_folder = datetime.now().strftime("%Y%m")
     object_key = f"{folder}/{date_folder}/{unique_filename}"
     
-    global OSS_ENABLED
-    if OSS_ENABLED and OSS_BUCKET:
+    global OSS_ENABLED, COS_ENABLED
+    file_url = ""
+    storage_type = "local"
+    
+    # 优先上传到腾讯云COS
+    if COS_ENABLED and COS_CLIENT:
+        try:
+            COS_CLIENT.put_object(
+                Bucket=COS_BUCKET,
+                Body=file_content,
+                Key=object_key,
+            )
+            if COS_DOMAIN:
+                file_url = f"{COS_DOMAIN.rstrip('/')}/{object_key}"
+            else:
+                file_url = f"https://{COS_BUCKET}.cos.{COS_REGION}.myqcloud.com/{object_key}"
+            storage_type = "cos"
+            logger.info(f"Base64 file uploaded to COS: {object_key}")
+        except Exception as e:
+            logger.error(f"COS upload failed: {e}, falling back")
+            COS_ENABLED = False
+    
+    # 其次上传到阿里云OSS
+    if not file_url and OSS_ENABLED and OSS_BUCKET:
         try:
             OSS_BUCKET.put_object(object_key, file_content)
             oss_domain = os.getenv("OSS_CUSTOM_DOMAIN", f"{OSS_BUCKET_NAME}.{OSS_ENDPOINT}")
             file_url = f"https://{oss_domain}/{object_key}"
+            storage_type = "oss"
         except Exception as e:
             logger.error(f"OSS upload failed: {e}, falling back to local storage")
             OSS_ENABLED = False
     
-    if not OSS_ENABLED:
+    # 本地存储兜底
+    if not file_url:
         save_dir = UPLOAD_DIR / folder / date_folder
         save_dir.mkdir(parents=True, exist_ok=True)
         file_path = save_dir / unique_filename
@@ -245,7 +330,7 @@ async def save_base64_file(base64_str: str, folder: str = "images") -> dict:
         "size": file_size,
         "content_type": mime_type,
         "path": object_key,
-        "storage": "oss" if OSS_ENABLED else "local"
+        "storage": storage_type
     }
 
 

@@ -250,13 +250,20 @@ export default function RouteEdit() {
   const [editingField, setEditingField] = useState<string | null>(null);
   const [editingPrice, setEditingPrice] = useState<number | null>(null);
   const [editingStock, setEditingStock] = useState<number | null>(null);
+  const [editTravelType, setEditTravelType] = useState<number>(0);
+  const [batchTravelType, setBatchTravelType] = useState<number>(0);
   const handleBatchAddSchedules = async (values: any) => {
     try {
       const { start_date, end_date, start_time, end_time, price, self_drive_price, stock, week_days,
         single_person_price, two_person_one_pet_price, one_person_two_pet_price, single_pet_price,
         extra_person_price, extra_pet_price,
         self_drive_single_person_price, self_drive_two_person_one_pet_price, self_drive_one_person_two_pet_price,
-        self_drive_single_pet_price, self_drive_extra_person_price, self_drive_extra_pet_price
+        self_drive_single_pet_price, self_drive_extra_person_price, self_drive_extra_pet_price,
+        member_price, member_single_person_price, member_two_person_one_pet_price, member_one_person_two_pet_price,
+        member_single_pet_price, member_extra_person_price, member_extra_pet_price,
+        member_self_drive_price, member_self_drive_single_person_price, member_self_drive_two_person_one_pet_price,
+        member_self_drive_one_person_two_pet_price, member_self_drive_single_pet_price,
+        member_self_drive_extra_person_price, member_self_drive_extra_pet_price
       } = values;
       
       const res = await request(`/api/v1/admin/routes/${id}/schedules/batch`, {
@@ -282,6 +289,20 @@ export default function RouteEdit() {
           self_drive_single_pet_price,
           self_drive_extra_person_price,
           self_drive_extra_pet_price,
+          member_price,
+          member_single_person_price,
+          member_two_person_one_pet_price,
+          member_one_person_two_pet_price,
+          member_single_pet_price,
+          member_extra_person_price,
+          member_extra_pet_price,
+          member_self_drive_price,
+          member_self_drive_single_person_price,
+          member_self_drive_two_person_one_pet_price,
+          member_self_drive_one_person_two_pet_price,
+          member_self_drive_single_pet_price,
+          member_self_drive_extra_person_price,
+          member_self_drive_extra_pet_price,
         },
       });
       
@@ -1068,6 +1089,11 @@ export default function RouteEdit() {
         }}
         footer={null}
         width={1400}
+        afterOpenChange={(open) => {
+          if (open && currentEditingSchedule) {
+            setEditTravelType(currentEditingSchedule.travel_type ?? 0);
+          }
+        }}
       >
         <Form
           key={currentEditingSchedule?.id}
@@ -1126,89 +1152,184 @@ export default function RouteEdit() {
                       { label: '仅大巴', value: 1 },
                       { label: '仅自驾', value: 2 },
                     ]}
+                    onChange={(value) => setEditTravelType(value)}
                   />
                 </Form.Item>
               </Col>
             </Row>
             <Tabs type="card" style={{ marginBottom: 16 }}>
-              <Tabs.TabPane tab="大巴出行价格" key="bus">
-              <Row gutter={16}>
-                <Col span={8}>
-                  <Form.Item label="价格(1人1宠)" name="price">
-                    <InputNumber placeholder="价格" min={0} style={{ width: '100%' }} />
-                  </Form.Item>
-                </Col>
-                <Col span={8}>
-                  <Form.Item label="一人两宠" name="one_person_two_pet_price">
-                    <InputNumber placeholder="路线默认价" min={0} style={{ width: '100%' }} />
-                  </Form.Item>
-                </Col>
-                <Col span={8}>
-                  <Form.Item label="二人一宠" name="two_person_one_pet_price">
-                    <InputNumber placeholder="路线默认价" min={0} style={{ width: '100%' }} />
-                  </Form.Item>
-                </Col>
-              </Row>
-              <Row gutter={16}>
-                <Col span={8}>
-                  <Form.Item label="单人轻旅（无宠）" name="single_person_price">
-                    <InputNumber placeholder="路线默认价" min={0} style={{ width: '100%' }} />
-                  </Form.Item>
-                </Col>
-                <Col span={8}>
-                  <Form.Item label="毛孩专属接送（无主人陪同）" name="single_pet_price">
-                    <InputNumber placeholder="路线默认价" min={0} style={{ width: '100%' }} />
-                  </Form.Item>
-                </Col>
-                <Col span={8}>
-                  <Form.Item label="增加一人" name="extra_person_price">
-                    <InputNumber placeholder="路线默认价" min={0} style={{ width: '100%' }} />
-                  </Form.Item>
-                </Col>
-              </Row>
-              <Row gutter={16}>
-                <Col span={8}>
-                  <Form.Item label="增加一宠" name="extra_pet_price">
-                    <InputNumber placeholder="路线默认价" min={0} style={{ width: '100%' }} />
-                  </Form.Item>
-                </Col>
-              </Row>
-            </Tabs.TabPane>
-            <Tabs.TabPane tab="自驾出行价格" key="self_drive">
-              <Row gutter={16}>
-                <Col span={8}>
-                  <Form.Item label="自驾价格(1人1宠)" name="self_drive_price">
-                    <InputNumber placeholder="自驾价格" min={0} style={{ width: '100%' }} />
-                  </Form.Item>
-                </Col>
-                <Col span={8}>
-                  <Form.Item label="一人两宠" name="self_drive_one_person_two_pet_price">
-                    <InputNumber placeholder="路线默认价" min={0} style={{ width: '100%' }} />
-                  </Form.Item>
-                </Col>
-                <Col span={8}>
-                  <Form.Item label="二人一宠" name="self_drive_two_person_one_pet_price">
-                    <InputNumber placeholder="路线默认价" min={0} style={{ width: '100%' }} />
-                  </Form.Item>
-                </Col>
-              </Row>
-              <Row gutter={16}>
-                <Col span={8}>
-                  <Form.Item label="单人轻旅（无宠）" name="self_drive_single_person_price">
-                    <InputNumber placeholder="路线默认价" min={0} style={{ width: '100%' }} />
-                  </Form.Item>
-                </Col>
-                <Col span={8}>
-                  <Form.Item label="增加一人" name="self_drive_extra_person_price">
-                    <InputNumber placeholder="路线默认价" min={0} style={{ width: '100%' }} />
-                  </Form.Item>
-                </Col>
-                <Col span={8}>
-                  <Form.Item label="增加一宠" name="self_drive_extra_pet_price">
-                    <InputNumber placeholder="路线默认价" min={0} style={{ width: '100%' }} />
-                  </Form.Item>
-                </Col>
-              </Row>
+              {editTravelType !== 2 && (
+                <Tabs.TabPane tab="大巴出行价格" key="bus">
+                  <Row gutter={16}>
+                    <Col span={8}>
+                      <Form.Item label="价格(1人1宠)" name="price">
+                        <InputNumber placeholder="价格" min={0} style={{ width: '100%' }} />
+                      </Form.Item>
+                    </Col>
+                    <Col span={8}>
+                      <Form.Item label="一人两宠" name="one_person_two_pet_price">
+                        <InputNumber placeholder="路线默认价" min={0} style={{ width: '100%' }} />
+                      </Form.Item>
+                    </Col>
+                    <Col span={8}>
+                      <Form.Item label="二人一宠" name="two_person_one_pet_price">
+                        <InputNumber placeholder="路线默认价" min={0} style={{ width: '100%' }} />
+                      </Form.Item>
+                    </Col>
+                  </Row>
+                  <Row gutter={16}>
+                    <Col span={8}>
+                      <Form.Item label="单人轻旅（无宠）" name="single_person_price">
+                        <InputNumber placeholder="路线默认价" min={0} style={{ width: '100%' }} />
+                      </Form.Item>
+                    </Col>
+                    <Col span={8}>
+                      <Form.Item label="毛孩专属接送（无主人陪同）" name="single_pet_price">
+                        <InputNumber placeholder="路线默认价" min={0} style={{ width: '100%' }} />
+                      </Form.Item>
+                    </Col>
+                    <Col span={8}>
+                      <Form.Item label="增加一人" name="extra_person_price">
+                        <InputNumber placeholder="路线默认价" min={0} style={{ width: '100%' }} />
+                      </Form.Item>
+                    </Col>
+                  </Row>
+                  <Row gutter={16}>
+                    <Col span={8}>
+                      <Form.Item label="增加一宠" name="extra_pet_price">
+                        <InputNumber placeholder="路线默认价" min={0} style={{ width: '100%' }} />
+                      </Form.Item>
+                    </Col>
+                  </Row>
+                </Tabs.TabPane>
+              )}
+              {editTravelType !== 1 && (
+                <Tabs.TabPane tab="自驾出行价格" key="self_drive">
+                  <Row gutter={16}>
+                    <Col span={8}>
+                      <Form.Item label="自驾价格(1人1宠)" name="self_drive_price">
+                        <InputNumber placeholder="自驾价格" min={0} style={{ width: '100%' }} />
+                      </Form.Item>
+                    </Col>
+                    <Col span={8}>
+                      <Form.Item label="一人两宠" name="self_drive_one_person_two_pet_price">
+                        <InputNumber placeholder="路线默认价" min={0} style={{ width: '100%' }} />
+                      </Form.Item>
+                    </Col>
+                    <Col span={8}>
+                      <Form.Item label="二人一宠" name="self_drive_two_person_one_pet_price">
+                        <InputNumber placeholder="路线默认价" min={0} style={{ width: '100%' }} />
+                      </Form.Item>
+                    </Col>
+                  </Row>
+                  <Row gutter={16}>
+                    <Col span={8}>
+                      <Form.Item label="单人轻旅（无宠）" name="self_drive_single_person_price">
+                        <InputNumber placeholder="路线默认价" min={0} style={{ width: '100%' }} />
+                      </Form.Item>
+                    </Col>
+                    <Col span={8}>
+                      <Form.Item label="增加一人" name="self_drive_extra_person_price">
+                        <InputNumber placeholder="路线默认价" min={0} style={{ width: '100%' }} />
+                      </Form.Item>
+                    </Col>
+                    <Col span={8}>
+                      <Form.Item label="增加一宠" name="self_drive_extra_pet_price">
+                        <InputNumber placeholder="路线默认价" min={0} style={{ width: '100%' }} />
+                      </Form.Item>
+                    </Col>
+                  </Row>
+                </Tabs.TabPane>
+              )}
+              <Tabs.TabPane tab="会员专属价" key="member">
+                <div style={{ background: '#fff7e6', padding: '12px 16px', borderRadius: 8, marginBottom: 16, color: '#d48806', fontSize: 13 }}>
+                  💡 会员下单时优先使用以下价格，不填则按正常价格结算
+                </div>
+                {editTravelType !== 2 && (
+                  <>
+                    <div style={{ fontWeight: 600, marginBottom: 12, color: '#1890ff' }}>大巴出行会员价</div>
+                    <Row gutter={16}>
+                      <Col span={8}>
+                        <Form.Item label="会员价(1人1宠)" name="member_price">
+                          <InputNumber placeholder="会员专享价" min={0} style={{ width: '100%' }} />
+                        </Form.Item>
+                      </Col>
+                      <Col span={8}>
+                        <Form.Item label="会员价(一人两宠)" name="member_one_person_two_pet_price">
+                          <InputNumber placeholder="会员专享价" min={0} style={{ width: '100%' }} />
+                        </Form.Item>
+                      </Col>
+                      <Col span={8}>
+                        <Form.Item label="会员价(二人一宠)" name="member_two_person_one_pet_price">
+                          <InputNumber placeholder="会员专享价" min={0} style={{ width: '100%' }} />
+                        </Form.Item>
+                      </Col>
+                    </Row>
+                    <Row gutter={16}>
+                      <Col span={8}>
+                        <Form.Item label="会员价(单人)" name="member_single_person_price">
+                          <InputNumber placeholder="会员专享价" min={0} style={{ width: '100%' }} />
+                        </Form.Item>
+                      </Col>
+                      <Col span={8}>
+                        <Form.Item label="会员价(毛孩接送)" name="member_single_pet_price">
+                          <InputNumber placeholder="会员专享价" min={0} style={{ width: '100%' }} />
+                        </Form.Item>
+                      </Col>
+                      <Col span={8}>
+                        <Form.Item label="会员价(加一人)" name="member_extra_person_price">
+                          <InputNumber placeholder="会员专享价" min={0} style={{ width: '100%' }} />
+                        </Form.Item>
+                      </Col>
+                    </Row>
+                    <Row gutter={16}>
+                      <Col span={8}>
+                        <Form.Item label="会员价(加一宠)" name="member_extra_pet_price">
+                          <InputNumber placeholder="会员专享价" min={0} style={{ width: '100%' }} />
+                        </Form.Item>
+                      </Col>
+                    </Row>
+                  </>
+                )}
+                {editTravelType !== 1 && (
+                  <>
+                    <div style={{ fontWeight: 600, marginBottom: 12, marginTop: editTravelType === 2 ? 0 : 16, color: '#1890ff' }}>自驾出行会员价</div>
+                    <Row gutter={16}>
+                      <Col span={8}>
+                        <Form.Item label="会员自驾价(1人1宠)" name="member_self_drive_price">
+                          <InputNumber placeholder="会员专享价" min={0} style={{ width: '100%' }} />
+                        </Form.Item>
+                      </Col>
+                      <Col span={8}>
+                        <Form.Item label="会员价(一人两宠)" name="member_self_drive_one_person_two_pet_price">
+                          <InputNumber placeholder="会员专享价" min={0} style={{ width: '100%' }} />
+                        </Form.Item>
+                      </Col>
+                      <Col span={8}>
+                        <Form.Item label="会员价(二人一宠)" name="member_self_drive_two_person_one_pet_price">
+                          <InputNumber placeholder="会员专享价" min={0} style={{ width: '100%' }} />
+                        </Form.Item>
+                      </Col>
+                    </Row>
+                    <Row gutter={16}>
+                      <Col span={8}>
+                        <Form.Item label="会员价(单人)" name="member_self_drive_single_person_price">
+                          <InputNumber placeholder="会员专享价" min={0} style={{ width: '100%' }} />
+                        </Form.Item>
+                      </Col>
+                      <Col span={8}>
+                        <Form.Item label="会员价(加一人)" name="member_self_drive_extra_person_price">
+                          <InputNumber placeholder="会员专享价" min={0} style={{ width: '100%' }} />
+                        </Form.Item>
+                      </Col>
+                      <Col span={8}>
+                        <Form.Item label="会员价(加一宠)" name="member_self_drive_extra_pet_price">
+                          <InputNumber placeholder="会员专享价" min={0} style={{ width: '100%' }} />
+                        </Form.Item>
+                      </Col>
+                    </Row>
+                  </>
+                )}
               </Tabs.TabPane>
             </Tabs>
             </>
@@ -1286,6 +1407,7 @@ export default function RouteEdit() {
                 { label: '仅大巴', value: 1 },
                 { label: '仅自驾', value: 2 },
               ]}
+              onChange={(value) => setBatchTravelType(value)}
             />
           </Form.Item>
           <Form.Item label="价格(1人1宠)" name="price">
@@ -1297,42 +1419,100 @@ export default function RouteEdit() {
           <Form.Item label="库存" name="stock" initialValue={12}>
             <InputNumber placeholder="库存" min={1} style={{ width: '100%' }} />
           </Form.Item>
-          <Card size="small" title="大巴套餐价格（可选）" style={{ marginBottom: 16 }}>
-            <Form.Item label="一人两宠" name="one_person_two_pet_price">
-              <InputNumber placeholder="路线默认价" min={0} style={{ width: '100%' }} />
-            </Form.Item>
-            <Form.Item label="二人一宠" name="two_person_one_pet_price">
-              <InputNumber placeholder="路线默认价" min={0} style={{ width: '100%' }} />
-            </Form.Item>
-            <Form.Item label="单人轻旅（无宠）" name="single_person_price">
-              <InputNumber placeholder="路线默认价" min={0} style={{ width: '100%' }} />
-            </Form.Item>
-            <Form.Item label="毛孩专属接送（无主人陪同）" name="single_pet_price">
-              <InputNumber placeholder="路线默认价" min={0} style={{ width: '100%' }} />
-            </Form.Item>
-            <Form.Item label="增加一人" name="extra_person_price">
-              <InputNumber placeholder="路线默认价" min={0} style={{ width: '100%' }} />
-            </Form.Item>
-            <Form.Item label="增加一宠" name="extra_pet_price">
-              <InputNumber placeholder="路线默认价" min={0} style={{ width: '100%' }} />
-            </Form.Item>
-          </Card>
-          <Card size="small" title="自驾套餐价格（可选）" style={{ marginBottom: 16 }}>
-            <Form.Item label="一人两宠" name="self_drive_one_person_two_pet_price">
-              <InputNumber placeholder="路线默认价" min={0} style={{ width: '100%' }} />
-            </Form.Item>
-            <Form.Item label="二人一宠" name="self_drive_two_person_one_pet_price">
-              <InputNumber placeholder="路线默认价" min={0} style={{ width: '100%' }} />
-            </Form.Item>
-            <Form.Item label="单人轻旅（无宠）" name="self_drive_single_person_price">
-              <InputNumber placeholder="路线默认价" min={0} style={{ width: '100%' }} />
-            </Form.Item>
-            <Form.Item label="增加一人" name="self_drive_extra_person_price">
-              <InputNumber placeholder="路线默认价" min={0} style={{ width: '100%' }} />
-            </Form.Item>
-            <Form.Item label="增加一宠" name="self_drive_extra_pet_price">
-              <InputNumber placeholder="路线默认价" min={0} style={{ width: '100%' }} />
-            </Form.Item>
+          {batchTravelType !== 2 && (
+            <Card size="small" title="大巴套餐价格（可选）" style={{ marginBottom: 16 }}>
+              <Form.Item label="一人两宠" name="one_person_two_pet_price">
+                <InputNumber placeholder="路线默认价" min={0} style={{ width: '100%' }} />
+              </Form.Item>
+              <Form.Item label="二人一宠" name="two_person_one_pet_price">
+                <InputNumber placeholder="路线默认价" min={0} style={{ width: '100%' }} />
+              </Form.Item>
+              <Form.Item label="单人轻旅（无宠）" name="single_person_price">
+                <InputNumber placeholder="路线默认价" min={0} style={{ width: '100%' }} />
+              </Form.Item>
+              <Form.Item label="毛孩专属接送（无主人陪同）" name="single_pet_price">
+                <InputNumber placeholder="路线默认价" min={0} style={{ width: '100%' }} />
+              </Form.Item>
+              <Form.Item label="增加一人" name="extra_person_price">
+                <InputNumber placeholder="路线默认价" min={0} style={{ width: '100%' }} />
+              </Form.Item>
+              <Form.Item label="增加一宠" name="extra_pet_price">
+                <InputNumber placeholder="路线默认价" min={0} style={{ width: '100%' }} />
+              </Form.Item>
+            </Card>
+          )}
+          {batchTravelType !== 1 && (
+            <Card size="small" title="自驾套餐价格（可选）" style={{ marginBottom: 16 }}>
+              <Form.Item label="一人两宠" name="self_drive_one_person_two_pet_price">
+                <InputNumber placeholder="路线默认价" min={0} style={{ width: '100%' }} />
+              </Form.Item>
+              <Form.Item label="二人一宠" name="self_drive_two_person_one_pet_price">
+                <InputNumber placeholder="路线默认价" min={0} style={{ width: '100%' }} />
+              </Form.Item>
+              <Form.Item label="单人轻旅（无宠）" name="self_drive_single_person_price">
+                <InputNumber placeholder="路线默认价" min={0} style={{ width: '100%' }} />
+              </Form.Item>
+              <Form.Item label="增加一人" name="self_drive_extra_person_price">
+                <InputNumber placeholder="路线默认价" min={0} style={{ width: '100%' }} />
+              </Form.Item>
+              <Form.Item label="增加一宠" name="self_drive_extra_pet_price">
+                <InputNumber placeholder="路线默认价" min={0} style={{ width: '100%' }} />
+              </Form.Item>
+            </Card>
+          )}
+          <Card size="small" title="会员专属价（可选）" style={{ marginBottom: 16, borderColor: '#ffd591' }}>
+            <div style={{ background: '#fff7e6', padding: '8px 12px', borderRadius: 6, marginBottom: 12, color: '#d48806', fontSize: 13 }}>
+              💡 会员下单时优先使用以下价格，不填则按正常价格结算
+            </div>
+            {batchTravelType !== 2 && (
+              <>
+                <div style={{ fontWeight: 600, marginBottom: 8, color: '#1890ff', fontSize: 13 }}>大巴出行会员价</div>
+                <Form.Item label="会员价(1人1宠)" name="member_price">
+                  <InputNumber placeholder="会员专享价" min={0} style={{ width: '100%' }} />
+                </Form.Item>
+                <Form.Item label="会员价(一人两宠)" name="member_one_person_two_pet_price">
+                  <InputNumber placeholder="会员专享价" min={0} style={{ width: '100%' }} />
+                </Form.Item>
+                <Form.Item label="会员价(二人一宠)" name="member_two_person_one_pet_price">
+                  <InputNumber placeholder="会员专享价" min={0} style={{ width: '100%' }} />
+                </Form.Item>
+                <Form.Item label="会员价(单人)" name="member_single_person_price">
+                  <InputNumber placeholder="会员专享价" min={0} style={{ width: '100%' }} />
+                </Form.Item>
+                <Form.Item label="会员价(毛孩接送)" name="member_single_pet_price">
+                  <InputNumber placeholder="会员专享价" min={0} style={{ width: '100%' }} />
+                </Form.Item>
+                <Form.Item label="会员价(加一人)" name="member_extra_person_price">
+                  <InputNumber placeholder="会员专享价" min={0} style={{ width: '100%' }} />
+                </Form.Item>
+                <Form.Item label="会员价(加一宠)" name="member_extra_pet_price">
+                  <InputNumber placeholder="会员专享价" min={0} style={{ width: '100%' }} />
+                </Form.Item>
+              </>
+            )}
+            {batchTravelType !== 1 && (
+              <>
+                <div style={{ fontWeight: 600, marginBottom: 8, marginTop: batchTravelType === 2 ? 0 : 12, color: '#1890ff', fontSize: 13 }}>自驾出行会员价</div>
+                <Form.Item label="会员自驾价(1人1宠)" name="member_self_drive_price">
+                  <InputNumber placeholder="会员专享价" min={0} style={{ width: '100%' }} />
+                </Form.Item>
+                <Form.Item label="会员价(一人两宠)" name="member_self_drive_one_person_two_pet_price">
+                  <InputNumber placeholder="会员专享价" min={0} style={{ width: '100%' }} />
+                </Form.Item>
+                <Form.Item label="会员价(二人一宠)" name="member_self_drive_two_person_one_pet_price">
+                  <InputNumber placeholder="会员专享价" min={0} style={{ width: '100%' }} />
+                </Form.Item>
+                <Form.Item label="会员价(单人)" name="member_self_drive_single_person_price">
+                  <InputNumber placeholder="会员专享价" min={0} style={{ width: '100%' }} />
+                </Form.Item>
+                <Form.Item label="会员价(加一人)" name="member_self_drive_extra_person_price">
+                  <InputNumber placeholder="会员专享价" min={0} style={{ width: '100%' }} />
+                </Form.Item>
+                <Form.Item label="会员价(加一宠)" name="member_self_drive_extra_pet_price">
+                  <InputNumber placeholder="会员专享价" min={0} style={{ width: '100%' }} />
+                </Form.Item>
+              </>
+            )}
           </Card>
           <Form.Item>
             <Button type="primary" htmlType="submit" block>

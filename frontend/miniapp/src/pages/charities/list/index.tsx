@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import Taro from '@tarojs/taro'
 import { View, Text, Image, ScrollView } from '@tarojs/components'
-import { getCharityActivities, BASE_URL } from '../../../utils/api'
+import { getCharityActivities, IMAGE_BASE_URL } from '../../../utils/api'
 import './index.scss'
 
 export default function CharityList() {
@@ -26,7 +26,7 @@ export default function CharityList() {
           date: a.start_date || '',
           location: a.location || '',
           status: a.status_name || '报名中',
-          image: a.cover_image ? (a.cover_image.startsWith('http') ? a.cover_image : `${BASE_URL}${a.cover_image}`) + '?w=750&q=75' : '',
+          image: a.cover_image ? (a.cover_image.startsWith('http') ? a.cover_image : `${IMAGE_BASE_URL}${a.cover_image}`) + '?w=750&q=75' : '',
         }))
         if (p === 1) {
           setList(items)
