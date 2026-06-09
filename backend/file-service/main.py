@@ -210,8 +210,7 @@ async def save_upload_file(upload_file: UploadFile, folder: str = "") -> dict:
             storage_type = "cos"
             logger.info(f"File uploaded to COS: {object_key}")
         except Exception as e:
-            logger.error(f"COS upload failed: {e}, falling back")
-            COS_ENABLED = False
+            logger.error(f"COS upload failed: {e}, falling back to local storage")
     
     # 其次上传到阿里云OSS
     if not file_url and OSS_ENABLED and OSS_BUCKET:
@@ -316,8 +315,7 @@ async def save_base64_file(base64_str: str, folder: str = "images") -> dict:
             storage_type = "cos"
             logger.info(f"Base64 file uploaded to COS: {object_key}")
         except Exception as e:
-            logger.error(f"COS upload failed: {e}, falling back")
-            COS_ENABLED = False
+            logger.error(f"COS upload failed: {e}, falling back to local storage")
     
     # 其次上传到阿里云OSS
     if not file_url and OSS_ENABLED and OSS_BUCKET:
