@@ -3,6 +3,7 @@ import { Button, Tag, Image, message, Popconfirm, Space, Form, Upload, Input } f
 import { PlusOutlined, EditOutlined, DeleteOutlined, VerticalAlignTopOutlined, VerticalAlignBottomOutlined, LoadingOutlined, UploadOutlined } from '@ant-design/icons';
 import { useRef, useState, useCallback } from 'react';
 import { request } from '@umijs/max';
+import { compressImage, isLargeImage } from '@/utils/imageCompress';
 import dayjs from 'dayjs';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
@@ -41,8 +42,10 @@ export default function ReviewManage() {
       const file = input.files?.[0];
       if (!file) return;
       try {
+        // 大图先压缩
+        const uploadFile = isLargeImage(file) ? await compressImage(file) : file;
         const formData = new FormData();
-        formData.append('file', file);
+        formData.append('file', uploadFile);
         const token = localStorage.getItem('token');
         const res = await fetch('/api/v1/files/upload/image', {
           method: 'POST',
@@ -137,8 +140,10 @@ export default function ReviewManage() {
   const handleCoverUpload = async (file: File) => {
     setCoverUploading(true);
     try {
+      // 大图先压缩
+      const uploadFile = isLargeImage(file) ? await compressImage(file) : file;
       const formData = new FormData();
-      formData.append('file', file);
+      formData.append('file', uploadFile);
       const token = localStorage.getItem('token');
       const res = await fetch('/api/v1/files/upload/image', {
         method: 'POST',
@@ -185,6 +190,20 @@ export default function ReviewManage() {
     action: '/api/v1/files/upload/image',
     headers: {
       Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
+    },
+    beforeUpload: async (file: File) => {
+      if (isLargeImage(file)) {
+        message.loading('图片压缩中...', 0);
+        try {
+          const compressed = await compressImage(file);
+          message.destroy();
+          return compressed;
+        } catch (e) {
+          message.destroy();
+          message.error('图片压缩失败，使用原图上传');
+        }
+      }
+      return file;
     },
     onChange(info: any) {
       if (info.file.status === 'done') {
