@@ -46,6 +46,12 @@ def generate_verify_code(order_no: str) -> str:
     ).hexdigest()[:16].upper()
 
 
+def generate_refund_no() -> str:
+    """生成退款单号"""
+    import random
+    return f"REF{datetime.now().strftime('%Y%m%d%H%M%S')}{random.randint(1000, 9999)}"
+
+
 def verify_order_code(order_no: str, code: str) -> bool:
     """验证核销码"""
     expected = generate_verify_code(order_no)
@@ -176,6 +182,7 @@ STATUS_MAP = {
     40: "退款中",
     45: "退款驳回",
     50: "已退款",
+    55: "部分退款",
     60: "已完成",
     70: "已评价"
 }
@@ -264,6 +271,13 @@ async def get_order_detail(
     if not o:
         return success({})
     
+    # 查询退款记录
+    from app.models.refund_record import RefundRecord
+    refund_records_result = await db.execute(
+        select(RefundRecord).where(RefundRecord.order_id == o.id).order_by(RefundRecord.created_at.desc())
+    )
+    refund_records = refund_records_result.scalars().all()
+    
     order = {
         "id": o.id,
         "order_no": o.order_no,
@@ -288,6 +302,7 @@ async def get_order_detail(
         "total_amount": float(o.total_amount),
         "discount_amount": float(o.discount_amount),
         "pay_amount": float(o.pay_amount),
+        "refunded_amount": float(o.refunded_amount or 0),
         "status": o.status,
         "status_name": STATUS_MAP.get(o.status, "未知"),
                 
@@ -298,7 +313,19 @@ async def get_order_detail(
         "created_at": o.created_at.isoformat(),
         "qrcode": o.qrcode,
         "guide_info": o.guide_info or {},
-        "refund_reject_reason": o.refund_reject_reason
+        "refund_reject_reason": o.refund_reject_reason,
+        "refund_records": [
+            {
+                "id": r.id,
+                "refund_no": r.refund_no,
+                "amount": float(r.amount),
+                "reason": r.reason,
+                "type": r.type,
+                "status": r.status,
+                "created_at": r.created_at.isoformat() if r.created_at else None
+            }
+            for r in refund_records
+        ]
     }
     
     return success(order)
@@ -779,8 +806,8 @@ async def refund_order(
     if not order:
         return {"code": 404, "message": "订单不存在", "data": None}
     
-    # 只能对待出行或退款驳回的订单申请退款
-    if order.status not in [20, 45]:
+    # 只能对待出行、部分退款或退款驳回的订单申请退款
+    if order.status not in [20, 45, 55]:
         return {"code": 400, "message": "当前订单状态不允许申请退款", "data": None}
     
     # 更新订单状态为退款中，清空之前的拒绝原因
@@ -1247,6 +1274,13 @@ async def admin_get_order_detail(
         if contact_id_card and isinstance(contact, dict):
             contact = {**contact, "id_card": contact_id_card}
         
+        # 查询退款记录
+        from app.models.refund_record import RefundRecord
+        refund_records_result = await db.execute(
+            select(RefundRecord).where(RefundRecord.order_id == o.id).order_by(RefundRecord.created_at.desc())
+        )
+        refund_records = refund_records_result.scalars().all()
+        
         order = {
             "id": o.id,
             "order_no": o.order_no,
@@ -1269,6 +1303,7 @@ async def admin_get_order_detail(
             "discount_amount": float(o.discount_amount) if o.discount_amount else 0,
             "pay_amount": float(o.pay_amount) if o.pay_amount else 0,
             "total_amount": float(o.total_amount) if o.total_amount else 0,
+            "refunded_amount": float(o.refunded_amount or 0),
             "status": o.status,
             "status_name": STATUS_MAP.get(o.status, "未知"),
                 
@@ -1279,6 +1314,18 @@ async def admin_get_order_detail(
             "created_at": o.created_at.isoformat() if o.created_at else None,
             "updated_at": o.updated_at.isoformat() if o.updated_at else None,
             "refund_reject_reason": o.refund_reject_reason,
+            "refund_records": [
+                {
+                    "id": r.id,
+                    "refund_no": r.refund_no,
+                    "amount": float(r.amount),
+                    "reason": r.reason,
+                    "type": r.type,
+                    "status": r.status,
+                    "created_at": r.created_at.isoformat() if r.created_at else None
+                }
+                for r in refund_records
+            ]
         }
         
         return success(order)
@@ -1470,13 +1517,13 @@ async def admin_refund_order(
         if not order:
             return {"code": 404, "message": "订单不存在", "data": None}
         
-        # 检查订单状态是否允许退款
-        if order.status not in [20, 60, 70]:  # 待出行、已完成、已评价
+        # 检查订单状态是否允许退款（待出行、部分退款、已完成、已评价）
+        if order.status not in [20, 55, 60, 70]:
             return {"code": 400, "message": "当前订单状态不允许退款", "data": None}
         
-        # 防止重复退款：已经退款成功过的订单不允许再次退款
-        if order.refund_time:
-            return {"code": 400, "message": "该订单已退款成功，不可重复退款", "data": None}
+        # 防止超退
+        if order.refunded_amount and float(order.refunded_amount) >= float(order.pay_amount or 0):
+            return {"code": 400, "message": "该订单已退完全部金额，不可重复退款", "data": None}
         
         refund_type = refund_data.get('refund_type', 'full')
         refund_reason = refund_data.get('refund_reason', '')
@@ -1523,8 +1570,8 @@ async def admin_get_refunds(
     try:
         from app.models.order import Order
         
-        # 查询退款中(40)、退款驳回(45)或已退款(50)的订单
-        query = select(Order).where(Order.status.in_([40, 45, 50]))
+        # 查询退款中(40)、退款驳回(45)、已退款(50)或部分退款(55)的订单
+        query = select(Order).where(Order.status.in_([40, 45, 50, 55]))
         
         if status:
             query = query.where(Order.status == status)
@@ -1577,7 +1624,7 @@ async def admin_direct_refund(
     """管理后台直接退款（不走申请+审核流程，一键完成微信退款）"""
     try:
         from app.models.order import Order
-        from datetime import datetime
+        from app.models.refund_record import RefundRecord
         
         result = await db.execute(select(Order).where(Order.id == order_id))
         order = result.scalar_one_or_none()
@@ -1586,24 +1633,41 @@ async def admin_direct_refund(
             return {"code": 404, "message": "订单不存在", "data": None}
         
         # 检查订单状态是否允许退款
-        if order.status not in [20, 60, 70]:
+        if order.status not in [20, 55, 60, 70]:
             return {"code": 400, "message": "当前订单状态不允许退款", "data": None}
         
-        # 防止重复退款
-        if order.status == 50 or order.refund_time:
-            return {"code": 400, "message": "该订单已退款成功，不可重复退款", "data": None}
+        # 防止超退
+        already_refunded = float(order.refunded_amount or 0)
+        pay_amount = float(order.pay_amount or 0)
+        if already_refunded >= pay_amount:
+            return {"code": 400, "message": "该订单已退完全部金额，不可重复退款", "data": None}
         
         refund_type = refund_data.get('refund_type', 'full')
         refund_reason = refund_data.get('refund_reason', '后台直接退款')
         
         # 计算退款金额
         if refund_type == 'full':
-            refund_amount = float(order.pay_amount)
+            refund_amount = pay_amount - already_refunded
         else:
             refund_amount = float(refund_data.get('refund_amount', 0))
         
         if refund_amount <= 0:
             return {"code": 400, "message": "退款金额必须大于0", "data": None}
+        
+        if already_refunded + refund_amount > pay_amount:
+            return {"code": 400, "message": f"累计退款不能超过实付金额，剩余可退: {pay_amount - already_refunded:.2f}", "data": None}
+        
+        # 生成退款单号并创建记录
+        refund_no = generate_refund_no()
+        record = RefundRecord(
+            order_id=order_id,
+            refund_no=refund_no,
+            amount=refund_amount,
+            reason=refund_reason,
+            type=refund_type,
+            status=10,
+        )
+        db.add(record)
         
         # 先更新为退款中
         order.status = 40
@@ -1637,42 +1701,55 @@ async def admin_direct_refund(
         except Exception as e:
             logger.error(f"Call pay-service refund failed: {e}")
             # 退款服务调用失败，回滚状态
-            order.status = 20
+            order.status = 20 if already_refunded == 0 else 55
             order.refund_amount = 0
             order.refund_reason = f"退款服务调用失败: {str(e)}"
+            record.status = 30
+            record.fail_reason = str(e)
             await db.commit()
             return {"code": 500, "message": f"退款服务调用失败: {str(e)}", "data": None}
         
         if pay_result.get("code") != 200:
             logger.error(f"Pay-service refund error: {pay_result}")
             # 微信退款失败，回滚状态
-            order.status = 20
+            order.status = 20 if already_refunded == 0 else 55
             order.refund_amount = 0
             order.refund_reason = f"退款失败: {pay_result.get('message', '未知错误')}"
+            record.status = 30
+            record.fail_reason = pay_result.get('message', '微信退款返回错误')
             await db.commit()
             return {"code": 500, "message": f"退款失败: {pay_result.get('message', '微信退款返回错误')}", "data": None}
         
-        # 退款成功，更新为已退款
-        order.status = 50
-        order.refund_time = datetime.now()
+        # 退款成功
+        record.status = 20
+        record.transaction_id = pay_result.get("data", {}).get("refund_id", "")
+        order.refunded_amount = already_refunded + refund_amount
+        
+        # 判断是否为最后一笔退款
+        if order.refunded_amount >= pay_amount:
+            order.status = 50
+            order.refund_time = datetime.now()
+            # 全额退完，恢复优惠券
+            if order.coupon_id:
+                await db.execute(
+                    text("UPDATE user_coupons SET status = 1, used_at = NULL, used_order_id = NULL WHERE id = :coupon_id"),
+                    {"coupon_id": order.coupon_id}
+                )
+                logger.info(f"Coupon restored after full refund: coupon_id={order.coupon_id}, order_id={order_id}")
+        else:
+            order.status = 55  # 部分退款
+        
         await db.commit()
         
-        # 退款成功，恢复优惠券
-        if order.coupon_id:
-            await db.execute(
-                text("UPDATE user_coupons SET status = 1, used_at = NULL, used_order_id = NULL WHERE id = :coupon_id"),
-                {"coupon_id": order.coupon_id}
-            )
-            await db.commit()
-            logger.info(f"Coupon restored after refund: coupon_id={order.coupon_id}, order_id={order_id}")
-        
-        logger.info(f"Order {order_id} direct refund success: amount={refund_amount}")
+        logger.info(f"Order {order_id} direct refund success: amount={refund_amount}, total_refunded={order.refunded_amount}")
         
         return success({
             "order_id": order_id,
             "refund_amount": refund_amount,
-            "status": 50,
-            "refund_time": order.refund_time.isoformat()
+            "refunded_amount": float(order.refunded_amount),
+            "status": order.status,
+            "status_name": STATUS_MAP.get(order.status, "未知"),
+            "refund_time": order.refund_time.isoformat() if order.refund_time else None
         }, message="退款成功")
     except Exception as e:
         logger.error(f"Error direct refunding order: {e}")
@@ -1684,13 +1761,14 @@ async def admin_direct_refund(
 @app.post("/api/v1/admin/refunds/{order_id}/approve")
 async def admin_approve_refund(
     order_id: int,
+    data: dict = {},
     authorization: Optional[str] = Header(None),
     db: AsyncSession = Depends(get_db)
 ):
-    """审核通过退款"""
+    """审核通过退款（支持全额或部分）"""
     try:
         from app.models.order import Order
-        from datetime import datetime
+        from app.models.refund_record import RefundRecord
         
         result = await db.execute(select(Order).where(Order.id == order_id))
         order = result.scalar_one_or_none()
@@ -1701,11 +1779,38 @@ async def admin_approve_refund(
         if order.status != 40:
             return {"code": 400, "message": "订单不是退款中状态", "data": None}
         
+        already_refunded = float(order.refunded_amount or 0)
+        pay_amount = float(order.pay_amount or 0)
+        
+        # 判断是全额还是部分
+        refund_type = data.get('refund_type', 'full')
+        if refund_type == 'partial':
+            refund_amount = float(data.get('refund_amount', 0))
+            if refund_amount <= 0:
+                return {"code": 400, "message": "退款金额必须大于0", "data": None}
+            if already_refunded + refund_amount > pay_amount:
+                return {"code": 400, "message": f"累计退款不能超过实付金额，剩余可退: {pay_amount - already_refunded:.2f}", "data": None}
+        else:
+            refund_amount = pay_amount - already_refunded
+        
+        # 创建退款记录
+        refund_no = generate_refund_no()
+        record = RefundRecord(
+            order_id=order_id,
+            refund_no=refund_no,
+            amount=refund_amount,
+            reason=order.refund_reason or "用户申请退款",
+            type=refund_type,
+            status=10,
+        )
+        db.add(record)
+        await db.flush()
+        
         # 调用 pay-service 发起退款
         pay_service_url = os.getenv("PAY_SERVICE_URL", "http://localhost:8006")
         refund_payload = {
             "order_no": order.order_no,
-            "refund_amount": float(order.refund_amount or order.pay_amount),
+            "refund_amount": refund_amount,
             "reason": order.refund_reason or "用户申请退款",
             "transaction_id": order.pay_trade_no or order.pay_transaction_id or "",
             "total_amount": float(order.pay_amount or order.total_amount or 0)
@@ -1725,38 +1830,52 @@ async def admin_approve_refund(
                 pay_result = pay_response.json()
         except Exception as e:
             logger.error(f"Call pay-service refund failed: {e}")
+            record.status = 30
+            record.fail_reason = str(e)
+            await db.commit()
             return {"code": 500, "message": f"退款服务调用失败: {str(e)}", "data": None}
         
         if pay_result.get("code") != 200:
             logger.error(f"Pay-service refund error: {pay_result}")
-            # 退款失败，回滚订单状态到待出行，允许重新发起退款
-            order.status = 20
-            order.refund_amount = 0
-            order.refund_reason = f"退款失败: {pay_result.get('message', '未知错误')}"
+            record.status = 30
+            record.fail_reason = pay_result.get('message', '退款服务返回错误')
             await db.commit()
             return {"code": 500, "message": f"退款失败: {pay_result.get('message', '退款服务返回错误')}", "data": None}
         
-        # 更新为已退款状态
-        order.status = 50
-        order.refund_time = datetime.now()
-        await db.commit()
+        # 退款成功
+        record.status = 20
+        record.transaction_id = pay_result.get("data", {}).get("refund_id", "")
+        order.refunded_amount = already_refunded + refund_amount
         
-        # 退款成功，恢复优惠券
-        if order.coupon_id:
-            await db.execute(
-                text("UPDATE user_coupons SET status = 1, used_at = NULL, used_order_id = NULL WHERE id = :coupon_id"),
-                {"coupon_id": order.coupon_id}
-            )
-            await db.commit()
-            logger.info(f"Coupon restored after refund approve: coupon_id={order.coupon_id}, order_id={order_id}")
+        # 判断是否为最后一笔退款
+        if order.refunded_amount >= pay_amount:
+            order.status = 50
+            order.refund_time = datetime.now()
+            # 全额退完，恢复优惠券
+            if order.coupon_id:
+                await db.execute(
+                    text("UPDATE user_coupons SET status = 1, used_at = NULL, used_order_id = NULL WHERE id = :coupon_id"),
+                    {"coupon_id": order.coupon_id}
+                )
+                logger.info(f"Coupon restored after full refund approve: coupon_id={order.coupon_id}, order_id={order_id}")
+        else:
+            order.status = 55  # 部分退款
+            order.refund_amount = 0  # 清空当前退款金额，允许再次申请
+        
+        await db.commit()
         
         return success({
             "order_id": order_id,
-            "status": 50,
-            "refund_time": order.refund_time.isoformat()
+            "refund_amount": refund_amount,
+            "refunded_amount": float(order.refunded_amount),
+            "status": order.status,
+            "status_name": STATUS_MAP.get(order.status, "未知"),
+            "refund_time": order.refund_time.isoformat() if order.refund_time else None
         }, message="退款审核通过")
     except Exception as e:
         logger.error(f"Error approving refund: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
         return {"code": 500, "message": f"审核失败: {str(e)}", "data": None}
 
 

@@ -11,8 +11,9 @@ const STATUS_MAP: any = {
   40: '退款中',
   45: '退款驳回',
   50: '已退款',
+  55: '部分退款',
   60: '已完成',
-  70: '已完成'
+  70: '已评价'
 }
 
 export default function OrderDetail() {
@@ -138,7 +139,29 @@ export default function OrderDetail() {
         )}
         <View className='divider' />
         <Text className='total-row'>实付金额: ￥{order.pay_amount}</Text>
+        {order.refunded_amount > 0 && (
+          <>
+            <Text className='info-row' style={{ color: '#faad14' }}>已退金额: ￥{order.refunded_amount}</Text>
+            <Text className='total-row' style={{ color: '#52c41a' }}>实付净额: ￥{(order.pay_amount - order.refunded_amount).toFixed(2)}</Text>
+          </>
+        )}
       </View>
+
+      {order.refund_records && order.refund_records.length > 0 && (
+        <View className='info-card'>
+          <Text className='card-title'>退款记录</Text>
+          {order.refund_records.map((r: any, idx: number) => (
+            <View key={idx} className='info-row' style={{ marginBottom: '8rpx' }}>
+              <Text style={{ color: '#666', fontSize: '24rpx' }}>
+                {r.type === 'full' ? '全额退款' : '部分退款'} ￥{r.amount}
+              </Text>
+              <Text style={{ color: '#999', fontSize: '22rpx', marginLeft: '16rpx' }}>
+                {r.status === 20 ? '成功' : r.status === 30 ? '失败' : '处理中'}
+              </Text>
+            </View>
+          ))}
+        </View>
+      )}
       </ScrollView>
 
       <View className='action-bar'>
@@ -162,7 +185,7 @@ export default function OrderDetail() {
             )}
           </View>
         )}
-        {(order.status === 40 || order.status === 50) && (
+        {(order.status === 40 || order.status === 50 || order.status === 55) && (
           <View className='action-btns'>
             <Button className='btn-default' onClick={() => setQrModalVisible(true)}>联系客服</Button>
           </View>

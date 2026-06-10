@@ -49,10 +49,11 @@ class Order(Base):
     pay_transaction_id: Mapped[Optional[str]] = mapped_column(String(64), nullable=True, comment="微信支付单号")
     
     # 退款信息
-    refund_amount: Mapped[float] = mapped_column(DECIMAL(10, 2), default=0, comment="退款金额")
+    refund_amount: Mapped[float] = mapped_column(DECIMAL(10, 2), default=0, comment="当前退款金额")
     refund_reason: Mapped[Optional[str]] = mapped_column(String(500), nullable=True, comment="退款原因")
     refund_reject_reason: Mapped[Optional[str]] = mapped_column(String(500), nullable=True, comment="退款拒绝原因")
     refund_time: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True, comment="退款时间")
+    refunded_amount: Mapped[float] = mapped_column(DECIMAL(10, 2), default=0, comment="累计已退金额")
     
     # 行程选配
     addons: Mapped[Optional[list]] = mapped_column(JSON, comment="行程选配列表")

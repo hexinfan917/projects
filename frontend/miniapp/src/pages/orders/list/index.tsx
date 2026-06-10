@@ -19,6 +19,7 @@ const STATUS_MAP: any = {
   40: '退款中',
   45: '退款驳回',
   50: '已退款',
+  55: '部分退款',
   60: '已完成'
 }
 
@@ -264,7 +265,7 @@ export default function OrderList() {
                     )}
                   </View>
                 )}
-                {(order.status === 40 || order.status === 50) && (
+                {(order.status === 40 || order.status === 50 || order.status === 55) && (
                   <View className='action-btns'>
                     <View className='mini-btn default' onClick={(e) => showCustomerService(e)}>
                       <Text>联系客服</Text>

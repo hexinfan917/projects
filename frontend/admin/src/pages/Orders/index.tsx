@@ -10,9 +10,11 @@ const statusMap: Record<number, { text: string; color: string }> = {
   20: { text: '待出行', color: 'blue' },
   30: { text: '已取消', color: 'default' },
   40: { text: '退款中', color: 'red' },
+  45: { text: '退款驳回', color: 'orange' },
   50: { text: '已退款', color: 'default' },
+  55: { text: '部分退款', color: 'purple' },
   60: { text: '已完成', color: 'green' },
-  70: { text: '已完成', color: 'green' },
+  70: { text: '已评价', color: 'green' },
 };
 
 const statusOptions = [
@@ -20,9 +22,11 @@ const statusOptions = [
   { label: '待出行', value: 20 },
   { label: '已取消', value: 30 },
   { label: '退款中', value: 40 },
+  { label: '退款驳回', value: 45 },
   { label: '已退款', value: 50 },
+  { label: '部分退款', value: 55 },
   { label: '已完成', value: 60 },
-  { label: '已完成', value: 70 },
+  { label: '已评价', value: 70 },
 ];
 
 export default function OrderList() {
@@ -373,9 +377,11 @@ export default function OrderList() {
         20: { text: '待出行' },
         30: { text: '已取消' },
         40: { text: '退款中' },
+        45: { text: '退款驳回' },
         50: { text: '已退款' },
+        55: { text: '部分退款' },
         60: { text: '已完成' },
-        70: { text: '已完成' },
+        70: { text: '已评价' },
       },
       render: (_: any, record: any) => {
         const status = Number(record.status);
@@ -416,7 +422,7 @@ export default function OrderList() {
             确认完成
           </Button>
         ),
-        (!record.is_free && [20, 45].includes(record.status)) && (
+        (!record.is_free && [20, 45, 55].includes(record.status)) && (
           <Button key="refund" type="link" size="small" danger icon={<MoneyCollectOutlined />} onClick={() => handleRefund(record)}>
             退款
           </Button>
@@ -582,11 +588,42 @@ export default function OrderList() {
                 <Descriptions.Item label="订单总额">
                   <span>¥{currentOrder.total_amount?.toFixed(2)}</span>
                 </Descriptions.Item>
-                <Descriptions.Item label="实付金额" span={2}>
+                <Descriptions.Item label="实付金额">
                   <span style={{ color: '#cf1322', fontSize: 16, fontWeight: 'bold' }}>¥{currentOrder.pay_amount?.toFixed(2)}</span>
                 </Descriptions.Item>
+                {currentOrder.refunded_amount > 0 && (
+                  <>
+                    <Descriptions.Item label="已退金额">
+                      <span style={{ color: '#faad14', fontWeight: 'bold' }}>¥{currentOrder.refunded_amount?.toFixed(2)}</span>
+                    </Descriptions.Item>
+                    <Descriptions.Item label="实付净额">
+                      <span style={{ color: '#52c41a', fontWeight: 'bold' }}>¥{(currentOrder.pay_amount - currentOrder.refunded_amount)?.toFixed(2)}</span>
+                    </Descriptions.Item>
+                  </>
+                )}
               </Descriptions>
             </Card>
+
+            {/* 退款记录 */}
+            {currentOrder.refund_records && currentOrder.refund_records.length > 0 && (
+              <Card title="退款记录" size="small" style={{ marginBottom: 16 }}>
+                <Table
+                  size="small"
+                  pagination={false}
+                  bordered
+                  dataSource={currentOrder.refund_records}
+                  columns={[
+                    { title: '退款单号', dataIndex: 'refund_no', key: 'refund_no' },
+                    { title: '退款金额', dataIndex: 'amount', key: 'amount', render: (v: number) => <span style={{ color: '#cf1322' }}>¥{v?.toFixed(2)}</span> },
+                    { title: '类型', dataIndex: 'type', key: 'type', render: (v: string) => v === 'full' ? '全额' : '部分' },
+                    { title: '原因', dataIndex: 'reason', key: 'reason', render: (v: string) => v || '-' },
+                    { title: '状态', dataIndex: 'status', key: 'status', render: (v: number) => v === 20 ? '成功' : v === 30 ? '失败' : '处理中' },
+                    { title: '时间', dataIndex: 'created_at', key: 'created_at', render: (v: string) => v ? dayjs(v).format('YYYY-MM-DD HH:mm:ss') : '-' },
+                  ]}
+                  rowKey="id"
+                />
+              </Card>
+            )}
 
             {/* 出行人信息（同行人） */}
             {currentOrder.participants && currentOrder.participants.length > 0 && (
@@ -649,6 +686,12 @@ export default function OrderList() {
       >
         <p>订单号: {currentOrder?.order_no}</p>
         <p>实付金额: <span style={{ color: '#cf1322', fontWeight: 'bold' }}>¥{currentOrder?.pay_amount?.toFixed(2)}</span></p>
+        {currentOrder?.refunded_amount > 0 && (
+          <>
+            <p>已退金额: <span style={{ color: '#cf1322', fontWeight: 'bold' }}>¥{currentOrder?.refunded_amount?.toFixed(2)}</span></p>
+            <p>剩余可退: <span style={{ color: '#52c41a', fontWeight: 'bold' }}>¥{(currentOrder?.pay_amount - currentOrder?.refunded_amount)?.toFixed(2)}</span></p>
+          </>
+        )}
         <ProFormSelect
           name="refund_type"
           label="退款类型"
@@ -661,10 +704,11 @@ export default function OrderList() {
         <ProFormDependency name={['refund_type']}>
           {({ refund_type }) => {
             if (refund_type !== 'partial') return null;
+            const remaining = (currentOrder?.pay_amount || 0) - (currentOrder?.refunded_amount || 0);
             return (
               <ProFormText
                 name="refund_amount"
-                label="退款金额"
+                label={`退款金额（剩余可退: ¥${remaining.toFixed(2)}）`}
                 placeholder="请输入退款金额"
                 rules={[
                   { required: true, message: '请输入退款金额' },
@@ -674,8 +718,8 @@ export default function OrderList() {
                       if (isNaN(num) || num <= 0) {
                         return Promise.reject('退款金额必须大于0');
                       }
-                      if (num > currentOrder?.pay_amount) {
-                        return Promise.reject('退款金额不能大于实付金额');
+                      if (num > remaining) {
+                        return Promise.reject(`退款金额不能大于剩余可退金额 ¥${remaining.toFixed(2)}`);
                       }
                       return Promise.resolve();
                     },
