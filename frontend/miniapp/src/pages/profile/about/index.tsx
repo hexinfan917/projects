@@ -19,6 +19,7 @@ const copyWechat = () => {
 }
 
 export default function About() {
+  const appVersion = Taro.getStorageSync('app_version') || '1.0.0'
   return (
     <View className='about-page' style={{ paddingTop: '140rpx' }}>
 
@@ -29,7 +30,7 @@ export default function About() {
         <View className='logo'>🐾</View>
         <Text className='app-name'>尾巴PetWay</Text>
         <Text className='app-slogan'>与爱宠并肩同行</Text>
-        <Text className='version'>Version 1.0.0</Text>
+        <Text className='version'>Version {appVersion}</Text>
       </View>
 
       <View className='info-section'>

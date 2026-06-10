@@ -161,6 +161,10 @@ export default function Settings() {
               <Form.Item name="mp_secret" label="小程序AppSecret">
                 <Input.Password placeholder="请输入小程序AppSecret" />
               </Form.Item>
+
+              <Form.Item name="mp_version" label="小程序版本号">
+                <Input placeholder="如: 1.0.0" />
+              </Form.Item>
             </TabPane>
 
             <TabPane tab="短信服务" key="sms">

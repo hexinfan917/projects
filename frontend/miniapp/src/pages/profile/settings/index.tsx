@@ -109,7 +109,7 @@ export default function Settings() {
       )}
 
       <View className='version-section'>
-        <Text className='version-text'>Version 1.0.0</Text>
+        <Text className='version-text'>Version {Taro.getStorageSync('app_version') || '1.0.0'}</Text>
       </View>
 
       {showDeleteModal && (

@@ -146,6 +146,7 @@
             0,
             0,
             0,
+            0,
             0
           ]
         },
@@ -194,7 +195,8 @@
             9,
             4,
             7,
-            7
+            7,
+            6
           ]
         },
         "register": 3
@@ -245,7 +247,8 @@
             31,
             15,
             33,
-            18
+            18,
+            19
           ]
         },
         "register": 68
@@ -268,6 +271,7 @@
             0,
             0,
             1,
+            0,
             0,
             0,
             0,
@@ -316,6 +320,7 @@
             1
           ],
           "onPrepareBuildSuccess": [
+            0,
             0,
             0,
             0,
@@ -415,6 +420,7 @@
             1,
             1,
             1,
+            0,
             0,
             0,
             0,
@@ -1697,6 +1703,7 @@
             1,
             1,
             2,
+            1,
             1
           ],
           "addRuntimePlugin": [
@@ -1710,6 +1717,7 @@
             0,
             0,
             1,
+            0,
             0,
             0,
             0,
@@ -1836,9 +1844,12 @@
             0,
             0,
             0,
+            0,
             0
           ],
           "addEntryImports": [
+            0,
+            0,
             0,
             0,
             0,
@@ -1966,9 +1977,12 @@
             28,
             15,
             67,
-            35
+            35,
+            40
           ],
           "addPolyfillImports": [
+            0,
+            0,
             0,
             0,
             0,
@@ -2111,6 +2125,8 @@
             0,
             0,
             0,
+            0,
+            0,
             0
           ]
         },
@@ -2129,6 +2145,7 @@
         "hooks": {
           "onGenerateFiles": [
             379,
+            0,
             0,
             0,
             0,
@@ -2233,6 +2250,7 @@
             0,
             0,
             2,
+            0,
             0
           ],
           "addBeforeMiddlewares": [
@@ -2316,7 +2334,9 @@
             54,
             10,
             59,
-            9
+            9,
+            57,
+            14
           ]
         },
         "register": 12
@@ -2402,7 +2422,8 @@
             29,
             14,
             36,
-            20
+            20,
+            35
           ]
         },
         "register": 8
@@ -2518,7 +2539,8 @@
             1,
             0,
             3,
-            2
+            2,
+            3
           ]
         },
         "register": 3
@@ -3257,6 +3279,7 @@
             0,
             0,
             0,
+            0,
             0
           ],
           "onGenerateFiles": [
@@ -3291,7 +3314,8 @@
             0,
             0,
             1,
-            2
+            2,
+            1
           ],
           "addTmpGenerateWatcherPaths": [
             0
@@ -3397,9 +3421,12 @@
             1,
             0,
             0,
+            0,
+            0,
             0
           ],
           "addRuntimePlugin": [
+            0,
             0,
             0,
             0,
@@ -3465,6 +3492,7 @@
             0,
             0,
             0,
+            0,
             0
           ],
           "onGenerateFiles": [
@@ -3499,7 +3527,8 @@
             4,
             1,
             3,
-            1
+            1,
+            4
           ],
           "addExtraBabelPlugins": [
             0
@@ -3565,9 +3594,11 @@
             0,
             0,
             0,
+            0,
             0
           ],
           "addRuntimePluginKey": [
+            0,
             0,
             0,
             0,
@@ -3633,6 +3664,7 @@
             1,
             1,
             2,
+            1,
             1
           ],
           "addExtraModels": [
@@ -3667,7 +3699,8 @@
             0,
             0,
             0,
-            1
+            1,
+            0
           ]
         },
         "register": 1
@@ -3720,7 +3753,8 @@
             0,
             0,
             1,
-            1
+            1,
+            0
           ],
           "modifyAppData": [
             1
@@ -3757,9 +3791,11 @@
             0,
             0,
             0,
+            0,
             0
           ],
           "addRuntimePluginKey": [
+            0,
             0,
             0,
             0,
@@ -3825,7 +3861,8 @@
             7,
             3,
             10,
-            6
+            6,
+            7
           ]
         },
         "register": 7
@@ -3899,6 +3936,7 @@
             0,
             0,
             0,
+            0,
             0
           ],
           "onGenerateFiles": [
@@ -3933,7 +3971,8 @@
             54,
             55,
             63,
-            52
+            52,
+            82
           ],
           "addTmpGenerateWatcherPaths": [
             0
@@ -3966,6 +4005,7 @@
       "time": {
         "hooks": {
           "addRuntimePluginKey": [
+            0,
             0,
             0,
             0,
@@ -4082,6 +4122,7 @@
             0,
             0,
             0,
+            0,
             0
           ],
           "onGenerateFiles": [
@@ -4116,7 +4157,8 @@
             2,
             2,
             4,
-            3
+            3,
+            5
           ]
         },
         "register": 1
@@ -5828,7 +5870,7 @@
       "parentId": "ant-design-pro-layout",
       "id": "23",
       "absPath": "/reviews",
-      "__content": "import { PageContainer, ProTable, ModalForm, ProFormText, ProFormDigit, ProFormSelect } from '@ant-design/pro-components';\nimport { Button, Tag, Image, message, Popconfirm, Space, Form, Upload, Input } from 'antd';\nimport { PlusOutlined, EditOutlined, DeleteOutlined, VerticalAlignTopOutlined, VerticalAlignBottomOutlined, LoadingOutlined, UploadOutlined } from '@ant-design/icons';\nimport { useRef, useState, useCallback } from 'react';\nimport { request } from '@umijs/max';\nimport dayjs from 'dayjs';\nimport ReactQuill from 'react-quill';\nimport 'react-quill/dist/quill.snow.css';\n\nconst statusMap: Record<number, { text: string; color: string }> = {\n  0: { text: '草稿', color: 'default' },\n  1: { text: '已发布', color: 'success' },\n  2: { text: '已下架', color: 'error' },\n};\n\nconst quillFormats = [\n  'header',\n  'bold', 'italic', 'underline', 'strike',\n  'list', 'bullet', 'indent',\n  'color', 'background',\n  'link', 'image',\n];\n\nexport default function ReviewManage() {\n  const tableRef = useRef<any>(null);\n  const [modalVisible, setModalVisible] = useState(false);\n  const [editData, setEditData] = useState<any>(null);\n  const [content, setContent] = useState('');\n  const [coverImageUrl, setCoverImageUrl] = useState('');\n  const [coverUploading, setCoverUploading] = useState(false);\n  const [gallery, setGallery] = useState<string[]>([]);\n  const [form] = Form.useForm();\n  const quillRef = useRef<ReactQuill>(null);\n\n  const handleQuillImageUpload = useCallback(() => {\n    const input = document.createElement('input');\n    input.setAttribute('type', 'file');\n    input.setAttribute('accept', 'image/*');\n    input.click();\n    input.onchange = async () => {\n      const file = input.files?.[0];\n      if (!file) return;\n      try {\n        const formData = new FormData();\n        formData.append('file', file);\n        const token = localStorage.getItem('token');\n        const res = await fetch('/api/v1/files/upload/image', {\n          method: 'POST',\n          headers: {\n            ...(token ? { Authorization: `Bearer ${token}` } : {}),\n          },\n          body: formData,\n        });\n        const data = await res.json();\n        if (data.code === 200 && data.data?.url) {\n          const editor = quillRef.current?.getEditor();\n          if (editor) {\n            const range = editor.getSelection(true);\n            editor.insertEmbed(range.index, 'image', data.data.url);\n            editor.setSelection(range.index + 1);\n          }\n          message.success('图片插入成功');\n        } else {\n          message.error(data.message || '图片上传失败');\n        }\n      } catch (error) {\n        message.error('图片上传失败');\n      }\n    };\n  }, []);\n\n  const quillModules = useRef({\n    toolbar: {\n      container: [\n        [{ header: [1, 2, 3, false] }],\n        ['bold', 'italic', 'underline', 'strike'],\n        [{ list: 'ordered' }, { list: 'bullet' }],\n        [{ indent: '-1' }, { indent: '+1' }],\n        [{ color: [] }, { background: [] }],\n        ['link', 'image'],\n        ['clean'],\n      ],\n      handlers: {\n        image: handleQuillImageUpload,\n      },\n    },\n  }).current;\n\n  const openModal = (record?: any) => {\n    setEditData(record || null);\n    setContent(record?.content || '');\n    setCoverImageUrl(record?.cover_image || '');\n    let galleryUrls: string[] = [];\n    if (record?.images) {\n      try {\n        galleryUrls = typeof record.images === 'string' ? JSON.parse(record.images) : record.images;\n      } catch (e) {\n        console.error('[Modal] Failed to parse images:', record.images, e);\n      }\n    }\n    setGallery(galleryUrls);\n    form.setFieldsValue(record || { status: 0, is_top: 0, sort_order: 0, category: 'review', participants: 0 });\n    setModalVisible(true);\n  };\n\n  const handleDelete = async (id: number) => {\n    try {\n      const res = await request('/api/v1/admin/articles/' + id, { method: 'DELETE' });\n      if (res.code === 200) {\n        message.success('删除成功');\n        tableRef.current?.reload();\n      } else {\n        message.error(res.message || '删除失败');\n      }\n    } catch (error) {\n      message.error('删除失败');\n    }\n  };\n\n  const handleStatusChange = async (record: any, newStatus: number) => {\n    try {\n      const res = await request('/api/v1/admin/articles/' + record.id, {\n        method: 'PUT',\n        data: { ...record, status: newStatus },\n      });\n      if (res.code === 200) {\n        message.success('状态更新成功');\n        tableRef.current?.reload();\n      } else {\n        message.error(res.message || '更新失败');\n      }\n    } catch (error) {\n      message.error('更新失败');\n    }\n  };\n\n  const handleCoverUpload = async (file: File) => {\n    setCoverUploading(true);\n    try {\n      const formData = new FormData();\n      formData.append('file', file);\n      const token = localStorage.getItem('token');\n      const res = await fetch('/api/v1/files/upload/image', {\n        method: 'POST',\n        headers: {\n          ...(token ? { Authorization: `Bearer ${token}` } : {}),\n        },\n        body: formData,\n      });\n      const data = await res.json();\n      if (data.code === 200 && data.data?.url) {\n        setCoverImageUrl(data.data.url);\n        form.setFieldsValue({ cover_image: data.data.url });\n        message.success('上传成功');\n      } else {\n        message.error(data.message || '上传失败');\n      }\n    } catch (error) {\n      message.error('上传失败');\n    } finally {\n      setCoverUploading(false);\n    }\n    return false;\n  };\n\n  // 添加图集图片（使用函数式更新避免 stale closure）\n  const handleGalleryUpload = (url: string) => {\n    setGallery(prev => {\n      const newGallery = [...prev, url];\n      return newGallery;\n    });\n  };\n\n  // 删除图集图片\n  const removeGalleryImage = (index: number) => {\n    setGallery(prev => {\n      const newGallery = prev.filter((_, i) => i !== index);\n      return newGallery;\n    });\n  };\n\n  // 图集上传配置\n  const galleryUploadProps = {\n    name: 'file',\n    action: '/api/v1/files/upload/image',\n    headers: {\n      Authorization: `Bearer ${localStorage.getItem('token') || ''}`,\n    },\n    onChange(info: any) {\n      if (info.file.status === 'done') {\n        const url = info.file.response?.data?.url;\n        if (url) {\n          message.success(`${info.file.name} 上传成功`);\n          handleGalleryUpload(url);\n        } else {\n          console.error('[Upload] No URL in response:', info.file.response);\n          message.error('上传成功但无法获取图片地址');\n        }\n      } else if (info.file.status === 'error') {\n        message.error(`${info.file.name} 上传失败`);\n        console.error('[Upload] Error:', info.file.error);\n      }\n    },\n  };\n\n  const handleSubmit = async (values: any) => {\n    try {\n      const url = editData ? '/api/v1/admin/articles/' + editData.id : '/api/v1/admin/articles';\n      const method = editData ? 'PUT' : 'POST';\n      const submitContent = content && content.trim() !== '<p><br></p>' ? content : '';\n      // 从 form 实例获取完整字段值，避免 ModalForm onFinish 遗漏\n      const allValues = form.getFieldsValue(true);\n      // 清理数字字段空字符串，避免后端类型转换失败\n      const submitData = {\n        ...allValues,\n        content: submitContent,\n        category: 'review',\n        is_top: allValues.is_top === '' || allValues.is_top === undefined ? 0 : Number(allValues.is_top),\n        sort_order: allValues.sort_order === '' || allValues.sort_order === undefined ? 0 : Number(allValues.sort_order),\n        participants: allValues.participants === '' || allValues.participants === undefined ? 0 : Number(allValues.participants),\n        status: allValues.status === '' || allValues.status === undefined ? 0 : Number(allValues.status),\n        images: gallery.length > 0 ? JSON.stringify(gallery) : null,\n      };\n      const res = await request(url, {\n        method,\n        data: submitData,\n      });\n      if (res.code === 200) {\n        message.success(editData ? '更新成功' : '创建成功');\n        setModalVisible(false);\n        setEditData(null);\n        setContent('');\n        setCoverImageUrl('');\n        setGallery([]);\n        tableRef.current?.reload();\n        return true;\n      }\n      message.error(res.message || (editData ? '更新失败' : '创建失败'));\n      return false;\n    } catch (error: any) {\n      message.error(error?.message || (editData ? '更新失败' : '创建失败'));\n      return false;\n    }\n  };\n\n  const columns = [\n    { title: 'ID', dataIndex: 'id', width: 60, search: false },\n    {\n      title: '封面',\n      dataIndex: 'cover_image',\n      width: 100,\n      search: false,\n      render: (url: string) => {\n        if (!url) return <span style={{ color: '#999' }}>无</span>;\n        const fullUrl = url;\n        return <Image src={fullUrl} width={80} height={60} style={{ objectFit: 'cover' }} />;\n      },\n    },\n    {\n      title: '标题',\n      dataIndex: 'title',\n      width: 250,\n      ellipsis: true,\n      render: (text: string, record: any) => (\n        <div>\n          <div>{text}</div>\n          {record.is_top === 1 && <Tag color=\"red\" size=\"small\">置顶</Tag>}\n        </div>\n      ),\n    },\n    {\n      title: '地点',\n      dataIndex: 'location',\n      width: 150,\n      ellipsis: true,\n    },\n    {\n      title: '活动日期',\n      dataIndex: 'event_date',\n      width: 120,\n      search: false,\n    },\n    {\n      title: '参与狗狗',\n      dataIndex: 'participants',\n      width: 100,\n      search: false,\n      render: (v: number) => `${v || 0} 只`,\n    },\n    { title: '浏览', dataIndex: 'view_count', width: 80, search: false },\n    {\n      title: '状态',\n      dataIndex: 'status',\n      width: 100,\n      valueEnum: {\n        0: { text: '草稿', status: 'Default' },\n        1: { text: '已发布', status: 'Success' },\n        2: { text: '已下架', status: 'Error' },\n      },\n    },\n    {\n      title: '发布时间',\n      dataIndex: 'created_at',\n      width: 180,\n      search: false,\n      render: (date: string) => (date ? dayjs(date).format('YYYY-MM-DD HH:mm') : '-'),\n    },\n    {\n      title: '操作',\n      valueType: 'option',\n      width: 220,\n      fixed: 'right',\n      render: (_: any, record: any) => (\n        <Space size=\"small\">\n          <Button type=\"link\" size=\"small\" icon={<EditOutlined />} onClick={() => openModal(record)}>\n            编辑\n          </Button>\n          {record.status !== 1 && (\n            <Button type=\"link\" size=\"small\" icon={<VerticalAlignTopOutlined />} onClick={() => handleStatusChange(record, 1)}>\n              发布\n            </Button>\n          )}\n          {record.status === 1 && (\n            <Button type=\"link\" size=\"small\" danger icon={<VerticalAlignBottomOutlined />} onClick={() => handleStatusChange(record, 2)}>\n              下架\n            </Button>\n          )}\n          <Popconfirm\n            title=\"确认删除\"\n            description=\"删除后无法恢复，是否继续？\"\n            onConfirm={() => handleDelete(record.id)}\n          >\n            <Button type=\"link\" danger size=\"small\" icon={<DeleteOutlined />}>\n              删除\n            </Button>\n          </Popconfirm>\n        </Space>\n      ),\n    },\n  ];\n\n  return (\n    <PageContainer title=\"狗狗回顾\">\n      <ProTable\n        columns={columns}\n        actionRef={tableRef}\n        request={async (params) => {\n          const res = await request('/api/v1/admin/articles', {\n            params: {\n              page: params.current,\n              page_size: params.pageSize,\n              category: 'review',\n              status: params.status,\n              keyword: params.title,\n            },\n          });\n          return { data: res.data?.articles || [], success: res.code === 200, total: res.data?.total || 0 };\n        }}\n        rowKey=\"id\"\n        search={{ labelWidth: 'auto' }}\n        pagination={{ pageSize: 10, showSizeChanger: true }}\n        scroll={{ x: 1300 }}\n        toolBarRender={() => [\n          <Button key=\"add\" type=\"primary\" icon={<PlusOutlined />} onClick={() => openModal()}>\n            新建回顾\n          </Button>,\n        ]}\n      />\n      <ModalForm\n        title={editData ? '编辑回顾' : '新建回顾'}\n        open={modalVisible}\n        onOpenChange={setModalVisible}\n        onFinish={handleSubmit}\n        form={form}\n        width={900}\n        modalProps={{\n          destroyOnClose: true,\n          afterClose: () => {\n            setContent('');\n            setCoverImageUrl('');\n            setGallery([]);\n            setEditData(null);\n            form.resetFields();\n          },\n        }}\n      >\n        <ProFormText name=\"title\" label=\"标题\" rules={[{ required: true }]} />\n        <Form.Item label=\"封面图\" required>\n          <Form.Item name=\"cover_image\" noStyle rules={[{ required: true, message: '请上传封面图' }]}>\n            <Input type=\"hidden\" />\n          </Form.Item>\n          <Upload\n            listType=\"picture-card\"\n            showUploadList={false}\n            beforeUpload={handleCoverUpload}\n            accept=\"image/*\"\n          >\n            {coverImageUrl ? (\n              <Image src={coverImageUrl} alt=\"cover\" style={{ width: '100%', height: '100%', objectFit: 'cover' }} preview={false} />\n            ) : (\n              <div>\n                {coverUploading ? <LoadingOutlined /> : <PlusOutlined />}\n                <div style={{ marginTop: 8 }}>上传封面</div>\n              </div>\n            )}\n          </Upload>\n          {coverImageUrl && (\n            <Button type=\"link\" size=\"small\" danger onClick={() => { setCoverImageUrl(''); form.setFieldsValue({ cover_image: '' }); }}>\n              删除封面\n            </Button>\n          )}\n        </Form.Item>\n        <ProFormText name=\"location\" label=\"活动地点\" />\n        <ProFormText name=\"event_date\" label=\"活动日期\" placeholder=\"如：2024.06.15\" />\n        <ProFormDigit name=\"participants\" label=\"参与狗狗数量\" min={0} initialValue={0} />\n        <ProFormText name=\"summary\" label=\"摘要\" />\n        <Form.Item label=\"图集\">\n          <div style={{ marginBottom: 16 }}>\n            <Upload {...galleryUploadProps} showUploadList={false}>\n              <Button icon={<UploadOutlined />}>上传图片</Button>\n            </Upload>\n            <span style={{ marginLeft: 8, color: '#999' }}>或直接输入图片URL：</span>\n            <Input\n              style={{ width: 300, marginLeft: 8 }}\n              placeholder=\"输入图片URL\"\n              onPressEnter={(e: any) => {\n                if (e.target.value) {\n                  handleGalleryUpload(e.target.value);\n                  e.target.value = '';\n                }\n              }}\n            />\n          </div>\n          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16 }}>\n            {gallery.map((url, index) => (\n              <div key={index} style={{ position: 'relative', width: 200, height: 150 }}>\n                <img\n                  src={url}\n                  alt={`图集${index + 1}`}\n                  style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 8 }}\n                />\n                <Button\n                  type=\"primary\"\n                  danger\n                  size=\"small\"\n                  icon={<DeleteOutlined />}\n                  style={{ position: 'absolute', top: 8, right: 8 }}\n                  onClick={() => removeGalleryImage(index)}\n                >\n                  删除\n                </Button>\n              </div>\n            ))}\n          </div>\n        </Form.Item>\n        <Form.Item label=\"内容\" required>\n          <ReactQuill\n            ref={quillRef}\n            theme=\"snow\"\n            value={content}\n            onChange={setContent}\n            modules={quillModules}\n            formats={quillFormats}\n            style={{ height: 300, marginBottom: 40 }}\n          />\n        </Form.Item>\n        <ProFormText name=\"author_name\" label=\"作者\" />\n        <ProFormSelect\n          name=\"status\"\n          label=\"状态\"\n          options={[\n            { label: '草稿', value: 0 },\n            { label: '已发布', value: 1 },\n            { label: '已下架', value: 2 },\n          ]}\n        />\n        <ProFormDigit name=\"is_top\" label=\"置顶\" min={0} max={1} />\n        <ProFormDigit name=\"sort_order\" label=\"排序\" min={0} />\n      </ModalForm>\n    </PageContainer>\n  );\n}\n",
+      "__content": "import { PageContainer, ProTable, ModalForm, ProFormText, ProFormDigit, ProFormSelect } from '@ant-design/pro-components';\nimport { Button, Tag, Image, message, Popconfirm, Space, Form, Upload, Input } from 'antd';\nimport { PlusOutlined, EditOutlined, DeleteOutlined, VerticalAlignTopOutlined, VerticalAlignBottomOutlined, LoadingOutlined, UploadOutlined } from '@ant-design/icons';\nimport { useRef, useState, useCallback } from 'react';\nimport { request } from '@umijs/max';\nimport { compressImage, isLargeImage } from '@/utils/imageCompress';\nimport dayjs from 'dayjs';\nimport ReactQuill from 'react-quill';\nimport 'react-quill/dist/quill.snow.css';\n\nconst statusMap: Record<number, { text: string; color: string }> = {\n  0: { text: '草稿', color: 'default' },\n  1: { text: '已发布', color: 'success' },\n  2: { text: '已下架', color: 'error' },\n};\n\nconst quillFormats = [\n  'header',\n  'bold', 'italic', 'underline', 'strike',\n  'list', 'bullet', 'indent',\n  'color', 'background',\n  'link', 'image',\n];\n\nexport default function ReviewManage() {\n  const tableRef = useRef<any>(null);\n  const [modalVisible, setModalVisible] = useState(false);\n  const [editData, setEditData] = useState<any>(null);\n  const [content, setContent] = useState('');\n  const [coverImageUrl, setCoverImageUrl] = useState('');\n  const [coverUploading, setCoverUploading] = useState(false);\n  const [gallery, setGallery] = useState<string[]>([]);\n  const [form] = Form.useForm();\n  const quillRef = useRef<ReactQuill>(null);\n\n  const handleQuillImageUpload = useCallback(() => {\n    const input = document.createElement('input');\n    input.setAttribute('type', 'file');\n    input.setAttribute('accept', 'image/*');\n    input.click();\n    input.onchange = async () => {\n      const file = input.files?.[0];\n      if (!file) return;\n      try {\n        // 大图先压缩\n        const uploadFile = isLargeImage(file) ? await compressImage(file) : file;\n        const formData = new FormData();\n        formData.append('file', uploadFile);\n        const token = localStorage.getItem('token');\n        const res = await fetch('/api/v1/files/upload/image', {\n          method: 'POST',\n          headers: {\n            ...(token ? { Authorization: `Bearer ${token}` } : {}),\n          },\n          body: formData,\n        });\n        const data = await res.json();\n        if (data.code === 200 && data.data?.url) {\n          const editor = quillRef.current?.getEditor();\n          if (editor) {\n            const range = editor.getSelection(true);\n            editor.insertEmbed(range.index, 'image', data.data.url);\n            editor.setSelection(range.index + 1);\n          }\n          message.success('图片插入成功');\n        } else {\n          message.error(data.message || '图片上传失败');\n        }\n      } catch (error) {\n        message.error('图片上传失败');\n      }\n    };\n  }, []);\n\n  const quillModules = useRef({\n    toolbar: {\n      container: [\n        [{ header: [1, 2, 3, false] }],\n        ['bold', 'italic', 'underline', 'strike'],\n        [{ list: 'ordered' }, { list: 'bullet' }],\n        [{ indent: '-1' }, { indent: '+1' }],\n        [{ color: [] }, { background: [] }],\n        ['link', 'image'],\n        ['clean'],\n      ],\n      handlers: {\n        image: handleQuillImageUpload,\n      },\n    },\n  }).current;\n\n  const openModal = (record?: any) => {\n    setEditData(record || null);\n    setContent(record?.content || '');\n    setCoverImageUrl(record?.cover_image || '');\n    let galleryUrls: string[] = [];\n    if (record?.images) {\n      try {\n        galleryUrls = typeof record.images === 'string' ? JSON.parse(record.images) : record.images;\n      } catch (e) {\n        console.error('[Modal] Failed to parse images:', record.images, e);\n      }\n    }\n    setGallery(galleryUrls);\n    form.setFieldsValue(record || { status: 0, is_top: 0, sort_order: 0, category: 'review', participants: 0 });\n    setModalVisible(true);\n  };\n\n  const handleDelete = async (id: number) => {\n    try {\n      const res = await request('/api/v1/admin/articles/' + id, { method: 'DELETE' });\n      if (res.code === 200) {\n        message.success('删除成功');\n        tableRef.current?.reload();\n      } else {\n        message.error(res.message || '删除失败');\n      }\n    } catch (error) {\n      message.error('删除失败');\n    }\n  };\n\n  const handleStatusChange = async (record: any, newStatus: number) => {\n    try {\n      const res = await request('/api/v1/admin/articles/' + record.id, {\n        method: 'PUT',\n        data: { ...record, status: newStatus },\n      });\n      if (res.code === 200) {\n        message.success('状态更新成功');\n        tableRef.current?.reload();\n      } else {\n        message.error(res.message || '更新失败');\n      }\n    } catch (error) {\n      message.error('更新失败');\n    }\n  };\n\n  const handleCoverUpload = async (file: File) => {\n    setCoverUploading(true);\n    try {\n      // 大图先压缩\n      const uploadFile = isLargeImage(file) ? await compressImage(file) : file;\n      const formData = new FormData();\n      formData.append('file', uploadFile);\n      const token = localStorage.getItem('token');\n      const res = await fetch('/api/v1/files/upload/image', {\n        method: 'POST',\n        headers: {\n          ...(token ? { Authorization: `Bearer ${token}` } : {}),\n        },\n        body: formData,\n      });\n      const data = await res.json();\n      if (data.code === 200 && data.data?.url) {\n        setCoverImageUrl(data.data.url);\n        form.setFieldsValue({ cover_image: data.data.url });\n        message.success('上传成功');\n      } else {\n        message.error(data.message || '上传失败');\n      }\n    } catch (error) {\n      message.error('上传失败');\n    } finally {\n      setCoverUploading(false);\n    }\n    return false;\n  };\n\n  // 添加图集图片（使用函数式更新避免 stale closure）\n  const handleGalleryUpload = (url: string) => {\n    setGallery(prev => {\n      const newGallery = [...prev, url];\n      return newGallery;\n    });\n  };\n\n  // 删除图集图片\n  const removeGalleryImage = (index: number) => {\n    setGallery(prev => {\n      const newGallery = prev.filter((_, i) => i !== index);\n      return newGallery;\n    });\n  };\n\n  // 图集上传配置\n  const galleryUploadProps = {\n    name: 'file',\n    action: '/api/v1/files/upload/image',\n    headers: {\n      Authorization: `Bearer ${localStorage.getItem('token') || ''}`,\n    },\n    beforeUpload: async (file: File) => {\n      if (isLargeImage(file)) {\n        message.loading('图片压缩中...', 0);\n        try {\n          const compressed = await compressImage(file);\n          message.destroy();\n          return compressed;\n        } catch (e) {\n          message.destroy();\n          message.error('图片压缩失败，使用原图上传');\n        }\n      }\n      return file;\n    },\n    onChange(info: any) {\n      if (info.file.status === 'done') {\n        const url = info.file.response?.data?.url;\n        if (url) {\n          message.success(`${info.file.name} 上传成功`);\n          handleGalleryUpload(url);\n        } else {\n          console.error('[Upload] No URL in response:', info.file.response);\n          message.error('上传成功但无法获取图片地址');\n        }\n      } else if (info.file.status === 'error') {\n        message.error(`${info.file.name} 上传失败`);\n        console.error('[Upload] Error:', info.file.error);\n      }\n    },\n  };\n\n  const handleSubmit = async (values: any) => {\n    try {\n      const url = editData ? '/api/v1/admin/articles/' + editData.id : '/api/v1/admin/articles';\n      const method = editData ? 'PUT' : 'POST';\n      const submitContent = content && content.trim() !== '<p><br></p>' ? content : '';\n      // 从 form 实例获取完整字段值，避免 ModalForm onFinish 遗漏\n      const allValues = form.getFieldsValue(true);\n      // 清理数字字段空字符串，避免后端类型转换失败\n      const submitData = {\n        ...allValues,\n        content: submitContent,\n        category: 'review',\n        is_top: allValues.is_top === '' || allValues.is_top === undefined ? 0 : Number(allValues.is_top),\n        sort_order: allValues.sort_order === '' || allValues.sort_order === undefined ? 0 : Number(allValues.sort_order),\n        participants: allValues.participants === '' || allValues.participants === undefined ? 0 : Number(allValues.participants),\n        status: allValues.status === '' || allValues.status === undefined ? 0 : Number(allValues.status),\n        images: gallery.length > 0 ? JSON.stringify(gallery) : null,\n      };\n      const res = await request(url, {\n        method,\n        data: submitData,\n      });\n      if (res.code === 200) {\n        message.success(editData ? '更新成功' : '创建成功');\n        setModalVisible(false);\n        setEditData(null);\n        setContent('');\n        setCoverImageUrl('');\n        setGallery([]);\n        tableRef.current?.reload();\n        return true;\n      }\n      message.error(res.message || (editData ? '更新失败' : '创建失败'));\n      return false;\n    } catch (error: any) {\n      message.error(error?.message || (editData ? '更新失败' : '创建失败'));\n      return false;\n    }\n  };\n\n  const columns = [\n    { title: 'ID', dataIndex: 'id', width: 60, search: false },\n    {\n      title: '封面',\n      dataIndex: 'cover_image',\n      width: 100,\n      search: false,\n      render: (url: string) => {\n        if (!url) return <span style={{ color: '#999' }}>无</span>;\n        const fullUrl = url;\n        return <Image src={fullUrl} width={80} height={60} style={{ objectFit: 'cover' }} />;\n      },\n    },\n    {\n      title: '标题',\n      dataIndex: 'title',\n      width: 250,\n      ellipsis: true,\n      render: (text: string, record: any) => (\n        <div>\n          <div>{text}</div>\n          {record.is_top === 1 && <Tag color=\"red\" size=\"small\">置顶</Tag>}\n        </div>\n      ),\n    },\n    {\n      title: '地点',\n      dataIndex: 'location',\n      width: 150,\n      ellipsis: true,\n    },\n    {\n      title: '活动日期',\n      dataIndex: 'event_date',\n      width: 120,\n      search: false,\n    },\n    {\n      title: '参与狗狗',\n      dataIndex: 'participants',\n      width: 100,\n      search: false,\n      render: (v: number) => `${v || 0} 只`,\n    },\n    { title: '浏览', dataIndex: 'view_count', width: 80, search: false },\n    {\n      title: '状态',\n      dataIndex: 'status',\n      width: 100,\n      valueEnum: {\n        0: { text: '草稿', status: 'Default' },\n        1: { text: '已发布', status: 'Success' },\n        2: { text: '已下架', status: 'Error' },\n      },\n    },\n    {\n      title: '发布时间',\n      dataIndex: 'created_at',\n      width: 180,\n      search: false,\n      render: (date: string) => (date ? dayjs(date).format('YYYY-MM-DD HH:mm') : '-'),\n    },\n    {\n      title: '操作',\n      valueType: 'option',\n      width: 220,\n      fixed: 'right',\n      render: (_: any, record: any) => (\n        <Space size=\"small\">\n          <Button type=\"link\" size=\"small\" icon={<EditOutlined />} onClick={() => openModal(record)}>\n            编辑\n          </Button>\n          {record.status !== 1 && (\n            <Button type=\"link\" size=\"small\" icon={<VerticalAlignTopOutlined />} onClick={() => handleStatusChange(record, 1)}>\n              发布\n            </Button>\n          )}\n          {record.status === 1 && (\n            <Button type=\"link\" size=\"small\" danger icon={<VerticalAlignBottomOutlined />} onClick={() => handleStatusChange(record, 2)}>\n              下架\n            </Button>\n          )}\n          <Popconfirm\n            title=\"确认删除\"\n            description=\"删除后无法恢复，是否继续？\"\n            onConfirm={() => handleDelete(record.id)}\n          >\n            <Button type=\"link\" danger size=\"small\" icon={<DeleteOutlined />}>\n              删除\n            </Button>\n          </Popconfirm>\n        </Space>\n      ),\n    },\n  ];\n\n  return (\n    <PageContainer title=\"狗狗回顾\">\n      <ProTable\n        columns={columns}\n        actionRef={tableRef}\n        request={async (params) => {\n          const res = await request('/api/v1/admin/articles', {\n            params: {\n              page: params.current,\n              page_size: params.pageSize,\n              category: 'review',\n              status: params.status,\n              keyword: params.title,\n            },\n          });\n          return { data: res.data?.articles || [], success: res.code === 200, total: res.data?.total || 0 };\n        }}\n        rowKey=\"id\"\n        search={{ labelWidth: 'auto' }}\n        pagination={{ pageSize: 10, showSizeChanger: true }}\n        scroll={{ x: 1300 }}\n        toolBarRender={() => [\n          <Button key=\"add\" type=\"primary\" icon={<PlusOutlined />} onClick={() => openModal()}>\n            新建回顾\n          </Button>,\n        ]}\n      />\n      <ModalForm\n        title={editData ? '编辑回顾' : '新建回顾'}\n        open={modalVisible}\n        onOpenChange={setModalVisible}\n        onFinish={handleSubmit}\n        form={form}\n        width={900}\n        modalProps={{\n          destroyOnClose: true,\n          afterClose: () => {\n            setContent('');\n            setCoverImageUrl('');\n            setGallery([]);\n            setEditData(null);\n            form.resetFields();\n          },\n        }}\n      >\n        <ProFormText name=\"title\" label=\"标题\" rules={[{ required: true }]} />\n        <Form.Item label=\"封面图\" required>\n          <Form.Item name=\"cover_image\" noStyle rules={[{ required: true, message: '请上传封面图' }]}>\n            <Input type=\"hidden\" />\n          </Form.Item>\n          <Upload\n            listType=\"picture-card\"\n            showUploadList={false}\n            beforeUpload={handleCoverUpload}\n            accept=\"image/*\"\n          >\n            {coverImageUrl ? (\n              <Image src={coverImageUrl} alt=\"cover\" style={{ width: '100%', height: '100%', objectFit: 'cover' }} preview={false} />\n            ) : (\n              <div>\n                {coverUploading ? <LoadingOutlined /> : <PlusOutlined />}\n                <div style={{ marginTop: 8 }}>上传封面</div>\n              </div>\n            )}\n          </Upload>\n          {coverImageUrl && (\n            <Button type=\"link\" size=\"small\" danger onClick={() => { setCoverImageUrl(''); form.setFieldsValue({ cover_image: '' }); }}>\n              删除封面\n            </Button>\n          )}\n        </Form.Item>\n        <ProFormText name=\"location\" label=\"活动地点\" />\n        <ProFormText name=\"event_date\" label=\"活动日期\" placeholder=\"如：2024.06.15\" />\n        <ProFormDigit name=\"participants\" label=\"参与狗狗数量\" min={0} initialValue={0} />\n        <ProFormText name=\"summary\" label=\"摘要\" />\n        <Form.Item label=\"图集\">\n          <div style={{ marginBottom: 16 }}>\n            <Upload {...galleryUploadProps} showUploadList={false}>\n              <Button icon={<UploadOutlined />}>上传图片</Button>\n            </Upload>\n            <span style={{ marginLeft: 8, color: '#999' }}>或直接输入图片URL：</span>\n            <Input\n              style={{ width: 300, marginLeft: 8 }}\n              placeholder=\"输入图片URL\"\n              onPressEnter={(e: any) => {\n                if (e.target.value) {\n                  handleGalleryUpload(e.target.value);\n                  e.target.value = '';\n                }\n              }}\n            />\n          </div>\n          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16 }}>\n            {gallery.map((url, index) => (\n              <div key={index} style={{ position: 'relative', width: 200, height: 150 }}>\n                <img\n                  src={url}\n                  alt={`图集${index + 1}`}\n                  style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 8 }}\n                />\n                <Button\n                  type=\"primary\"\n                  danger\n                  size=\"small\"\n                  icon={<DeleteOutlined />}\n                  style={{ position: 'absolute', top: 8, right: 8 }}\n                  onClick={() => removeGalleryImage(index)}\n                >\n                  删除\n                </Button>\n              </div>\n            ))}\n          </div>\n        </Form.Item>\n        <Form.Item label=\"内容\" required>\n          <ReactQuill\n            ref={quillRef}\n            theme=\"snow\"\n            value={content}\n            onChange={setContent}\n            modules={quillModules}\n            formats={quillFormats}\n            style={{ height: 300, marginBottom: 40 }}\n          />\n        </Form.Item>\n        <ProFormText name=\"author_name\" label=\"作者\" />\n        <ProFormSelect\n          name=\"status\"\n          label=\"状态\"\n          options={[\n            { label: '草稿', value: 0 },\n            { label: '已发布', value: 1 },\n            { label: '已下架', value: 2 },\n          ]}\n        />\n        <ProFormDigit name=\"is_top\" label=\"置顶\" min={0} max={1} />\n        <ProFormDigit name=\"sort_order\" label=\"排序\" min={0} />\n      </ModalForm>\n    </PageContainer>\n  );\n}\n",
       "__isJSFile": true,
       "__absFile": "D:/projects/frontend/admin/src/pages/Reviews/index.tsx"
     },
@@ -8188,7 +8230,7 @@
             "format": "esm"
           },
           "src/pages/Settings/index.tsx": {
-            "bytes": 7554,
+            "bytes": 7704,
             "imports": [
               {
                 "path": "@ant-design/pro-components",
@@ -11461,7 +11503,7 @@
                 "bytesInOutput": 11368
               },
               "src/pages/Settings/index.tsx": {
-                "bytesInOutput": 9517
+                "bytesInOutput": 9710
               },
               "src/pages/Logs/index.tsx": {
                 "bytesInOutput": 5031
@@ -11530,7 +11572,7 @@
                 "bytesInOutput": 1934
               }
             },
-            "bytes": 516065
+            "bytes": 516258
           }
         }
       }

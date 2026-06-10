@@ -847,6 +847,10 @@ async def admin_update_settings(
             else:
                 setting = SystemSetting(key=key, value=str(value))
                 db.add(setting)
+            # 版本号字段自动设为公开
+            if key == 'mp_version':
+                setting.is_public = 1
+                setting.group = 'miniprogram'
         
         await db.commit()
         return {"code": 200, "message": "设置已保存", "data": None}

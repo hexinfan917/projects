@@ -7,15 +7,32 @@ function App({ children }) {
   useEffect(() => {
     // 小程序启动时执行
     console.log('App launched')
-    
+
     // 清除弹窗关闭标记，确保重新进入小程序后弹窗可以正常显示
     Taro.removeStorageSync('home_popup_dismissed')
-    
+
     // 检查登录状态
     const token = Taro.getStorageSync('access_token')
     if (!token) {
       console.log('User not logged in')
     }
+
+    // 获取公开系统设置（版本号等）
+    const systemInfo = Taro.getSystemInfoSync()
+    const isDevtools = systemInfo.platform === 'devtools'
+    const baseUrl = process.env.NODE_ENV === 'development'
+      ? (isDevtools ? 'http://localhost:8000' : 'http://192.168.8.46:8000')
+      : 'https://tailtravel.cn'
+    Taro.request({
+      url: `${baseUrl}/api/v1/settings/public`,
+      method: 'GET',
+      success: (res: any) => {
+        if (res.data?.code === 200 && res.data.data?.mp_version) {
+          Taro.setStorageSync('app_version', res.data.data.mp_version.value)
+          console.log('[App] 版本号已更新:', res.data.data.mp_version.value)
+        }
+      }
+    })
 
     // 检查小程序更新
     const updateManager = Taro.getUpdateManager()
