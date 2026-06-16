@@ -37,6 +37,28 @@ logger = setup_logger("order-service")
 VERIFY_SECRET = os.getenv("ORDER_VERIFY_SECRET", "petway-verify-secret-2024")
 
 
+def parse_pet_tags(raw):
+    """解析宠物标签字段，支持 JSON 字符串、列表或 null/None 字符串"""
+    if raw is None:
+        return []
+    if isinstance(raw, list):
+        return raw
+    if isinstance(raw, str):
+        s = raw.strip()
+        if not s or s.lower() in ("null", "none", ""):
+            return []
+        try:
+            parsed = json.loads(s)
+            if isinstance(parsed, list):
+                return parsed
+            if parsed is None:
+                return []
+            return [str(parsed)]
+        except (json.JSONDecodeError, ValueError):
+            return [s]
+    return [str(raw)]
+
+
 def generate_verify_code(order_no: str) -> str:
     """生成订单核销码（HMAC-SHA256）"""
     return hmac.new(
@@ -215,6 +237,18 @@ async def get_orders(
     result = await db.execute(query)
     orders_db = result.scalars().all()
     
+    # 补充缺失的路线封面图（旧订单可能没有保存 route_cover）
+    route_ids = list({o.route_id for o in orders_db if o.route_id and not o.route_cover})
+    route_cover_map = {}
+    if route_ids:
+        placeholders = ",".join([f":id_{i}" for i in range(len(route_ids))])
+        params = {f"id_{i}": route_id for i, route_id in enumerate(route_ids)}
+        cover_result = await db.execute(
+            text(f"SELECT id, cover_image FROM routes WHERE id IN ({placeholders})"),
+            params
+        )
+        route_cover_map = {row["id"]: row["cover_image"] for row in cover_result.mappings().all()}
+    
     orders = []
     for o in orders_db:
         orders.append({
@@ -224,7 +258,7 @@ async def get_orders(
             "route_id": o.route_id,
             "is_free": o.is_free,
             "route_name": o.route_name,
-            "route_cover": o.route_cover,
+            "route_cover": o.route_cover or route_cover_map.get(o.route_id, ""),
             "travel_date": o.travel_date.isoformat(),
             "participant_count": o.participant_count,
             "pet_count": o.pet_count,
@@ -271,6 +305,86 @@ async def get_order_detail(
     if not o:
         return success({})
     
+    # 查询默认出行人身份证（用于补充联系人信息）
+    contact_id_card = None
+    if o.user_id:
+        traveler_res = await db.execute(
+            text("SELECT id_card FROM travelers WHERE user_id = :user_id AND is_default = 1 AND status = 1 LIMIT 1"),
+            {"user_id": o.user_id}
+        )
+        traveler_row = traveler_res.fetchone()
+        if traveler_row:
+            contact_id_card = traveler_row[0]
+    
+    # 组装联系人信息（补充身份证号）
+    contact = o.contact or {}
+    if contact_id_card and isinstance(contact, dict):
+        contact = {**contact, "id_card": contact_id_card}
+    
+    # 补全宠物档案信息（按 id 优先匹配，再按名字匹配）
+    order_pets = o.pets or []
+    pets = order_pets
+    if o.user_id and order_pets:
+        pet_result = await db.execute(
+            text("""
+                SELECT id, user_id, name, breed, breed_type, birth_date, age_str,
+                       gender, weight, vaccine_date, vaccine_book, health_notes,
+                       avatar, tags, is_default, status, created_at, updated_at
+                FROM pet_profiles
+                WHERE user_id = :user_id
+            """),
+            {"user_id": o.user_id}
+        )
+        pet_map_by_id = {}
+        pet_map_by_name = {}
+        for row in pet_result.fetchall():
+            pet_data = {
+                "id": row[0],
+                "user_id": row[1],
+                "name": row[2],
+                "breed": row[3],
+                "breed_type": row[4],
+                "birth_date": row[5].isoformat() if row[5] else None,
+                "age_str": row[6],
+                "gender": row[7],
+                "weight": row[8],
+                "vaccine_date": row[9].isoformat() if row[9] else None,
+                "vaccine_book": row[10],
+                "health_notes": row[11],
+                "avatar": row[12],
+                "tags": parse_pet_tags(row[13]),
+                "is_default": row[14],
+                "status": row[15],
+                "created_at": row[16].isoformat() if row[16] else None,
+                "updated_at": row[17].isoformat() if row[17] else None,
+            }
+            pet_map_by_id[row[0]] = pet_data
+            pet_map_by_name[(row[1], row[2])] = pet_data
+        
+        enriched_pets = []
+        for p in order_pets:
+            pet_profile = pet_map_by_id.get(p.get("id")) or pet_map_by_name.get((o.user_id, p.get("name"))) or {}
+            enriched_pets.append({
+                "id": pet_profile.get("id") or p.get("id") or "",
+                "name": p.get("name") or pet_profile.get("name") or "",
+                "breed": p.get("breed") if p.get("breed") is not None else pet_profile.get("breed") or "",
+                "breed_type": pet_profile.get("breed_type") or "",
+                "gender": p.get("gender") if p.get("gender") is not None else pet_profile.get("gender"),
+                "birth_date": pet_profile.get("birth_date") or "",
+                "age_str": pet_profile.get("age_str") or "",
+                "weight": p.get("weight") if p.get("weight") is not None else (float(pet_profile.get("weight")) if pet_profile.get("weight") is not None else None),
+                "vaccine_date": pet_profile.get("vaccine_date") or "",
+                "vaccine_book": pet_profile.get("vaccine_book") or "",
+                "health_notes": pet_profile.get("health_notes") or "",
+                "avatar": pet_profile.get("avatar") or "",
+                "tags": pet_profile.get("tags") or [],
+                "is_default": pet_profile.get("is_default") or 0,
+                "status": pet_profile.get("status") or 1,
+                "created_at": pet_profile.get("created_at") or "",
+                "updated_at": pet_profile.get("updated_at") or "",
+            })
+        pets = enriched_pets
+    
     # 查询退款记录
     from app.models.refund_record import RefundRecord
     refund_records_result = await db.execute(
@@ -291,8 +405,8 @@ async def get_order_detail(
         "participant_count": o.participant_count,
         "pet_count": o.pet_count,
         "participants": o.participants or [],
-        "pets": o.pets or [],
-        "contact": o.contact or {},
+        "pets": pets,
+        "contact": contact,
         "route_price": float(o.route_price),
         "insurance_price": float(o.insurance_price),
         "equipment_price": float(o.equipment_price),
@@ -560,6 +674,16 @@ async def create_order(
     if stock_result.rowcount == 0:
         raise BadRequestException("该排期库存不足或已售罄，请选择其他日期")
     
+    # 查询路线封面图
+    route_cover = None
+    if data.route_id:
+        route_cover_result = await db.execute(
+            text("SELECT cover_image FROM routes WHERE id = :route_id"),
+            {"route_id": data.route_id}
+        )
+        route_cover_row = route_cover_result.mappings().first()
+        route_cover = route_cover_row["cover_image"] if route_cover_row else None
+    
     # 创建订单
     order = Order(
         order_no=order_no,
@@ -568,6 +692,7 @@ async def create_order(
         route_id=data.route_id,
         is_free=order_is_free,
         route_name=data.route_name,
+        route_cover=route_cover,
         travel_date=travel_date,
         participant_count=data.participant_count,
         pet_count=data.pet_count,
@@ -1231,6 +1356,237 @@ async def admin_get_orders(
         return {"code": 500, "message": f"查询失败: {str(e)}", "data": None}
 
 
+@app.get("/api/v1/admin/orders/insurance-export")
+async def admin_export_orders_for_insurance(
+    status: Optional[int] = None,
+    is_free: Optional[int] = None,
+    keyword: Optional[str] = None,
+    order_no: Optional[str] = None,
+    travel_date: Optional[str] = None,
+    ids: Optional[str] = None,
+    page_size: int = 5000,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    保险专用订单导出
+    按人头展开，每行包含：订单信息 + 个人完整信息 + 该订单所有宠物信息
+    """
+    try:
+        from app.models.order import Order
+        from sqlalchemy import text
+
+        # 1. 查询符合条件的订单（默认导出所有状态，可通过 status 参数筛选）
+        query = select(Order)
+        if ids:
+            try:
+                id_list = [int(x.strip()) for x in ids.split(",") if x.strip()]
+                if id_list:
+                    query = query.where(Order.id.in_(id_list))
+            except ValueError:
+                return {"code": 400, "message": "ids 参数格式错误", "data": None}
+        if status:
+            query = query.where(Order.status == status)
+        if is_free is not None:
+            query = query.where(Order.is_free == is_free)
+        if keyword:
+            query = query.where(or_(
+                Order.route_name.contains(keyword),
+                Order.order_no.contains(keyword)
+            ))
+        if order_no:
+            query = query.where(Order.order_no.contains(order_no))
+        if travel_date:
+            query = query.where(Order.travel_date == travel_date)
+
+        query = query.order_by(Order.travel_date.asc(), Order.created_at.desc()).limit(page_size)
+        result = await db.execute(query)
+        orders_db = result.scalars().all()
+
+        if not orders_db:
+            return success([])
+
+        user_ids = [o.user_id for o in orders_db if o.user_id]
+
+        # 2. 批量查询出行人表补全身份证、生日、性别、紧急联系人等信息
+        traveler_map: dict = {}
+        if user_ids:
+            traveler_result = await db.execute(
+                text("""
+                    SELECT id, user_id, name, phone, id_card, gender, birthday,
+                           emergency_name, emergency_phone
+                    FROM travelers
+                    WHERE user_id IN :user_ids AND status = 1
+                """),
+                {"user_ids": tuple(user_ids)}
+            )
+            for row in traveler_result.fetchall():
+                key = (row[1], row[2])  # (user_id, name)
+                traveler_map[key] = {
+                    "id": row[0],
+                    "user_id": row[1],
+                    "name": row[2],
+                    "phone": row[3],
+                    "id_card": row[4],
+                    "gender": row[5],
+                    "birthday": row[6].isoformat() if row[6] else None,
+                    "emergency_name": row[7],
+                    "emergency_phone": row[8],
+                }
+
+        # 3. 批量查询宠物档案表补全宠物完整信息
+        pet_map: dict = {}
+        if user_ids:
+            pet_result = await db.execute(
+                text("""
+                    SELECT id, user_id, name, breed, breed_type, birth_date, age_str,
+                           gender, weight, vaccine_date, vaccine_book, health_notes,
+                           avatar, tags, is_default, status, created_at, updated_at
+                    FROM pet_profiles
+                    WHERE user_id IN :user_ids
+                """),
+                {"user_ids": tuple(user_ids)}
+            )
+            for row in pet_result.fetchall():
+                key = (row[1], row[2])  # (user_id, name)
+                pet_map[key] = {
+                    "id": row[0],
+                    "user_id": row[1],
+                    "name": row[2],
+                    "breed": row[3],
+                    "breed_type": row[4],
+                    "birth_date": row[5].isoformat() if row[5] else None,
+                    "age_str": row[6],
+                    "gender": row[7],
+                    "weight": float(row[8]) if row[8] is not None else None,
+                    "vaccine_date": row[9].isoformat() if row[9] else None,
+                    "vaccine_book": row[10],
+                    "health_notes": row[11],
+                    "avatar": row[12],
+                    "tags": parse_pet_tags(row[13]),
+                    "is_default": row[14],
+                    "status": row[15],
+                    "created_at": row[16].isoformat() if row[16] else None,
+                    "updated_at": row[17].isoformat() if row[17] else None,
+                }
+
+        # 4. 组装保险导出数据
+        rows = []
+        for o in orders_db:
+            contact = o.contact or {}
+            participants = o.participants or []
+            pets_in_order = o.pets or []
+
+            # 补全联系人信息
+            contact_key = (o.user_id, contact.get("name"))
+            contact_traveler = traveler_map.get(contact_key) or {}
+            contact_full = {
+                "name": contact.get("name") or contact_traveler.get("name") or "",
+                "phone": contact.get("phone") or contact_traveler.get("phone") or "",
+                "id_card": contact.get("id_card") or contact_traveler.get("id_card") or "",
+                "gender": contact_traveler.get("gender") or 0,
+                "birthday": contact_traveler.get("birthday") or "",
+                "emergency_name": contact_traveler.get("emergency_name") or "",
+                "emergency_phone": contact_traveler.get("emergency_phone") or "",
+            }
+
+            # 构建该订单下所有宠物的完整信息
+            order_pets_full = []
+            for p in pets_in_order:
+                pet_key = (o.user_id, p.get("name"))
+                pet_profile = pet_map.get(pet_key) or {}
+                order_pets_full.append({
+                    "id": pet_profile.get("id") or "",
+                    "name": p.get("name") or pet_profile.get("name") or "",
+                    "breed": p.get("breed") or pet_profile.get("breed") or "",
+                    "breed_type": pet_profile.get("breed_type") or "",
+                    "gender": p.get("gender") if p.get("gender") is not None else pet_profile.get("gender"),
+                    "birth_date": pet_profile.get("birth_date") or "",
+                    "age_str": pet_profile.get("age_str") or "",
+                    "weight": p.get("weight") if p.get("weight") is not None else (float(pet_profile.get("weight")) if pet_profile.get("weight") is not None else None),
+                    "vaccine_date": pet_profile.get("vaccine_date") or "",
+                    "vaccine_book": pet_profile.get("vaccine_book") or "",
+                    "health_notes": pet_profile.get("health_notes") or "",
+                    "avatar": pet_profile.get("avatar") or "",
+                    "tags": pet_profile.get("tags") or [],
+                    "is_default": pet_profile.get("is_default") or 0,
+                    "status": pet_profile.get("status") or 1,
+                    "created_at": pet_profile.get("created_at") or "",
+                    "updated_at": pet_profile.get("updated_at") or "",
+                })
+
+            # 要导出的人员列表：联系人 + 所有出行人
+            persons = [{"role": "联系人", **contact_full}]
+            for idx, participant in enumerate(participants):
+                part_key = (o.user_id, participant.get("name"))
+                part_traveler = traveler_map.get(part_key) or {}
+                persons.append({
+                    "role": f"出行人{idx + 1}",
+                    "name": participant.get("name") or part_traveler.get("name") or "",
+                    "phone": participant.get("phone") or part_traveler.get("phone") or "",
+                    "id_card": participant.get("id_card") or part_traveler.get("id_card") or "",
+                    "gender": participant.get("gender") if participant.get("gender") is not None else part_traveler.get("gender"),
+                    "birthday": part_traveler.get("birthday") or "",
+                    "emergency_name": part_traveler.get("emergency_name") or "",
+                    "emergency_phone": part_traveler.get("emergency_phone") or "",
+                })
+
+            # 每人生成一行
+            for person in persons:
+                row = {
+                    "order_no": o.order_no or "",
+                    "user_id": o.user_id,
+                    "route_name": o.route_name or "",
+                    "travel_date": o.travel_date.isoformat() if o.travel_date else "",
+                    "status": o.status,
+                    "status_name": STATUS_MAP.get(o.status, "未知"),
+                    "pay_amount": float(o.pay_amount) if o.pay_amount is not None else 0,
+                    "created_at": o.created_at.isoformat() if o.created_at else "",
+                    "role": person["role"],
+                    "person_name": person["name"],
+                    "person_phone": person["phone"],
+                    "person_id_card": person["id_card"],
+                    "person_gender": {0: "未知", 1: "男", 2: "女"}.get(person["gender"], "未知"),
+                    "person_birthday": person["birthday"],
+                    "emergency_name": person["emergency_name"],
+                    "emergency_phone": person["emergency_phone"],
+                    "pet_count": len(order_pets_full),
+                }
+                # 动态追加宠物字段
+                for i, pet in enumerate(order_pets_full, start=1):
+                    prefix = f"pet{i}_"
+                    row[f"{prefix}id"] = pet["id"]
+                    row[f"{prefix}name"] = pet["name"]
+                    row[f"{prefix}breed"] = pet["breed"]
+                    row[f"{prefix}breed_type"] = {1: "小型", 2: "中型", 3: "大型", 4: "巨型"}.get(pet["breed_type"], "")
+                    row[f"{prefix}gender"] = {0: "母", 1: "公"}.get(pet["gender"], "未知")
+                    row[f"{prefix}birth_date"] = pet["birth_date"]
+                    row[f"{prefix}age_str"] = pet["age_str"]
+                    row[f"{prefix}weight"] = pet["weight"] if pet["weight"] is not None else ""
+                    row[f"{prefix}vaccine_date"] = pet["vaccine_date"]
+                    row[f"{prefix}vaccine_book"] = pet["vaccine_book"]
+                    row[f"{prefix}health_notes"] = pet["health_notes"]
+                    row[f"{prefix}avatar"] = pet["avatar"]
+                    tags = pet.get("tags") if isinstance(pet, dict) else None
+                    if isinstance(tags, list):
+                        row[f"{prefix}tags"] = ",".join(str(t) for t in tags)
+                    elif tags:
+                        row[f"{prefix}tags"] = str(tags)
+                    else:
+                        row[f"{prefix}tags"] = ""
+                    row[f"{prefix}is_default"] = pet["is_default"]
+                    row[f"{prefix}status"] = pet["status"]
+                    row[f"{prefix}created_at"] = pet["created_at"]
+                    row[f"{prefix}updated_at"] = pet["updated_at"]
+                rows.append(row)
+
+        return success(rows)
+    except Exception as e:
+        logger.error(f"Error exporting orders for insurance: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
+        return {"code": 500, "message": f"导出失败: {str(e)}", "data": None}
+
+
 @app.get("/api/v1/admin/orders/{order_id}")
 async def admin_get_order_detail(
     order_id: int,
@@ -1274,6 +1630,69 @@ async def admin_get_order_detail(
         if contact_id_card and isinstance(contact, dict):
             contact = {**contact, "id_card": contact_id_card}
         
+        # 补全宠物档案信息
+        order_pets = o.pets or []
+        pets = order_pets
+        if o.user_id and order_pets:
+            pet_result = await db.execute(
+                text("""
+                    SELECT id, user_id, name, breed, breed_type, birth_date, age_str,
+                           gender, weight, vaccine_date, vaccine_book, health_notes,
+                           avatar, tags, is_default, status, created_at, updated_at
+                    FROM pet_profiles
+                    WHERE user_id = :user_id
+                """),
+                {"user_id": o.user_id}
+            )
+            pet_map = {}
+            for row in pet_result.fetchall():
+                key = (row[1], row[2])  # (user_id, name)
+                pet_map[key] = {
+                    "id": row[0],
+                    "user_id": row[1],
+                    "name": row[2],
+                    "breed": row[3],
+                    "breed_type": row[4],
+                    "birth_date": row[5].isoformat() if row[5] else None,
+                    "age_str": row[6],
+                    "gender": row[7],
+                    "weight": row[8],
+                    "vaccine_date": row[9].isoformat() if row[9] else None,
+                    "vaccine_book": row[10],
+                    "health_notes": row[11],
+                    "avatar": row[12],
+                    "tags": parse_pet_tags(row[13]),
+                    "is_default": row[14],
+                    "status": row[15],
+                    "created_at": row[16].isoformat() if row[16] else None,
+                    "updated_at": row[17].isoformat() if row[17] else None,
+                }
+            
+            enriched_pets = []
+            for p in order_pets:
+                pet_key = (o.user_id, p.get("name"))
+                pet_profile = pet_map.get(pet_key) or {}
+                enriched_pets.append({
+                    "id": pet_profile.get("id") or p.get("id") or "",
+                    "name": p.get("name") or pet_profile.get("name") or "",
+                    "breed": p.get("breed") or pet_profile.get("breed") or "",
+                    "breed_type": pet_profile.get("breed_type") or "",
+                    "gender": p.get("gender") if p.get("gender") is not None else pet_profile.get("gender"),
+                    "birth_date": pet_profile.get("birth_date") or "",
+                    "age_str": pet_profile.get("age_str") or "",
+                    "weight": p.get("weight") if p.get("weight") is not None else (float(pet_profile.get("weight")) if pet_profile.get("weight") is not None else None),
+                    "vaccine_date": pet_profile.get("vaccine_date") or "",
+                    "vaccine_book": pet_profile.get("vaccine_book") or "",
+                    "health_notes": pet_profile.get("health_notes") or "",
+                    "avatar": pet_profile.get("avatar") or "",
+                    "tags": pet_profile.get("tags") or [],
+                    "is_default": pet_profile.get("is_default") or 0,
+                    "status": pet_profile.get("status") or 1,
+                    "created_at": pet_profile.get("created_at") or "",
+                    "updated_at": pet_profile.get("updated_at") or "",
+                })
+            pets = enriched_pets
+        
         # 查询退款记录
         from app.models.refund_record import RefundRecord
         refund_records_result = await db.execute(
@@ -1293,7 +1712,7 @@ async def admin_get_order_detail(
             "participant_count": o.participant_count,
             "pet_count": o.pet_count,
             "participants": o.participants or [],
-            "pets": o.pets or [],
+            "pets": pets,
             "contact": contact,
             "route_price": float(o.route_price) if o.route_price else 0,
             "insurance_price": float(o.insurance_price) if o.insurance_price else 0,

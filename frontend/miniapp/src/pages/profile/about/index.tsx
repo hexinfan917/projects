@@ -1,5 +1,5 @@
 import Taro from '@tarojs/taro'
-import { View, Text , Image } from '@tarojs/components'
+import { View, Text, Image } from '@tarojs/components'
 import { safeNavigateBack } from '../../../utils/api'
 import './index.scss'
 
@@ -19,39 +19,75 @@ const copyWechat = () => {
 }
 
 export default function About() {
-  const appVersion = Taro.getStorageSync('app_version') || '1.0.0'
-  return (
-    <View className='about-page' style={{ paddingTop: '140rpx' }}>
+  const appVersion = Taro.getStorageSync('app_version') || '1.0.3'
+  const statusBarHeight = Taro.getSystemInfoSync().statusBarHeight || 20
 
-        <View className='page-back' onClick={() => safeNavigateBack()}>
-          <Image className='page-back-icon' src='/assets/icons/return.png' mode='aspectFit' />
+  return (
+    <View className='about-page'>
+      {/* 自定义顶部导航栏 */}
+      <View className='about-header' style={{ paddingTop: `${statusBarHeight}px` }}>
+        <View className='header-back' onClick={() => safeNavigateBack()}>
+          <Image className='back-icon' src='/assets/icons/return.png' mode='aspectFit' />
         </View>
+        <View className='header-placeholder' />
+      </View>
+
+      {/* 品牌区域 */}
       <View className='brand-section'>
-        <View className='logo'>🐾</View>
+        <View className='logo-wrapper'>
+          <View className='logo-glow' />
+          <Image
+            className='logo-img'
+            src={require('../../../assets/see-throughlogo.png')}
+            mode='aspectFit'
+          />
+        </View>
         <Text className='app-name'>尾巴PetWay</Text>
         <Text className='app-slogan'>与爱宠并肩同行</Text>
         <Text className='version'>Version {appVersion}</Text>
       </View>
 
-      <View className='info-section'>
-        <View className='info-item'>
-          <Text className='info-label'>客服联系方式</Text>
-          <View className='info-value' onClick={copyWechat}>
-            <Text>Petway_（点击复制）</Text>
+      {/* 关于我们卡片 */}
+      <View className='info-card'>
+        <View className='card-header'>
+          <View className='card-icon-wrap'>
+            <Image className='card-icon' src='/assets/icons/profile/about.png' mode='aspectFit' />
           </View>
+          <Text className='card-title'>关于我们</Text>
         </View>
-        <View className='info-item'>
-          <Text className='info-label'>工作时间</Text>
-          <Text className='info-value'>周一至周五 10:00~20:00</Text>
-        </View>
-      </View>
-
-      <View className='desc-section'>
-        <Text className='desc-title'>关于我们</Text>
-        <Text className='desc-text'>
+        <Text className='card-text'>
           尾巴PetWay 是专注于宠物友好型户外活动的服务平台。我们致力于为爱宠家庭提供安全、舒适、有趣的出行体验，让每一次相聚都能留下与毛孩子的美好回忆。
         </Text>
       </View>
+
+      {/* 客服联系方式卡片 */}
+      <View className='info-card'>
+        <View className='card-header'>
+          <View className='card-icon-wrap'>
+            <Image className='card-icon' src='/assets/icons/profile/service.png' mode='aspectFit' />
+          </View>
+          <Text className='card-title'>客服联系方式</Text>
+        </View>
+        <View className='contact-list'>
+          <View className='contact-item' onClick={copyWechat}>
+            <View className='contact-info'>
+              <Text className='contact-label'>WECHAT</Text>
+              <Text className='contact-value'>Petway_</Text>
+            </View>
+            <View className='copy-btn'>
+              <Text className='copy-icon'>⧉</Text>
+              <Text className='copy-text'>复制</Text>
+            </View>
+          </View>
+          <View className='contact-item'>
+            <View className='contact-info'>
+              <Text className='contact-label'>工作时间</Text>
+              <Text className='contact-value'>周一至周五 10:00~20:00</Text>
+            </View>
+          </View>
+        </View>
+      </View>
+
     </View>
   )
 }

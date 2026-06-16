@@ -1,5 +1,5 @@
 import { PageContainer, ProTable, ModalForm, ProFormText, ProFormSelect, ProFormDigit, ProFormDatePicker } from '@ant-design/pro-components';
-import { Button, Tag, Avatar, message, Popconfirm, Descriptions, Drawer, Table, Empty, Space } from 'antd';
+import { Button, Tag, Avatar, message, Popconfirm, Descriptions, Drawer, Table, Empty, Space, Image, Modal } from 'antd';
 import { EditOutlined, EyeOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useRef, useState } from 'react';
 import { request } from '@umijs/max';
@@ -90,6 +90,21 @@ export default function UserList() {
       const res = await request('/api/v1/admin/users/' + id, { method: 'DELETE' });
       if (res.code === 200) {
         message.success('删除成功');
+        tableRef.current?.reload();
+      } else {
+        message.error(res.message || '删除失败');
+      }
+    } catch (error) {
+      message.error('删除失败');
+    }
+  };
+
+  const handlePetDelete = async (petId: number, userId: number) => {
+    try {
+      const res = await request('/api/v1/admin/pets/' + petId, { method: 'DELETE' });
+      if (res.code === 200) {
+        message.success('删除成功');
+        loadPets(userId);
         tableRef.current?.reload();
       } else {
         message.error(res.message || '删除失败');
@@ -250,6 +265,13 @@ export default function UserList() {
   ];
 
   const petColumns = [
+    {
+      title: '头像',
+      dataIndex: 'avatar',
+      width: 80,
+      render: (avatar: string, record: any) =>
+        avatar ? <Avatar src={avatar} size={48} shape="square">{record.name?.[0]}</Avatar> : '-',
+    },
     { title: '宠物ID', dataIndex: 'id', width: 80 },
     { title: '宠物名称', dataIndex: 'name', width: 120 },
     { title: '品种', dataIndex: 'breed', width: 120 },
@@ -261,19 +283,51 @@ export default function UserList() {
     },
     {
       title: '年龄',
-      dataIndex: 'birth_date',
+      dataIndex: 'age_str',
       width: 80,
-      render: (birthDate: string) => calcAge(birthDate),
+      render: (ageStr: string) => ageStr || '-',
+    },
+    {
+      title: '体重',
+      dataIndex: 'weight',
+      width: 80,
+      render: (weight: number) => (weight ? `${weight}kg` : '-'),
     },
     {
       title: '疫苗',
       dataIndex: 'vaccine_date',
+      width: 120,
+      render: (date: string) => (
+        date ? (
+          <>
+            <Tag color="success">已接种</Tag>
+            <div style={{ fontSize: 12, color: '#666', marginTop: 4 }}>{dayjs(date).format('YYYY-MM-DD')}</div>
+          </>
+        ) : (
+          <Tag>未接种</Tag>
+        )
+      ),
+    },
+    {
+      title: '疫苗本',
+      dataIndex: 'vaccine_book',
       width: 100,
-      render: (date: string) => (date ? <Tag color="success">已接种</Tag> : <Tag>未接种</Tag>),
+      render: (url: string) =>
+        url ? (
+          <Image
+            src={url}
+            width={60}
+            height={40}
+            style={{ objectFit: 'cover', borderRadius: 4, cursor: 'pointer' }}
+            preview={{ mask: '查看' }}
+          />
+        ) : (
+          '-'
+        ),
     },
     {
       title: '操作',
-      width: 120,
+      width: 180,
       render: (_: any, record: any) => (
         <Space size="small">
           <Button type="link" size="small" icon={<EyeOutlined />} onClick={() => handlePetView(record.id)}>
@@ -281,6 +335,15 @@ export default function UserList() {
           </Button>
           <Button type="link" size="small" icon={<EditOutlined />} onClick={() => handlePetEdit(record)}>
             编辑
+          </Button>
+          <Button type="link" danger size="small" icon={<DeleteOutlined />} onClick={() => {
+            Modal.confirm({
+              title: '确认删除',
+              content: `确定删除宠物「${record.name}」吗？`,
+              onOk: () => handlePetDelete(record.id, record.user_id),
+            });
+          }}>
+            删除
           </Button>
         </Space>
       ),
@@ -389,9 +452,25 @@ export default function UserList() {
             <Descriptions.Item label="体型">{breedTypeMap[petDetailData.breed_type] || '-'}</Descriptions.Item>
             <Descriptions.Item label="性别">{genderMap[petDetailData.gender] || '-'}</Descriptions.Item>
             <Descriptions.Item label="体重">{petDetailData.weight ? `${petDetailData.weight}kg` : '-'}</Descriptions.Item>
-            <Descriptions.Item label="年龄">{calcAge(petDetailData.birth_date)}</Descriptions.Item>
+            <Descriptions.Item label="年龄">{petDetailData.age_str || '-'}</Descriptions.Item>
             <Descriptions.Item label="疫苗">
               {petDetailData.vaccine_date ? dayjs(petDetailData.vaccine_date).format('YYYY-MM-DD') : '-'}
+            </Descriptions.Item>
+            <Descriptions.Item label="疫苗本">
+              {petDetailData.vaccine_book ? (
+                <Image
+                  src={petDetailData.vaccine_book}
+                  width={200}
+                  style={{ borderRadius: 4 }}
+                  preview={{ toolbarRender: () => (
+                    <a href={petDetailData.vaccine_book} download target="_blank" rel="noopener noreferrer" style={{ color: '#fff', marginLeft: 8 }}>
+                      下载
+                    </a>
+                  ) }}
+                />
+              ) : (
+                '-'
+              )}
             </Descriptions.Item>
             <Descriptions.Item label="是否默认">{petDetailData.is_default ? '是' : '否'}</Descriptions.Item>
             <Descriptions.Item label="状态">
@@ -428,6 +507,7 @@ export default function UserList() {
         <ProFormSelect name="gender" label="性别" options={[{ label: '母', value: 0 }, { label: '公', value: 1 }]} />
         <ProFormDigit name="weight" label="体重(kg)" min={0} max={200} />
         <ProFormDatePicker name="vaccine_date" label="疫苗日期" />
+        <ProFormText name="vaccine_book" label="疫苗本照片URL" />
         <ProFormSelect name="is_default" label="是否默认" options={[{ label: '否', value: 0 }, { label: '是', value: 1 }]} />
       </ModalForm>
 

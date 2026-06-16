@@ -34,6 +34,12 @@ class RouteResponse(BaseModel):
     is_insurance_required: int = 1
     pet_insurance_price: float = 15.00
     person_insurance_price: float = 10.00
+    pet_insurance_title: Optional[str] = "宠物意外险"
+    pet_insurance_unit: Optional[str] = "狗"
+    pet_insurance_desc: Optional[str] = "保障宠物活动中突发意外医疗费用，最高保额¥5000"
+    person_insurance_title: Optional[str] = "人身意外险"
+    person_insurance_unit: Optional[str] = "人"
+    person_insurance_desc: Optional[str] = "保障出行人意外伤害及医疗，最高保额¥200,000"
     non_member_price: Optional[float] = 0
     
     class Config:
@@ -98,6 +104,12 @@ class RouteDetailResponse(BaseModel):
     is_insurance_required: int = 1
     pet_insurance_price: float = 15.00
     person_insurance_price: float = 10.00
+    pet_insurance_title: Optional[str] = "宠物意外险"
+    pet_insurance_unit: Optional[str] = "狗"
+    pet_insurance_desc: Optional[str] = "保障宠物活动中突发意外医疗费用，最高保额¥5000"
+    person_insurance_title: Optional[str] = "人身意外险"
+    person_insurance_unit: Optional[str] = "人"
+    person_insurance_desc: Optional[str] = "保障出行人意外伤害及医疗，最高保额¥200,000"
     non_member_price: Optional[float] = 0
     schedule: List[ScheduleItem]
     cost_include: List[str]

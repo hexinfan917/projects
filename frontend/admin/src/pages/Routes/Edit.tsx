@@ -1,5 +1,5 @@
 import { PageContainer } from '@ant-design/pro-components';
-import { Card, Form, Input, Select, InputNumber, Radio, Button, Space, Upload, message, Row, Col, DatePicker, TimePicker, Table, Popconfirm, Tabs, Modal, Spin } from 'antd';
+import { Card, Form, Input, Select, InputNumber, Radio, Button, Space, Upload, message, Row, Col, DatePicker, TimePicker, Table, Popconfirm, Tabs, Modal, Spin, Divider } from 'antd';
 import { UploadOutlined, PlusOutlined, DeleteOutlined, SaveOutlined, EditOutlined } from '@ant-design/icons';
 import { useState, useEffect } from 'react';
 import { request, useParams, history } from '@umijs/max';
@@ -575,41 +575,47 @@ export default function RouteEdit() {
         </Space>
       }
     >
-      <Tabs activeKey={activeTab} onChange={setActiveTab}>
-        <Tabs.TabPane tab="基本信息" key="basic">
-          <Card>
-            <Spin spinning={loading}>
-            <Form
-              form={form}
-              layout="vertical"
-              initialValues={{
-                status: 1,
-                is_free: 0,
-                is_member_only: 0,
-                is_insurance_required: 1,
-                pet_insurance_price: 15.00,
-                person_insurance_price: 10.00,
-                non_member_price: 0,
-                is_hot: 0,
-                difficulty: 3,
-                min_participants: 4,
-                max_participants: 12,
-                base_price: 0,
-                single_person_price: undefined,
-                two_person_one_pet_price: undefined,
-                one_person_two_pet_price: undefined,
-                single_pet_price: undefined,
-                extra_person_price: 0,
-                extra_pet_price: 0,
-                self_drive_base_price: undefined,
-                self_drive_single_person_price: undefined,
-                self_drive_two_person_one_pet_price: undefined,
-                self_drive_one_person_two_pet_price: undefined,
-                self_drive_single_pet_price: undefined,
-                self_drive_extra_person_price: undefined,
-                self_drive_extra_pet_price: undefined,
-              }}
-            >
+      <Form
+        form={form}
+        layout="vertical"
+        initialValues={{
+          status: 1,
+          is_free: 0,
+          is_member_only: 0,
+          is_insurance_required: 1,
+          pet_insurance_price: 15.00,
+          person_insurance_price: 10.00,
+          pet_insurance_title: '宠物意外险',
+          pet_insurance_unit: '狗',
+          pet_insurance_desc: '保障宠物活动中突发意外医疗费用，最高保额¥5000',
+          person_insurance_title: '人身意外险',
+          person_insurance_unit: '人',
+          person_insurance_desc: '保障出行人意外伤害及医疗，最高保额¥200,000',
+          non_member_price: 0,
+          is_hot: 0,
+          difficulty: 3,
+          min_participants: 4,
+          max_participants: 12,
+          base_price: 0,
+          single_person_price: undefined,
+          two_person_one_pet_price: undefined,
+          one_person_two_pet_price: undefined,
+          single_pet_price: undefined,
+          extra_person_price: 0,
+          extra_pet_price: 0,
+          self_drive_base_price: undefined,
+          self_drive_single_person_price: undefined,
+          self_drive_two_person_one_pet_price: undefined,
+          self_drive_one_person_two_pet_price: undefined,
+          self_drive_single_pet_price: undefined,
+          self_drive_extra_person_price: undefined,
+          self_drive_extra_pet_price: undefined,
+        }}
+      >
+        <Tabs activeKey={activeTab} onChange={setActiveTab}>
+          <Tabs.TabPane tab="基本信息" key="basic">
+            <Card>
+              <Spin spinning={loading}>
               <Form.Item
                 name="is_free"
                 label="是否免费活动"
@@ -654,38 +660,6 @@ export default function RouteEdit() {
                 </>
               )}
 
-              <Form.Item
-                name="is_insurance_required"
-                label="是否需要保险"
-              >
-                <Radio.Group onChange={(e) => setIsInsuranceRequired(e.target.value === 1)}>
-                  <Radio.Button value={0}>不需要保险</Radio.Button>
-                  <Radio.Button value={1}>需要保险</Radio.Button>
-                </Radio.Group>
-              </Form.Item>
-
-              {isInsuranceRequired && (
-                <Row gutter={24}>
-                  <Col span={12}>
-                    <Form.Item
-                      name="pet_insurance_price"
-                      label="宠物保险单价（元/只）"
-                      rules={[{ required: true, message: '请输入宠物保险单价' }]}
-                    >
-                      <InputNumber min={0} precision={2} style={{ width: '100%' }} />
-                    </Form.Item>
-                  </Col>
-                  <Col span={12}>
-                    <Form.Item
-                      name="person_insurance_price"
-                      label="人身保险单价（元/人）"
-                      rules={[{ required: true, message: '请输入人身保险单价' }]}
-                    >
-                      <InputNumber min={0} precision={2} style={{ width: '100%' }} />
-                    </Form.Item>
-                  </Col>
-                </Row>
-              )}
 
               <Row gutter={24}>
                 <Col span={12}>
@@ -915,7 +889,6 @@ export default function RouteEdit() {
                   style={{ height: 300, marginBottom: 50 }}
                 />
               </Form.Item>
-            </Form>
             </Spin>
           </Card>
         </Tabs.TabPane>
@@ -937,8 +910,105 @@ export default function RouteEdit() {
           <>
             <Tabs.TabPane tab="费用说明" key="fee">
               <Card title="费用说明">
-                <Form layout="vertical">
-                  <Form.Item label="费用说明概述">
+                <Divider orientation="left">保险配置</Divider>
+                <Form.Item
+                  name="is_insurance_required"
+                  label="是否需要保险"
+                >
+                  <Radio.Group onChange={(e) => setIsInsuranceRequired(e.target.value === 1)}>
+                    <Radio.Button value={0}>不需要保险</Radio.Button>
+                    <Radio.Button value={1}>需要保险</Radio.Button>
+                  </Radio.Group>
+                </Form.Item>
+
+                {isInsuranceRequired && (
+                  <>
+                    <Row gutter={24}>
+                      <Col span={12}>
+                        <Form.Item
+                          name="pet_insurance_price"
+                          label="宠物保险单价（元/只）"
+                          rules={[{ required: true, message: '请输入宠物保险单价' }]}
+                        >
+                          <InputNumber min={0} precision={2} style={{ width: '100%' }} />
+                        </Form.Item>
+                      </Col>
+                      <Col span={12}>
+                        <Form.Item
+                          name="person_insurance_price"
+                          label="人身保险单价（元/人）"
+                          rules={[{ required: true, message: '请输入人身保险单价' }]}
+                        >
+                          <InputNumber min={0} precision={2} style={{ width: '100%' }} />
+                        </Form.Item>
+                      </Col>
+                    </Row>
+                    <Row gutter={24}>
+                      <Col span={12}>
+                        <Form.Item
+                          name="pet_insurance_title"
+                          label="宠物保险标题"
+                          rules={[{ required: true, message: '请输入宠物保险标题' }]}
+                        >
+                          <Input placeholder="宠物意外险" />
+                        </Form.Item>
+                      </Col>
+                      <Col span={12}>
+                        <Form.Item
+                          name="pet_insurance_unit"
+                          label="宠物保险计价单位"
+                          rules={[{ required: true, message: '请输入宠物保险计价单位' }]}
+                        >
+                          <Input placeholder="狗" />
+                        </Form.Item>
+                      </Col>
+                    </Row>
+                    <Row gutter={24}>
+                      <Col span={24}>
+                        <Form.Item
+                          name="pet_insurance_desc"
+                          label="宠物保险描述"
+                          rules={[{ required: true, message: '请输入宠物保险描述' }]}
+                        >
+                          <Input placeholder="保障宠物活动中突发意外医疗费用，最高保额¥5000" />
+                        </Form.Item>
+                      </Col>
+                    </Row>
+                    <Row gutter={24}>
+                      <Col span={12}>
+                        <Form.Item
+                          name="person_insurance_title"
+                          label="人身保险标题"
+                          rules={[{ required: true, message: '请输入人身保险标题' }]}
+                        >
+                          <Input placeholder="人身意外险" />
+                        </Form.Item>
+                      </Col>
+                      <Col span={12}>
+                        <Form.Item
+                          name="person_insurance_unit"
+                          label="人身保险计价单位"
+                          rules={[{ required: true, message: '请输入人身保险计价单位' }]}
+                        >
+                          <Input placeholder="人" />
+                        </Form.Item>
+                      </Col>
+                    </Row>
+                    <Row gutter={24}>
+                      <Col span={24}>
+                        <Form.Item
+                          name="person_insurance_desc"
+                          label="人身保险描述"
+                          rules={[{ required: true, message: '请输入人身保险描述' }]}
+                        >
+                          <Input placeholder="保障出行人意外伤害及医疗，最高保额¥200,000" />
+                        </Form.Item>
+                      </Col>
+                    </Row>
+                    <Divider />
+                  </>
+                )}
+                <Form.Item label="费用说明概述">
                     <ReactQuill
                       theme="snow"
                       value={feeDescription}
@@ -968,7 +1038,6 @@ export default function RouteEdit() {
                       style={{ height: 200, marginBottom: 50 }}
                     />
                   </Form.Item>
-                </Form>
               </Card>
             </Tabs.TabPane>
 
@@ -1079,6 +1148,7 @@ export default function RouteEdit() {
 
 
       </Tabs>
+      </Form>
 
       {/* 编辑排期Modal */}
       <Modal

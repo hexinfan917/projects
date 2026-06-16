@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import Taro, { useDidShow, useShareAppMessage, useShareTimeline } from '@tarojs/taro'
 import { setActiveTab, getRoutes, getCharityActivities, getReviews, getBanners, getMemberPopup, logPopupAction, getMemberCenter, IMAGE_BASE_URL } from '../../utils/api'
+import { setTabBarSelected } from '../../utils/tabbar'
 import { View, Text, Swiper, SwiperItem, Image, ScrollView, Input } from '@tarojs/components'
 const logoIcon = '/assets/toplogo.png'
 
@@ -22,6 +23,8 @@ export default function Index() {
   const [popupVisible, setPopupVisible] = useState(false)
   const [popupData, setPopupData] = useState<any>(null)
   const [isMember, setIsMember] = useState(false)
+  const [navHeight, setNavHeight] = useState(88)
+  const [statusBarHeight, setStatusBarHeight] = useState(40)
 
   // 分享给好友
   useShareAppMessage(() => {
@@ -43,6 +46,7 @@ export default function Index() {
 
   useDidShow(() => {
     console.log('[Index] useDidShow triggered')
+    setTabBarSelected(0)
     loadHomeData()
     setActiveTab(0, 'pages/index/index')
     loadPopup()
@@ -103,6 +107,10 @@ export default function Index() {
 
   useEffect(() => {
     loadHomeData()
+    const sys = Taro.getSystemInfoSync()
+    const sbh = sys.statusBarHeight || 20
+    setStatusBarHeight(sbh)
+    setNavHeight(sbh + 44)
   }, [])
 
   const loadHomeData = async () => {
@@ -130,7 +138,7 @@ export default function Index() {
           price: isMember && r.schedule_member_price != null
             ? r.schedule_member_price
             : ((r.schedule_price !== undefined && r.schedule_price !== null) ? r.schedule_price : (r.price || 0)),
-          cover_image: r.cover_image ? (r.cover_image.startsWith('http') ? r.cover_image : `${IMAGE_BASE_URL}${r.cover_image}`) + '?w=750&q=75' : 'https://via.placeholder.com/620x420/CCCCCC/FFFFFF?text=No+Image',
+          cover_image: r.cover_image ? (r.cover_image.startsWith('http') ? r.cover_image : `${IMAGE_BASE_URL}${r.cover_image}`) + '?w=750&q=75' : '/assets/images/placeholder-cover.png',
           subtitle: r.subtitle || ''
         })))
       }
@@ -144,7 +152,7 @@ export default function Index() {
           date: a.event_date || '',
           location: a.location || '',
           participants: a.participants || 0,
-          image: a.cover_image ? (a.cover_image.startsWith('http') ? a.cover_image : `${IMAGE_BASE_URL}${a.cover_image}`) + '?w=750&q=75' : 'https://via.placeholder.com/700x380/CCCCCC/FFFFFF?text=No+Image',
+          image: a.cover_image ? (a.cover_image.startsWith('http') ? a.cover_image : `${IMAGE_BASE_URL}${a.cover_image}`) + '?w=750&q=75' : '/assets/images/placeholder-cover.png',
         })))
       }
 
@@ -157,7 +165,7 @@ export default function Index() {
           date: a.start_date || '',
           location: a.location || '',
           status: a.status_name || '报名中',
-          image: a.cover_image ? (a.cover_image.startsWith('http') ? a.cover_image : `${IMAGE_BASE_URL}${a.cover_image}`) + '?w=750&q=75' : 'https://via.placeholder.com/700x380/96C93D/FFFFFF?text=Charity',
+          image: a.cover_image ? (a.cover_image.startsWith('http') ? a.cover_image : `${IMAGE_BASE_URL}${a.cover_image}`) + '?w=750&q=75' : '/assets/images/placeholder-cover.png',
         })))
       }
     } catch (error) {
@@ -204,14 +212,14 @@ export default function Index() {
   }
 
   return (
-    <View className='index-page'>
+    <View className='index-page' style={{ paddingTop: `${navHeight}px` }}>
       {/* 自定义导航栏 */}
-      <View className='custom-navbar'>
+      <View className='custom-navbar' style={{ height: `${navHeight}px`, paddingTop: `${statusBarHeight}px` }}>
         <View className='navbar-bg' />
         <View className='navbar-content'>
           <View className='navbar-left'>
             <Image className='navbar-icon' src={logoIcon} mode='aspectFit' />
-            <Text className='navbar-title'>尾巴PetWay</Text>
+            <Text className='navbar-title'>PetWay</Text>
           </View>
         </View>
       </View>
@@ -222,8 +230,6 @@ export default function Index() {
         refresherTriggered={loading}
         onRefresherRefresh={onRefresh}
       >
-        {/* 占位区域，避免内容被 fixed 导航栏遮挡 */}
-        <View className='navbar-placeholder' />
         {/* 搜索栏 */}
         <View className='search-bar'>
           <View className='search-input'>
@@ -267,7 +273,7 @@ export default function Index() {
         </View>
 
         {/* 热门活动 */}
-        <View className='section-block'>
+        <View className='section-block hot-section'>
           <View className='section-header-row'>
             <View>
               <Text className='section-title-main'>热门活动</Text>
@@ -276,7 +282,7 @@ export default function Index() {
             <Text className='section-more' onClick={() => Taro.switchTab({ url: '/pages/routes/index' })}>更多 {'>'}</Text>
           </View>
           
-          <ScrollView className='trip-scroll' scrollX showScrollbar={false}>
+          <ScrollView className='trip-scroll' scrollX scrollWithAnimation showScrollbar={false} enhanced>
             {routes.map((route, index) => (
               <View key={route.id} className={`trip-card ${index === 0 ? 'trip-card-first' : ''}`} onClick={() => goToRouteDetail(route)}>
                 <Image className='trip-image' src={route.cover_image} mode='aspectFill' />
@@ -335,6 +341,9 @@ export default function Index() {
             ))}
           </View>
         </View>
+
+        {/* 底部安全区占位，避免内容被 tabBar 遮挡 */}
+        <View className='bottom-safe-area' />
       </ScrollView>
 
       {/* 会员活动弹窗 */}

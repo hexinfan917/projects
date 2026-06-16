@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import Taro, { useDidShow } from '@tarojs/taro'
-import { View, Text, Button , Image } from '@tarojs/components'
+import { View, Text, Image } from '@tarojs/components'
 import { getTravelers, deleteTraveler, safeNavigateBack } from '../../../utils/api'
 import './index.scss'
 
@@ -10,7 +10,6 @@ const maskName = (name: string): string => {
   const len = name.length
   if (len === 1) return name
   if (len === 2) return name[0] + '*'
-  // 3字及以上：保留首字和尾字，中间用**代替
   return name[0] + '*'.repeat(Math.min(len - 2, 2)) + name[len - 1]
 }
 
@@ -28,6 +27,17 @@ const maskPhone = (phone: string) => {
 
 export default function Travelers() {
   const [list, setList] = useState<any[]>([])
+  const [statusBarHeight, setStatusBarHeight] = useState(40)
+  const [navHeight, setNavHeight] = useState(88)
+  const [slideId, setSlideId] = useState<number | null>(null)
+  const [touchStartX, setTouchStartX] = useState(0)
+
+  useEffect(() => {
+    const sysInfo = Taro.getSystemInfoSync()
+    const sbh = sysInfo.statusBarHeight || 40
+    setStatusBarHeight(sbh)
+    setNavHeight((sbh + 44 + 4) * 2)
+  }, [])
 
   useEffect(() => {
     loadTravelers()
@@ -38,7 +48,10 @@ export default function Travelers() {
   })
 
   const loadTravelers = () => {
-    getTravelers().then(res => setList(res.data || []))
+    getTravelers().then(res => {
+      setList(res.data || [])
+      setSlideId(null)
+    })
   }
 
   const handleDelete = (id: number) => {
@@ -55,36 +68,107 @@ export default function Travelers() {
     })
   }
 
+  const handleEdit = (id: number) => {
+    Taro.navigateTo({ url: `/pages/profile/traveler-edit/index?id=${id}` })
+  }
+
+  const handleAdd = () => {
+    Taro.navigateTo({ url: '/pages/profile/traveler-edit/index' })
+  }
+
+  const onTouchStart = (e: any, id: number) => {
+    setTouchStartX(e.touches[0].clientX)
+  }
+
+  const onTouchMove = (e: any, id: number) => {
+    const moveX = e.touches[0].clientX
+    const diff = touchStartX - moveX
+    if (diff > 60) {
+      setSlideId(id)
+    } else if (diff < -40) {
+      setSlideId(null)
+    }
+  }
+
+  const onTouchEnd = (e: any, id: number) => {
+    const endX = e.changedTouches[0].clientX
+    const diff = touchStartX - endX
+    if (diff > 60) {
+      setSlideId(id)
+    } else if (diff < -40) {
+      setSlideId(null)
+    }
+  }
+
   return (
-    <View className='travelers-page' style={{ paddingTop: '140rpx' }}>
-
-        <View className='page-back' onClick={() => safeNavigateBack()}>
-          <Image className='page-back-icon' src='/assets/icons/return.png' mode='aspectFit' />
+    <View className='travelers-page'>
+      {/* 顶部导航 */}
+      <View className='travelers-header' style={{ paddingTop: `${statusBarHeight}px`, height: `${navHeight}rpx` }}>
+        <View className='header-back' onClick={() => safeNavigateBack()}>
+          <View className='header-back-arrow' />
         </View>
-      {list.map(item => (
-        <View key={item.id} className='traveler-card'>
-          <View className='traveler-header'>
-            <Text className='traveler-name'>{maskName(item.name)}</Text>
-            <Text className='traveler-phone'>{maskPhone(item.phone)}</Text>
-          </View>
-          <Text className='traveler-idcard'>身份证: {maskIdCard(item.id_card)}</Text>
-          <View className='traveler-actions'>
-            <Text
-              className='action-text'
-              onClick={() => Taro.navigateTo({ url: `/pages/profile/traveler-edit/index?id=${item.id}` })}
-            >编辑</Text>
-            <Text className='action-text delete' onClick={() => handleDelete(item.id)}>删除</Text>
-          </View>
+        <Text className='header-title'>常用出行人</Text>
+        <View className='header-add' onClick={handleAdd}>
+          <Text className='header-add-text'>+</Text>
         </View>
-      ))}
+      </View>
 
-      {list.length === 0 && <Text className='empty-tip'>暂无出行人</Text>}
+      {/* 出行人列表 */}
+      <View className='travelers-list' style={{ marginTop: `${navHeight}rpx` }}>
+        {list.map(item => (
+          <View
+            key={item.id}
+            className={`traveler-card ${slideId === item.id ? 'slide-open' : ''}`}
+            onTouchStart={(e) => onTouchStart(e, item.id)}
+            onTouchMove={(e) => onTouchMove(e, item.id)}
+            onTouchEnd={(e) => onTouchEnd(e, item.id)}
+          >
+            <View className='traveler-card-inner'>
+              <View className='traveler-card-content' onClick={() => handleEdit(item.id)}>
+                <View className='traveler-card-info'>
+                  <View className='traveler-name-row'>
+                    <Text className='traveler-name'>{maskName(item.name)}</Text>
+                    {item.is_default ? (
+                      <Text className='traveler-default-tag'>默认</Text>
+                    ) : null}
+                  </View>
+                  <View className='traveler-meta-row'>
+                    <Image className='traveler-meta-icon' src='/assets/icons/icon-phone.svg' mode='aspectFit' />
+                    <Text className='traveler-meta-text'>{maskPhone(item.phone)}</Text>
+                  </View>
+                  <View className='traveler-meta-row'>
+                    <Image className='traveler-meta-icon' src='/assets/icons/icon-idcard.svg' mode='aspectFit' />
+                    <Text className='traveler-meta-text'>{maskIdCard(item.id_card)}</Text>
+                  </View>
+                </View>
+                <View className='traveler-card-edit' onClick={(e) => { e.stopPropagation(); handleEdit(item.id) }}>
+                  <Image className='edit-icon' src='/assets/icons/icon-edit.svg' mode='aspectFit' />
+                </View>
+              </View>
+              <View className='traveler-delete-btn' onClick={(e) => { e.stopPropagation(); handleDelete(item.id) }}>
+                <Text className='delete-btn-text'>删除</Text>
+              </View>
+            </View>
+          </View>
+        ))}
 
-      <View
-        className='travelers-add-btn'
-        onClick={() => Taro.navigateTo({ url: '/pages/profile/traveler-edit/index' })}
-      >
-        + 添加出行人
+        {list.length === 0 && (
+          <View className='travelers-empty'>
+            <View className='empty-icon-wrap'>
+              <Image className='empty-icon' src='/assets/see-throughlogo.png' mode='aspectFit' />
+            </View>
+            <Text className='empty-title'>还没有常用出行人</Text>
+            <Text className='empty-desc'>添加您的出行人信息，下单时可一键选择，预订更快捷</Text>
+          </View>
+        )}
+      </View>
+
+      {/* 底部添加按钮 */}
+      <View className='travelers-footer'>
+        <View className='travelers-add-btn' onClick={handleAdd}>
+          <Text className='add-btn-icon'>+</Text>
+          <Text>添加出行人</Text>
+        </View>
       </View>
     </View>
   )

@@ -126,7 +126,7 @@ async def _get_nearest_schedule_prices(db: AsyncSession, route_ids: list) -> dic
         logger.warning(f"Failed to get nearest schedule prices: {e}")
         return {}
 
-@app.get("/api/v1/routes", response_model=RouteListResponse)
+@app.get("/api/v1/routes")
 async def get_routes(
     route_type: Optional[int] = Query(None, description="路线类型: 1山野 2海边 3森林 4主题 5自驾"),
     keyword: Optional[str] = Query(None, description="搜索关键词"),
@@ -148,26 +148,8 @@ async def get_routes(
         # 获取类型映射
         type_name_to_id = await _get_route_name_to_id_map(db)
         
-        # 构建查询，列表只加载必要字段避免 sort memory 溢出
-        query = select(Route).where(Route.status == 1).options(
-            load_only(
-                Route.id, Route.route_no, Route.name, Route.route_type,
-                Route.title, Route.subtitle, Route.cover_image, Route.description,
-                Route.duration, Route.difficulty, Route.min_participants,
-                Route.max_participants, Route.base_price, Route.self_drive_discount, Route.single_person_price,
-                Route.two_person_one_pet_price, Route.one_person_two_pet_price,
-                Route.single_pet_price, Route.extra_person_price,
-                Route.extra_pet_price,
-                Route.self_drive_base_price, Route.self_drive_single_person_price,
-                Route.self_drive_two_person_one_pet_price, Route.self_drive_one_person_two_pet_price,
-                Route.self_drive_single_pet_price, Route.self_drive_extra_person_price,
-                Route.self_drive_extra_pet_price,
-                Route.highlights, Route.sort_order, Route.is_free,
-                Route.is_member_only, Route.is_insurance_required,
-                Route.pet_insurance_price, Route.person_insurance_price,
-                Route.non_member_price, Route.created_at
-            )
-        )
+        # 构建查询
+        query = select(Route).where(Route.status == 1)
         
         # 类型筛选
         if route_type:
@@ -235,17 +217,7 @@ async def get_routes(
                 .where(Route.status == 1)
                 .order_by(Route.created_at.desc())
                 .limit(1)
-                .options(
-                    load_only(
-                        Route.id, Route.route_no, Route.name, Route.route_type,
-                        Route.title, Route.subtitle, Route.cover_image, Route.description,
-                        Route.duration, Route.difficulty, Route.min_participants,
-                        Route.max_participants, Route.highlights, Route.sort_order,
-                        Route.is_free, Route.is_member_only, Route.is_insurance_required,
-                        Route.pet_insurance_price, Route.person_insurance_price,
-                        Route.non_member_price, Route.created_at
-                    )
-                )
+
             )
             fallback_route = fallback_result.scalar_one_or_none()
             if fallback_route:
@@ -301,6 +273,12 @@ async def get_routes(
                 "is_insurance_required": r.is_insurance_required,
                 "pet_insurance_price": float(r.pet_insurance_price) if r.pet_insurance_price else 0,
                 "person_insurance_price": float(r.person_insurance_price) if r.person_insurance_price else 0,
+                "pet_insurance_title": r.pet_insurance_title or "宠物意外险",
+                "pet_insurance_unit": r.pet_insurance_unit or "狗",
+                "pet_insurance_desc": r.pet_insurance_desc or "保障宠物活动中突发意外医疗费用，最高保额¥5000",
+                "person_insurance_title": r.person_insurance_title or "人身意外险",
+                "person_insurance_unit": r.person_insurance_unit or "人",
+                "person_insurance_desc": r.person_insurance_desc or "保障出行人意外伤害及医疗，最高保额¥200,000",
                 "non_member_price": float(r.non_member_price) if r.non_member_price else 0
             })
         
@@ -428,6 +406,12 @@ async def get_route_detail(
             "is_insurance_required": r.is_insurance_required,
             "pet_insurance_price": float(r.pet_insurance_price) if r.pet_insurance_price else 0,
             "person_insurance_price": float(r.person_insurance_price) if r.person_insurance_price else 0,
+            "pet_insurance_title": r.pet_insurance_title or "宠物意外险",
+            "pet_insurance_unit": r.pet_insurance_unit or "狗",
+            "pet_insurance_desc": r.pet_insurance_desc or "保障宠物活动中突发意外医疗费用，最高保额¥5000",
+            "person_insurance_title": r.person_insurance_title or "人身意外险",
+            "person_insurance_unit": r.person_insurance_unit or "人",
+            "person_insurance_desc": r.person_insurance_desc or "保障出行人意外伤害及医疗，最高保额¥200,000",
             "non_member_price": float(r.non_member_price) if r.non_member_price else 0,
             "schedule": [
                 {"time": "09:00", "activity": "集合出发", "detail": "在指定地点集合，签到领取物资"},
@@ -694,6 +678,12 @@ class RouteCreateUpdate(BaseModel):
     is_insurance_required: Optional[int] = 1
     pet_insurance_price: Optional[float] = 15.00
     person_insurance_price: Optional[float] = 10.00
+    pet_insurance_title: Optional[str] = "宠物意外险"
+    pet_insurance_unit: Optional[str] = "狗"
+    pet_insurance_desc: Optional[str] = "保障宠物活动中突发意外医疗费用，最高保额¥5000"
+    person_insurance_title: Optional[str] = "人身意外险"
+    person_insurance_unit: Optional[str] = "人"
+    person_insurance_desc: Optional[str] = "保障出行人意外伤害及医疗，最高保额¥200,000"
     non_member_price: Optional[float] = 0
     sort_order: Optional[int] = None
 
@@ -858,6 +848,12 @@ async def admin_create_route(
             is_insurance_required=data.is_insurance_required if data.is_insurance_required is not None else 1,
             pet_insurance_price=data.pet_insurance_price if data.pet_insurance_price is not None else 15.00,
             person_insurance_price=data.person_insurance_price if data.person_insurance_price is not None else 10.00,
+            pet_insurance_title=data.pet_insurance_title if data.pet_insurance_title is not None else "宠物意外险",
+            pet_insurance_unit=data.pet_insurance_unit if data.pet_insurance_unit is not None else "狗",
+            pet_insurance_desc=data.pet_insurance_desc if data.pet_insurance_desc is not None else "保障宠物活动中突发意外医疗费用，最高保额¥5000",
+            person_insurance_title=data.person_insurance_title if data.person_insurance_title is not None else "人身意外险",
+            person_insurance_unit=data.person_insurance_unit if data.person_insurance_unit is not None else "人",
+            person_insurance_desc=data.person_insurance_desc if data.person_insurance_desc is not None else "保障出行人意外伤害及医疗，最高保额¥200,000",
             non_member_price=data.non_member_price if data.non_member_price is not None else 0,
             sort_order=data.sort_order if data.sort_order is not None else 0
         )
@@ -911,7 +907,7 @@ async def admin_update_route(
         for field in price_fields:
             update_data.pop(field, None)
         for field, value in update_data.items():
-            if value is not None or field in ['subtitle', 'title', 'description', 'is_hot', 'status', 'content_modules', 'is_free', 'display_price', 'is_member_only', 'is_insurance_required', 'pet_insurance_price', 'person_insurance_price', 'non_member_price']:  # 允许清空这些字段
+            if value is not None or field in ['subtitle', 'title', 'description', 'is_hot', 'status', 'content_modules', 'is_free', 'display_price', 'is_member_only', 'is_insurance_required', 'pet_insurance_price', 'person_insurance_price', 'pet_insurance_title', 'pet_insurance_unit', 'pet_insurance_desc', 'person_insurance_title', 'person_insurance_unit', 'person_insurance_desc', 'non_member_price']:  # 允许清空这些字段
                 setattr(route, field, value)
         
         await db.commit()
@@ -991,6 +987,8 @@ async def admin_get_routes(
             Route.min_participants, Route.max_participants,
             Route.is_hot, Route.status, Route.is_free, Route.is_member_only,
             Route.is_insurance_required, Route.pet_insurance_price, Route.person_insurance_price,
+            Route.pet_insurance_title, Route.pet_insurance_unit, Route.pet_insurance_desc,
+            Route.person_insurance_title, Route.person_insurance_unit, Route.person_insurance_desc,
             Route.non_member_price, Route.sort_order, Route.created_at, Route.updated_at
         )
         if status is not None:
@@ -1067,6 +1065,12 @@ async def admin_get_routes(
                 "is_insurance_required": r.is_insurance_required,
                 "pet_insurance_price": float(r.pet_insurance_price) if r.pet_insurance_price else 0,
                 "person_insurance_price": float(r.person_insurance_price) if r.person_insurance_price else 0,
+                "pet_insurance_title": r.pet_insurance_title or "宠物意外险",
+                "pet_insurance_unit": r.pet_insurance_unit or "狗",
+                "pet_insurance_desc": r.pet_insurance_desc or "保障宠物活动中突发意外医疗费用，最高保额¥5000",
+                "person_insurance_title": r.person_insurance_title or "人身意外险",
+                "person_insurance_unit": r.person_insurance_unit or "人",
+                "person_insurance_desc": r.person_insurance_desc or "保障出行人意外伤害及医疗，最高保额¥200,000",
                 "non_member_price": float(r.non_member_price) if r.non_member_price else 0,
                 "sort_order": r.sort_order,
                 "created_at": r.created_at.isoformat() if r.created_at else None,
@@ -1141,6 +1145,12 @@ async def admin_get_route_detail(
             "is_insurance_required": r.is_insurance_required,
             "pet_insurance_price": float(r.pet_insurance_price) if r.pet_insurance_price else 0,
             "person_insurance_price": float(r.person_insurance_price) if r.person_insurance_price else 0,
+            "pet_insurance_title": r.pet_insurance_title or "宠物意外险",
+            "pet_insurance_unit": r.pet_insurance_unit or "狗",
+            "pet_insurance_desc": r.pet_insurance_desc or "保障宠物活动中突发意外医疗费用，最高保额¥5000",
+            "person_insurance_title": r.person_insurance_title or "人身意外险",
+            "person_insurance_unit": r.person_insurance_unit or "人",
+            "person_insurance_desc": r.person_insurance_desc or "保障出行人意外伤害及医疗，最高保额¥200,000",
             "non_member_price": float(r.non_member_price) if r.non_member_price else 0,
             "sort_order": r.sort_order,
             "created_at": r.created_at.isoformat() if r.created_at else None,

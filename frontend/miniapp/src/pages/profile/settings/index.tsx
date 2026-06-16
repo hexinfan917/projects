@@ -8,11 +8,14 @@ export default function Settings() {
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [agreements, setAgreements] = useState<any[]>([])
   const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const [statusBarHeight, setStatusBarHeight] = useState(40)
 
   useEffect(() => {
     loadAgreements()
     const token = Taro.getStorageSync('access_token')
     setIsLoggedIn(!!token)
+    const sysInfo = Taro.getSystemInfoSync()
+    setStatusBarHeight(sysInfo.statusBarHeight || 40)
   }, [])
 
   const loadAgreements = async () => {
@@ -65,10 +68,23 @@ export default function Settings() {
     }
   }
 
+  const navHeight = (statusBarHeight + 44 + 4) * 2
+
   return (
-    <View className='settings-page' style={{ paddingTop: '140rpx' }}>
-      <View className='page-back' onClick={() => safeNavigateBack()}>
-        <Image className='page-back-icon' src='/assets/icons/return.png' mode='aspectFit' />
+    <View className='settings-page' style={{ paddingTop: `${navHeight}rpx` }}>
+      <View
+        className='settings-header'
+        style={{
+          paddingTop: `${statusBarHeight}px`,
+          height: `${navHeight}rpx`,
+          boxSizing: 'border-box'
+        }}
+      >
+        <View className='page-back' onClick={() => safeNavigateBack()}>
+          <Image className='page-back-icon' src='/assets/icons/return.png' mode='aspectFit' />
+        </View>
+        <Text className='settings-title'>设置</Text>
+        <View className='header-placeholder' />
       </View>
 
       <View className='settings-group'>
@@ -79,7 +95,10 @@ export default function Settings() {
             if (id) goAgreementDetail(id)
             else Taro.showToast({ title: '暂无隐私协议', icon: 'none' })
           }}>
-            <Text className='settings-label'>隐私政策</Text>
+            <View className='item-left'>
+              <Image className='item-icon' src='/assets/icons/icon-shield.svg' mode='aspectFit' />
+              <Text className='settings-label'>隐私政策</Text>
+            </View>
             <Text className='settings-arrow'>{'>'}</Text>
           </View>
           <View className='settings-item' onClick={() => {
@@ -87,29 +106,35 @@ export default function Settings() {
             if (id) goAgreementDetail(id)
             else Taro.showToast({ title: '暂无用户协议', icon: 'none' })
           }}>
-            <Text className='settings-label'>用户协议</Text>
+            <View className='item-left'>
+              <Image className='item-icon' src='/assets/icons/icon-file.svg' mode='aspectFit' />
+              <Text className='settings-label'>用户协议</Text>
+            </View>
             <Text className='settings-arrow'>{'>'}</Text>
           </View>
           <View className='settings-item' onClick={handleClearCache}>
-            <Text className='settings-label'>清除缓存</Text>
+            <View className='item-left'>
+              <Image className='item-icon' src='/assets/icons/icon-mop.svg' mode='aspectFit' />
+              <Text className='settings-label'>清除缓存</Text>
+            </View>
             <Text className='settings-arrow'>{'>'}</Text>
           </View>
         </View>
       </View>
 
       {isLoggedIn && (
-        <View className='settings-group'>
+        <View className='settings-group logout-group'>
           <View className='settings-list'>
-            <View className='settings-item' onClick={() => setShowDeleteModal(true)}>
+            <View className='settings-item logout-item' onClick={() => setShowDeleteModal(true)}>
+              <Image className='logout-icon' src='/assets/icons/icon-logout.svg' mode='aspectFit' />
               <Text className='settings-label danger-text'>注销账号</Text>
-              <Text className='settings-arrow'>{'>'}</Text>
             </View>
           </View>
         </View>
       )}
 
       <View className='version-section'>
-        <Text className='version-text'>Version {Taro.getStorageSync('app_version') || '1.0.0'}</Text>
+        <Text className='version-text'>VERSION {Taro.getStorageSync('app_version') || '1.0.0'}</Text>
       </View>
 
       {showDeleteModal && (

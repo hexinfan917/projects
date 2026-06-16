@@ -1,82 +1,210 @@
-.traveler-edit {
-  min-height: 100vh;
-  background: #f5f5f5;
-  padding-top: 20rpx;
+// 页面基础
+.traveler-edit-page {
+  height: 100vh;
+  background: #f0f4f1;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
-.form-section {
-  background: #fff;
-  padding: 0 30rpx;
-  margin-bottom: 40rpx;
-}
-
-.input-row {
+// 顶部导航
+.traveler-edit-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: #f0f4f1;
   display: flex;
   align-items: center;
-  padding: 24rpx 0;
-  border-bottom: 1rpx solid #eee;
+  justify-content: space-between;
+  padding: 0 24rpx;
+  padding-bottom: 8rpx;
+  z-index: 100;
+  box-sizing: border-box;
 }
 
-.label {
-  width: 180rpx;
-  font-size: 28rpx;
-  color: #333;
-}
-
-.input {
-  flex: 1;
-  font-size: 28rpx;
-}
-
-.save-btn {
-  margin: 0 40rpx;
-  background: #22C55E;
-  color: #fff;
-  font-size: 32rpx;
-  border-radius: 44rpx;
-}
-
-.checkbox-row {
+.header-back {
+  width: 64rpx;
+  height: 64rpx;
   display: flex;
   align-items: center;
-  padding: 24rpx 0;
+  justify-content: center;
+  margin-top: 8rpx;
 }
 
-.check-box {
-  width: 36rpx;
-  height: 36rpx;
-  border: 2rpx solid #ccc;
-  border-radius: 50%;
-  margin-right: 16rpx;
-  position: relative;
-  &.checked {
-    border-color: #22C55E;
-    background: #22C55E;
-    &::after {
-      content: '';
-      position: absolute;
-      left: 10rpx;
-      top: 6rpx;
-      width: 8rpx;
-      height: 14rpx;
-      border: solid #fff;
-      border-width: 0 3rpx 3rpx 0;
-      transform: rotate(45deg);
-    }
-  }
+.header-back-arrow {
+  width: 20rpx;
+  height: 20rpx;
+  border-left: 4rpx solid #1a5c2a;
+  border-bottom: 4rpx solid #1a5c2a;
+  transform: rotate(45deg);
+  margin-left: 6rpx;
 }
 
-.checkbox-label {
+.header-title {
+  font-size: 34rpx;
+  font-weight: 600;
+  color: #1a5c2a;
+  margin-top: 8rpx;
+}
+
+.header-placeholder {
+  width: 64rpx;
+}
+
+// 白色卡片
+.traveler-edit-card {
+  margin: 0 24rpx 32rpx;
+  background: #ffffff;
+  border-radius: 32rpx;
+  padding: 40rpx 32rpx;
+  box-shadow: 0 4rpx 24rpx rgba(0, 0, 0, 0.06);
+}
+
+// 表单
+.traveler-form {
+  display: flex;
+  flex-direction: column;
+  gap: 28rpx;
+}
+
+.form-item {
+  display: flex;
+  flex-direction: column;
+  gap: 10rpx;
+}
+
+.form-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-left: 4rpx;
+}
+
+.form-label {
   font-size: 28rpx;
-  color: #333;
+  font-weight: 600;
+  color: #2c3e33;
+}
+
+.form-input {
+  width: 100%;
+  height: 88rpx;
+  background: #f0f5f2;
+  border-radius: 16rpx;
+  padding: 0 24rpx;
+  font-size: 28rpx;
+  color: #1a1a1a;
+  box-sizing: border-box;
 }
 
 .fill-self-btn {
-  font-size: 24rpx;
-  color: #22C55E;
-  padding: 8rpx 16rpx;
-  border: 1rpx solid #22C55E;
+  font-size: 26rpx;
+  color: #1a7c2e;
+  font-weight: 500;
+}
+
+// 默认出行人复选框
+.default-traveler-row {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  padding: 8rpx 0;
+  margin-top: 4rpx;
+}
+
+.custom-checkbox {
+  width: 36rpx;
+  height: 36rpx;
+  border: 2rpx solid #c8d4cc;
   border-radius: 8rpx;
-  margin-left: 16rpx;
-  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+
+  &.checked {
+    background: #1a7c2e;
+    border-color: #1a7c2e;
+  }
+}
+
+.checkbox-checkmark {
+  width: 8rpx;
+  height: 16rpx;
+  border: solid #fff;
+  border-width: 0 3rpx 3rpx 0;
+  transform: rotate(45deg) translate(-2rpx, -2rpx);
+}
+
+.default-traveler-label {
+  font-size: 28rpx;
+  color: #444;
+}
+
+// 提示
+.traveler-tip {
+  display: flex;
+  gap: 16rpx;
+  padding: 0 32rpx;
+  margin-top: 8rpx;
+}
+
+.tip-icon {
+  width: 36rpx;
+  height: 36rpx;
+  border-radius: 50%;
+  background: #f5a623;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 2rpx;
+}
+
+.tip-icon-i {
+  color: #fff;
+  font-size: 22rpx;
+  font-weight: 600;
+  font-style: italic;
+  font-family: Georgia, serif;
+}
+
+.traveler-tip-text {
+  font-size: 24rpx;
+  color: #8b6914;
+  line-height: 1.7;
+  flex: 1;
+}
+
+// 底部按钮
+.traveler-edit-footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 24rpx 32rpx;
+  padding-bottom: calc(24rpx + constant(safe-area-inset-bottom));
+  padding-bottom: calc(24rpx + env(safe-area-inset-bottom));
+  background: #f0f4f1;
+  z-index: 100;
+}
+
+.save-btn {
+  width: 100%;
+  height: 92rpx;
+  line-height: 92rpx;
+  border-radius: 46rpx;
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #fff;
+  text-align: center;
+  border: none;
+  background: #1a7c2e;
+  box-shadow: 0 4rpx 16rpx rgba(26, 124, 46, 0.3);
+  transition: all 0.2s ease;
+
+  &::after {
+    border: none;
+  }
 }

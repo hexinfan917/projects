@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import Taro from '@tarojs/taro'
 import { Provider } from './store'
+import { BASE_URL } from './utils/api'
 import './styles/global.scss'
 
 function App({ children }) {
@@ -18,13 +19,8 @@ function App({ children }) {
     }
 
     // 获取公开系统设置（版本号等）
-    const systemInfo = Taro.getSystemInfoSync()
-    const isDevtools = systemInfo.platform === 'devtools'
-    const baseUrl = process.env.NODE_ENV === 'development'
-      ? (isDevtools ? 'http://localhost:8000' : 'http://192.168.8.46:8000')
-      : 'https://tailtravel.cn'
     Taro.request({
-      url: `${baseUrl}/api/v1/settings/public`,
+      url: `${BASE_URL}/api/v1/settings/public`,
       method: 'GET',
       success: (res: any) => {
         if (res.data?.code === 200 && res.data.data?.mp_version) {
@@ -46,11 +42,9 @@ function App({ children }) {
         title: '版本更新',
         content: '新版本已准备好，重启后即可使用最新功能',
         confirmText: '立即重启',
-        cancelText: '稍后',
-        success: (modalRes) => {
-          if (modalRes.confirm) {
-            updateManager.applyUpdate()
-          }
+        showCancel: false,
+        success: () => {
+          updateManager.applyUpdate()
         },
       })
     })

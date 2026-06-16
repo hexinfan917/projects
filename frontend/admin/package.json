@@ -16,7 +16,9 @@
     "@umijs/max": "^4.1.0",
     "antd": "^5.14.0",
     "dayjs": "^1.11.10",
-    "react-quill": "^2.0.0"
+    "exceljs": "^4.4.0",
+    "react-quill": "^2.0.0",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@types/react": "^18.2.55",

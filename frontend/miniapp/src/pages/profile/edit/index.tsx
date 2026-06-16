@@ -1,10 +1,8 @@
 import { useEffect, useState } from 'react'
 import Taro from '@tarojs/taro'
-import { View, Text, Input, Button, Image } from '@tarojs/components'
+import { View, Text, Input, Button, Image, ScrollView } from '@tarojs/components'
 import { getUserProfile, updateUserProfile, uploadFile, compressImageUrl, safeNavigateBack } from '../../../utils/api'
 import './index.scss'
-
-import { BASE_URL } from '../../../utils/api'
 
 function fullImageUrl(url?: string) {
   if (!url) return ''
@@ -118,70 +116,120 @@ export default function ProfileEdit() {
   }
 
   return (
-    <View className='profile-edit' style={{ paddingTop: '200rpx' }}>
+    <View className='profile-edit'>
       <View className='custom-navbar'>
         <View className='navbar-bg' />
         <View className='navbar-content'>
           <View className='page-back' onClick={() => safeNavigateBack()}>
             <Image className='page-back-icon' src='/assets/icons/return.png' mode='aspectFit' />
           </View>
-          <Text className='navbar-title'>完善个人信息</Text>
+          <View className='navbar-title-wrap'>
+            <Text className='navbar-title'>完善个人信息</Text>
+          </View>
+          <View className='navbar-right' />
         </View>
       </View>
-      <View className='form-section'>
-        <View className='avatar-row' onClick={handleChooseAvatar}>
-          <Text className='label'>头像</Text>
+
+      <ScrollView className='profile-edit-scroll' scrollY>
+        {/* 头像上传区 */}
+        <View className='avatar-section' onClick={handleChooseAvatar}>
           <View className='avatar-wrap'>
             {user.avatar ? (
               <Image className='avatar-img' src={fullImageUrl(user.avatar)} mode='aspectFill' />
             ) : (
-              <View className='avatar-placeholder'>点击上传</View>
-            )}
-            <Text className='arrow'>{'>'}</Text>
-          </View>
-        </View>
-        <View className='input-row'>
-          <Text className='label'>昵称</Text>
-          <Input className='input' placeholder='请输入昵称' value={user.nickname || ''} onInput={(e) => setUser({ ...user, nickname: e.detail.value })} />
-        </View>
-        <View className='input-row'>
-          <Text className='label'>性别</Text>
-          <View className='gender-wrap'>
-            {GENDER_OPTIONS.map(opt => (
-              <View
-                key={opt.value}
-                className={`gender-option ${Number(user.gender) === opt.value ? 'active' : ''}`}
-                onClick={() => setUser({ ...user, gender: opt.value })}
-              >
-                <Text className='gender-text'>{opt.label}</Text>
+              <View className='avatar-placeholder'>
+                <View className='avatar-default-icon' />
               </View>
-            ))}
+            )}
+            <View className='upload-badge'>
+              <Text className='upload-badge-text'>点击上传</Text>
+            </View>
           </View>
         </View>
-        <View className='input-row'>
-          <Text className='label'>手机号</Text>
-          <Input className='input' type='number' placeholder='请输入手机号' value={user.phone || ''} onInput={(e) => setUser({ ...user, phone: e.detail.value })} />
-        </View>
-        <View className='input-row'>
-          <Text className='label'>所在城市</Text>
-          <Input className='input' placeholder='请输入城市' value={user.city || ''} onInput={(e) => setUser({ ...user, city: e.detail.value })} />
-        </View>
-        <View className='input-row'>
-          <View className='label'>
-            <Text>真实姓名</Text>
-            <Text className='required'>*</Text>
+
+        {/* 表单卡片 */}
+        <View className='form-card'>
+          <View className='form-field'>
+            <Text className='field-label'>昵称</Text>
+            <Input
+              className='field-input'
+              placeholder='请输入昵称'
+              value={user.nickname || ''}
+              onInput={(e) => setUser({ ...user, nickname: e.detail.value })}
+            />
           </View>
-          <Input className='input' placeholder='请输入真实姓名' value={user.real_name || ''} onInput={(e) => setUser({ ...user, real_name: e.detail.value })} />
-        </View>
-        <View className='input-row'>
-          <View className='label'>
-            <Text>身份证号</Text>
-            <Text className='required'>*</Text>
+
+          <View className='form-field'>
+            <Text className='field-label'>性别</Text>
+            <View className='gender-wrap'>
+              {GENDER_OPTIONS.map(opt => (
+                <View
+                  key={opt.value}
+                  className={`gender-option ${Number(user.gender) === opt.value ? 'active' : ''}`}
+                  onClick={() => setUser({ ...user, gender: opt.value })}
+                >
+                  <Text className='gender-text'>{opt.label}</Text>
+                </View>
+              ))}
+            </View>
           </View>
-          <Input className='input' placeholder='请输入身份证号' value={user.id_card || ''} onInput={(e) => setUser({ ...user, id_card: e.detail.value })} />
+
+          <View className='form-field'>
+            <Text className='field-label'>手机号</Text>
+            <Input
+              className='field-input'
+              type='number'
+              placeholder='请输入手机号'
+              value={user.phone || ''}
+              onInput={(e) => setUser({ ...user, phone: e.detail.value })}
+            />
+          </View>
+
+          <View className='form-field'>
+            <View className='field-label-row'>
+              <Text className='field-label'>真实姓名</Text>
+              <Text className='required'>*</Text>
+            </View>
+            <Input
+              className='field-input'
+              placeholder='请输入真实姓名'
+              value={user.real_name || ''}
+              onInput={(e) => setUser({ ...user, real_name: e.detail.value })}
+            />
+          </View>
+
+          <View className='form-field'>
+            <View className='field-label-row'>
+              <Text className='field-label'>身份证号</Text>
+              <Text className='required'>*</Text>
+            </View>
+            <Input
+              className='field-input'
+              placeholder='请输入身份证号'
+              value={user.id_card || ''}
+              onInput={(e) => setUser({ ...user, id_card: e.detail.value })}
+            />
+          </View>
+
+          <View className='form-field'>
+            <Text className='field-label'>所在城市</Text>
+            <View className='field-input-wrap'>
+              <Input
+                className='field-input'
+                placeholder='请输入城市'
+                value={user.city || ''}
+                onInput={(e) => setUser({ ...user, city: e.detail.value })}
+              />
+              <Image className='location-icon' src='/assets/icons/icon-location.svg' mode='aspectFit' />
+            </View>
+          </View>
         </View>
-      </View>
-      <Button className='save-btn' onClick={handleSave}>确认提交</Button>
+
+        {/* 提交区 */}
+        <View className='submit-section'>
+          <Button className='save-btn' onClick={handleSave}>确认提交</Button>
+        </View>
+      </ScrollView>
     </View>
   )
 }

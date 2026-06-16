@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import Taro from '@tarojs/taro'
-import { View, Text, Input, Button , Image } from '@tarojs/components'
+import { View, Text, Input, Button, Image } from '@tarojs/components'
 import { getTravelers, createTraveler, updateTraveler, updateUserProfile, safeNavigateBack } from '../../../utils/api'
 import './index.scss'
 
@@ -12,9 +12,7 @@ const isValidPhone = (phone: string): boolean => {
 /** 校验身份证号 */
 const isValidIdCard = (idCard: string): boolean => {
   if (!idCard || idCard.length !== 18) return false
-  // 基本格式：前17位数字，最后一位数字或X
   if (!/^\d{17}[\dXx]$/.test(idCard)) return false
-  // 校验码验证
   const weights = [7, 9, 10, 5, 8, 4, 2, 1, 6, 3, 7, 9, 10, 5, 8, 4, 2]
   const checkCodes = ['1', '0', 'X', '9', '8', '7', '6', '5', '4', '3', '2']
   let sum = 0
@@ -28,7 +26,6 @@ const isValidIdCard = (idCard: string): boolean => {
 
 /** 校验姓名 */
 const isValidName = (name: string): boolean => {
-  // 允许中文、英文、·、•，长度2-20
   if (!name || name.length < 2 || name.length > 20) return false
   return /^[\u4e00-\u9fa5a-zA-Z·•]+$/.test(name)
 }
@@ -42,6 +39,15 @@ const maskIdCardSimple = (idCard: string) => {
 export default function TravelerEdit() {
   const [form, setForm] = useState<any>({ name: '', phone: '', id_card: '', gender: 0, is_default: 0 })
   const [isEdit, setIsEdit] = useState(false)
+  const [statusBarHeight, setStatusBarHeight] = useState(40)
+  const [navHeight, setNavHeight] = useState(88)
+
+  useEffect(() => {
+    const sysInfo = Taro.getSystemInfoSync()
+    const sbh = sysInfo.statusBarHeight || 40
+    setStatusBarHeight(sbh)
+    setNavHeight((sbh + 44 + 4) * 2)
+  }, [])
 
   useEffect(() => {
     const instance = Taro.getCurrentInstance()
@@ -85,7 +91,6 @@ export default function TravelerEdit() {
   }
 
   const handleSave = async () => {
-    // 姓名校验
     if (!form.name) {
       Taro.showToast({ title: '请输入姓名', icon: 'none' })
       return
@@ -94,8 +99,6 @@ export default function TravelerEdit() {
       Taro.showToast({ title: '姓名仅限2-20位中文/英文/·', icon: 'none' })
       return
     }
-
-    // 手机号校验
     if (!form.phone) {
       Taro.showToast({ title: '请输入手机号', icon: 'none' })
       return
@@ -104,8 +107,6 @@ export default function TravelerEdit() {
       Taro.showToast({ title: '手机号格式不正确', icon: 'none' })
       return
     }
-
-    // 身份证校验
     if (!form.id_card) {
       Taro.showToast({ title: '请输入身份证号', icon: 'none' })
       return
@@ -117,11 +118,8 @@ export default function TravelerEdit() {
 
     try {
       const userInfo = Taro.getStorageSync('user_info') || {}
-      // 资料关键信息是否完整：真实姓名 + 身份证号
-      // 手机号不算关键信息（可能自动获取），同步目的是填充姓名和身份证
       const hasCriticalProfile = userInfo.real_name && userInfo.id_card
 
-      // 新建时检查是否已存在相同身份证号的出行人
       let existList: any[] = []
       if (!form.id) {
         const existRes: any = await getTravelers()
@@ -138,9 +136,6 @@ export default function TravelerEdit() {
         }
       }
 
-      // 判断是否是本人
-      // - 资料有身份证：通过身份证号匹配
-      // - 资料完全空白：第一个出行人默认认为是本人
       let isSelf = false
       if (form.id_card && userInfo.id_card) {
         isSelf = form.id_card === userInfo.id_card
@@ -149,14 +144,12 @@ export default function TravelerEdit() {
       }
 
       if (form.id) {
-        // 编辑已有出行人
         const res: any = await updateTraveler(form.id, form)
         if (res?.code !== 200) {
           throw new Error(res?.message || '保存失败')
         }
         Taro.showToast({ title: '保存成功', icon: 'success' })
 
-        // 编辑本人且信息有变化时，询问同步
         const changed = isSelf && (
           form.name !== userInfo.real_name ||
           form.phone !== userInfo.phone ||
@@ -198,7 +191,6 @@ export default function TravelerEdit() {
           setTimeout(() => safeNavigateBack(), 1000)
         }
       } else {
-        // 新建出行人
         const res: any = await createTraveler(form)
         if (res?.code !== 200) {
           throw new Error(res?.message || '保存失败')
@@ -208,7 +200,6 @@ export default function TravelerEdit() {
         }
         Taro.showToast({ title: '保存成功', icon: 'success' })
 
-        // 新建本人且个人资料完全空白时才询问同步
         if (isSelf && !hasCriticalProfile) {
           setTimeout(() => {
             Taro.showModal({
@@ -251,37 +242,87 @@ export default function TravelerEdit() {
   }
 
   return (
-    <View className='traveler-edit' style={{ paddingTop: '140rpx' }}>
+    <View className='traveler-edit-page'>
+      {/* 顶部导航 */}
+      <View className='traveler-edit-header' style={{ paddingTop: `${statusBarHeight}px`, height: `${navHeight}rpx` }}>
+        <View className='header-back' onClick={() => safeNavigateBack()}>
+          <View className='header-back-arrow' />
+        </View>
+        <Text className='header-title'>{isEdit ? '编辑出行人' : '添加出行人'}</Text>
+        <View className='header-placeholder' />
+      </View>
 
-        <View className='page-back' onClick={() => safeNavigateBack()}>
-          <Image className='page-back-icon' src='/assets/icons/return.png' mode='aspectFit' />
-        </View>
-      <View className='form-section'>
-        <View className='input-row'>
-          <Text className='label'>姓名</Text>
-          <Input className='input' placeholder='请输入真实姓名' value={form.name} onInput={(e) => setForm({ ...form, name: e.detail.value })} />
-          {!isEdit && (
-            <Text className='fill-self-btn' onClick={handleFillSelf}>使用本人信息</Text>
-          )}
-        </View>
-        <View className='input-row'>
-          <Text className='label'>手机号</Text>
-          <Input className='input' type='number' placeholder='请输入手机号' value={form.phone} onInput={(e) => setForm({ ...form, phone: e.detail.value })} />
-        </View>
-        <View className='input-row'>
-          <Text className='label'>身份证号</Text>
-          <Input className='input' placeholder='请输入身份证号' value={form.id_card} onInput={(e) => setForm({ ...form, id_card: e.detail.value })} />
+      {/* 白色卡片 */}
+      <View className='traveler-edit-card' style={{ marginTop: `${navHeight}rpx` }}>
+        <View className='traveler-form'>
+          {/* 姓名 */}
+          <View className='form-item'>
+            <View className='form-item-header'>
+              <Text className='form-label'>姓名</Text>
+              {!isEdit && (
+                <Text className='fill-self-btn' onClick={handleFillSelf}>使用本人信息</Text>
+              )}
+            </View>
+            <Input
+              className='form-input'
+              placeholder='请输入真实姓名'
+              placeholderStyle='color: #b0b8c4;'
+              value={form.name}
+              onInput={(e) => setForm({ ...form, name: e.detail.value })}
+            />
+          </View>
+
+          {/* 手机号 */}
+          <View className='form-item'>
+            <Text className='form-label'>手机号</Text>
+            <Input
+              className='form-input'
+              type='number'
+              placeholder='请输入手机号'
+              placeholderStyle='color: #b0b8c4;'
+              value={form.phone}
+              onInput={(e) => setForm({ ...form, phone: e.detail.value })}
+            />
+          </View>
+
+          {/* 身份证号 */}
+          <View className='form-item'>
+            <Text className='form-label'>身份证号</Text>
+            <Input
+              className='form-input'
+              placeholder='请输入身份证号'
+              placeholderStyle='color: #b0b8c4;'
+              value={form.id_card}
+              onInput={(e) => setForm({ ...form, id_card: e.detail.value })}
+            />
+          </View>
+
+          {/* 设为默认 */}
+          <View className='default-traveler-row' onClick={() => setForm({ ...form, is_default: form.is_default ? 0 : 1 })}>
+            <View className={`custom-checkbox ${form.is_default ? 'checked' : ''}`}>
+              {form.is_default ? <View className='checkbox-checkmark' /> : null}
+            </View>
+            <Text className='default-traveler-label'>设为默认出行人</Text>
+          </View>
         </View>
       </View>
 
-      <View className='form-section'>
-        <View className='checkbox-row' onClick={() => setForm({ ...form, is_default: form.is_default ? 0 : 1 })}>
-          <View className={`check-box ${form.is_default ? 'checked' : ''}`} />
-          <Text className='checkbox-label'>设为默认出行人</Text>
+      {/* 提示 */}
+      <View className='traveler-tip'>
+        <View className='tip-icon'>
+          <Text className='tip-icon-i'>i</Text>
         </View>
+        <Text className='traveler-tip-text'>
+          您的个人信息将受到严格保护，仅用于宠物出行预订及保险购买。
+        </Text>
       </View>
 
-      <Button className='save-btn' onClick={handleSave}>保存</Button>
+      {/* 底部按钮 */}
+      <View className='traveler-edit-footer'>
+        <Button className='save-btn' onClick={handleSave}>
+          确认并保存
+        </Button>
+      </View>
     </View>
   )
 }

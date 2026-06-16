@@ -22,7 +22,7 @@ from common.logger import setup_logger
 import httpx
 
 settings.app_name = "api-gateway"
-settings.app_port = 8000
+settings.app_port = 8081
 logger = setup_logger("gateway")
 
 # JWT 配置

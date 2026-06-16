@@ -133,16 +133,16 @@ page {
 .navbar-left {
   display: flex;
   align-items: center;
-  gap: 8rpx;
+  gap: 20rpx;
 }
 
 .navbar-icon {
-  width: 100rpx;
-  height: 100rpx;
+  width: 72rpx;
+  height: 72rpx;
 }
 
 .navbar-title {
-  font-size: 32rpx;
+  font-size: 30rpx;
   font-weight: 700;
   color: #006b1b;
   letter-spacing: 1rpx;
