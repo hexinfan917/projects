@@ -3,7 +3,7 @@ import Taro, { eventCenter } from '@tarojs/taro'
 // 环境切换：开发走本地网关，生产走线上域名
 // 小程序开发工具需勾选「设置 → 项目设置 → 不校验合法域名、web-view（业务域名）、TLS版本以及HTTPS证书」
 // 本地开发强制 localhost，真机预览如需局域网请改成 http://192.168.31.44:8081
-export const BASE_URL = 'https://tailtravel.cn'
+export const BASE_URL = 'http://localhost:8081'
 // 图片使用生产域名（微信真机预览/体验版必须走已备案域名，内网IP会被拦截）
 // 注意：本地开发环境新上传的图片在生产服务器上不存在，真机预览时无法显示
 // 如需在真机上测试新图片，请手动将图片同步到生产服务器，或使用 ngrok 内网穿透
