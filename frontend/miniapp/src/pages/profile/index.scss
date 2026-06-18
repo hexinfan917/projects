@@ -199,12 +199,9 @@
 }
 
 .entry-icon-img {
-  width: 96rpx;
-  height: 96rpx;
-  border-radius: 50%;
-  background: #e6e9e7;
-  padding: 20rpx;
-  box-sizing: border-box;
+  width: 56rpx;
+  height: 56rpx;
+  display: block;
 }
 
 .entry-label {
@@ -285,12 +282,9 @@
 }
 
 .more-icon-img {
-  width: 80rpx;
-  height: 80rpx;
-  border-radius: 50%;
-  background: rgba(145, 247, 142, 0.3);
-  padding: 16rpx;
-  box-sizing: border-box;
+  width: 44rpx;
+  height: 44rpx;
+  display: block;
   margin-right: 24rpx;
 }
 

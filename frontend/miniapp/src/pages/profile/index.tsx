@@ -6,21 +6,21 @@ import { getUserProfile, setActiveTab, getMemberCenter, getUserCoupons, getMembe
 import './index.scss'
 
 const ICON_MAP: Record<string, string> = {
-  '会员中心': '/assets/icons/profile/vip.png',
-  '优惠券': '/assets/icons/profile/coupon.png',
+  '会员中心': '/assets/icons/profile/vip.svg',
+  '优惠券': '/assets/icons/profile/coupon.svg',
   '收藏夹': '/assets/icons/profile/favorite.png',
-  '浏览足迹': '/assets/icons/profile/footprint.png',
+  '浏览足迹': '/assets/icons/profile/footprint.svg',
   '地址管理': '/assets/icons/profile/address.png',
-  '出行人管理': '/assets/icons/profile/traveler.png',
-  '我的足迹': '/assets/icons/profile/footprint.png',
-  '联系客服': '/assets/icons/profile/service.png',
-  '关于我们': '/assets/icons/profile/about.png',
-  '设置': '/assets/icons/profile/settings.png',
-  '待支付': '/assets/icons/profile/pending.png',
-  '待出行': '/assets/icons/profile/travel.png',
-  '已完成': '/assets/icons/profile/Departed.png',
+  '出行人管理': '/assets/icons/profile/traveler.svg',
+  '我的足迹': '/assets/icons/profile/footprint.svg',
+  '联系客服': '/assets/icons/profile/service.svg',
+  '关于我们': '/assets/icons/profile/about.svg',
+  '设置': '/assets/icons/profile/settings.svg',
+  '待支付': '/assets/icons/profile/pending.svg',
+  '待出行': '/assets/icons/profile/travel.svg',
+  '已完成': '/assets/icons/profile/completed.svg',
   '待评价': '/assets/icons/profile/review.png',
-  '退款/售后': '/assets/icons/profile/refund.png',
+  '退款/售后': '/assets/icons/profile/refund.svg',
   '默认头像': '/assets/icons/profile/head.png',
 }
 
