@@ -13,10 +13,10 @@ definePageConfig({
 
 // 快捷入口模块
 const QUICK_MODULES = [
-  { key: 'featured', label: '主题精选', icon: '✨', path: '/pages/routes/index' },
-  { key: 'personality', label: '犬格检测', icon: '🧠', path: '/pages/routes/index' },
-  { key: 'adoption', label: '狗狗领养', icon: '🐾', path: '/pages/charities/list/index' },
-  { key: 'wiki', label: '养宠百科', icon: '📚', path: '/pages/reviews/list/index' },
+  { key: 'featured', label: '主题精选', icon: '/assets/icons/featured.svg', path: '/pages/routes/index' },
+  { key: 'personality', label: '犬格检测', icon: '/assets/icons/personality.svg', path: '/pages/routes/index' },
+  { key: 'adoption', label: '狗狗领养', icon: '/assets/icons/adoption.svg', path: '/pages/charities/list/index' },
+  { key: 'wiki', label: '养宠百科', icon: '/assets/icons/wiki.svg', path: '/pages/reviews/list/index' },
 ]
 
 // 首页（发现页）- V2 沉浸式设计
@@ -277,7 +277,7 @@ export default function Index() {
             {QUICK_MODULES.map(module => (
               <View key={module.key} className='quick-module-item' onClick={() => handleQuickModule(module)}>
                 <View className='quick-module-icon'>
-                  <Text className='quick-module-icon-text'>{module.icon}</Text>
+                  <Image className='quick-module-icon-img' src={module.icon} mode='aspectFit' />
                 </View>
                 <Text className='quick-module-label'>{module.label}</Text>
               </View>
@@ -285,28 +285,34 @@ export default function Index() {
           </View>
         </View>
 
-        {/* 3. 热门活动 - 横向滚动卡片 */}
+        {/* 3. 热门活动 - 错位双列 */}
         <View className='section-block activity-section'>
           <View className='section-header-row'>
             <View>
               <Text className='section-title-main'>热门活动</Text>
-              <Text className='section-title-sub'>精选最受欢迎的宠物友好目的地</Text>
+              <View className='section-title-underline' />
             </View>
-            <Text className='section-more' onClick={() => Taro.switchTab({ url: '/pages/routes/index' })}>更多 {'>'}</Text>
+            <Text className='section-more' onClick={() => Taro.switchTab({ url: '/pages/routes/index' })}>
+              Explore more <Text className='section-more-arrow'>→</Text>
+            </Text>
           </View>
 
-          <ScrollView className='trip-scroll' scrollX showScrollbar={false}>
+          <View className='activity-grid'>
             {routes.map((route, index) => (
-              <View key={route.id} className={`trip-card ${index === 0 ? 'trip-card-first' : ''}`} onClick={() => goToRouteDetail(route)}>
-                <Image className='trip-image' src={route.cover_image} mode='aspectFill' lazyLoad />
-                <View className='trip-tag'>{route.type}</View>
-                <View className='trip-overlay'>
-                  <Text className='trip-name'>{route.name}</Text>
-                  {route.subtitle ? <Text className='trip-subtitle'>{route.subtitle}</Text> : null}
+              <View
+                key={route.id}
+                className={`activity-card ${index % 2 === 1 ? 'activity-card-offset' : ''}`}
+                onClick={() => goToRouteDetail(route)}
+              >
+                <Image className='activity-image' src={route.cover_image} mode='aspectFill' lazyLoad />
+                <View className='activity-gradient' />
+                <View className='activity-info'>
+                  <Text className='activity-location'>{route.location || route.type}</Text>
+                  <Text className='activity-name'>{route.name}</Text>
                 </View>
               </View>
             ))}
-          </ScrollView>
+          </View>
         </View>
 
         {/* 4. 狗狗领养（公益）- 情感轮播 */}
