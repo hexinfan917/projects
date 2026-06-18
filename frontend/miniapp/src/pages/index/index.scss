@@ -84,7 +84,7 @@
 // 1. 沉浸式 Hero 轮播
 .hero-section {
   position: relative;
-  height: 78vh;
+  height: 82vh;
   width: 100%;
   overflow: hidden;
 }
@@ -133,7 +133,7 @@
 
 .hero-content {
   position: absolute;
-  bottom: 180rpx;
+  bottom: 100rpx;
   left: 40rpx;
   right: 40rpx;
   color: #fff;
@@ -172,7 +172,7 @@
 .quick-modules-wrap {
   position: relative;
   z-index: 10;
-  margin-top: -160rpx;
+  margin-top: -48rpx;
   margin-bottom: 48rpx;
   padding: 0 40rpx;
 }
