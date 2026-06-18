@@ -295,21 +295,31 @@
   font-size: 28rpx;
 }
 
-// 3. 热门活动
-.activity-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 24rpx;
-  padding: 0 40rpx;
-  align-items: start;
+// 3. 热门活动 - 横向滚动卡片
+.trip-scroll {
+  white-space: nowrap;
+  padding: 0 24rpx;
 }
 
-.activity-card {
+.trip-card {
+  display: inline-block;
   position: relative;
-  border-radius: 32rpx;
+  width: 560rpx;
+  height: 380rpx;
+  border-radius: 24rpx;
   overflow: hidden;
-  box-shadow: 0 12rpx 32rpx rgba(0, 0, 0, 0.08);
-  transform: translateZ(0);
+  margin-right: 20rpx;
+  vertical-align: top;
+  box-shadow: 0 8rpx 32rpx rgba(44, 47, 46, 0.08);
+  background: #fff;
+
+  &.trip-card-first {
+    width: 702rpx;
+  }
+
+  &:last-child {
+    margin-right: 24rpx;
+  }
 
   &:active {
     transform: scale(0.98);
@@ -317,50 +327,46 @@
 
   transition: transform 0.2s ease;
 
-  &.activity-card-offset {
-    margin-top: 64rpx;
+  .trip-image {
+    width: 100%;
+    height: 260rpx;
+    display: block;
   }
-}
 
-.activity-image {
-  width: 100%;
-  aspect-ratio: 3 / 4;
-  display: block;
-}
+  .trip-tag {
+    position: absolute;
+    top: 16rpx;
+    left: 16rpx;
+    background: #fdc003;
+    color: #3d2b00;
+    font-size: 20rpx;
+    font-weight: 700;
+    padding: 8rpx 16rpx;
+    border-radius: 24rpx;
+    z-index: 2;
+  }
 
-.activity-gradient {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.6), transparent 60%);
-  pointer-events: none;
-}
+  .trip-overlay {
+    padding: 20rpx 24rpx;
+    background: #fff;
 
-.activity-info {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  padding: 24rpx;
-  color: #fff;
-}
+    .trip-name {
+      display: block;
+      font-size: 30rpx;
+      font-weight: 700;
+      color: #2c2f2e;
+      margin-bottom: 8rpx;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
 
-.activity-location {
-  display: block;
-  font-size: 20rpx;
-  font-weight: 700;
-  text-transform: uppercase;
-  opacity: 0.85;
-  margin-bottom: 8rpx;
-}
-
-.activity-name {
-  display: block;
-  font-size: 28rpx;
-  font-weight: 700;
-  line-height: 1.3;
+    .trip-subtitle {
+      display: block;
+      font-size: 24rpx;
+      color: #747776;
+    }
+  }
 }
 
 // 4. 狗狗领养

@@ -290,34 +290,28 @@ export default function Index() {
           </View>
         </View>
 
-        {/* 3. 热门活动 - 错位双列 */}
+        {/* 3. 热门活动 - 横向滚动卡片 */}
         <View className='section-block activity-section'>
           <View className='section-header-row'>
             <View>
               <Text className='section-title-main'>热门活动</Text>
-              <View className='section-title-underline' />
+              <Text className='section-title-sub'>精选最受欢迎的宠物友好目的地</Text>
             </View>
-            <Text className='section-more' onClick={() => Taro.switchTab({ url: '/pages/routes/index' })}>
-              Explore more <Text className='section-more-arrow'>→</Text>
-            </Text>
+            <Text className='section-more' onClick={() => Taro.switchTab({ url: '/pages/routes/index' })}>更多 {'>'}</Text>
           </View>
 
-          <View className='activity-grid'>
+          <ScrollView className='trip-scroll' scrollX showScrollbar={false}>
             {routes.map((route, index) => (
-              <View
-                key={route.id}
-                className={`activity-card ${index % 2 === 1 ? 'activity-card-offset' : ''}`}
-                onClick={() => goToRouteDetail(route)}
-              >
-                <Image className='activity-image' src={route.cover_image} mode='aspectFill' lazyLoad />
-                <View className='activity-gradient' />
-                <View className='activity-info'>
-                  <Text className='activity-location'>{route.location || route.type}</Text>
-                  <Text className='activity-name'>{route.name}</Text>
+              <View key={route.id} className={`trip-card ${index === 0 ? 'trip-card-first' : ''}`} onClick={() => goToRouteDetail(route)}>
+                <Image className='trip-image' src={route.cover_image} mode='aspectFill' lazyLoad />
+                <View className='trip-tag'>{route.type}</View>
+                <View className='trip-overlay'>
+                  <Text className='trip-name'>{route.name}</Text>
+                  {route.subtitle ? <Text className='trip-subtitle'>{route.subtitle}</Text> : null}
                 </View>
               </View>
             ))}
-          </View>
+          </ScrollView>
         </View>
 
         {/* 4. 狗狗领养（公益）- 情感轮播 */}
