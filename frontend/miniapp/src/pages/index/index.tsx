@@ -269,11 +269,6 @@ export default function Index() {
               </SwiperItem>
             ))}
           </Swiper>
-          <View className='hero-scroll-indicator'>
-            <View className='hero-scroll-track'>
-              <View className='hero-scroll-thumb' />
-            </View>
-          </View>
         </View>
 
         {/* 2. 四大功能模块 - 玻璃态浮层 */}
