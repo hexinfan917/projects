@@ -273,7 +273,6 @@ export default function Index() {
 
         {/* 2. 四大功能模块 */}
         <View className='quick-modules-wrap'>
-          <View className='quick-modules-shadow' />
           <View className='quick-modules-card'>
             {QUICK_MODULES.map(module => (
               <View key={module.key} className='quick-module-item' onClick={() => handleQuickModule(module)}>
