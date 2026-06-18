@@ -22,7 +22,10 @@
 
   .top-app-bar-bg {
     position: absolute;
-    inset: 0;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
     background: rgba(252, 253, 252, 0.85);
     backdrop-filter: blur(12px);
     border-bottom: 1rpx solid rgba(195, 200, 193, 0.2);
@@ -100,7 +103,10 @@
 
 .hero-image {
   position: absolute;
-  inset: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   width: 100%;
   height: 100%;
   display: block;
@@ -112,7 +118,10 @@
 
 .hero-gradient {
   position: absolute;
-  inset: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   background: linear-gradient(to top, rgba(0, 0, 0, 0.75) 0%, rgba(0, 0, 0, 0.2) 40%, transparent 100%);
   pointer-events: none;
 }
@@ -321,7 +330,10 @@
 
 .activity-gradient {
   position: absolute;
-  inset: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   background: linear-gradient(to top, rgba(0, 0, 0, 0.6), transparent 60%);
   pointer-events: none;
 }
@@ -374,7 +386,10 @@
 
 .adoption-image {
   position: absolute;
-  inset: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   width: 100%;
   height: 100%;
   display: block;
@@ -382,7 +397,10 @@
 
 .adoption-gradient {
   position: absolute;
-  inset: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   background: linear-gradient(to top, rgba(0, 0, 0, 0.85) 0%, rgba(0, 0, 0, 0.2) 50%, transparent 100%);
   pointer-events: none;
 }
@@ -506,7 +524,10 @@
 
 .memory-overlay {
   position: absolute;
-  inset: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   background: rgba(0, 0, 0, 0.4);
   display: flex;
   align-items: center;
@@ -545,9 +566,9 @@
   .member-popup-mask {
     position: absolute;
     top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
     background: rgba(0, 0, 0, 0.6);
   }
 
