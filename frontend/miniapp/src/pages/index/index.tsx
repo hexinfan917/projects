@@ -275,6 +275,7 @@ export default function Index() {
         <View className='quick-modules-wrap'>
           <View className='quick-modules-shadow' />
           <View className='quick-modules-card'>
+            <View className='quick-modules-card-top-shade' />
             {QUICK_MODULES.map(module => (
               <View key={module.key} className='quick-module-item' onClick={() => handleQuickModule(module)}>
                 <View className='quick-module-icon'>

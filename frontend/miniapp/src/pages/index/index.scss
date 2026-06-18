@@ -178,14 +178,7 @@
 }
 
 .quick-modules-shadow {
-  position: absolute;
-  top: -40rpx;
-  left: 40rpx;
-  right: 40rpx;
-  height: 80rpx;
-  background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.35) 0%, rgba(0, 0, 0, 0.12) 45%, transparent 72%);
-  border-radius: 50%;
-  z-index: 1;
+  display: none;
 }
 
 .quick-modules-card {
@@ -194,12 +187,25 @@
   border-radius: 48rpx;
   padding: 36rpx 32rpx;
   box-shadow:
-    inset 0 20rpx 30rpx -16rpx rgba(0, 0, 0, 0.08),
+    0 -20rpx 50rpx 8rpx rgba(0, 0, 0, 0.35),
     0 16rpx 48rpx rgba(0, 0, 0, 0.08);
   display: flex;
   justify-content: space-between;
   align-items: center;
   z-index: 2;
+  overflow: visible;
+}
+
+.quick-modules-card-top-shade {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 56rpx;
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.32) 0%, rgba(0, 0, 0, 0.08) 65%, transparent 100%);
+  border-radius: 48rpx 48rpx 0 0;
+  z-index: 5;
+  pointer-events: none;
 }
 
 .quick-module-item {
@@ -301,7 +307,7 @@
   display: inline-block;
   position: relative;
   width: 560rpx;
-  height: 380rpx;
+  height: 480rpx;
   border-radius: 24rpx;
   overflow: hidden;
   margin-right: 20rpx;
@@ -324,8 +330,11 @@
   transition: transform 0.2s ease;
 
   .trip-image {
+    position: absolute;
+    top: 0;
+    left: 0;
     width: 100%;
-    height: 260rpx;
+    height: 100%;
     display: block;
   }
 
@@ -343,14 +352,24 @@
   }
 
   .trip-overlay {
-    padding: 20rpx 24rpx;
-    background: #fff;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 48rpx 24rpx 24rpx;
+    background: linear-gradient(
+      to top,
+      rgba(0, 0, 0, 0.75) 0%,
+      rgba(0, 0, 0, 0.35) 45%,
+      transparent 100%
+    );
+    z-index: 2;
 
     .trip-name {
       display: block;
-      font-size: 30rpx;
+      font-size: 32rpx;
       font-weight: 700;
-      color: #2c2f2e;
+      color: #fff;
       margin-bottom: 8rpx;
       white-space: nowrap;
       overflow: hidden;
@@ -360,7 +379,7 @@
     .trip-subtitle {
       display: block;
       font-size: 24rpx;
-      color: #747776;
+      color: rgba(255, 255, 255, 0.85);
     }
   }
 }
@@ -521,7 +540,6 @@
   width: 100%;
   height: 100%;
   display: block;
-  filter: grayscale(100%);
 }
 
 .memory-overlay {
@@ -530,7 +548,12 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.4);
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.55) 0%,
+    rgba(0, 0, 0, 0.15) 55%,
+    transparent 100%
+  );
   display: flex;
   align-items: center;
   justify-content: center;

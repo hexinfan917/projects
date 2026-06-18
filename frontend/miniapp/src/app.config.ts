@@ -51,6 +51,7 @@ export default defineAppConfig({
     navigationBarTextStyle: 'black'
   },
   tabBar: {
+    custom: true,
     color: '#9CA3AF',
     selectedColor: '#22C55E',
     backgroundColor: '#ffffff',
@@ -59,26 +60,26 @@ export default defineAppConfig({
       {
         pagePath: 'pages/index/index',
         text: '首页',
-        iconPath: 'assets/icons/tab-home.png',
-        selectedIconPath: 'assets/icons/tab-home-active.png'
+        iconPath: 'assets/icons/tab-home.svg',
+        selectedIconPath: 'assets/icons/tab-home.svg'
       },
       {
         pagePath: 'pages/routes/index',
         text: '活动',
-        iconPath: 'assets/icons/tab-route.png',
-        selectedIconPath: 'assets/icons/tab-route-active.png'
+        iconPath: 'assets/icons/tab-route.svg',
+        selectedIconPath: 'assets/icons/tab-route.svg'
       },
       {
         pagePath: 'pages/profile/pets/index',
         text: '档案',
-        iconPath: 'assets/icons/tab-pet.png',
-        selectedIconPath: 'assets/icons/tab-pet-active.png'
+        iconPath: 'assets/icons/tab-pet.svg',
+        selectedIconPath: 'assets/icons/tab-pet.svg'
       },
       {
         pagePath: 'pages/profile/index',
         text: '我的',
-        iconPath: 'assets/icons/tab-profile.png',
-        selectedIconPath: 'assets/icons/tab-profile-active.png'
+        iconPath: 'assets/icons/tab-profile.svg',
+        selectedIconPath: 'assets/icons/tab-profile.svg'
       }
     ]
   }
