@@ -53,6 +53,7 @@ class Order(Base):
     refund_reason: Mapped[Optional[str]] = mapped_column(String(500), nullable=True, comment="退款原因")
     refund_reject_reason: Mapped[Optional[str]] = mapped_column(String(500), nullable=True, comment="退款拒绝原因")
     refund_time: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True, comment="退款时间")
+    refunded_amount: Mapped[float] = mapped_column(DECIMAL(10, 2), default=0, comment="累计已退金额")
     
     # 行程选配
     addons: Mapped[Optional[list]] = mapped_column(JSON, comment="行程选配列表")

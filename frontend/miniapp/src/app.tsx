@@ -20,9 +20,10 @@ function App({ children }) {
     // 获取公开系统设置（版本号等）
     const systemInfo = Taro.getSystemInfoSync()
     const isDevtools = systemInfo.platform === 'devtools'
-    const baseUrl = process.env.NODE_ENV === 'development'
-      ? (isDevtools ? 'http://localhost:8000' : 'http://192.168.8.46:8000')
-      : 'https://tailtravel.cn'
+    // 开发工具固定走 localhost，避免 build 模式被 Taro 覆盖 NODE_ENV 后命中线上
+    const baseUrl = isDevtools
+      ? 'http://localhost:8000'
+      : (process.env.NODE_ENV === 'development' ? 'http://192.168.8.46:8000' : 'https://tailtravel.cn')
     Taro.request({
       url: `${baseUrl}/api/v1/settings/public`,
       method: 'GET',

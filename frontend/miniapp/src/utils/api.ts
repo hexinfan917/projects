@@ -6,9 +6,10 @@ const isDev = process.env.NODE_ENV === 'development'
 // 模拟器用 localhost，真机预览用局域网 IP
 const systemInfo = Taro.getSystemInfoSync()
 const isDevtools = systemInfo.platform === 'devtools'
-export const BASE_URL = isDev
-  ? (isDevtools ? 'http://localhost:8000' : 'http://192.168.8.46:8000')
-  : 'https://tailtravel.cn'
+// 优先按运行平台判断：开发工具固定走 localhost，避免 build 模式被 Taro 覆盖 NODE_ENV 后命中线上
+export const BASE_URL = isDevtools
+  ? 'http://localhost:8000'
+  : (isDev ? 'http://192.168.8.46:8000' : 'https://tailtravel.cn')
 // 图片使用生产域名（微信真机预览/体验版必须走已备案域名，内网IP会被拦截）
 // 注意：本地开发环境新上传的图片在生产服务器上不存在，真机预览时无法显示
 // 如需在真机上测试新图片，请手动将图片同步到生产服务器，或使用 ngrok 内网穿透
@@ -36,11 +37,27 @@ export async function deleteAccount() {
   return request('/api/v1/user/account', { method: 'DELETE' })
 }
 
+const ACTIVE_TAB_EVENT = 'activeTabChange'
+
 export function setActiveTab(index: number, expectedRoute: string) {
   const pages = Taro.getCurrentPages()
   const currentRoute = (pages[pages.length - 1]?.route || '').replace(/\.html$/, '')
   if (currentRoute === expectedRoute) {
     Taro.setStorageSync('active_tab_index', index)
+    // 通过事件中心强制同步，避免 setData 在自定义 TabBar 函数组件中不生效
+    eventCenter.trigger(ACTIVE_TAB_EVENT, index)
+    // 同步更新自定义 TabBar 高亮状态
+    try {
+      const page = Taro.getCurrentInstance().page as any
+      if (page && typeof page.getTabBar === 'function') {
+        const tabBar = page.getTabBar()
+        if (tabBar) {
+          tabBar.setData({ selected: index })
+        }
+      }
+    } catch (e) {
+      // ignore
+    }
   }
 }
 

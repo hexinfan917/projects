@@ -1,45 +1,25 @@
 import { useEffect, useState } from 'react'
 import Taro, { useDidShow } from '@tarojs/taro'
 import { View, Text, Image } from '@tarojs/components'
-const logoIcon = '/assets/toplogo.png'
-import { getUserProfile, setActiveTab, getMemberCenter, getUserCoupons, getMemberPlans, compressImageUrl } from '../../utils/api'
+import { getUserProfile, setActiveTab, compressImageUrl } from '../../utils/api'
 import './index.scss'
 
+const topLogo = '/assets/toplogo.png'
+
 const ICON_MAP: Record<string, string> = {
-  '会员中心': '/assets/icons/profile/vip.svg',
-  '优惠券': '/assets/icons/profile/coupon.svg',
-  '收藏夹': '/assets/icons/profile/favorite.png',
-  '浏览足迹': '/assets/icons/profile/footprint.svg',
-  '地址管理': '/assets/icons/profile/address.png',
-  '出行人管理': '/assets/icons/profile/traveler.svg',
-  '我的足迹': '/assets/icons/profile/footprint.svg',
-  '联系客服': '/assets/icons/profile/service.svg',
-  '关于我们': '/assets/icons/profile/about.svg',
-  '设置': '/assets/icons/profile/settings.svg',
-  '待支付': '/assets/icons/profile/pending.svg',
-  '待出行': '/assets/icons/profile/travel.svg',
-  '已完成': '/assets/icons/profile/completed.svg',
-  '待评价': '/assets/icons/profile/review.png',
-  '退款/售后': '/assets/icons/profile/refund.svg',
   '默认头像': '/assets/icons/profile/head.png',
+  '待支付': '/assets/icons/profile/pending.png',
+  '待出行': '/assets/icons/profile/travel.png',
+  '已完成': '/assets/icons/profile/completed.png',
+  '退款/售后': '/assets/icons/profile/refund.png',
+  '会员中心': '/assets/icons/profile/vip.png',
+  '优惠券': '/assets/icons/profile/coupon.png',
+  '出行人管理': '/assets/icons/profile/traveler.png',
+  '我的足迹': '/assets/icons/profile/footprint.png',
+  '联系客服': '/assets/icons/profile/service.png',
+  '关于我们': '/assets/icons/profile/about.png',
+  '设置': '/assets/icons/profile/settings.png',
 }
-
-const SERVICES = [
-  { label: '优惠券', path: '/pages/coupons/list/index' },
-  { label: '收藏夹', count: 12 },
-  { label: '浏览足迹' },
-  { label: '地址管理' },
-]
-
-const MORE = [
-  { label: '会员中心', path: '/pages/member/center/index' },
-  { label: '优惠券', path: '/pages/coupons/list/index' },
-  { label: '出行人管理', path: '/pages/profile/travelers/index' },
-  { label: '我的足迹', path: '/pages/profile/footprint/index' },
-  { label: '联系客服', action: 'service' },
-  { label: '关于我们', path: '/pages/profile/about/index' },
-  { label: '设置', path: '/pages/profile/settings/index' },
-]
 
 const ORDER_ENTRIES = [
   { label: '待支付', status: '10' },
@@ -48,90 +28,41 @@ const ORDER_ENTRIES = [
   { label: '退款/售后', action: 'refund' },
 ]
 
-const showDeveloping = () => {
-  Taro.showToast({ title: '功能开发中', icon: 'none' })
-}
+const MENU = [
+  { label: '会员中心', path: '/pages/member/center/index', needLogin: true },
+  { label: '优惠券', path: '/pages/coupons/list/index', needLogin: true },
+  { label: '出行人管理', path: '/pages/profile/travelers/index', needLogin: true },
+  { label: '我的足迹', path: '/pages/profile/footprint/index', needLogin: true },
+  { label: '联系客服', action: 'service' },
+  { label: '关于我们', path: '/pages/profile/about/index' },
+  { label: '设置', path: '/pages/profile/settings/index' },
+]
 
 export default function Profile() {
   const [user, setUser] = useState<any>(null)
   const [serviceVisible, setServiceVisible] = useState(false)
-  const [memberInfo, setMemberInfo] = useState<any>(null)
-  const [couponCount, setCouponCount] = useState(0)
-  const [memberPlan, setMemberPlan] = useState<any>(null)
 
   const loadUser = () => {
     const token = Taro.getStorageSync('access_token')
-    console.log('[Profile] loadUser token=', token ? 'exists(' + token.substring(0, 10) + '...)' : 'missing')
     if (!token) {
       setUser(null)
       return
     }
-    getUserProfile().then(res => setUser(res.data)).catch((err) => {
-      console.error('[Profile] getUserProfile failed:', err)
+    getUserProfile().then(res => setUser(res.data)).catch(() => {
       const cache = Taro.getStorageSync('user_info')
       if (cache) setUser(cache)
     })
   }
 
-  const loadMemberInfo = async () => {
-    try {
-      const res = await getMemberCenter()
-      console.log('getMemberCenter response:', res)
-      // 兼容两种返回结构：{ code, data } 或 { is_member, member_info, ... }
-      const data = res.data || res
-      setMemberInfo(data)
-    } catch (e) {
-      console.error('loadMemberInfo failed:', e)
-    }
-  }
-
-  const loadCouponCount = async () => {
-    try {
-      const res = await getUserCoupons({ status: 1, page_size: 1 })
-      if (res.code === 200) {
-        setCouponCount(res.data?.total || 0)
-      }
-    } catch (e) {
-      // ignore
-    }
-  }
-
-  const loadMemberPlan = async () => {
-    try {
-      const res = await getMemberPlans()
-      if (res.code === 200 && res.data?.list?.length > 0) {
-        // 优先取年度会员(365天)，否则取第一个
-        const list = res.data.list
-        const annual = list.find((p: any) => p.duration_days === 365)
-        setMemberPlan(annual || list[0])
-      }
-    } catch (e) {
-      // ignore
-    }
-  }
-
   useDidShow(() => {
     setActiveTab(3, 'pages/profile/index')
     loadUser()
-    const token = Taro.getStorageSync('access_token')
-    if (token) {
-      loadMemberInfo()
-      loadCouponCount()
-      loadMemberPlan()
-    } else {
-      setMemberInfo(null)
-      setCouponCount(0)
-      setMemberPlan(null)
-    }
   })
 
   useEffect(() => {
     loadUser()
+    Taro.setBackgroundColor({ backgroundColor: '#ffffff' })
   }, [])
-
-  const goLogin = () => {
-    Taro.navigateTo({ url: '/pages/login/index' })
-  }
 
   const checkLogin = () => {
     const token = Taro.getStorageSync('access_token')
@@ -142,152 +73,67 @@ export default function Profile() {
     return true
   }
 
+  const goLogin = () => {
+    Taro.navigateTo({ url: '/pages/login/index' })
+  }
+
   const goOrders = (status?: string) => {
     if (!checkLogin()) return
     Taro.navigateTo({ url: `/pages/orders/list/index${status ? '?status=' + status : ''}` })
   }
 
-  const WECHAT_ID = 'Petway_'
-
-  const copyWechat = () => {
-    Taro.setClipboardData({ data: WECHAT_ID }).then(() => {
-      Taro.showToast({ title: '客服号已复制', icon: 'none' })
-      setServiceVisible(false)
-    }).catch(() => {
-      Taro.showModal({
-        title: '复制客服号',
-        content: `客服号：${WECHAT_ID}\n\n（模拟器复制功能受限，请手动复制）`,
-        showCancel: false,
-        confirmText: '知道了',
-        success: () => setServiceVisible(false)
-      })
-    })
-  }
-
-  const handleLogout = () => {
-    Taro.showModal({
-      title: '提示',
-      content: '确定要退出登录吗？',
-      success: (res) => {
-        if (res.confirm) {
-          Taro.removeStorageSync('access_token')
-          Taro.removeStorageSync('user_info')
-          setUser(null)
-          Taro.showToast({ title: '已退出登录', icon: 'none' })
-        }
-      }
-    })
+  const handleMenu = (item: typeof MENU[number]) => {
+    if (item.needLogin && !checkLogin()) return
+    if (item.path) {
+      Taro.navigateTo({ url: item.path })
+    } else if (item.action === 'service') {
+      setServiceVisible(true)
+    }
   }
 
   return (
     <View className={`profile-page ${serviceVisible ? 'no-scroll' : ''}`}>
-      <View className='custom-navbar'>
-        <View className='navbar-bg' />
-        <View className='navbar-content'>
-          <View className='navbar-left'>
-            <Image className='navbar-icon' src={logoIcon} mode='aspectFit' />
-            <Text className='navbar-title'>尾巴PetWay</Text>
-          </View>
+      <View className='profile-top-section'>
+        <View className='profile-navbar'>
+          <Image className='profile-navbar-logo' src={topLogo} mode='aspectFit' />
+          <Text className='profile-navbar-title'>尾巴PetWay</Text>
         </View>
-      </View>
-      <View className='user-header'>
-        <View className='user-top'>
-          {user?.avatar ? (
-            <Image className='avatar' src={compressImageUrl(user.avatar, 200)} mode='aspectFill' style={{ width: '120rpx', height: '120rpx' }} />
-          ) : (
-            <View className='avatar avatar-placeholder'>
-              <Image className='avatar-icon-img' src={ICON_MAP['默认头像']} mode='aspectFill' />
+
+        <View className='profile-header' onClick={user ? undefined : goLogin}>
+          <View className='profile-header-inner'>
+            <View className='profile-avatar-wrap'>
+              {user?.avatar ? (
+                <Image className='profile-avatar' src={compressImageUrl(user.avatar, 200)} mode='aspectFill' />
+              ) : (
+                <Image className='profile-avatar' src={ICON_MAP['默认头像']} mode='aspectFill' />
+              )}
             </View>
-          )}
-          <View className='user-info'>
-            {user ? (
-              <>
-                <Text className='nickname'>{user.nickname || '尾巴人'}</Text>
-              </>
-            ) : (
-              <View className='login-wrap' onClick={goLogin}>
-                <Text className='login-text'>点击登录/注册</Text>
-                <Text className='login-subtext'>解锁更多宠友精彩内容</Text>
+            <View className='profile-user-meta'>
+              <Text className='profile-nickname'>{user ? (user.nickname || '尾巴人') : '点击登录/注册'}</Text>
+              {!user && <Text className='profile-subtitle'>解锁更多宠友精彩内容</Text>}
+            </View>
+            {!user && (
+              <View className='profile-header-arrow'>
+                <Text className='profile-header-arrow-text'>›</Text>
               </View>
             )}
           </View>
-          {!user && (
-            <View className='login-arrow' onClick={goLogin}>
-              <Text className='login-arrow-text'>›</Text>
-            </View>
-          )}
         </View>
-        {user && (
-          <View className='user-actions'>
-            <View className='action-btn' onClick={() => Taro.navigateTo({ url: '/pages/profile/edit/index' })}>
-              <Text className='action-btn-text'>编辑资料</Text>
-            </View>
-          </View>
-        )}
       </View>
 
-      {/* 会员入口 */}
-      {user && (
-        <View 
-          className='vip-card'
-          onClick={() => Taro.navigateTo({ url: '/pages/member/center/index' })}
-        >
-          {memberInfo?.is_member || !!memberInfo?.member_info ? (
-            <View className='vip-member-card'>
-              <Text className='vip-member-badge'>生效中</Text>
-              <View className='vip-member-main'>
-                <View className='vip-member-left'>
-                  <Text className='vip-member-title'>尾巴PetWay会员</Text>
-                  <Text className='vip-member-time'>购买时间：{memberInfo.member_info?.start_date?.split('T')[0] || '-'}</Text>
-                </View>
-                <View className='vip-member-right'>
-                  <Text className='vip-member-icon'>VIP</Text>
-                </View>
-              </View>
-            </View>
-          ) : (
-            <>
-              {/* 上半部分 */}
-              <View className='vip-card-top'>
-                <View className='vip-title-wrap'>
-                  <Text className='vip-title'>VIP</Text>
-                  <Text className='vip-subtitle'>会员</Text>
-                </View>
-                <View className='vip-tags'>
-                  <Text className='vip-tag'>享专属优惠</Text>
-                  <Text className='vip-tag vip-tag-primary'>立即开通 ›</Text>
-                </View>
-              </View>
-              {/* 下半部分 */}
-              <View className='vip-card-bottom'>
-                <View className='vip-desc'>
-                  <Text className='vip-desc-price'>
-                    {memberPlan?.sale_price !== undefined
-                      ? `¥${memberPlan.sale_price}/${memberPlan?.duration_days === 365 ? '年' : memberPlan?.duration_days === 30 ? '月' : '季'}，开通${memberPlan?.name || '会员'}`
-                      : '¥39.9/年，开通年度会员'}
-                  </Text>
-                  {memberPlan?.original_price ? (
-                    <Text className='vip-desc-original'>¥{memberPlan.original_price}</Text>
-                  ) : null}
-                </View>
-              </View>
-            </>
-          )}
-        </View>
-      )}
-
-      <View className='card'>
-        <View className='card-header'>
-          <Text className='card-title'>我的订单</Text>
-          <View className='card-more' onClick={() => goOrders()}>
-            <Text className='card-more-text'>全部 {'>'}</Text>
+      <View className='profile-order-card'>
+        <View className='profile-card-header'>
+          <Text className='profile-card-title'>我的订单</Text>
+          <View className='profile-card-more' onClick={() => goOrders()}>
+            <Text className='profile-card-more-text'>全部</Text>
+            <Text className='profile-card-more-arrow'>›</Text>
           </View>
         </View>
-        <View className='order-entries'>
+        <View className='profile-order-entries'>
           {ORDER_ENTRIES.map(e => (
             <View
               key={e.label}
-              className='entry'
+              className='profile-order-entry'
               onClick={() => {
                 if (e.action === 'refund') {
                   if (!checkLogin()) return
@@ -297,35 +143,20 @@ export default function Profile() {
                 }
               }}
             >
-              <Image className='entry-icon-img' src={ICON_MAP[e.label]} mode='aspectFit' />
-              <Text className='entry-label'>{e.label}</Text>
+              <Image className='profile-order-icon' src={ICON_MAP[e.label]} mode='aspectFit' />
+              <Text className='profile-order-label'>{e.label}</Text>
             </View>
           ))}
         </View>
       </View>
 
-      <View className='card'>
-        <View className='more-list'>
-          {MORE.map(m => (
-            <View
-              key={m.label}
-              className='more-item'
-              onClick={() => {
-                if (m.path && (m.label === '出行人管理' || m.label === '我的足迹' || m.label === '会员中心' || m.label === '优惠券')) {
-                  if (!checkLogin()) return
-                  Taro.navigateTo({ url: m.path })
-                } else if (m.path) {
-                  Taro.navigateTo({ url: m.path })
-                } else if (m.action === 'service') {
-                  setServiceVisible(true)
-                } else {
-                  showDeveloping()
-                }
-              }}
-            >
-              <Image className='more-icon-img' src={ICON_MAP[m.label]} mode='aspectFit' />
-              <Text className='more-label'>{m.label}</Text>
-              <Text className='more-arrow'>{'>'}</Text>
+      <View className='profile-menu-section'>
+        <View className='profile-menu-card'>
+          {MENU.map(item => (
+            <View key={item.label} className='profile-menu-item' onClick={() => handleMenu(item)}>
+              <Image className='profile-menu-icon' src={ICON_MAP[item.label]} mode='aspectFit' />
+              <Text className='profile-menu-label'>{item.label}</Text>
+              <Text className='profile-menu-arrow'>›</Text>
             </View>
           ))}
         </View>
@@ -347,14 +178,6 @@ export default function Profile() {
             <View className='qr-modal-close' onClick={() => setServiceVisible(false)}>
               <Text>关闭</Text>
             </View>
-          </View>
-        </View>
-      )}
-
-      {user && (
-        <View className='logout-section'>
-          <View className='logout-btn' onClick={handleLogout}>
-            <Text className='logout-text'>退出登录</Text>
           </View>
         </View>
       )}
