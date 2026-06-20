@@ -1,122 +1,276 @@
+$primary: #1a7c2e;
+$primary-light: #e8f5e9;
+$orange: #ff8c42;
+$orange-light: #fff3e0;
+$red: #ff4d4f;
+$red-light: #ffebee;
+$gray: #999;
+$gray-light: #f5f5f5;
+$text: #333;
+$border: #eee;
+
 .order-list {
   height: 100vh;
-  padding-top: 140rpx;
   box-sizing: border-box;
-  background: #f5f5f5;
+  background: #f5f7f5;
   display: flex;
   flex-direction: column;
   overflow: hidden;
 }
 
-.tabs {
-  flex-shrink: 0;
-  display: flex;
+.top-section {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
   background: #fff;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.04);
+}
+
+.header-inner {
+  height: 96rpx;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   padding: 0 20rpx;
-  border-bottom: 1rpx solid #eee;
+  box-sizing: border-box;
+}
+
+.header-left,
+.header-right {
+  width: 64rpx;
+  height: 64rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.back-icon {
+  width: 40rpx;
+  height: 40rpx;
+}
+
+.header-title {
+  flex: 1;
+  text-align: center;
+  font-size: 34rpx;
+  font-weight: 600;
+  color: #111d23;
+}
+
+.tabs {
+  height: 96rpx;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  padding: 0 20rpx;
+  box-sizing: border-box;
 }
 
 .tab-item {
-  flex: 1;
-  text-align: center;
-  padding: 24rpx 0;
-  font-size: 28rpx;
-  color: #666;
+  flex-shrink: 0;
+  padding: 0 12rpx;
+  height: 96rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   position: relative;
 }
 
-.tab-item.active {
-  color: #22C55E;
-  font-weight: bold;
+.tab-text {
+  font-size: 28rpx;
+  color: #666;
+  font-weight: 500;
+}
+
+.tab-item.active .tab-text {
+  color: #333;
+  font-weight: 600;
 }
 
 .tab-item.active::after {
   content: '';
   position: absolute;
-  bottom: 0;
+  bottom: 16rpx;
   left: 50%;
   transform: translateX(-50%);
-  width: 48rpx;
+  width: 32rpx;
   height: 4rpx;
-  background: #22C55E;
+  background: $primary;
   border-radius: 2rpx;
 }
 
 .list-scroll {
   flex: 1;
-  padding: 20rpx;
-  overflow-y: auto;
+  width: 100%;
+  min-height: 0;
+  box-sizing: border-box;
+}
+
+.list-content {
+  padding: 24rpx;
 }
 
 .order-card {
   background: #fff;
-  border-radius: 16rpx;
-  padding: 24rpx;
-  margin-bottom: 20rpx;
+  border-radius: 24rpx;
+  padding: 28rpx;
+  margin-bottom: 24rpx;
+  box-shadow: 0 4rpx 20rpx rgba(26, 124, 46, 0.04);
 }
 
 .order-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16rpx;
+  margin-bottom: 20rpx;
 }
 
 .order-no-wrap {
   display: flex;
   align-items: center;
+  flex: 1;
+  overflow: hidden;
+}
+
+.order-icon {
+  width: 32rpx;
+  height: 32rpx;
+  margin-right: 12rpx;
+  flex-shrink: 0;
 }
 
 .order-no {
   font-size: 24rpx;
-  color: #999;
+  color: $gray;
+  margin-right: 12rpx;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .copy-icon {
   font-size: 22rpx;
-  margin-left: 8rpx;
-  color: #22C55E;
+  color: #999;
+  border: 2rpx solid #ddd;
+  font-weight: 500;
+  border-radius: 8rpx;
+  padding: 2rpx 8rpx;
+  flex-shrink: 0;
 }
 
 .order-status {
-  font-size: 26rpx;
-  color: #FF8C42;
+  font-size: 24rpx;
+  font-weight: 600;
+  padding: 6rpx 16rpx;
+  border-radius: 20rpx;
+  flex-shrink: 0;
+  margin-left: 16rpx;
+}
+
+.order-status.status-pay {
+  background: $orange-light;
+  color: #e65100;
+}
+
+.order-status.status-trip {
+  background: $primary-light;
+  color: $primary;
+}
+
+.order-status.status-refund {
+  background: $red-light;
+  color: #c62828;
+}
+
+.order-status.status-disabled {
+  background: $gray-light;
+  color: #666;
 }
 
 .order-body {
-  margin-bottom: 16rpx;
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  margin-bottom: 24rpx;
+}
+
+.route-cover {
+  width: 180rpx;
+  height: 180rpx;
+  border-radius: 16rpx;
+  flex-shrink: 0;
+  background: #f5f5f5;
+}
+
+.route-cover-placeholder {
+  background: #f0f0f0;
+}
+
+.order-body-main {
+  flex: 1;
+  min-width: 0;
 }
 
 .route-name {
   display: block;
   font-size: 30rpx;
-  font-weight: bold;
-  color: #333;
-  margin-bottom: 8rpx;
+  font-weight: 600;
+  color: $text;
+  margin-bottom: 16rpx;
+  line-height: 1.4;
 }
 
-.order-info {
-  font-size: 26rpx;
-  color: #999;
-}
-
-.order-footer {
+.order-price-wrap {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 80rpx;
+  padding-left: 8rpx;
 }
 
 .order-price {
   font-size: 32rpx;
-  color: #FF4D4F;
-  font-weight: bold;
+  color: #333;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.order-info {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24rpx;
+}
+
+.info-item {
+  display: flex;
+  align-items: center;
+}
+
+.info-icon-svg {
+  width: 28rpx;
+  height: 28rpx;
+  margin-right: 8rpx;
+  flex-shrink: 0;
+}
+
+.info-text {
+  font-size: 26rpx;
+  color: #666;
+}
+
+.order-footer {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  border-top: 1rpx solid #f0f0f0;
+  padding-top: 24rpx;
 }
 
 .countdown-text {
-  display: block;
-  font-size: 28rpx;
-  color: #FF4D4F;
-  font-weight: bold;
+  font-size: 24rpx;
+  color: $red;
   margin-top: 8rpx;
 }
 
@@ -128,13 +282,17 @@
 
 .mini-btn {
   font-size: 24rpx;
-  padding: 8rpx 20rpx;
-  border-radius: 20rpx;
+  padding: 14rpx 28rpx;
+  border-radius: 30rpx;
+  text-align: center;
+  white-space: nowrap;
 }
 
 .mini-btn.primary {
-  background: #FF8C42;
+  background: $primary;
   color: #fff;
+  box-shadow: 0 4rpx 12rpx rgba(26, 124, 46, 0.25);
+  font-weight: 500;
 }
 
 .mini-btn.default {
@@ -146,8 +304,8 @@
 .empty-tip {
   display: block;
   text-align: center;
-  padding: 60rpx 0;
-  color: #999;
+  padding: 120rpx 0;
+  color: $gray;
   font-size: 28rpx;
 }
 
@@ -166,7 +324,7 @@
 
 .qr-modal-content {
   background: #fff;
-  border-radius: 20rpx;
+  border-radius: 24rpx;
   padding: 40rpx;
   width: 560rpx;
   display: flex;
@@ -175,23 +333,23 @@
 }
 
 .qr-modal-title {
-  font-size: 36rpx;
-  font-weight: bold;
-  color: #333;
+  font-size: 34rpx;
+  font-weight: 600;
+  color: $text;
   margin-bottom: 30rpx;
 }
 
 .qr-image {
   width: 400rpx;
   height: 400rpx;
-  border-radius: 12rpx;
+  border-radius: 16rpx;
 }
 
 .qr-modal-tip {
   font-size: 26rpx;
-  color: #999;
-  margin-top: 20rpx;
-  margin-bottom: 30rpx;
+  color: $gray;
+  margin-top: 24rpx;
+  margin-bottom: 32rpx;
 }
 
 .qr-modal-close {

@@ -204,7 +204,7 @@ export default function RouteDetail() {
   }
 
   const bannerImages = (route.gallery?.length > 0 ? route.gallery : [route.cover_image]).filter(Boolean)
-  const images = bannerImages.length > 0 ? bannerImages : ['https://via.placeholder.com/750x420']
+  const images = bannerImages.length > 0 ? bannerImages : ['/assets/images/placeholder-cover.png']
 
   return (
     <View className='route-detail' style={{ paddingTop: '140rpx' }}>

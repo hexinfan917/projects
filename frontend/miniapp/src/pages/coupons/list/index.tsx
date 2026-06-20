@@ -80,34 +80,56 @@ export default function CouponList() {
             }}
           >
             <View className='coupon-left'>
-              <Text className='coupon-value'>
-                {item.type === 4 ? '礼品' : (item.type === 2 ? `${item.value}折` : `¥${item.value}`)}
-              </Text>
-              <Text className='coupon-type'>{TYPE_TEXT[item.type] || '优惠券'}</Text>
+              {item.type === 4 ? (
+                <>
+                  <Text className='coupon-gift-icon'>🎁</Text>
+                  <Text className='coupon-type'>{TYPE_TEXT[item.type] || '优惠券'}</Text>
+                </>
+              ) : (
+                <>
+                  <View className='coupon-value-row'>
+                    {item.type !== 2 && <Text className='coupon-value-unit'>¥</Text>}
+                    <Text className='coupon-value'>{item.type === 2 ? `${item.value}` : item.value}</Text>
+                    {item.type === 2 && <Text className='coupon-value-unit'>折</Text>}
+                  </View>
+                  <Text className='coupon-type'>{TYPE_TEXT[item.type] || '优惠券'}</Text>
+                </>
+              )}
+            </View>
+            <View className='coupon-divider'>
+              <View className='coupon-notch top' />
+              <View className='coupon-notch bottom' />
             </View>
             <View className='coupon-right'>
-              <Text className='coupon-name'>{item.name}</Text>
-              <Text className='coupon-desc'>
-                {item.type === 4
-                  ? (item.description || '点击查看详情')
-                  : (item.min_amount > 0 ? `满${item.min_amount}元可用` : '无门槛')
-                }
-              </Text>
-              {item.description && item.type !== 4 && (
-                <Text className='coupon-desc-detail'>{item.description}</Text>
-              )}
-              <Text className='coupon-valid'>有效期至 {formatDate(item.valid_end_time)}</Text>
-              {item.coupon_no && item.type !== 4 && (
-                <Text className='coupon-no'>券码: {item.coupon_no}</Text>
-              )}
-              {item.type === 4 && item.status === 1 && (
-                <View className='use-btn'>
-                  <Text className='use-btn-text'>去使用</Text>
+              <View className='coupon-info'>
+                <View className='coupon-name-row'>
+                  <Text className='coupon-name'>{item.name}</Text>
+                  {item.is_expired_soon && item.type !== 4 && (
+                    <Text className='expire-soon'>即将过期</Text>
+                  )}
                 </View>
-              )}
-              {item.is_expired_soon && item.type !== 4 && (
-                <Text className='expire-soon'>即将过期</Text>
-              )}
+                <Text className='coupon-desc'>
+                  {item.type === 4
+                    ? (item.description || '点击查看详情')
+                    : (item.min_amount > 0 ? `满${item.min_amount}元可用` : '无门槛')
+                  }
+                </Text>
+                {item.description && item.type !== 4 && (
+                  <Text className='coupon-desc-detail'>{item.description}</Text>
+                )}
+                <Text className='coupon-valid'>有效期至 {formatDate(item.valid_end_time)}</Text>
+                {item.coupon_no && item.type !== 4 && (
+                  <Text className='coupon-no'>券码: {item.coupon_no}</Text>
+                )}
+              </View>
+              <View className='coupon-right-bottom'>
+                {item.type !== 4 && <Text className='coupon-tag'>不可退</Text>}
+                {item.status === 1 && (
+                  <View className='use-btn'>
+                    <Text className='use-btn-text'>去使用</Text>
+                  </View>
+                )}
+              </View>
             </View>
           </View>
         ))}

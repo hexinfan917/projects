@@ -45,7 +45,7 @@ const PACKAGE_OPTIONS = [
 /* ---------- 酒店房型详情弹窗 ---------- */
 function HotelRoomModal({ room, visible, onClose }: any) {
   if (!visible || !room) return null
-  const images = room.images?.length > 0 ? room.images.map((url: string) => compressImageUrl(url, 750)) : ['https://via.placeholder.com/750x420']
+  const images = room.images?.length > 0 ? room.images.map((url: string) => compressImageUrl(url, 750)) : ['/assets/images/placeholder-cover.png']
   return (
     <View className='room-modal-confirm' onClick={onClose}>
       <View className='room-modal-mask-confirm' />
@@ -801,7 +801,7 @@ export default function OrderConfirm() {
       <View className='main-content'>
         {/* Hero 活动摘要 */}
         <View className='hero-section'>
-          <Image className='hero-image' src={compressImageUrl(route?.cover_image, 750) || 'https://via.placeholder.com/750x420'} mode='aspectFill' />
+          <Image className='hero-image' src={compressImageUrl(route?.cover_image, 750) || '/assets/images/placeholder-cover.png'} mode='aspectFill' />
           <View className='hero-overlay'>
             <View className='hero-tags'>
               <Text className='hero-tag'>{route?.duration || '1天'}游</Text>
@@ -879,7 +879,7 @@ export default function OrderConfirm() {
           selectedPets.map(pet => (
             <View key={pet.id} className='info-card'>
               <View className='pet-avatar-wrap'>
-                <Image className='pet-avatar' src={compressImageUrl(pet.avatar, 200) || 'https://via.placeholder.com/120'} mode='aspectFill' />
+                <Image className='pet-avatar' src={compressImageUrl(pet.avatar, 200) || '/assets/images/placeholder-avatar.png'} mode='aspectFill' />
                 <View className='info-left'>
                   <View className='info-name-row'>
                     <Text className='info-name'>{pet.name}</Text>
@@ -953,10 +953,10 @@ export default function OrderConfirm() {
           {selectedPetIds.length > 0 && <View className='insurance-check'>✓</View>}
           <View className='insurance-left'>
             <View className='insurance-name-row'>
-              <Text className='insurance-name'>宠物意外险</Text>
-              <Text className='insurance-price'>+¥{petInsuranceUnit}/狗</Text>
+              <Text className='insurance-name'>{route?.pet_insurance_title || '宠物意外险'}</Text>
+              <Text className='insurance-price'>+¥{petInsuranceUnit}/{route?.pet_insurance_unit || '狗'}</Text>
             </View>
-            <Text className='insurance-desc'>保障宠物活动中突发意外医疗费用，最高保额¥5000</Text>
+            <Text className='insurance-desc'>{route?.pet_insurance_desc || '保障宠物活动中突发意外医疗费用，最高保额¥5000'}</Text>
           </View>
           <Text className='insurance-total'>¥{petInsuranceTotal}</Text>
         </View>
@@ -965,10 +965,10 @@ export default function OrderConfirm() {
           {selectedTravelers.length > 0 && <View className='insurance-check'>✓</View>}
           <View className='insurance-left'>
             <View className='insurance-name-row'>
-              <Text className='insurance-name'>人身意外险</Text>
-              <Text className='insurance-price'>+¥{personInsuranceUnit}/人</Text>
+              <Text className='insurance-name'>{route?.person_insurance_title || '人身意外险'}</Text>
+              <Text className='insurance-price'>+¥{personInsuranceUnit}/{route?.person_insurance_unit || '人'}</Text>
             </View>
-            <Text className='insurance-desc'>保障出行人意外伤害及医疗，最高保额¥200,000</Text>
+            <Text className='insurance-desc'>{route?.person_insurance_desc || '保障出行人意外伤害及医疗，最高保额¥200,000'}</Text>
           </View>
           <Text className='insurance-total'>¥{personInsuranceTotal}</Text>
         </View>

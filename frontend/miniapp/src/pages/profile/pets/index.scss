@@ -2,74 +2,274 @@
 
 .pets-page {
   min-height: 100vh;
-  background: #f5f5f5;
-  padding: 240rpx 20rpx 20rpx;
+  background: #f4faff;
+  padding-bottom: 160rpx;
   box-sizing: border-box;
 }
 
+/* 顶部导航栏 */
+.pets-navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  background: #f4faff;
+  box-sizing: border-box;
+  padding-left: 32rpx;
+  padding-right: 32rpx;
+}
 
-.pet-card {
+.navbar-inner {
+  height: 100%;
   display: flex;
   align-items: center;
+  justify-content: space-between;
+}
+
+.navbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+}
+
+.brand-logo {
+  width: 72rpx;
+  height: 72rpx;
+}
+
+.brand-text {
+  font-size: 30rpx;
+  font-weight: 700;
+  color: #006b1b;
+  letter-spacing: 1rpx;
+}
+
+/* 页面标题 */
+.pets-header-section {
+  padding: 32rpx 32rpx 24rpx;
+}
+
+.pets-page-title {
+  font-size: 48rpx;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin-bottom: 8rpx;
+  display: block;
+}
+
+.pets-page-subtitle {
+  font-size: 28rpx;
+  color: #666;
+  display: block;
+}
+
+/* 宠物列表 */
+.pets-list {
+  padding: 0 32rpx;
+}
+
+/* 卡片容器（右滑删除） */
+.pet-card {
+  position: relative;
   background: #fff;
-  border-radius: 16rpx;
-  padding: 24rpx;
-  margin-bottom: 20rpx;
+  border-radius: 24rpx;
+  border: 2rpx solid #e3e8ec;
+  margin-bottom: 24rpx;
+  overflow: hidden;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.04);
+}
+
+/* 可滑动内容区 */
+.pet-card-content {
+  display: flex;
+  padding: 28rpx;
+  gap: 24rpx;
+  position: relative;
+  z-index: 2;
+  background: #fff;
+  transition: transform 0.25s ease;
+}
+
+.pet-card.swiped .pet-card-content {
+  transform: translateX(-140rpx);
+  border-radius: 24rpx 0 0 24rpx;
+}
+
+/* 删除按钮（右侧隐藏） */
+.pet-delete-btn {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 140rpx;
+  background: #e53935;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0 24rpx 24rpx 0;
+}
+
+.pet-delete-text {
+  font-size: 30rpx;
+  color: #fff;
+  font-weight: 500;
+}
+
+/* 头像区域 */
+.pet-avatar-section {
+  position: relative;
+  flex-shrink: 0;
 }
 
 .pet-avatar {
-  width: 120rpx;
-  height: 120rpx;
-  border-radius: 50%;
-  margin-right: 24rpx;
+  width: 160rpx;
+  height: 160rpx;
+  border-radius: 24rpx;
+  object-fit: cover;
+  border: 2rpx solid #e3e8ec;
 }
 
-.pet-info {
+.pet-gender-badge {
+  position: absolute;
+  right: -6rpx;
+  bottom: -6rpx;
+  width: 40rpx;
+  height: 40rpx;
+  border-radius: 50%;
+  background: #0d631b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 4rpx solid #fff;
+}
+
+.gender-icon {
+  width: 22rpx;
+  height: 22rpx;
+}
+
+/* 信息区域 */
+.pet-info-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.pet-info-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
   flex: 1;
 }
 
-.pet-header {
-  display: flex;
-  align-items: center;
-  gap: 12rpx;
-  margin-bottom: 10rpx;
+.pet-name-wrap {
+  flex: 1;
+  min-width: 0;
 }
 
 .pet-name {
-  font-size: 32rpx;
-  font-weight: bold;
-  color: #333;
-}
-
-.default-tag {
-  background: #22C55E;
-  color: #fff;
-  font-size: 20rpx;
-  padding: 4rpx 12rpx;
-  border-radius: 12rpx;
-}
-
-.pet-meta {
+  font-size: 40rpx;
+  font-weight: 500;
+  color: #1a1a1a;
+  line-height: 1.2;
+  margin-bottom: 12rpx;
   display: block;
-  font-size: 26rpx;
-  color: #666;
 }
 
-.pet-actions {
+.pet-tags {
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
   gap: 12rpx;
 }
 
-.action-text {
+.pet-tag {
+  font-size: 24rpx;
+  color: #666;
+  background: #f0f4f1;
+  padding: 6rpx 16rpx;
+  border-radius: 12rpx;
+  line-height: 1.4;
+}
+
+.pet-tag.default {
+  background: #0d631b;
+  color: #fff;
+}
+
+/* 编辑按钮 */
+.pet-edit-btn {
+  padding-left: 16rpx;
+  flex-shrink: 0;
+  align-self: center;
+  margin-top: -4rpx;
+}
+
+.edit-icon {
+  width: 44rpx;
+  height: 44rpx;
+}
+
+/* 疫苗信息 */
+.pet-vaccine-row {
+  margin-top: 20rpx;
+  padding-top: 20rpx;
+  border-top: 2rpx dashed #d0d7de;
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.vaccine-icon {
+  font-size: 28rpx;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.vaccine-text {
   font-size: 26rpx;
-  color: #22C55E;
+  color: #666;
+  line-height: 1.4;
 }
 
-.action-text.delete {
-  color: #FF4D4F;
+.vaccine-date {
+  color: #1a1a1a;
+  font-weight: 600;
 }
 
+/* 底部按钮 */
+.pets-footer {
+  padding: 32rpx 32rpx 0;
+}
+
+.add-pet-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12rpx;
+  width: 100%;
+  height: 96rpx;
+  background: #0d631b;
+  color: #fff;
+  font-size: 32rpx;
+  font-weight: 600;
+  border-radius: 48rpx;
+}
+
+.add-pet-btn.empty-add {
+  margin: 0 auto;
+  max-width: 400rpx;
+}
+
+.add-btn-icon {
+  font-size: 36rpx;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* 空状态 */
 .empty-state {
   display: flex;
   flex-direction: column;
@@ -105,27 +305,4 @@
   text-align: center;
   line-height: 1.6;
   margin-bottom: 64rpx;
-}
-
-.pets-add-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12rpx;
-  margin: 40rpx 20rpx 0;
-  height: 100rpx;
-  line-height: 100rpx;
-  text-align: center;
-  background: #22C55E;
-  color: #fff;
-  font-size: 32rpx;
-  font-weight: 600;
-  border-radius: 50rpx;
-  width: 100%;
-  box-sizing: border-box;
-}
-
-.add-btn-icon {
-  font-size: 36rpx;
-  font-weight: 700;
 }

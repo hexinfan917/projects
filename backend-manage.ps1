@@ -9,20 +9,29 @@ param(
 )
 
 $ProjectRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
-$Ports = @(8000, 8001, 8002, 8003, 8004, 8005, 8006)
+$Services = @(
+    @{ Name = "API网关"; Port = 8081 }
+    @{ Name = "用户服务"; Port = 8001 }
+    @{ Name = "订单服务"; Port = 8003 }
+    @{ Name = "地图服务"; Port = 8004 }
+    @{ Name = "内容服务"; Port = 8005 }
+    @{ Name = "支付服务"; Port = 8006 }
+    @{ Name = "消息服务"; Port = 8007 }
+    @{ Name = "文件服务"; Port = 8008 }
+    @{ Name = "公益服务"; Port = 8009 }
+    @{ Name = "路线服务"; Port = 8033 }
+)
 
 function Get-ServiceStatus {
     Write-Host "检查服务状态..." -ForegroundColor Cyan
     Write-Host ""
     
-    $ServiceNames = @("API网关", "用户服务", "路线服务", "订单服务", "地图服务", "内容服务", "支付服务")
-    
-    for ($i = 0; $i -lt $Ports.Count; $i++) {
-        $Port = $Ports[$i]
-        $Name = $ServiceNames[$i]
+    foreach ($svc in $Services) {
+        $Port = $svc.Port
+        $Name = $svc.Name
         
         try {
-            $Response = Invoke-WebRequest -Uri "http://localhost:$Port/health" -TimeoutSec 2 -ErrorAction Stop
+            $Response = Invoke-WebRequest -Uri "http://127.0.0.1:$Port/health" -TimeoutSec 5 -ErrorAction Stop
             if ($Response.StatusCode -eq 200) {
                 Write-Host "✓ $Name (端口: $Port)" -ForegroundColor Green
             }

@@ -20,8 +20,11 @@ export default function Login() {
   const [avatarUrl, setAvatarUrl] = useState('')
   const [avatarFilePath, setAvatarFilePath] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [statusBarHeight, setStatusBarHeight] = useState(40)
 
   useEffect(() => {
+    const sys = Taro.getSystemInfoSync()
+    setStatusBarHeight((sys.statusBarHeight || 20) * 2)
     loadAgreements()
   }, [])
 
@@ -210,13 +213,13 @@ export default function Login() {
   // ------------------------
 
   return (
-    <View className='login-page' style={{ paddingTop: '140rpx' }}>
+    <View className='login-page' style={{ paddingTop: `${statusBarHeight + 140}rpx` }}>
 
         <View className='page-back' onClick={() => safeNavigateBack()}>
           <Image className='page-back-icon' src='/assets/icons/return.png' mode='aspectFit' />
         </View>
       {/* 顶部导航栏 */}
-      <View className='login-header-bar'>
+      <View className='login-header-bar' style={{ paddingTop: `${statusBarHeight}rpx`, height: `${statusBarHeight + 88}rpx` }}>
         <View className='header-spacer' />
         <Text className='header-title'>Welcome</Text>
         <View className='header-spacer' />
