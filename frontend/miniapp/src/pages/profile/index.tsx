@@ -73,6 +73,22 @@ export default function Profile() {
     return true
   }
 
+  const handleLogout = () => {
+    Taro.showModal({
+      title: '提示',
+      content: '确定要退出登录吗？',
+      success: (res) => {
+        if (res.confirm) {
+          Taro.removeStorageSync('access_token')
+          Taro.removeStorageSync('refresh_token')
+          Taro.removeStorageSync('user_info')
+          setUser(null)
+          Taro.showToast({ title: '已退出登录', icon: 'none' })
+        }
+      }
+    })
+  }
+
   const goLogin = () => {
     Taro.navigateTo({ url: '/pages/login/index' })
   }
@@ -93,7 +109,7 @@ export default function Profile() {
 
   return (
     <View className={`profile-page ${serviceVisible ? 'no-scroll' : ''}`}>
-      <View className='profile-top-section'>
+      <View className={`profile-top-section ${user ? '' : 'no-vip'}`}>
         <View className='profile-navbar'>
           <Image className='profile-navbar-logo' src={topLogo} mode='aspectFit' />
           <Text className='profile-navbar-title'>尾巴PetWay</Text>
@@ -109,7 +125,14 @@ export default function Profile() {
               )}
             </View>
             <View className='profile-user-meta'>
-              <Text className='profile-nickname'>{user ? (user.nickname || '尾巴人') : '点击登录/注册'}</Text>
+              <View className='profile-name-row'>
+                <Text className='profile-nickname'>{user ? (user.nickname || '尾巴人') : '点击登录/注册'}</Text>
+                {user && (
+                  <View className='profile-edit-btn' onClick={() => Taro.navigateTo({ url: '/pages/profile/edit/index' })}>
+                    <Text className='profile-edit-text'>编辑资料</Text>
+                  </View>
+                )}
+              </View>
               {!user && <Text className='profile-subtitle'>解锁更多宠友精彩内容</Text>}
             </View>
             {!user && (
@@ -119,9 +142,40 @@ export default function Profile() {
             )}
           </View>
         </View>
+
+        {/* VIP 会员卡片 */}
+        {user && (
+          <View className='profile-vip-card' onClick={() => Taro.navigateTo({ url: '/pages/member/center/index' })}>
+            <View className='profile-vip-header'>
+              <View className='profile-vip-title'>
+                <Text className='profile-vip-text'>VIP</Text>
+                <Text className='profile-vip-subtitle'>会员</Text>
+              </View>
+              <View className='profile-vip-actions'>
+                <View className='profile-vip-tag'>
+                  <Text className='profile-vip-tag-text'>享专属优惠</Text>
+                </View>
+                <View className='profile-vip-btn'>
+                  <Text className='profile-vip-btn-text'>立即开通</Text>
+                  <Text className='profile-vip-btn-arrow'>›</Text>
+                </View>
+              </View>
+            </View>
+            <View className='profile-vip-body'>
+              <View className='profile-vip-price-row'>
+                <Text className='profile-vip-price'>
+                  <Text className='profile-vip-price-currency'>¥</Text>9.9/年，开通年度会员
+                </Text>
+              </View>
+              <View className='profile-vip-original-row'>
+                <Text className='profile-vip-original'>¥99</Text>
+              </View>
+            </View>
+          </View>
+        )}
       </View>
 
-      <View className='profile-order-card'>
+      <View className={`profile-order-card ${user ? '' : 'no-vip'}`}>
         <View className='profile-card-header'>
           <Text className='profile-card-title'>我的订单</Text>
           <View className='profile-card-more' onClick={() => goOrders()}>
@@ -160,6 +214,11 @@ export default function Profile() {
             </View>
           ))}
         </View>
+        {user && (
+          <View className='profile-logout-card' onClick={handleLogout}>
+            <Text className='profile-logout-text'>退出登录</Text>
+          </View>
+        )}
       </View>
 
       {serviceVisible && (

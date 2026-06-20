@@ -1,82 +1,175 @@
 .traveler-edit {
   min-height: 100vh;
-  background: #f5f5f5;
-  padding-top: 20rpx;
+  background: #f5f7fa;
+  padding: 0 24rpx calc(40rpx + env(safe-area-inset-bottom));
+  box-sizing: border-box;
 }
 
-.form-section {
+/* 导航栏 */
+.traveler-edit-navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: calc(100rpx + env(safe-area-inset-top)) 24rpx 24rpx;
+  background: #f5f7fa;
+}
+
+.traveler-edit-navbar-back {
+  position: absolute;
+  left: 24rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64rpx;
+  height: 64rpx;
+}
+
+.traveler-edit-navbar-back-icon {
+  width: 40rpx;
+  height: 40rpx;
+}
+
+.traveler-edit-navbar-title {
+  font-size: 34rpx;
+  font-weight: 700;
+  color: #006b1b;
+}
+
+/* 表单卡片 */
+.traveler-edit-card {
   background: #fff;
-  padding: 0 30rpx;
+  border-radius: 24rpx;
+  padding: 32rpx 28rpx;
+  margin-top: 60rpx;
+  margin-bottom: 24rpx;
+}
+
+.traveler-edit-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 44rpx;
+  margin-bottom: 16rpx;
+}
+
+.traveler-edit-label {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.traveler-edit-fill-self-wrap {
+  padding: 8rpx 0;
+  flex-shrink: 0;
+}
+
+.traveler-edit-fill-self {
+  font-size: 26rpx;
+  color: #006b1b;
+  white-space: nowrap;
+}
+
+.traveler-edit-input {
+  width: 100%;
+  height: 88rpx;
+  background: #f3f4f6;
+  border-radius: 16rpx;
+  padding: 0 24rpx;
+  font-size: 28rpx;
+  color: #1f2937;
+  box-sizing: border-box;
+  margin-bottom: 28rpx;
+}
+
+.traveler-edit-input:last-of-type {
+  margin-bottom: 0;
+}
+
+.traveler-edit-placeholder {
+  color: #9ca3af;
+}
+
+.traveler-edit-checkbox-row {
+  display: flex;
+  align-items: center;
+  margin-top: 28rpx;
+  padding-top: 28rpx;
+  border-top: 1rpx solid #f0f0f0;
+}
+
+.traveler-edit-checkbox {
+  width: 40rpx;
+  height: 40rpx;
+  border: 2rpx solid #d1d5db;
+  border-radius: 8rpx;
+  margin-right: 16rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.traveler-edit-checkbox.checked {
+  border-color: #006b1b;
+  background: #006b1b;
+}
+
+.traveler-edit-check-icon {
+  font-size: 24rpx;
+  color: #fff;
+  font-weight: 700;
+}
+
+.traveler-edit-checkbox-label {
+  font-size: 28rpx;
+  color: #1f2937;
+}
+
+/* 提示 */
+.traveler-edit-tip {
+  display: flex;
+  align-items: flex-start;
   margin-bottom: 40rpx;
 }
 
-.input-row {
-  display: flex;
-  align-items: center;
-  padding: 24rpx 0;
-  border-bottom: 1rpx solid #eee;
-}
-
-.label {
-  width: 180rpx;
-  font-size: 28rpx;
-  color: #333;
-}
-
-.input {
-  flex: 1;
-  font-size: 28rpx;
-}
-
-.save-btn {
-  margin: 0 40rpx;
-  background: #22C55E;
-  color: #fff;
-  font-size: 32rpx;
-  border-radius: 44rpx;
-}
-
-.checkbox-row {
-  display: flex;
-  align-items: center;
-  padding: 24rpx 0;
-}
-
-.check-box {
+.traveler-edit-tip-icon {
   width: 36rpx;
   height: 36rpx;
-  border: 2rpx solid #ccc;
   border-radius: 50%;
-  margin-right: 16rpx;
-  position: relative;
-  &.checked {
-    border-color: #22C55E;
-    background: #22C55E;
-    &::after {
-      content: '';
-      position: absolute;
-      left: 10rpx;
-      top: 6rpx;
-      width: 8rpx;
-      height: 14rpx;
-      border: solid #fff;
-      border-width: 0 3rpx 3rpx 0;
-      transform: rotate(45deg);
-    }
-  }
-}
-
-.checkbox-label {
-  font-size: 28rpx;
-  color: #333;
-}
-
-.fill-self-btn {
+  background: #f59e0b;
+  color: #fff;
   font-size: 24rpx;
-  color: #22C55E;
-  padding: 8rpx 16rpx;
-  border: 1rpx solid #22C55E;
-  border-radius: 8rpx;
-  margin-left: 16rpx;
-  white-space: nowrap;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 12rpx;
+  flex-shrink: 0;
+}
+
+.traveler-edit-tip-text {
+  flex: 1;
+  font-size: 26rpx;
+  color: #b45309;
+  line-height: 1.5;
+}
+
+/* 保存按钮 */
+.traveler-edit-save-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 96rpx;
+  background: #006b1b;
+  border-radius: 48rpx;
+}
+
+.traveler-edit-save-text {
+  font-size: 32rpx;
+  color: #fff;
+  font-weight: 500;
 }

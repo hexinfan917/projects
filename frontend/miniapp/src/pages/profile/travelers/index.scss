@@ -1,13 +1,87 @@
 .travelers-page {
   min-height: 100vh;
-  background: #f5f5f5;
-  padding: 20rpx 20rpx 340rpx;
+  background: #f5f7fa;
+  padding: 0 24rpx calc(40rpx + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 导航栏 */
+.travelers-navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: calc(100rpx + env(safe-area-inset-top)) 24rpx 24rpx;
+  background: #f5f7fa;
+}
+
+.travelers-navbar-back {
+  position: absolute;
+  left: 24rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64rpx;
+  height: 64rpx;
+}
+
+.travelers-navbar-back-icon {
+  width: 40rpx;
+  height: 40rpx;
+}
+
+.travelers-navbar-title {
+  font-size: 34rpx;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+/* 空状态 */
+.travelers-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0 60rpx 200rpx;
+}
+
+.travelers-empty-logo {
+  width: 240rpx;
+  height: 240rpx;
+  margin-bottom: 32rpx;
+}
+
+.travelers-empty-title {
+  font-size: 36rpx;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 16rpx;
+}
+
+.travelers-empty-subtitle {
+  font-size: 28rpx;
+  color: #9ca3af;
+  text-align: center;
+  line-height: 1.6;
+}
+
+/* 列表 */
+.travelers-list {
+  flex: 1;
+  padding-bottom: 160rpx;
 }
 
 .traveler-card {
   background: #fff;
-  border-radius: 16rpx;
-  padding: 24rpx;
+  border-radius: 24rpx;
+  padding: 28rpx;
   margin-bottom: 20rpx;
 }
 
@@ -15,58 +89,79 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 10rpx;
+  margin-bottom: 12rpx;
+}
+
+.traveler-name-wrap {
+  display: flex;
+  align-items: center;
 }
 
 .traveler-name {
-  font-size: 30rpx;
-  font-weight: bold;
-  color: #333;
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.traveler-default-tag {
+  font-size: 22rpx;
+  color: #006b1b;
+  background: #f0fdf4;
+  padding: 4rpx 12rpx;
+  border-radius: 8rpx;
+  margin-left: 12rpx;
 }
 
 .traveler-phone {
   font-size: 26rpx;
-  color: #666;
+  color: #6b7280;
 }
 
 .traveler-idcard {
   display: block;
   font-size: 26rpx;
-  color: #999;
+  color: #9ca3af;
 }
 
 .traveler-actions {
   display: flex;
   justify-content: flex-end;
-  margin-top: 16rpx;
-  gap: 24rpx;
+  margin-top: 20rpx;
+  gap: 32rpx;
 }
 
 .action-text {
   font-size: 26rpx;
-  color: #22C55E;
+  color: #006b1b;
 }
 
 .action-text.delete {
   color: #EF4444;
 }
 
-.empty-tip {
-  display: block;
-  text-align: center;
-  padding: 60rpx 0;
-  color: #999;
-  font-size: 28rpx;
+/* 添加按钮 */
+.travelers-add-btn {
+  position: fixed;
+  left: 40rpx;
+  right: 40rpx;
+  bottom: calc(40rpx + env(safe-area-inset-bottom));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 96rpx;
+  background: #006b1b;
+  border-radius: 48rpx;
 }
 
-.travelers-add-btn {
-  display: block;
-  margin: 40rpx 20rpx 0;
-  height: 88rpx;
-  line-height: 88rpx;
-  text-align: center;
-  background: #22C55E;
+.travelers-add-icon {
+  font-size: 36rpx;
   color: #fff;
+  margin-right: 8rpx;
+  line-height: 1;
+}
+
+.travelers-add-text {
   font-size: 32rpx;
-  border-radius: 44rpx;
+  color: #fff;
+  font-weight: 500;
 }

@@ -44,6 +44,10 @@ export default function RouteEdit() {
   const [isFree, setIsFree] = useState(false);
   const [isMemberOnly, setIsMemberOnly] = useState(false);
   const [isInsuranceRequired, setIsInsuranceRequired] = useState(true);
+  const [newScheduleDate, setNewScheduleDate] = useState<dayjs.Dayjs | null>(null);
+  const [newStartTime, setNewStartTime] = useState<dayjs.Dayjs | null>(null);
+  const [newEndTime, setNewEndTime] = useState<dayjs.Dayjs | null>(null);
+  const [newStock, setNewStock] = useState<number>(12);
   const [routeTypes, setRouteTypes] = useState<{ id: number; name: string }[]>([
     { id: 1, name: '山野厨房' },
     { id: 2, name: '海边度假' },
@@ -320,31 +324,35 @@ export default function RouteEdit() {
   };
 
   // 添加排期
-  const addSchedule = async (values: any) => {
-    // 检查该日期是否已存在
-    const dateStr = values.schedule_date.format('YYYY-MM-DD');
+  const handleAddSchedule = async () => {
+    if (!newScheduleDate) {
+      message.error('请选择日期');
+      return;
+    }
+    const dateStr = newScheduleDate.format('YYYY-MM-DD');
     const existingSchedule = schedules.find(s => s.schedule_date === dateStr);
     if (existingSchedule) {
       message.error(`该日期(${dateStr})已存在排期，请勿重复添加`);
       return;
     }
-    
+
     try {
       const res = await request(`/api/v1/admin/routes/${id}/schedules`, {
         method: 'POST',
         data: {
           schedule_date: dateStr,
-          start_time: values.start_time?.format('HH:mm') || '09:00',
-          end_time: values.end_time?.format('HH:mm') || '17:00',
-          price: values.price,
-          self_drive_price: values.self_drive_price,
-          stock: values.stock,
+          start_time: newStartTime?.format('HH:mm') || '09:00',
+          end_time: newEndTime?.format('HH:mm') || '17:00',
+          stock: newStock,
           status: 1,
         },
       });
       if (res.code === 200) {
         message.success('排期添加成功');
-        // 立即刷新排期列表
+        setNewScheduleDate(null);
+        setNewStartTime(null);
+        setNewEndTime(null);
+        setNewStock(12);
         await fetchSchedules();
       } else if (res.code === 409) {
         message.error(res.message || '该日期已存在排期，请勿重复添加');
@@ -1045,28 +1053,35 @@ export default function RouteEdit() {
         {isEdit && (
           <Tabs.TabPane tab="营期管理" key="schedules">
             <Card title="排期列表">
-              <Form layout="inline" onFinish={addSchedule} style={{ marginBottom: 16 }}>
-                <Form.Item name="schedule_date" rules={[{ required: true }]}>
-                  <DatePicker 
-                    placeholder="选择日期" 
-                    disabledDate={(current) => current && current < dayjs().startOf('day')}
-                  />
-                </Form.Item>
-                <Form.Item name="start_time">
-                  <TimePicker placeholder="开始时间" format="HH:mm" />
-                </Form.Item>
-                <Form.Item name="end_time">
-                  <TimePicker placeholder="结束时间" format="HH:mm" />
-                </Form.Item>
-                <Form.Item name="stock" initialValue={12}>
-                  <InputNumber placeholder="库存" min={1} />
-                </Form.Item>
-                <Form.Item>
-                  <Button type="primary" htmlType="submit" icon={<PlusOutlined />}>
-                    添加排期
-                  </Button>
-                </Form.Item>
-              </Form>
+              <Space style={{ marginBottom: 16 }}>
+                <DatePicker
+                  placeholder="选择日期"
+                  value={newScheduleDate}
+                  onChange={setNewScheduleDate}
+                  disabledDate={(current) => current && current < dayjs().startOf('day')}
+                />
+                <TimePicker
+                  placeholder="开始时间"
+                  format="HH:mm"
+                  value={newStartTime}
+                  onChange={setNewStartTime}
+                />
+                <TimePicker
+                  placeholder="结束时间"
+                  format="HH:mm"
+                  value={newEndTime}
+                  onChange={setNewEndTime}
+                />
+                <InputNumber
+                  placeholder="库存"
+                  min={1}
+                  value={newStock}
+                  onChange={(val) => setNewStock(val || 1)}
+                />
+                <Button type="primary" icon={<PlusOutlined />} onClick={handleAddSchedule}>
+                  添加排期
+                </Button>
+              </Space>
               <Table
                 dataSource={schedules}
                 columns={scheduleColumns}

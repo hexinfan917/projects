@@ -1,8 +1,15 @@
 import { useState, useEffect } from 'react'
 import Taro from '@tarojs/taro'
-import { View, Text, Image, Button } from '@tarojs/components'
+import { View, Text, Image } from '@tarojs/components'
 import { deleteAccount, getAgreements, safeNavigateBack } from '../../../utils/api'
 import './index.scss'
+
+const ICONS: Record<string, string> = {
+  privacy: '/assets/icons/profile/privacy.svg',
+  agreement: '/assets/icons/profile/agreement.svg',
+  clear: '/assets/icons/profile/clear.svg',
+  logout: '/assets/icons/profile/logout.svg',
+}
 
 export default function Settings() {
   const [showDeleteModal, setShowDeleteModal] = useState(false)
@@ -66,9 +73,12 @@ export default function Settings() {
   }
 
   return (
-    <View className='settings-page' style={{ paddingTop: '140rpx' }}>
-      <View className='page-back' onClick={() => safeNavigateBack()}>
-        <Image className='page-back-icon' src='/assets/icons/return.png' mode='aspectFit' />
+    <View className='settings-page' style={{ paddingTop: 'calc(80rpx + env(safe-area-inset-top))' }}>
+      <View className='settings-navbar' style={{ paddingTop: 'calc(80rpx + env(safe-area-inset-top))' }}>
+        <View className='settings-navbar-back' onClick={() => safeNavigateBack()}>
+          <Image className='settings-navbar-back-icon' src='/assets/icons/return.png' mode='aspectFit' />
+        </View>
+        <Text className='settings-navbar-title'>设置</Text>
       </View>
 
       <View className='settings-group'>
@@ -79,6 +89,7 @@ export default function Settings() {
             if (id) goAgreementDetail(id)
             else Taro.showToast({ title: '暂无隐私协议', icon: 'none' })
           }}>
+            <Image className='settings-item-icon' src={ICONS.privacy} mode='aspectFit' />
             <Text className='settings-label'>隐私政策</Text>
             <Text className='settings-arrow'>{'>'}</Text>
           </View>
@@ -87,10 +98,12 @@ export default function Settings() {
             if (id) goAgreementDetail(id)
             else Taro.showToast({ title: '暂无用户协议', icon: 'none' })
           }}>
+            <Image className='settings-item-icon' src={ICONS.agreement} mode='aspectFit' />
             <Text className='settings-label'>用户协议</Text>
             <Text className='settings-arrow'>{'>'}</Text>
           </View>
           <View className='settings-item' onClick={handleClearCache}>
+            <Image className='settings-item-icon' src={ICONS.clear} mode='aspectFit' />
             <Text className='settings-label'>清除缓存</Text>
             <Text className='settings-arrow'>{'>'}</Text>
           </View>
@@ -98,18 +111,14 @@ export default function Settings() {
       </View>
 
       {isLoggedIn && (
-        <View className='settings-group'>
-          <View className='settings-list'>
-            <View className='settings-item' onClick={() => setShowDeleteModal(true)}>
-              <Text className='settings-label danger-text'>注销账号</Text>
-              <Text className='settings-arrow'>{'>'}</Text>
-            </View>
-          </View>
+        <View className='settings-logout-card' onClick={() => setShowDeleteModal(true)}>
+          <Image className='settings-logout-icon' src={ICONS.logout} mode='aspectFit' />
+          <Text className='settings-logout-text'>注销账号</Text>
         </View>
       )}
 
       <View className='version-section'>
-        <Text className='version-text'>Version {Taro.getStorageSync('app_version') || '1.0.0'}</Text>
+        <Text className='version-text'>VERSION {Taro.getStorageSync('app_version') || '1.0.0'}</Text>
       </View>
 
       {showDeleteModal && (
@@ -117,8 +126,12 @@ export default function Settings() {
           <View className='modal-content' onClick={(e) => e.stopPropagation()}>
             <Text className='modal-title'>注销账号</Text>
             <Text className='tip-text'>注销后账号无法恢复，确定继续吗？</Text>
-            <Button className='submit-btn' style={{ background: '#EF4444' }} onClick={handleDeleteAccount}>确认注销</Button>
-            <Button className='cancel-btn' onClick={() => setShowDeleteModal(false)}>取消</Button>
+            <View className='submit-btn' style={{ background: '#EF4444' }} onClick={handleDeleteAccount}>
+              <Text className='submit-btn-text'>确认注销</Text>
+            </View>
+            <View className='cancel-btn' onClick={() => setShowDeleteModal(false)}>
+              <Text className='cancel-btn-text'>取消</Text>
+            </View>
           </View>
         </View>
       )}

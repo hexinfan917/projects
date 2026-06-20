@@ -10,9 +10,8 @@ page {
 
 .profile-page {
   min-height: 100vh;
-  height: 100%;
   background: #fff;
-  padding-bottom: calc(160rpx + env(safe-area-inset-bottom));
+  padding-bottom: calc(300rpx + env(safe-area-inset-bottom));
   box-sizing: border-box;
 }
 
@@ -24,15 +23,19 @@ page {
 /* 上半部分绿色背景区域 */
 .profile-top-section {
   background: $bg-green;
-  padding-bottom: 150rpx;
+  padding-bottom: 0;
   position: relative;
+}
+
+.profile-top-section.no-vip {
+  padding-bottom: 96rpx;
 }
 
 /* 自定义导航栏 */
 .profile-navbar {
   display: flex;
   align-items: center;
-  padding: calc(64rpx + env(safe-area-inset-top)) 24rpx 28rpx;
+  padding: calc(64rpx + env(safe-area-inset-top)) 24rpx 40rpx;
   background: $bg-green;
 }
 
@@ -51,7 +54,7 @@ page {
 /* 顶部用户卡片 */
 .profile-header {
   background: $header-green;
-  margin: 0 24rpx 20rpx;
+  margin: 0 24rpx 12rpx;
   border-radius: 24rpx;
   padding: 40rpx 32rpx;
   position: relative;
@@ -88,6 +91,25 @@ page {
   justify-content: center;
 }
 
+.profile-name-row {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.profile-edit-btn {
+  margin-top: 14rpx;
+  padding: 8rpx 24rpx;
+  background: rgba(255, 255, 255, 0.25);
+  border-radius: 24rpx;
+}
+
+.profile-edit-text {
+  font-size: 24rpx;
+  color: #fff;
+  line-height: 1.4;
+}
+
 .profile-nickname {
   font-size: 38rpx;
   font-weight: 700;
@@ -115,16 +137,125 @@ page {
   line-height: 1;
 }
 
+/* VIP 会员卡片 */
+.profile-vip-card {
+  background: linear-gradient(135deg, #f5e6d0 0%, #f8ead6 100%);
+  border-radius: 24rpx;
+  margin: 0 16rpx;
+  padding: 56rpx 36rpx 48rpx;
+  position: relative;
+  z-index: 1;
+}
+
+.profile-vip-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 44rpx;
+}
+
+.profile-vip-title {
+  display: flex;
+  align-items: baseline;
+}
+
+.profile-vip-text {
+  font-size: 56rpx;
+  font-weight: 700;
+  font-style: italic;
+  color: #8b6914;
+  line-height: 1;
+  margin-right: 8rpx;
+}
+
+.profile-vip-subtitle {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #8b6914;
+  line-height: 1;
+}
+
+.profile-vip-actions {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.profile-vip-tag {
+  padding: 6rpx 16rpx;
+  background: rgba(139, 105, 20, 0.12);
+  border-radius: 20rpx;
+}
+
+.profile-vip-tag-text {
+  font-size: 22rpx;
+  color: #8b6914;
+  line-height: 1.4;
+}
+
+.profile-vip-btn {
+  display: flex;
+  align-items: center;
+  padding: 8rpx 20rpx;
+  background: #8b6914;
+  border-radius: 28rpx;
+}
+
+.profile-vip-btn-text {
+  font-size: 24rpx;
+  color: #fff;
+  line-height: 1.4;
+  font-weight: 500;
+}
+
+.profile-vip-btn-arrow {
+  font-size: 26rpx;
+  color: #fff;
+  margin-left: 4rpx;
+  line-height: 1;
+}
+
+.profile-vip-body {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.profile-vip-price-row {
+  margin-bottom: 8rpx;
+}
+
+.profile-vip-price {
+  font-size: 36rpx;
+  font-weight: 600;
+  color: #8b6914;
+}
+
+.profile-vip-price-currency {
+  font-size: 24rpx;
+  font-weight: 600;
+}
+
+.profile-vip-original {
+  font-size: 26rpx;
+  color: #a89b7e;
+  text-decoration: line-through;
+}
+
 /* 我的订单卡片 */
 .profile-order-card {
   background: #fff;
   border-radius: 24rpx;
-  margin: -130rpx 24rpx 24rpx;
+  margin: 0 24rpx 12rpx;
   padding: 36rpx 40rpx 44rpx;
   min-height: 260rpx;
   box-sizing: border-box;
   position: relative;
   z-index: 1;
+}
+
+.profile-order-card.no-vip {
+  margin-top: -96rpx;
 }
 
 .profile-card-header {
@@ -185,13 +316,28 @@ page {
 /* 下方白色区域菜单卡片 */
 .profile-menu-section {
   background: #fff;
-  padding: 0 24rpx calc(40rpx + env(safe-area-inset-bottom));
+  padding: 0 24rpx;
 }
 
 .profile-menu-card {
   background: #fff;
   border-radius: 24rpx;
-  padding: 8rpx 32rpx 16rpx;
+  padding: 0 32rpx 16rpx;
+}
+
+/* 退出登录 */
+.profile-logout-card {
+  background: #fff;
+  border-radius: 24rpx;
+  margin-top: 24rpx;
+  padding: 34rpx 0;
+  text-align: center;
+}
+
+.profile-logout-text {
+  font-size: 30rpx;
+  color: #c23531;
+  font-weight: 500;
 }
 
 .profile-menu-item {
