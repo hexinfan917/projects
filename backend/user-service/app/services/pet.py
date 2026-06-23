@@ -108,11 +108,6 @@ class PetService:
             **data
         )
         
-        # 如果是第一个宠物，设为默认
-        existing_pets = await self.get_user_pets(user_id, db)
-        if not existing_pets:
-            pet.is_default = 1
-        
         db.add(pet)
         await db.commit()
         await db.refresh(pet)

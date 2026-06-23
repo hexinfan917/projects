@@ -297,10 +297,14 @@ export default function OrderConfirm() {
       const res = await getPets()
       const list = res.data || []
       setPets(list)
-      // 若之前有选中但已被删除的 ID，自动清理；单人轻旅（无宠）不自动勾选宠物
+      // 从路由参数判断套餐类型，避免 useDidShow 执行时 bookingParams 尚未初始化导致误判
+      const params = Taro.getCurrentInstance().router?.params
+      const isSinglePerson = params?.packageType === 'single_person'
       setSelectedPetIds(prev => {
+        // 单人轻旅（无宠）套餐不携带任何宠物
+        if (isSinglePerson) return []
         const cleaned = prev.filter(id => list.some((p: any) => p.id === id))
-        if (cleaned.length === 0 && bookingParams?.packageType !== 'single_person') {
+        if (cleaned.length === 0) {
           const defaults = list.filter((p: any) => p.is_default).map((p: any) => p.id)
           if (defaults.length > 0) return defaults
         }
@@ -547,9 +551,9 @@ export default function OrderConfirm() {
         travel_date: schedule.schedule_date,
         contact: { name: contact.name, phone: contact.phone, id_card: contact.id_card },
         participants,
-        pets: selectedPets.map(p => ({ id: p.id, name: p.name, breed: p.breed, weight: p.weight, gender: p.gender })),
+        pets: isSinglePersonPackage ? [] : selectedPets.map(p => ({ id: p.id, name: p.name, breed: p.breed, weight: p.weight, gender: p.gender })),
         participant_count: selectedTravelers.length,
-        pet_count: selectedPetIds.length,
+        pet_count: isSinglePersonPackage ? 0 : selectedPetIds.length,
         route_price: routePrice,
         insurance_price: petInsuranceTotal + personInsuranceTotal,
         equipment_price: 0,
