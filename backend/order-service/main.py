@@ -1734,7 +1734,7 @@ async def admin_get_order_detail(
             "pay_transaction_id": o.pay_transaction_id,
             "created_at": o.created_at.isoformat() if o.created_at else None,
             "updated_at": o.updated_at.isoformat() if o.updated_at else None,
-            "refund_reject_reason": o.refund_reject_reason,
+            "travel_type": o.travel_type,
             "refund_records": [
                 {
                     "id": r.id,
