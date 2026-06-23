@@ -188,33 +188,38 @@ export default function OrderDetail() {
         </View>
 
         {/* 出行人与宠物 */}
-        {(order.contact?.name || (order.pets && order.pets.length > 0)) && (
+        {(order.participants?.length > 0 || (order.pets && order.pets.length > 0)) && (
           <View className='section'>
             <View className='section-header'>
               <Image className='section-icon' src='/assets/icons/icon-paw.svg' mode='aspectFit' />
               <Text className='section-title'>出行人与宠物</Text>
             </View>
             <View className='info-card'>
-              {order.contact?.name && (
-                <View className='contact-block'>
-                  <View className='contact-item'>
-                    <Text className='contact-item-label'>姓名</Text>
-                    <Text className='contact-item-value'>{order.contact.name}</Text>
+              {/* 出行人列表 */}
+              {order.participants && order.participants.map((participant: any, pidx: number) => {
+                const isLastParticipant = pidx === (order.participants?.length || 0) - 1
+                return (
+                  <View key={`participant-${pidx}`} className={isLastParticipant && !order.pets?.length ? 'contact-block' : 'contact-block contact-block-bordered'}>
+                    <View className='contact-item'>
+                      <Text className='contact-item-label'>姓名</Text>
+                      <Text className='contact-item-value'>{participant.name}</Text>
+                    </View>
+                    {participant.id_card && (
+                      <View className='contact-item'>
+                        <Text className='contact-item-label'>身份证号</Text>
+                        <Text className='contact-item-value'>{participant.id_card}</Text>
+                      </View>
+                    )}
+                    {participant.phone && (
+                      <View className='contact-item'>
+                        <Text className='contact-item-label'>手机号</Text>
+                        <Text className='contact-item-value'>{participant.phone}</Text>
+                      </View>
+                    )}
                   </View>
-                  {order.contact.id_card && (
-                    <View className='contact-item'>
-                      <Text className='contact-item-label'>身份证号</Text>
-                      <Text className='contact-item-value'>{order.contact.id_card}</Text>
-                    </View>
-                  )}
-                  {order.contact.phone && (
-                    <View className='contact-item'>
-                      <Text className='contact-item-label'>手机号</Text>
-                      <Text className='contact-item-value'>{order.contact.phone}</Text>
-                    </View>
-                  )}
-                </View>
-              )}
+                )
+              })}
+              {/* 宠物列表 */}
               {order.pets && order.pets.map((pet: any, idx: number) => {
                 const avatarUrl = fullImageUrl(pet.avatar)
                 const genderIcon = GENDER_MAP[pet.gender]
