@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react'
 import Taro, { useDidShow } from '@tarojs/taro'
 import { View, Text, Image, Swiper, SwiperItem, ScrollView } from '@tarojs/components'
-import { getRouteDetail, getRouteSchedules, getPets, getTravelers, createOrder, getRouteAddons, getAddonCategories, getAvailableCoupons, calculateCoupon, getAgreements, getMemberCenter, compressImageUrl, payOrder } from '../../../utils/api'
+import { getRouteDetail, getRouteSchedules, getPets, getTravelers, createOrder, getRouteAddons, getAddonCategories, getAvailableCoupons, calculateCoupon, getAgreements, getMemberCenter, compressImageUrl, payOrder, getUserProfile } from '../../../utils/api'
 import './index.scss'
 
 const GENDER_MAP: any = { 0: '母', 1: '公' }
@@ -144,6 +144,8 @@ export default function OrderConfirm() {
   const [showPriceDetail, setShowPriceDetail] = useState(false)
   const [agreements, setAgreements] = useState<any[]>([])
   const [agreed, setAgreed] = useState(false)
+  // 用户信息（账号主人，用于联系人）
+  const [userProfile, setUserProfile] = useState<any>(null)
 
   // 从弹窗传入的参数
   const [bookingParams, setBookingParams] = useState<any>(null)
@@ -153,6 +155,13 @@ export default function OrderConfirm() {
     const params = instance.router?.params
     const routeId = params?.routeId
     const scheduleId = params?.scheduleId
+
+    // 获取用户信息（用于联系人）
+    getUserProfile().then((res: any) => {
+      if (res.code === 200 && res.data) {
+        setUserProfile(res.data)
+      }
+    }).catch(() => {})
 
     // 解析弹窗传入的参数
     const bp: any = {
@@ -478,8 +487,17 @@ export default function OrderConfirm() {
       return
     }
     try {
-      const contact = selectedTravelers[0]
-      const participants = selectedTravelers.slice(1)
+      // 联系人使用账号主人（用户信息），出行人使用选中的所有出行人
+      const contact = userProfile ? {
+        name: userProfile.real_name || userProfile.nickname || '',
+        phone: userProfile.phone || '',
+        id_card: userProfile.id_card || ''
+      } : {
+        name: selectedTravelers[0]?.name || '',
+        phone: selectedTravelers[0]?.phone || '',
+        id_card: selectedTravelers[0]?.id_card || ''
+      }
+      const participants = selectedTravelers
       const selectedAddons = addons
         .filter((a: any) => {
           if (a.category === 'dog_ticket' && a.extra_config?.options?.length > 0) {
