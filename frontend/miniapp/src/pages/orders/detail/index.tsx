@@ -188,20 +188,42 @@ export default function OrderDetail() {
         </View>
 
         {/* 出行人与宠物 */}
-        {(order.participants?.length > 0 || (order.pets && order.pets.length > 0)) && (
+        {(order.participants?.length > 0 || order.contact?.name || (order.pets && order.pets.length > 0)) && (
           <View className='section'>
             <View className='section-header'>
               <Image className='section-icon' src='/assets/icons/icon-paw.svg' mode='aspectFit' />
               <Text className='section-title'>出行人与宠物</Text>
             </View>
             <View className='info-card'>
-              {/* 出行人列表 */}
+              {/* 联系人信息（账号主人，用于平台联系） */}
+              {order.contact?.name && (
+                <View className='contact-block contact-block-bordered'>
+                  <View className='contact-item'>
+                    <Text className='contact-item-label'>联系人</Text>
+                    <Text className='contact-item-value'>{order.contact.name}</Text>
+                  </View>
+                  {order.contact.id_card && (
+                    <View className='contact-item'>
+                      <Text className='contact-item-label'>身份证号</Text>
+                      <Text className='contact-item-value'>{order.contact.id_card}</Text>
+                    </View>
+                  )}
+                  {order.contact.phone && (
+                    <View className='contact-item'>
+                      <Text className='contact-item-label'>手机号</Text>
+                      <Text className='contact-item-value'>{order.contact.phone}</Text>
+                    </View>
+                  )}
+                </View>
+              )}
+              {/* 出行人列表（实际参加活动的人） */}
               {order.participants && order.participants.map((participant: any, pidx: number) => {
                 const isLastParticipant = pidx === (order.participants?.length || 0) - 1
+                const hasPets = order.pets && order.pets.length > 0
                 return (
-                  <View key={`participant-${pidx}`} className={isLastParticipant && !order.pets?.length ? 'contact-block' : 'contact-block contact-block-bordered'}>
+                  <View key={`participant-${pidx}`} className={isLastParticipant && !hasPets ? 'contact-block' : 'contact-block contact-block-bordered'}>
                     <View className='contact-item'>
-                      <Text className='contact-item-label'>姓名</Text>
+                      <Text className='contact-item-label'>出行人</Text>
                       <Text className='contact-item-value'>{participant.name}</Text>
                     </View>
                     {participant.id_card && (
