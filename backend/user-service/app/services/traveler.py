@@ -139,11 +139,6 @@ class TravelerService:
             **data
         )
         
-        # 如果是第一个出行人，设为默认
-        existing_travelers = await self.get_user_travelers(user_id, db)
-        if not existing_travelers:
-            traveler.is_default = 1
-        
         db.add(traveler)
         await db.commit()
         await db.refresh(traveler)
