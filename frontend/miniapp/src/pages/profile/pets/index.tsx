@@ -191,7 +191,14 @@ export default function Pets() {
               </View>
 
               {/* 右滑删除按钮 */}
-              <View className='pet-delete-btn' onClick={() => handleDelete(pet.id)}>
+              <View
+                className='pet-delete-btn'
+                onTouchStart={(e) => e.stopPropagation()}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handleDelete(pet.id)
+                }}
+              >
                 <Text className='pet-delete-text'>删除</Text>
               </View>
             </View>
