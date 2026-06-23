@@ -266,12 +266,12 @@ export default function OrderConfirm() {
       const res = await getTravelers()
       const list = res.data || []
       setTravelers(list)
-      // 若之前有选中但已被删除的 ID，自动清理
+      // 若之前有选中但已被删除的 ID，自动清理；无选中时只勾选一位默认出行人
       setSelectedTravelerIds(prev => {
         const cleaned = prev.filter(id => list.some((t: any) => t.id === id))
         if (cleaned.length === 0) {
           const defaults = list.filter((t: any) => t.is_default).map((t: any) => t.id)
-          if (defaults.length > 0) return defaults
+          if (defaults.length > 0) return defaults.slice(0, 1)
         }
         return cleaned
       })
@@ -297,10 +297,10 @@ export default function OrderConfirm() {
       const res = await getPets()
       const list = res.data || []
       setPets(list)
-      // 若之前有选中但已被删除的 ID，自动清理；无选中时自动勾选默认宠物
+      // 若之前有选中但已被删除的 ID，自动清理；单人轻旅（无宠）不自动勾选宠物
       setSelectedPetIds(prev => {
         const cleaned = prev.filter(id => list.some((p: any) => p.id === id))
-        if (cleaned.length === 0) {
+        if (cleaned.length === 0 && bookingParams?.packageType !== 'single_person') {
           const defaults = list.filter((p: any) => p.is_default).map((p: any) => p.id)
           if (defaults.length > 0) return defaults
         }
@@ -545,7 +545,7 @@ export default function OrderConfirm() {
         schedule_id: schedule.id,
         route_name: route.name,
         travel_date: schedule.schedule_date,
-        contact: { name: contact.name, phone: contact.phone },
+        contact: { name: contact.name, phone: contact.phone, id_card: contact.id_card },
         participants,
         pets: selectedPets.map(p => ({ id: p.id, name: p.name, breed: p.breed, weight: p.weight, gender: p.gender })),
         participant_count: selectedTravelers.length,
@@ -717,9 +717,9 @@ export default function OrderConfirm() {
   // 免费路线只需1人1宠，付费路线按原逻辑
   // 全员免费路线严格限制1人1宠，会员专享免费/付费路线只需有出行人和宠物
   const canSubmit = selectedTravelers.length > 0
-    && ((route?.is_free && !isMemberOnly)
+    && (isSinglePersonPackage || ((route?.is_free && !isMemberOnly)
       ? (selectedTravelers.length === 1 && selectedPetIds.length === 1)
-      : selectedPetIds.length > 0)
+      : selectedPetIds.length > 0))
     && (agreements.length === 0 || agreed)
 
   // 加载可用优惠券
