@@ -319,7 +319,7 @@ async def get_order_detail(
     
     # 组装联系人信息（补充身份证号）
     contact = o.contact or {}
-    if contact_id_card and isinstance(contact, dict):
+    if contact_id_card and isinstance(contact, dict) and not contact.get('id_card'):
         contact = {**contact, "id_card": contact_id_card}
     
     # 补全宠物档案信息（按 id 优先匹配，再按名字匹配）
@@ -1628,7 +1628,7 @@ async def admin_get_order_detail(
         
         # 组装联系人信息（补充身份证号）
         contact = o.contact or {}
-        if contact_id_card and isinstance(contact, dict):
+        if contact_id_card and isinstance(contact, dict) and not contact.get('id_card'):
             contact = {**contact, "id_card": contact_id_card}
         
         # 补全宠物档案信息
