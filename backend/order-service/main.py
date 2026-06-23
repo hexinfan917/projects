@@ -263,6 +263,7 @@ async def get_orders(
             "participant_count": o.participant_count,
             "pet_count": o.pet_count,
             "travel_type": o.travel_type,
+            "travel_type": o.travel_type,
             "participants": o.participants or [],
             "pets": o.pets or [],
             "contact": o.contact or {},
