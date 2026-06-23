@@ -336,24 +336,16 @@ export default function ScheduleManage() {
                 <ProFormDigit name="price" label="价格(1人1宠)" min={0} placeholder="路线默认价" />
               </Col>
               <Col span={8}>
-                <ProFormDigit name="one_person_two_pet_price" label="一人两宠" min={0} placeholder="路线默认价" />
-              </Col>
-              <Col span={8}>
-                <ProFormDigit name="two_person_one_pet_price" label="二人一宠" min={0} placeholder="路线默认价" />
-              </Col>
-            </Row>
-            <Row gutter={16}>
-              <Col span={8}>
                 <ProFormDigit name="single_person_price" label="单人轻旅（无宠）" min={0} placeholder="路线默认价" />
               </Col>
               <Col span={8}>
                 <ProFormDigit name="single_pet_price" label="毛孩专属接送（无主人陪同）" min={0} placeholder="路线默认价" />
               </Col>
+            </Row>
+            <Row gutter={16}>
               <Col span={8}>
                 <ProFormDigit name="extra_person_price" label="增加一人" min={0} placeholder="路线默认价" />
               </Col>
-            </Row>
-            <Row gutter={16}>
               <Col span={8}>
                 <ProFormDigit name="extra_pet_price" label="增加一宠" min={0} placeholder="路线默认价" />
               </Col>
@@ -365,21 +357,15 @@ export default function ScheduleManage() {
                 <ProFormDigit name="self_drive_price" label="自驾价格(1人1宠)" min={0} placeholder="路线默认价" />
               </Col>
               <Col span={8}>
-                <ProFormDigit name="self_drive_one_person_two_pet_price" label="一人两宠" min={0} placeholder="路线默认价" />
+                <ProFormDigit name="self_drive_single_person_price" label="单人轻旅（无宠）" min={0} placeholder="路线默认价" />
               </Col>
               <Col span={8}>
-                <ProFormDigit name="self_drive_two_person_one_pet_price" label="二人一宠" min={0} placeholder="路线默认价" />
+                <ProFormDigit name="self_drive_extra_pet_price" label="增加一宠" min={0} placeholder="路线默认价" />
               </Col>
             </Row>
             <Row gutter={16}>
               <Col span={8}>
-                <ProFormDigit name="self_drive_single_person_price" label="单人轻旅（无宠）" min={0} placeholder="路线默认价" />
-              </Col>
-              <Col span={8}>
                 <ProFormDigit name="self_drive_extra_person_price" label="增加一人" min={0} placeholder="路线默认价" />
-              </Col>
-              <Col span={8}>
-                <ProFormDigit name="self_drive_extra_pet_price" label="增加一宠" min={0} placeholder="路线默认价" />
               </Col>
             </Row>
           </Tabs.TabPane>

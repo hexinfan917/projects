@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import Taro, { useDidShow, useShareAppMessage, useShareTimeline } from '@tarojs/taro'
-import { setActiveTab, getRoutes, getCharityActivities, getReviews, getBanners, getMemberPopup, logPopupAction, getMemberCenter, IMAGE_BASE_URL } from '../../utils/api'
+import { setActiveTab, getRoutes, getCharityActivities, getReviews, getBanners, getMemberPopup, logPopupAction, getMemberCenter, getAdoptionDogs, IMAGE_BASE_URL } from '../../utils/api'
 import { View, Text, Swiper, SwiperItem, Image, ScrollView, Input } from '@tarojs/components'
 const logoIcon = '/assets/toplogo.png'
 
@@ -15,8 +15,8 @@ definePageConfig({
 const QUICK_MODULES = [
   { key: 'featured', label: '主题精选', icon: '/assets/icons/featured.svg', path: '/pages/routes/index' },
   { key: 'personality', label: '犬格检测', icon: '/assets/icons/personality.svg', path: '/pages/routes/index' },
-  { key: 'adoption', label: '狗狗领养', icon: '/assets/icons/adoption.svg', path: '/pages/charities/list/index' },
-  { key: 'wiki', label: '养宠百科', icon: '/assets/icons/wiki.svg', path: '/pages/reviews/list/index' },
+  { key: 'adoption', label: '狗狗领养', icon: '/assets/icons/adoption.svg', path: '/pages/adoption/index/index' },
+  { key: 'wiki', label: '狗狗回顾', icon: '/assets/icons/wiki.svg', path: '/pages/reviews/list/index' },
 ]
 
 // 首页（发现页）- V2 沉浸式设计
@@ -25,6 +25,7 @@ export default function Index() {
   const [routes, setRoutes] = useState<any[]>([])
   const [reviews, setReviews] = useState<any[]>([])
   const [charities, setCharities] = useState<any[]>([])
+  const [adoptionDogs, setAdoptionDogs] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [searchKeyword, setSearchKeyword] = useState('')
   const [popupVisible, setPopupVisible] = useState(false)
@@ -130,7 +131,7 @@ export default function Index() {
           price: isMember && r.schedule_member_price != null
             ? r.schedule_member_price
             : ((r.schedule_price !== undefined && r.schedule_price !== null) ? r.schedule_price : (r.price || 0)),
-          cover_image: r.cover_image ? (r.cover_image.startsWith('http') ? r.cover_image : `${IMAGE_BASE_URL}${r.cover_image}`) + '?w=750&q=75' : 'https://via.placeholder.com/620x420/CCCCCC/FFFFFF?text=No+Image',
+          cover_image: r.cover_image ? (r.cover_image.startsWith('http') ? r.cover_image : `${IMAGE_BASE_URL}${r.cover_image}`) + '?w=750&q=85' : 'https://via.placeholder.com/750x480/CCCCCC/FFFFFF?text=No+Image',
           subtitle: r.subtitle || '',
           location: r.location || '',
         })))
@@ -160,6 +161,18 @@ export default function Index() {
           image: a.cover_image ? (a.cover_image.startsWith('http') ? a.cover_image : `${IMAGE_BASE_URL}${a.cover_image}`) + '?w=750&q=75' : 'https://via.placeholder.com/700x380/96C93D/FFFFFF?text=Charity',
         })))
       }
+
+      const adoptionRes = await getAdoptionDogs({ page_size: 3, status: 1 })
+      if (adoptionRes.code === 200 && adoptionRes.data?.dogs) {
+        setAdoptionDogs(adoptionRes.data.dogs.map((d: any) => ({
+          id: d.id,
+          name: d.name,
+          breed: d.breed || '',
+          age: d.age || '',
+          location: d.location || '',
+          image: d.cover_image ? (d.cover_image.startsWith('http') ? d.cover_image : `${IMAGE_BASE_URL}${d.cover_image}`) + '?w=750&q=75' : 'https://via.placeholder.com/700x380/22C55E/FFFFFF?text=Adoption',
+        })))
+      }
     } catch (error) {
       console.error('Load home data failed:', error)
     } finally {
@@ -185,6 +198,14 @@ export default function Index() {
 
   const goToCharityDetail = (id: number) => {
     Taro.navigateTo({ url: `/pages/charities/detail/index?id=${id}` })
+  }
+
+  const goToAdoptionDetail = (id: number) => {
+    Taro.navigateTo({ url: `/pages/adoption/detail/index?id=${id}` })
+  }
+
+  const goToAdoptionList = () => {
+    Taro.navigateTo({ url: '/pages/adoption/index/index' })
   }
 
   const handleHomeSearch = () => {
@@ -299,8 +320,8 @@ export default function Index() {
 
           <ScrollView className='trip-scroll' scrollX showScrollbar={false}>
             {routes.map((route, index) => (
-              <View key={route.id} className={`trip-card ${index === 0 ? 'trip-card-first' : ''}`} onClick={() => goToRouteDetail(route)}>
-                <Image className='trip-image' src={route.cover_image} mode='aspectFill' lazyLoad />
+              <View key={route.id} className='trip-card' onClick={() => goToRouteDetail(route)}>
+                <Image className='trip-image' src={route.cover_image} mode='widthFix' lazyLoad />
                 <View className='trip-tag'>{route.type}</View>
                 <View className='trip-overlay'>
                   <Text className='trip-name'>{route.name}</Text>
@@ -311,30 +332,34 @@ export default function Index() {
           </ScrollView>
         </View>
 
-        {/* 4. 狗狗领养（公益）- 情感轮播 */}
+        {/* 4. 狗狗领养 - 情感轮播 */}
         <View className='section-block adoption-section'>
-          <View className='section-header-simple'>
-            <Text className='section-title-main'>狗狗领养</Text>
-            <Text className='section-title-sub'>给流浪的小生命一个温暖的家</Text>
+          <View className='section-header-row'>
+            <View>
+              <Text className='section-title-main'>狗狗领养</Text>
+              <Text className='section-title-sub'>给流浪的小生命一个温暖的家</Text>
+            </View>
+            <Text className='section-more' onClick={goToAdoptionList}>更多 {'>'}</Text>
           </View>
 
           <View className='adoption-carousel'>
             <Swiper
               className='adoption-swiper'
-              vertical
               autoplay
               interval={6000}
               duration={800}
               circular
+              indicatorColor='rgba(255,255,255,0.4)'
+              indicatorActiveColor='#22C55E'
             >
-              {charities.map((charity, idx) => (
-                <SwiperItem key={String(charity.id)}>
-                  <View className='adoption-slide' onClick={() => goToCharityDetail(charity.id)}>
-                    <Image className='adoption-image' src={charity.image} mode='aspectFill' lazyLoad />
+              {adoptionDogs.map((dog, idx) => (
+                <SwiperItem key={String(dog.id)}>
+                  <View className='adoption-slide' onClick={() => goToAdoptionDetail(dog.id)}>
+                    <Image className='adoption-image' src={dog.image} mode='aspectFill' lazyLoad />
                     <View className='adoption-gradient' />
                     <View className='adoption-content'>
                       <Text className='adotion-quote'>“{idx === 0 ? '我在等一个你' : '带我回家吧'}”</Text>
-                      <Text className='adoption-desc'>{charity.title} · {charity.subtitle || '给它一个家'}</Text>
+                      <Text className='adoption-desc'>{dog.name} · {dog.breed || ''} {dog.age || ''} · {dog.location || '给它一个家'}</Text>
                       <View className='adoption-btn'>
                         <Text className='adoption-btn-text'>{idx === 0 ? '了解 TA 的故事' : '申请领养'}</Text>
                       </View>
@@ -342,7 +367,7 @@ export default function Index() {
                   </View>
                 </SwiperItem>
               ))}
-              {charities.length === 0 && (
+              {adoptionDogs.length === 0 && (
                 <SwiperItem>
                   <View className='adoption-slide adoption-slide-empty'>
                     <Text className='adoption-empty-text'>暂无待领养信息</Text>
@@ -362,7 +387,7 @@ export default function Index() {
           <ScrollView className='memories-scroll' scrollX showScrollbar={false}>
             {reviews.map(review => (
               <View key={review.id} className='memory-card' onClick={() => goToReviewDetail(review.id)}>
-                <Image className='memory-image' src={review.image} mode='aspectFill' lazyLoad />
+                <Image className='memory-image' src={review.image} mode='widthFix' lazyLoad />
                 <View className='memory-overlay'>
                   <Text className='memory-title'>{review.location} · {review.date ? review.date.split('-')[0] : '2024'}</Text>
                 </View>

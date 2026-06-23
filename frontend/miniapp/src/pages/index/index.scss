@@ -84,7 +84,7 @@
 // 1. 沉浸式 Hero 轮播
 .hero-section {
   position: relative;
-  height: 70vh;
+  height: 820rpx;
   width: 100%;
   overflow: hidden;
 }
@@ -133,7 +133,7 @@
 
 .hero-content {
   position: absolute;
-  bottom: 100rpx;
+  bottom: 140rpx;
   left: 40rpx;
   right: 40rpx;
   color: #fff;
@@ -173,7 +173,7 @@
   position: relative;
   z-index: 10;
   margin-top: -48rpx;
-  margin-bottom: 48rpx;
+  margin-bottom: 32rpx;
   padding: 0 40rpx;
 }
 
@@ -183,12 +183,10 @@
 
 .quick-modules-card {
   position: relative;
-  background: #fff;
-  border-radius: 48rpx;
-  padding: 36rpx 32rpx;
-  box-shadow:
-    0 -20rpx 50rpx 8rpx rgba(0, 0, 0, 0.35),
-    0 16rpx 48rpx rgba(0, 0, 0, 0.08);
+  background: transparent;
+  border-radius: 0;
+  padding: 16rpx 28rpx;
+  box-shadow: none;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -197,22 +195,14 @@
 }
 
 .quick-modules-card-top-shade {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 56rpx;
-  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.32) 0%, rgba(0, 0, 0, 0.08) 65%, transparent 100%);
-  border-radius: 48rpx 48rpx 0 0;
-  z-index: 5;
-  pointer-events: none;
+  display: none;
 }
 
 .quick-module-item {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12rpx;
+  gap: 8rpx;
 
   &:active {
     transform: scale(0.92);
@@ -222,30 +212,31 @@
 }
 
 .quick-module-icon {
-  width: 88rpx;
-  height: 88rpx;
-  border-radius: 28rpx;
-  background: rgba(34, 197, 94, 0.1);
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: 24rpx;
+  background: rgba(255, 255, 255, 0.95);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .quick-module-icon-img {
-  width: 44rpx;
-  height: 44rpx;
+  width: 36rpx;
+  height: 36rpx;
   display: block;
 }
 
 .quick-module-label {
   font-size: 22rpx;
   font-weight: 500;
-  color: #191c19;
+  color: #fff;
+  text-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.4);
 }
 
 // 区块通用
 .section-block {
-  margin-bottom: 64rpx;
+  margin-bottom: 48rpx;
 }
 
 .section-header-row {
@@ -253,7 +244,7 @@
   justify-content: space-between;
   align-items: flex-end;
   padding: 0 40rpx;
-  margin-bottom: 32rpx;
+  margin-bottom: 24rpx;
 }
 
 .section-title-main {
@@ -306,18 +297,14 @@
 .trip-card {
   display: inline-block;
   position: relative;
-  width: 560rpx;
-  height: 480rpx;
+  width: 702rpx;
+  height: auto;
   border-radius: 24rpx;
   overflow: hidden;
   margin-right: 20rpx;
   vertical-align: top;
   box-shadow: 0 8rpx 32rpx rgba(44, 47, 46, 0.08);
   background: #fff;
-
-  &.trip-card-first {
-    width: 702rpx;
-  }
 
   &:last-child {
     margin-right: 24rpx;
@@ -330,11 +317,9 @@
   transition: transform 0.2s ease;
 
   .trip-image {
-    position: absolute;
-    top: 0;
-    left: 0;
+    position: relative;
     width: 100%;
-    height: 100%;
+    height: auto;
     display: block;
   }
 
@@ -518,12 +503,12 @@
 .memory-card {
   position: relative;
   display: inline-block;
-  width: 540rpx;
-  height: 320rpx;
+  width: calc(100vw - 80rpx);
   border-radius: 32rpx;
   overflow: hidden;
   margin-right: 24rpx;
   vertical-align: top;
+  min-height: 200rpx;
 
   &:last-child {
     margin-right: 0;
@@ -538,7 +523,6 @@
 
 .memory-image {
   width: 100%;
-  height: 100%;
   display: block;
 }
 

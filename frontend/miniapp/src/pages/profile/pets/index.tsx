@@ -203,7 +203,7 @@ export default function Pets() {
       {pets.length === 0 && (
         <View className='empty-state'>
           <View className='empty-icon-wrap'>
-            <Image className='empty-icon' src='/assets/see-throughlogo.png' mode='aspectFit' />
+            <Image className='empty-icon' src='/assets/empty-pet.svg' mode='aspectFit' />
           </View>
           <Text className='empty-title'>还没有宠物资料</Text>
           <Text className='empty-desc'>添加您的宠物信息，开始规划您的下一次旅程。</Text>

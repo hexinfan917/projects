@@ -1,0 +1,28 @@
+<svg width="240" height="240" viewBox="0 0 240 240" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="petGradient" x1="30" y1="30" x2="210" y2="210" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#F5C842"/>
+      <stop offset="55%" stop-color="#8BC34A"/>
+      <stop offset="100%" stop-color="#1A7C2E"/>
+    </linearGradient>
+  </defs>
+  <!-- 身体 -->
+  <path d="M85 165C75 165 65 160 60 150C55 140 55 125 62 112C68 100 82 92 98 90C105 89 112 90 118 92C124 94 130 93 136 90C142 87 148 82 152 76C156 70 158 63 158 56C158 48 162 42 170 40C178 38 186 42 190 50C194 58 194 70 188 80C184 86 178 90 172 92C170 93 168 94 168 96L168 118C168 138 160 154 145 162C138 166 130 168 120 168H100C95 168 90 166 85 165Z" stroke="url(#petGradient)" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <!-- 头部轮廓 -->
+  <path d="M62 112C58 106 54 98 54 88C54 78 58 68 66 60C74 52 86 48 98 48C110 48 120 52 126 60C132 68 134 78 132 88C130 96 126 104 118 108C112 111 105 112 98 112C90 112 82 110 74 108C70 107 66 109 62 112Z" stroke="url(#petGradient)" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <!-- 耳朵 -->
+  <path d="M70 62C66 52 62 42 64 34C66 26 72 22 78 26C84 30 88 40 90 50" stroke="url(#petGradient)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <path d="M118 58C122 48 126 38 124 30C122 22 116 18 110 22C104 26 100 36 98 46" stroke="url(#petGradient)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <!-- 眼睛 -->
+  <circle cx="85" cy="82" r="5" fill="url(#petGradient)"/>
+  <circle cx="111" cy="82" r="5" fill="url(#petGradient)"/>
+  <!-- 鼻子 -->
+  <path d="M96 96C96 96 100 100 106 96" stroke="url(#petGradient)" stroke-width="3.5" stroke-linecap="round"/>
+  <!-- 嘴巴 -->
+  <path d="M92 102C95 106 105 106 108 102" stroke="url(#petGradient)" stroke-width="3.5" stroke-linecap="round"/>
+  <!-- 尾巴 -->
+  <path d="M155 148C165 152 175 150 182 142C188 134 188 122 182 114" stroke="url(#petGradient)" stroke-width="4" stroke-linecap="round" fill="none"/>
+  <!-- 腿部 -->
+  <path d="M85 160L85 188C85 196 91 202 99 202C107 202 113 196 113 188L113 168" stroke="url(#petGradient)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <path d="M125 168L125 188C125 196 131 202 139 202C147 202 153 196 153 188L153 162" stroke="url(#petGradient)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+</svg>

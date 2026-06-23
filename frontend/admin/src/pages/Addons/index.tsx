@@ -87,6 +87,7 @@ function RoomImageUploader({ value = [], onChange }: any) {
       <Upload
         name="file"
         action="/api/v1/files/upload/image"
+        data={{ crop_ratio: 1.7857 }}
         headers={{ Authorization: `Bearer ${localStorage.getItem('token') || ''}` }}
         onChange={handleUpload}
         showUploadList={false}
@@ -95,6 +96,9 @@ function RoomImageUploader({ value = [], onChange }: any) {
           上传图片
         </Button>
       </Upload>
+      <div style={{ marginTop: 8, padding: 8, background: '#f6ffed', border: '1px solid #b7eb8f', borderRadius: 4, color: '#389e0d', fontSize: 12, lineHeight: 1.5 }}>
+        建议 750×420px（16:9），上传后自动中心裁剪
+      </div>
     </div>
   );
 }

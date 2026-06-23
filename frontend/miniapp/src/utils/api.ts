@@ -8,8 +8,8 @@ const systemInfo = Taro.getSystemInfoSync()
 const isDevtools = systemInfo.platform === 'devtools'
 // 优先按运行平台判断：开发工具固定走 localhost，避免 build 模式被 Taro 覆盖 NODE_ENV 后命中线上
 export const BASE_URL = isDevtools
-  ? 'http://localhost:8000'
-  : (isDev ? 'http://192.168.8.46:8000' : 'https://tailtravel.cn')
+  ? 'http://localhost:8081'
+  : (isDev ? 'http://192.168.8.46:8081' : 'https://tailtravel.cn')
 // 图片使用生产域名（微信真机预览/体验版必须走已备案域名，内网IP会被拦截）
 // 注意：本地开发环境新上传的图片在生产服务器上不存在，真机预览时无法显示
 // 如需在真机上测试新图片，请手动将图片同步到生产服务器，或使用 ngrok 内网穿透
@@ -289,6 +289,23 @@ export function registerCharityActivity(activityId: number, data: any) {
 
 export function getCharityRegisterStatus(activityId: number) {
   return request(`/api/v1/charities/activities/${activityId}/register/status`)
+}
+
+// 领养
+export function getAdoptionDogs(params?: any) {
+  return request('/api/v1/adoption/dogs', { data: params, skipAuthModal: true })
+}
+
+export function getAdoptionDogDetail(id: number) {
+  return request(`/api/v1/adoption/dogs/${id}`, { skipAuthModal: true })
+}
+
+export function submitAdoptionApplication(id: number, data: any) {
+  return request(`/api/v1/adoption/dogs/${id}/apply`, { method: 'POST', data })
+}
+
+export function getMyAdoptionApplications(params?: any) {
+  return request('/api/v1/adoption/my-applications', { data: params })
 }
 
 // 行程选配

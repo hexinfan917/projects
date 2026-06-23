@@ -494,14 +494,10 @@ async def get_route_schedules(
                 "price": float(s.price) if s.price is not None else 0,
                 "self_drive_price": float(s.self_drive_price) if s.self_drive_price is not None else None,
                 "single_person_price": float(s.single_person_price) if s.single_person_price is not None else None,
-                "two_person_one_pet_price": float(s.two_person_one_pet_price) if s.two_person_one_pet_price is not None else None,
-                "one_person_two_pet_price": float(s.one_person_two_pet_price) if s.one_person_two_pet_price is not None else None,
                 "single_pet_price": float(s.single_pet_price) if s.single_pet_price is not None else None,
                 "extra_person_price": float(s.extra_person_price) if s.extra_person_price is not None else None,
                 "extra_pet_price": float(s.extra_pet_price) if s.extra_pet_price is not None else None,
                 "self_drive_single_person_price": float(s.self_drive_single_person_price) if s.self_drive_single_person_price is not None else None,
-                "self_drive_two_person_one_pet_price": float(s.self_drive_two_person_one_pet_price) if s.self_drive_two_person_one_pet_price is not None else None,
-                "self_drive_one_person_two_pet_price": float(s.self_drive_one_person_two_pet_price) if s.self_drive_one_person_two_pet_price is not None else None,
                 "self_drive_single_pet_price": float(s.self_drive_single_pet_price) if s.self_drive_single_pet_price is not None else None,
                 "self_drive_extra_person_price": float(s.self_drive_extra_person_price) if s.self_drive_extra_person_price is not None else None,
                 "self_drive_extra_pet_price": float(s.self_drive_extra_pet_price) if s.self_drive_extra_pet_price is not None else None,
@@ -509,15 +505,11 @@ async def get_route_schedules(
                 # 会员专属价
                 "member_price": float(s.member_price) if s.member_price is not None else None,
                 "member_single_person_price": float(s.member_single_person_price) if s.member_single_person_price is not None else None,
-                "member_two_person_one_pet_price": float(s.member_two_person_one_pet_price) if s.member_two_person_one_pet_price is not None else None,
-                "member_one_person_two_pet_price": float(s.member_one_person_two_pet_price) if s.member_one_person_two_pet_price is not None else None,
                 "member_single_pet_price": float(s.member_single_pet_price) if s.member_single_pet_price is not None else None,
                 "member_extra_person_price": float(s.member_extra_person_price) if s.member_extra_person_price is not None else None,
                 "member_extra_pet_price": float(s.member_extra_pet_price) if s.member_extra_pet_price is not None else None,
                 "member_self_drive_price": float(s.member_self_drive_price) if s.member_self_drive_price is not None else None,
                 "member_self_drive_single_person_price": float(s.member_self_drive_single_person_price) if s.member_self_drive_single_person_price is not None else None,
-                "member_self_drive_two_person_one_pet_price": float(s.member_self_drive_two_person_one_pet_price) if s.member_self_drive_two_person_one_pet_price is not None else None,
-                "member_self_drive_one_person_two_pet_price": float(s.member_self_drive_one_person_two_pet_price) if s.member_self_drive_one_person_two_pet_price is not None else None,
                 "member_self_drive_single_pet_price": float(s.member_self_drive_single_pet_price) if s.member_self_drive_single_pet_price is not None else None,
                 "member_self_drive_extra_person_price": float(s.member_self_drive_extra_person_price) if s.member_self_drive_extra_person_price is not None else None,
                 "member_self_drive_extra_pet_price": float(s.member_self_drive_extra_pet_price) if s.member_self_drive_extra_pet_price is not None else None,
@@ -696,15 +688,11 @@ class ScheduleCreateUpdate(BaseModel):
     self_drive_price: Optional[float] = None
     # 大巴套餐价格
     single_person_price: Optional[float] = None
-    two_person_one_pet_price: Optional[float] = None
-    one_person_two_pet_price: Optional[float] = None
     single_pet_price: Optional[float] = None
     extra_person_price: Optional[float] = None
     extra_pet_price: Optional[float] = None
     # 自驾套餐价格
     self_drive_single_person_price: Optional[float] = None
-    self_drive_two_person_one_pet_price: Optional[float] = None
-    self_drive_one_person_two_pet_price: Optional[float] = None
     self_drive_single_pet_price: Optional[float] = None
     self_drive_extra_person_price: Optional[float] = None
     self_drive_extra_pet_price: Optional[float] = None
@@ -712,15 +700,11 @@ class ScheduleCreateUpdate(BaseModel):
     # 会员专属价
     member_price: Optional[float] = None
     member_single_person_price: Optional[float] = None
-    member_two_person_one_pet_price: Optional[float] = None
-    member_one_person_two_pet_price: Optional[float] = None
     member_single_pet_price: Optional[float] = None
     member_extra_person_price: Optional[float] = None
     member_extra_pet_price: Optional[float] = None
     member_self_drive_price: Optional[float] = None
     member_self_drive_single_person_price: Optional[float] = None
-    member_self_drive_two_person_one_pet_price: Optional[float] = None
-    member_self_drive_one_person_two_pet_price: Optional[float] = None
     member_self_drive_single_pet_price: Optional[float] = None
     member_self_drive_extra_person_price: Optional[float] = None
     member_self_drive_extra_pet_price: Optional[float] = None
@@ -1387,30 +1371,22 @@ async def admin_get_schedules(
                 "self_drive_price": float(s.self_drive_price) if s.self_drive_price is not None else None,
                 # 大巴套餐价格
                 "single_person_price": float(s.single_person_price) if s.single_person_price is not None else None,
-                "two_person_one_pet_price": float(s.two_person_one_pet_price) if s.two_person_one_pet_price is not None else None,
-                "one_person_two_pet_price": float(s.one_person_two_pet_price) if s.one_person_two_pet_price is not None else None,
                 "single_pet_price": float(s.single_pet_price) if s.single_pet_price is not None else None,
                 "extra_person_price": float(s.extra_person_price) if s.extra_person_price is not None else None,
                 "extra_pet_price": float(s.extra_pet_price) if s.extra_pet_price is not None else None,
                 # 自驾套餐价格
                 "self_drive_single_person_price": float(s.self_drive_single_person_price) if s.self_drive_single_person_price is not None else None,
-                "self_drive_two_person_one_pet_price": float(s.self_drive_two_person_one_pet_price) if s.self_drive_two_person_one_pet_price is not None else None,
-                "self_drive_one_person_two_pet_price": float(s.self_drive_one_person_two_pet_price) if s.self_drive_one_person_two_pet_price is not None else None,
                 "self_drive_single_pet_price": float(s.self_drive_single_pet_price) if s.self_drive_single_pet_price is not None else None,
                 "self_drive_extra_person_price": float(s.self_drive_extra_person_price) if s.self_drive_extra_person_price is not None else None,
                 "self_drive_extra_pet_price": float(s.self_drive_extra_pet_price) if s.self_drive_extra_pet_price is not None else None,
                 # 会员专属价
                 "member_price": float(s.member_price) if s.member_price is not None else None,
                 "member_single_person_price": float(s.member_single_person_price) if s.member_single_person_price is not None else None,
-                "member_two_person_one_pet_price": float(s.member_two_person_one_pet_price) if s.member_two_person_one_pet_price is not None else None,
-                "member_one_person_two_pet_price": float(s.member_one_person_two_pet_price) if s.member_one_person_two_pet_price is not None else None,
                 "member_single_pet_price": float(s.member_single_pet_price) if s.member_single_pet_price is not None else None,
                 "member_extra_person_price": float(s.member_extra_person_price) if s.member_extra_person_price is not None else None,
                 "member_extra_pet_price": float(s.member_extra_pet_price) if s.member_extra_pet_price is not None else None,
                 "member_self_drive_price": float(s.member_self_drive_price) if s.member_self_drive_price is not None else None,
                 "member_self_drive_single_person_price": float(s.member_self_drive_single_person_price) if s.member_self_drive_single_person_price is not None else None,
-                "member_self_drive_two_person_one_pet_price": float(s.member_self_drive_two_person_one_pet_price) if s.member_self_drive_two_person_one_pet_price is not None else None,
-                "member_self_drive_one_person_two_pet_price": float(s.member_self_drive_one_person_two_pet_price) if s.member_self_drive_one_person_two_pet_price is not None else None,
                 "member_self_drive_single_pet_price": float(s.member_self_drive_single_pet_price) if s.member_self_drive_single_pet_price is not None else None,
                 "member_self_drive_extra_person_price": float(s.member_self_drive_extra_person_price) if s.member_self_drive_extra_person_price is not None else None,
                 "member_self_drive_extra_pet_price": float(s.member_self_drive_extra_pet_price) if s.member_self_drive_extra_pet_price is not None else None,
@@ -1470,14 +1446,10 @@ async def admin_create_schedule(
             price=schedule_price,
             self_drive_price=None if is_free else data.self_drive_price,
             single_person_price=data.single_person_price,
-            two_person_one_pet_price=data.two_person_one_pet_price,
-            one_person_two_pet_price=data.one_person_two_pet_price,
             single_pet_price=data.single_pet_price,
             extra_person_price=data.extra_person_price,
             extra_pet_price=data.extra_pet_price,
             self_drive_single_person_price=data.self_drive_single_person_price,
-            self_drive_two_person_one_pet_price=data.self_drive_two_person_one_pet_price,
-            self_drive_one_person_two_pet_price=data.self_drive_one_person_two_pet_price,
             self_drive_single_pet_price=data.self_drive_single_pet_price,
             self_drive_extra_person_price=data.self_drive_extra_person_price,
             self_drive_extra_pet_price=data.self_drive_extra_pet_price,
@@ -1485,15 +1457,11 @@ async def admin_create_schedule(
             # 会员专属价
             member_price=data.member_price,
             member_single_person_price=data.member_single_person_price,
-            member_two_person_one_pet_price=data.member_two_person_one_pet_price,
-            member_one_person_two_pet_price=data.member_one_person_two_pet_price,
             member_single_pet_price=data.member_single_pet_price,
             member_extra_person_price=data.member_extra_person_price,
             member_extra_pet_price=data.member_extra_pet_price,
             member_self_drive_price=data.member_self_drive_price,
             member_self_drive_single_person_price=data.member_self_drive_single_person_price,
-            member_self_drive_two_person_one_pet_price=data.member_self_drive_two_person_one_pet_price,
-            member_self_drive_one_person_two_pet_price=data.member_self_drive_one_person_two_pet_price,
             member_self_drive_single_pet_price=data.member_self_drive_single_pet_price,
             member_self_drive_extra_person_price=data.member_self_drive_extra_person_price,
             member_self_drive_extra_pet_price=data.member_self_drive_extra_pet_price,
@@ -1618,15 +1586,11 @@ async def admin_batch_create_schedules(
         self_drive_price = None if is_free else data.get('self_drive_price')
         # 大巴套餐价格
         single_person_price = data.get('single_person_price')
-        two_person_one_pet_price = data.get('two_person_one_pet_price')
-        one_person_two_pet_price = data.get('one_person_two_pet_price')
         single_pet_price = data.get('single_pet_price')
         extra_person_price = data.get('extra_person_price')
         extra_pet_price = data.get('extra_pet_price')
         # 自驾套餐价格
         self_drive_single_person_price = data.get('self_drive_single_person_price')
-        self_drive_two_person_one_pet_price = data.get('self_drive_two_person_one_pet_price')
-        self_drive_one_person_two_pet_price = data.get('self_drive_one_person_two_pet_price')
         self_drive_single_pet_price = data.get('self_drive_single_pet_price')
         self_drive_extra_person_price = data.get('self_drive_extra_person_price')
         self_drive_extra_pet_price = data.get('self_drive_extra_pet_price')
@@ -1634,15 +1598,11 @@ async def admin_batch_create_schedules(
         # 会员专属价
         member_price = data.get('member_price')
         member_single_person_price = data.get('member_single_person_price')
-        member_two_person_one_pet_price = data.get('member_two_person_one_pet_price')
-        member_one_person_two_pet_price = data.get('member_one_person_two_pet_price')
         member_single_pet_price = data.get('member_single_pet_price')
         member_extra_person_price = data.get('member_extra_person_price')
         member_extra_pet_price = data.get('member_extra_pet_price')
         member_self_drive_price = data.get('member_self_drive_price')
         member_self_drive_single_person_price = data.get('member_self_drive_single_person_price')
-        member_self_drive_two_person_one_pet_price = data.get('member_self_drive_two_person_one_pet_price')
-        member_self_drive_one_person_two_pet_price = data.get('member_self_drive_one_person_two_pet_price')
         member_self_drive_single_pet_price = data.get('member_self_drive_single_pet_price')
         member_self_drive_extra_person_price = data.get('member_self_drive_extra_person_price')
         member_self_drive_extra_pet_price = data.get('member_self_drive_extra_pet_price')
@@ -1684,14 +1644,10 @@ async def admin_batch_create_schedules(
                     price=price,
                     self_drive_price=self_drive_price,
                     single_person_price=single_person_price,
-                    two_person_one_pet_price=two_person_one_pet_price,
-                    one_person_two_pet_price=one_person_two_pet_price,
                     single_pet_price=single_pet_price,
                     extra_person_price=extra_person_price,
                     extra_pet_price=extra_pet_price,
                     self_drive_single_person_price=self_drive_single_person_price,
-                    self_drive_two_person_one_pet_price=self_drive_two_person_one_pet_price,
-                    self_drive_one_person_two_pet_price=self_drive_one_person_two_pet_price,
                     self_drive_single_pet_price=self_drive_single_pet_price,
                     self_drive_extra_person_price=self_drive_extra_person_price,
                     self_drive_extra_pet_price=self_drive_extra_pet_price,
@@ -1699,15 +1655,11 @@ async def admin_batch_create_schedules(
                     # 会员专属价
                     member_price=member_price,
                     member_single_person_price=member_single_person_price,
-                    member_two_person_one_pet_price=member_two_person_one_pet_price,
-                    member_one_person_two_pet_price=member_one_person_two_pet_price,
                     member_single_pet_price=member_single_pet_price,
                     member_extra_person_price=member_extra_person_price,
                     member_extra_pet_price=member_extra_pet_price,
                     member_self_drive_price=member_self_drive_price,
                     member_self_drive_single_person_price=member_self_drive_single_person_price,
-                    member_self_drive_two_person_one_pet_price=member_self_drive_two_person_one_pet_price,
-                    member_self_drive_one_person_two_pet_price=member_self_drive_one_person_two_pet_price,
                     member_self_drive_single_pet_price=member_self_drive_single_pet_price,
                     member_self_drive_extra_person_price=member_self_drive_extra_person_price,
                     member_self_drive_extra_pet_price=member_self_drive_extra_pet_price,

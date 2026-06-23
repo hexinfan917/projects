@@ -1,133 +1,143 @@
 .member-info-page {
   min-height: 100vh;
   background: #f5f7f5;
+  padding-top: calc(212rpx + env(safe-area-inset-top));
   padding-bottom: 60rpx;
+  box-sizing: border-box;
 }
 
+/* 简洁顶部导航 */
 .custom-navbar {
-  position: relative;
-  height: 200rpx;
-  .navbar-bg {
-    position: absolute;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: linear-gradient(135deg, #22C55E 0%, #4ADE80 100%);
-    border-radius: 0 0 40rpx 40rpx;
-  }
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  background: #f5f7f5;
+  padding: calc(100rpx + env(safe-area-inset-top)) 30rpx 24rpx;
+  box-sizing: border-box;
+
   .navbar-content {
     position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
-    height: 100%;
-    padding: 0 30rpx;
-    box-sizing: border-box;
+    height: 88rpx;
+
     .page-back {
       position: absolute;
-      left: 30rpx;
+      left: 0;
       top: 50%;
       transform: translateY(-50%);
-      width: 60rpx;
-      height: 60rpx;
+      width: 64rpx;
+      height: 64rpx;
       display: flex;
       align-items: center;
-      z-index: 2;
+      justify-content: center;
+
       .page-back-icon {
-        color: #fff;
-        font-size: 48rpx;
+        width: 40rpx;
+        height: 40rpx;
       }
     }
+
     .navbar-title {
-      color: #fff;
-      font-size: 36rpx;
+      color: #1f2937;
+      font-size: 34rpx;
       font-weight: 600;
     }
   }
 }
 
+/* 欢迎区域 */
 .info-header {
-  padding: 60rpx 40rpx 40rpx;
+  padding: 0 40rpx 48rpx;
+
   .info-welcome {
-    font-size: 40rpx;
-    color: #1f2937;
+    font-size: 32rpx;
+    color: #6b7280;
     display: block;
-    margin-bottom: 8rpx;
+    margin-bottom: 12rpx;
   }
+
   .info-brand {
     font-size: 48rpx;
     font-weight: 700;
     color: #8B4513;
     display: block;
     margin-bottom: 16rpx;
+    line-height: 1.2;
   }
+
   .info-tip {
-    font-size: 30rpx;
+    font-size: 26rpx;
     color: #9CA3AF;
     display: block;
   }
 }
 
+/* 表单卡片 */
 .info-form {
-  margin: 0 30rpx;
+  margin: 0 40rpx;
   background: #fff;
-  border-radius: 20rpx;
-  padding: 20rpx 30rpx;
+  border-radius: 32rpx;
+  padding: 16rpx 36rpx;
+  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.04);
+
   .form-item {
     display: flex;
     align-items: center;
-    padding: 30rpx 0;
-    border-bottom: 1rpx solid #f0f0f0;
+    padding: 32rpx 0;
+    border-bottom: 1rpx solid #f3f4f6;
+
     &:last-child {
       border-bottom: none;
     }
+
     .form-label {
-      width: 140rpx;
-      font-size: 34rpx;
+      width: 130rpx;
+      font-size: 30rpx;
       color: #1f2937;
       font-weight: 500;
       flex-shrink: 0;
     }
+
     .form-input {
       flex: 1;
       font-size: 30rpx;
       color: #1f2937;
-    }
-    .form-picker {
-      flex: 1;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      .form-picker-value {
-        font-size: 30rpx;
-        color: #1f2937;
-      }
-      .form-picker-placeholder {
-        font-size: 30rpx;
-        color: #c0c0c0;
-      }
-      .form-picker-arrow {
-        font-size: 32rpx;
-        color: #c0c0c0;
-      }
+      height: 48rpx;
+      line-height: 48rpx;
     }
   }
 }
 
+/* 提交按钮 */
 .info-submit-wrap {
-  margin: 60rpx 30rpx 0;
+  margin: 60rpx 40rpx 0;
+
   .info-submit {
+    width: 100%;
     background: #8B4513;
     color: #fff;
     font-size: 32rpx;
     font-weight: 600;
-    border-radius: 44rpx;
+    border-radius: 48rpx;
     height: 96rpx;
     line-height: 96rpx;
     border: none;
+    box-shadow: 0 8rpx 24rpx rgba(139, 69, 19, 0.2);
+
     &.disabled {
       opacity: 0.6;
     }
+
     &::after {
       border: none;
+    }
+
+    &:active {
+      opacity: 0.9;
     }
   }
 }

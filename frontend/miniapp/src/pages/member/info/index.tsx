@@ -79,7 +79,6 @@ export default function MemberInfo() {
   return (
     <View className='member-info-page'>
       <View className='custom-navbar'>
-        <View className='navbar-bg' />
         <View className='navbar-content'>
           <View className='page-back' onClick={() => {
             const pages = Taro.getCurrentPages()
@@ -89,9 +88,9 @@ export default function MemberInfo() {
               Taro.redirectTo({ url: '/pages/member/center/index' })
             }
           }}>
-            <Image className='page-back-icon' src='/assets/icons/return.png' mode='aspectFit' />
+            <Image className='page-back-icon' src='/assets/icons/icon-back.svg' mode='aspectFit' />
           </View>
-          <Text className='navbar-title'>完善个人信息</Text>
+          <Text className='navbar-title'>完善会员信息</Text>
         </View>
       </View>
 

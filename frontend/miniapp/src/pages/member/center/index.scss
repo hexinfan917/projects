@@ -10,7 +10,7 @@
   left: 0;
   right: 0;
   z-index: 100;
-  background: #f5f7f5;
+  background: transparent;
   box-sizing: border-box;
   padding-bottom: 8rpx;
   .navbar-content {
@@ -44,27 +44,7 @@
       margin-top: 8rpx;
     }
     .navbar-capsule {
-      width: 86rpx;
-      height: 32px;
-      background: rgba(255, 255, 255, 0.9);
-      border: 1rpx solid rgba(0, 0, 0, 0.08);
-      border-radius: 32px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8rpx;
-      padding: 0 12rpx;
-      box-sizing: border-box;
-      margin-top: 8rpx;
-      .capsule-icon {
-        width: 18rpx;
-        height: 18rpx;
-      }
-      .capsule-divider {
-        width: 1rpx;
-        height: 18rpx;
-        background: #e5e7eb;
-      }
+      display: none;
     }
   }
 }

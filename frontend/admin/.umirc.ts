@@ -169,6 +169,22 @@ export default defineConfig({
       component: './Charities',
     },
     {
+      name: '领养管理',
+      path: '/adoption',
+      routes: [
+        {
+          name: '狗狗档案',
+          path: '/adoption/dogs',
+          component: './Adoption/Dogs',
+        },
+        {
+          name: '领养申请',
+          path: '/adoption/applications',
+          component: './Adoption/Applications',
+        },
+      ],
+    },
+    {
       name: '会员管理',
       path: '/member',
       routes: [

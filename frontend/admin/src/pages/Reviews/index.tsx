@@ -145,7 +145,7 @@ export default function ReviewManage() {
       const formData = new FormData();
       formData.append('file', uploadFile);
       const token = localStorage.getItem('token');
-      const res = await fetch('/api/v1/files/upload/image', {
+      const res = await fetch('/api/v1/files/upload/image?crop_ratio=1.7857', {
         method: 'POST',
         headers: {
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -188,6 +188,7 @@ export default function ReviewManage() {
   const galleryUploadProps = {
     name: 'file',
     action: '/api/v1/files/upload/image',
+    data: { crop_ratio: 1.0 },
     headers: {
       Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
     },
@@ -428,12 +429,25 @@ export default function ReviewManage() {
               删除封面
             </Button>
           )}
+          <div style={{ marginTop: 8, padding: 10, background: '#f6ffed', border: '1px solid #b7eb8f', borderRadius: 4, color: '#389e0d', fontSize: 13, lineHeight: 1.6 }}>
+            <div style={{ fontWeight: 600, marginBottom: 4 }}>封面图尺寸建议</div>
+            <div>建议尺寸：宽 750px，高 420px（比例 16:9）</div>
+            <div>文件格式：JPG / PNG，建议控制在 500KB 以内</div>
+            <div>上传后系统将自动按 750:420 比例中心裁剪。封面图用于小程序回顾列表和详情页顶部。</div>
+          </div>
         </Form.Item>
         <ProFormText name="location" label="活动地点" />
         <ProFormText name="event_date" label="活动日期" placeholder="如：2024.06.15" />
         <ProFormDigit name="participants" label="参与狗狗数量" min={0} initialValue={0} />
         <ProFormText name="summary" label="摘要" />
-        <Form.Item label="图集">
+        <Form.Item label="图集" extra={
+          <div style={{ marginTop: 8, padding: 10, background: '#f6ffed', border: '1px solid #b7eb8f', borderRadius: 4, color: '#389e0d', fontSize: 13, lineHeight: 1.6 }}>
+            <div style={{ fontWeight: 600, marginBottom: 4 }}>回顾图集尺寸建议</div>
+            <div>建议尺寸：宽 750px，高 750px（比例 1:1）</div>
+            <div>文件格式：JPG / PNG，建议控制在 500KB 以内</div>
+            <div>上传后系统将自动按 1:1 比例中心裁剪。图集用于小程序回顾详情页网格展示。</div>
+          </div>
+        }>
           <div style={{ marginBottom: 16 }}>
             <Upload {...galleryUploadProps} showUploadList={false}>
               <Button icon={<UploadOutlined />}>上传图片</Button>

@@ -36,8 +36,6 @@ function maskIdCard(idCard?: string) {
 
 const PACKAGE_OPTIONS = [
   { key: 'couple', label: '一人一宠', priceField: 'base_price', basePerson: 1, basePet: 1 },
-  { key: 'one_person_two_pet', label: '一人两宠', priceField: 'one_person_two_pet_price', basePerson: 1, basePet: 2 },
-  { key: 'two_person_one_pet', label: '二人一宠', priceField: 'two_person_one_pet_price', basePerson: 2, basePet: 1 },
   { key: 'single_person', label: '单人轻旅（无宠）', priceField: 'single_person_price', basePerson: 1, basePet: 0 },
   { key: 'single_pet', label: '毛孩专属接送（无主人陪同）', priceField: 'single_pet_price', basePerson: 0, basePet: 1 },
 ]
@@ -781,7 +779,7 @@ export default function OrderConfirm() {
 
   const finalTotal = Math.max(0, Math.round((total - couponDiscount) * 100) / 100)
 
-  const pkgLabelMap: any = { couple: '一人一宠', single_person: '单人轻旅（无宠）', two_person_one_pet: '二人一宠', one_person_two_pet: '一人两宠', single_pet: '毛孩专属接送（无主人陪同）' }
+  const pkgLabelMap: any = { couple: '一人一宠', single_person: '单人轻旅（无宠）', single_pet: '毛孩专属接送（无主人陪同）' }
 
   return (
     <View className='order-confirm'>
@@ -908,7 +906,7 @@ export default function OrderConfirm() {
             <View className='info-row'>
               <Text className='info-label'>套餐类型</Text>
               <Text className='info-value'>
-                {{ couple: '一人一宠', single_person: '单人轻旅（无宠）', two_person_one_pet: '二人一宠', one_person_two_pet: '一人两宠', single_pet: '毛孩专属接送（无主人陪同）' }[bookingParams.packageType] || '一人一宠'}
+                {{ couple: '一人一宠', single_person: '单人轻旅（无宠）', single_pet: '毛孩专属接送（无主人陪同）' }[bookingParams.packageType] || '一人一宠'}
               </Text>
             </View>
             <View className='info-row'>

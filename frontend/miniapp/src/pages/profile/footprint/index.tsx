@@ -91,7 +91,7 @@ export default function Footprint() {
             <Text className='empty-title'>这里还没有足迹</Text>
             <Text className='empty-text'>{keyword ? '未找到相关活动' : '暂无浏览足迹，快去发现精彩活动吧~'}</Text>
             {!keyword && (
-              <View className='empty-action-btn' onClick={() => Taro.switchTab({ url: '/pages/index/index' })}>
+              <View className='empty-action-btn' onClick={() => Taro.switchTab({ url: '/pages/routes/index' })}>
                 <Text className='empty-action-text'>去发现</Text>
                 <Text className='empty-action-arrow'>↗</Text>
               </View>

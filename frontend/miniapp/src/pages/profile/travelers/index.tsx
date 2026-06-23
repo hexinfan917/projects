@@ -29,6 +29,8 @@ const maskPhone = (phone: string) => {
 
 export default function Travelers() {
   const [list, setList] = useState<any[]>([])
+  const [swipedId, setSwipedId] = useState<number | null>(null)
+  const [touchStartX, setTouchStartX] = useState(0)
 
   useEffect(() => {
     loadTravelers()
@@ -50,10 +52,21 @@ export default function Travelers() {
         if (res.confirm) {
           await deleteTraveler(id)
           Taro.showToast({ title: '删除成功', icon: 'success' })
+          setSwipedId(null)
           loadTravelers()
         }
       }
     })
+  }
+
+  const onTouchStart = (e: any, id: number) => {
+    setTouchStartX(e.touches[0].clientX)
+  }
+
+  const onTouchMove = (e: any, id: number) => {
+    const diff = touchStartX - e.touches[0].clientX
+    if (diff > 60) setSwipedId(id)
+    else if (diff < -40) setSwipedId(null)
   }
 
   return (
@@ -75,25 +88,46 @@ export default function Travelers() {
 
       {list.length > 0 && (
         <View className='travelers-list'>
-          {list.map(item => (
-            <View key={item.id} className='traveler-card'>
-              <View className='traveler-header'>
-                <View className='traveler-name-wrap'>
-                  <Text className='traveler-name'>{maskName(item.name)}</Text>
-                  {item.is_default ? <Text className='traveler-default-tag'>默认</Text> : null}
+          {list.map(item => {
+            const isSwiped = swipedId === item.id
+            return (
+              <View
+                key={item.id}
+                className='traveler-card'
+                onTouchStart={(e) => onTouchStart(e, item.id)}
+                onTouchMove={(e) => onTouchMove(e, item.id)}
+              >
+                <View className={`traveler-card-content ${isSwiped ? 'swiped' : ''}`}>
+                  <View className='traveler-info'>
+                    <View className='traveler-name-wrap'>
+                      <Text className='traveler-name'>{maskName(item.name)}</Text>
+                      {item.is_default ? <Text className='traveler-default-tag'>默认</Text> : null}
+                    </View>
+                    <View className='traveler-row'>
+                      <Image className='traveler-row-icon' src='/assets/icons/icon-phone.svg' mode='aspectFit' />
+                      <Text className='traveler-phone'>{maskPhone(item.phone)}</Text>
+                    </View>
+                    <View className='traveler-row'>
+                      <Image className='traveler-row-icon' src='/assets/icons/icon-idcard.svg' mode='aspectFit' />
+                      <Text className='traveler-idcard'>{maskIdCard(item.id_card)}</Text>
+                    </View>
+                  </View>
+                  <View
+                    className='traveler-edit-btn'
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      Taro.navigateTo({ url: `/pages/profile/traveler-edit/index?id=${item.id}` })
+                    }}
+                  >
+                    <Image className='traveler-edit-icon' src='/assets/icons/icon-edit.svg' mode='aspectFit' />
+                  </View>
                 </View>
-                <Text className='traveler-phone'>{maskPhone(item.phone)}</Text>
+                <View className='traveler-delete-btn' onClick={() => handleDelete(item.id)}>
+                  <Text className='traveler-delete-text'>删除</Text>
+                </View>
               </View>
-              <Text className='traveler-idcard'>身份证: {maskIdCard(item.id_card)}</Text>
-              <View className='traveler-actions'>
-                <Text
-                  className='action-text'
-                  onClick={() => Taro.navigateTo({ url: `/pages/profile/traveler-edit/index?id=${item.id}` })}
-                >编辑</Text>
-                <Text className='action-text delete' onClick={() => handleDelete(item.id)}>删除</Text>
-              </View>
-            </View>
-          ))}
+            )
+          })}
         </View>
       )}
 

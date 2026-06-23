@@ -137,10 +137,9 @@ export default function MemberPay() {
   return (
     <View className='member-pay-page'>
       <View className='custom-navbar'>
-        <View className='navbar-bg' />
         <View className='navbar-content'>
           <View className='page-back' onClick={handleBack}>
-            <Image className='page-back-icon' src='/assets/icons/return.png' mode='aspectFit' />
+            <Image className='page-back-icon' src='/assets/icons/icon-back.svg' mode='aspectFit' />
           </View>
           <Text className='navbar-title'>确认订单</Text>
         </View>

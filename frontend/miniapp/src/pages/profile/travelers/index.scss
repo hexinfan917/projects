@@ -75,26 +75,43 @@
 /* 列表 */
 .travelers-list {
   flex: 1;
+  margin-top: 80rpx;
   padding-bottom: 160rpx;
 }
 
 .traveler-card {
+  position: relative;
   background: #fff;
   border-radius: 24rpx;
-  padding: 28rpx;
   margin-bottom: 20rpx;
+  overflow: hidden;
 }
 
-.traveler-header {
+.traveler-card-content {
+  position: relative;
+  z-index: 2;
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-bottom: 12rpx;
+  justify-content: space-between;
+  padding: 24rpx;
+  background: #fff;
+  transition: transform 0.25s ease;
+}
+
+.traveler-card-content.swiped {
+  transform: translateX(-140rpx);
+  border-radius: 24rpx 0 0 24rpx;
+}
+
+.traveler-info {
+  flex: 1;
+  min-width: 0;
 }
 
 .traveler-name-wrap {
   display: flex;
   align-items: center;
+  margin-bottom: 12rpx;
 }
 
 .traveler-name {
@@ -104,39 +121,71 @@
 }
 
 .traveler-default-tag {
-  font-size: 22rpx;
-  color: #006b1b;
-  background: #f0fdf4;
-  padding: 4rpx 12rpx;
-  border-radius: 8rpx;
-  margin-left: 12rpx;
+  font-size: 20rpx;
+  color: #fff;
+  background: #006b1b;
+  padding: 2rpx 12rpx;
+  border-radius: 12rpx;
+  margin-left: 10rpx;
+}
+
+.traveler-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 6rpx;
+}
+
+.traveler-row-icon {
+  width: 24rpx;
+  height: 24rpx;
+  margin-right: 8rpx;
+  flex-shrink: 0;
 }
 
 .traveler-phone {
-  font-size: 26rpx;
+  font-size: 28rpx;
   color: #6b7280;
 }
 
 .traveler-idcard {
-  display: block;
-  font-size: 26rpx;
+  font-size: 28rpx;
   color: #9ca3af;
 }
 
-.traveler-actions {
+.traveler-edit-btn {
+  width: 56rpx;
+  height: 56rpx;
   display: flex;
-  justify-content: flex-end;
-  margin-top: 20rpx;
-  gap: 32rpx;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-left: 12rpx;
 }
 
-.action-text {
-  font-size: 26rpx;
-  color: #006b1b;
+.traveler-edit-icon {
+  width: 36rpx;
+  height: 36rpx;
 }
 
-.action-text.delete {
-  color: #EF4444;
+/* 右滑删除按钮 */
+.traveler-delete-btn {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 140rpx;
+  background: #ef4444;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0 24rpx 24rpx 0;
+}
+
+.traveler-delete-text {
+  font-size: 30rpx;
+  color: #fff;
+  font-weight: 500;
 }
 
 /* 添加按钮 */

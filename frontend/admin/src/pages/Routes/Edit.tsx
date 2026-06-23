@@ -1,5 +1,5 @@
 import { PageContainer } from '@ant-design/pro-components';
-import { Card, Form, Input, Select, InputNumber, Radio, Button, Space, Upload, message, Row, Col, DatePicker, TimePicker, Table, Popconfirm, Tabs, Modal, Spin, Divider } from 'antd';
+import { Card, Form, Input, Select, InputNumber, Radio, Button, Space, Upload, message, Row, Col, DatePicker, TimePicker, Table, Popconfirm, Tabs, Modal, Spin, Divider, Image } from 'antd';
 import { UploadOutlined, PlusOutlined, DeleteOutlined, SaveOutlined, EditOutlined } from '@ant-design/icons';
 import { useState, useEffect } from 'react';
 import { request, useParams, history } from '@umijs/max';
@@ -39,6 +39,7 @@ export default function RouteEdit() {
   const [schedules, setSchedules] = useState<any[]>([]);
   const [scheduleAddons, setScheduleAddons] = useState<any[]>([]);
   const [gallery, setGallery] = useState<string[]>([]);
+  const [coverImage, setCoverImage] = useState<string>('');
   const [highlights, setHighlights] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState('basic');
   const [isFree, setIsFree] = useState(false);
@@ -98,6 +99,7 @@ export default function RouteEdit() {
           ...data,
         });
         setGallery(data.gallery || []);
+        setCoverImage(data.cover_image || '');
         setHighlights(data.highlights || []);
         setDescription(data.description || '');
         setHighlightsDetail(data.highlights_detail || '');
@@ -229,6 +231,7 @@ export default function RouteEdit() {
   const uploadProps = {
     name: 'file',
     action: '/api/v1/files/upload/image',
+    data: { crop_ratio: 1.7857 },
     headers: {
       Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
     },
@@ -803,32 +806,76 @@ export default function RouteEdit() {
 
               <Form.Item
                 label="封面图片"
-                extra="建议尺寸 750×350px（2:1），主体放中间偏左，避免被裁切"
+                extra={
+                  <div style={{ marginTop: 8, padding: 10, background: '#f6ffed', border: '1px solid #b7eb8f', borderRadius: 4, color: '#389e0d', fontSize: 13, lineHeight: 1.6 }}>
+                    <div style={{ fontWeight: 600, marginBottom: 4 }}>封面图片尺寸建议</div>
+                    <div>建议尺寸：宽 750px，高 480px（比例约 1.56:1）</div>
+                    <div>文件格式：JPG / PNG，建议控制在 500KB 以内</div>
+                    <div>该图片会用于首页「热门活动」卡片和路线详情页顶部轮播。上传后系统将自动按 750:480 比例中心裁剪，请确保重要内容在画面中间。</div>
+                  </div>
+                }
               >
                 <Form.Item name="cover_image" noStyle>
-                  <Input placeholder="图片URL" style={{ marginBottom: 8 }} />
+                  <Input type="hidden" />
                 </Form.Item>
-                <Upload
-                  name="file"
-                  action="/api/v1/files/upload/image"
-                  headers={{ Authorization: `Bearer ${localStorage.getItem('token')}` }}
-                  onChange={(info) => {
-                    if (info.file.status === 'done') {
-                      const url = info.file.response?.data?.url;
-                      if (url) {
-                        const fullUrl = url;
-                        form.setFieldValue('cover_image', fullUrl);
+                {coverImage ? (
+                  <div style={{ position: 'relative', display: 'inline-block', marginBottom: 12 }}>
+                    <Image
+                      src={coverImage}
+                      width={300}
+                      height={180}
+                      style={{ objectFit: 'cover', borderRadius: 8 }}
+                      preview={false}
+                    />
+                    <Button
+                      type="primary"
+                      danger
+                      size="small"
+                      icon={<DeleteOutlined />}
+                      style={{ position: 'absolute', top: 8, right: 8 }}
+                      onClick={() => {
+                        setCoverImage('');
+                        form.setFieldValue('cover_image', '');
+                      }}
+                    >
+                      删除
+                    </Button>
+                  </div>
+                ) : null}
+                <div>
+                  <Upload
+                    name="file"
+                    action="/api/v1/files/upload/image"
+                    headers={{ Authorization: `Bearer ${localStorage.getItem('token')}` }}
+                    data={{ crop_ratio: 1.5625 }}
+                    showUploadList={false}
+                    onChange={(info) => {
+                      if (info.file.status === 'done') {
+                        const url = info.file.response?.data?.url;
+                        if (url) {
+                          setCoverImage(url);
+                          form.setFieldValue('cover_image', url);
+                        }
+                      } else if (info.file.status === 'error') {
+                        message.error(`${info.file.name} 上传失败`);
                       }
-                    }
-                  }}
-                >
-                  <Button icon={<UploadOutlined />}>上传图片</Button>
-                </Upload>
+                    }}
+                  >
+                    <Button icon={<UploadOutlined />}>{coverImage ? '更换图片' : '上传图片'}</Button>
+                  </Upload>
+                </div>
               </Form.Item>
 
               <Form.Item
                 label="路线图集"
-                extra="建议尺寸 750×420px（16:9），可传 2 倍图（1500×840px）"
+                extra={
+                  <div style={{ marginTop: 8, padding: 10, background: '#f6ffed', border: '1px solid #b7eb8f', borderRadius: 4, color: '#389e0d', fontSize: 13, lineHeight: 1.6 }}>
+                    <div style={{ fontWeight: 600, marginBottom: 4 }}>路线图集尺寸建议</div>
+                    <div>建议尺寸：宽 750px，高 420px（比例 16:9）</div>
+                    <div>文件格式：JPG / PNG，建议控制在 500KB 以内</div>
+                    <div>上传后系统将自动按 750:420 比例中心裁剪。路线详情页顶部轮播使用此尺寸，可上传 2 倍图（1500×840px）以获得更清晰的显示效果。</div>
+                  </div>
+                }
               >
                 <div style={{ marginBottom: 16 }}>
                   <Upload {...uploadProps} showUploadList={false}>
@@ -1252,16 +1299,6 @@ export default function RouteEdit() {
                         <InputNumber placeholder="价格" min={0} style={{ width: '100%' }} />
                       </Form.Item>
                     </Col>
-                    <Col span={8}>
-                      <Form.Item label="一人两宠" name="one_person_two_pet_price">
-                        <InputNumber placeholder="路线默认价" min={0} style={{ width: '100%' }} />
-                      </Form.Item>
-                    </Col>
-                    <Col span={8}>
-                      <Form.Item label="二人一宠" name="two_person_one_pet_price">
-                        <InputNumber placeholder="路线默认价" min={0} style={{ width: '100%' }} />
-                      </Form.Item>
-                    </Col>
                   </Row>
                   <Row gutter={16}>
                     <Col span={8}>
@@ -1297,16 +1334,6 @@ export default function RouteEdit() {
                         <InputNumber placeholder="自驾价格" min={0} style={{ width: '100%' }} />
                       </Form.Item>
                     </Col>
-                    <Col span={8}>
-                      <Form.Item label="一人两宠" name="self_drive_one_person_two_pet_price">
-                        <InputNumber placeholder="路线默认价" min={0} style={{ width: '100%' }} />
-                      </Form.Item>
-                    </Col>
-                    <Col span={8}>
-                      <Form.Item label="二人一宠" name="self_drive_two_person_one_pet_price">
-                        <InputNumber placeholder="路线默认价" min={0} style={{ width: '100%' }} />
-                      </Form.Item>
-                    </Col>
                   </Row>
                   <Row gutter={16}>
                     <Col span={8}>
@@ -1337,16 +1364,6 @@ export default function RouteEdit() {
                     <Row gutter={16}>
                       <Col span={8}>
                         <Form.Item label="会员价(1人1宠)" name="member_price">
-                          <InputNumber placeholder="会员专享价" min={0} style={{ width: '100%' }} />
-                        </Form.Item>
-                      </Col>
-                      <Col span={8}>
-                        <Form.Item label="会员价(一人两宠)" name="member_one_person_two_pet_price">
-                          <InputNumber placeholder="会员专享价" min={0} style={{ width: '100%' }} />
-                        </Form.Item>
-                      </Col>
-                      <Col span={8}>
-                        <Form.Item label="会员价(二人一宠)" name="member_two_person_one_pet_price">
                           <InputNumber placeholder="会员专享价" min={0} style={{ width: '100%' }} />
                         </Form.Item>
                       </Col>
@@ -1383,16 +1400,6 @@ export default function RouteEdit() {
                     <Row gutter={16}>
                       <Col span={8}>
                         <Form.Item label="会员自驾价(1人1宠)" name="member_self_drive_price">
-                          <InputNumber placeholder="会员专享价" min={0} style={{ width: '100%' }} />
-                        </Form.Item>
-                      </Col>
-                      <Col span={8}>
-                        <Form.Item label="会员价(一人两宠)" name="member_self_drive_one_person_two_pet_price">
-                          <InputNumber placeholder="会员专享价" min={0} style={{ width: '100%' }} />
-                        </Form.Item>
-                      </Col>
-                      <Col span={8}>
-                        <Form.Item label="会员价(二人一宠)" name="member_self_drive_two_person_one_pet_price">
                           <InputNumber placeholder="会员专享价" min={0} style={{ width: '100%' }} />
                         </Form.Item>
                       </Col>
@@ -1507,12 +1514,6 @@ export default function RouteEdit() {
           </Form.Item>
           {batchTravelType !== 2 && (
             <Card size="small" title="大巴套餐价格（可选）" style={{ marginBottom: 16 }}>
-              <Form.Item label="一人两宠" name="one_person_two_pet_price">
-                <InputNumber placeholder="路线默认价" min={0} style={{ width: '100%' }} />
-              </Form.Item>
-              <Form.Item label="二人一宠" name="two_person_one_pet_price">
-                <InputNumber placeholder="路线默认价" min={0} style={{ width: '100%' }} />
-              </Form.Item>
               <Form.Item label="单人轻旅（无宠）" name="single_person_price">
                 <InputNumber placeholder="路线默认价" min={0} style={{ width: '100%' }} />
               </Form.Item>
@@ -1529,12 +1530,6 @@ export default function RouteEdit() {
           )}
           {batchTravelType !== 1 && (
             <Card size="small" title="自驾套餐价格（可选）" style={{ marginBottom: 16 }}>
-              <Form.Item label="一人两宠" name="self_drive_one_person_two_pet_price">
-                <InputNumber placeholder="路线默认价" min={0} style={{ width: '100%' }} />
-              </Form.Item>
-              <Form.Item label="二人一宠" name="self_drive_two_person_one_pet_price">
-                <InputNumber placeholder="路线默认价" min={0} style={{ width: '100%' }} />
-              </Form.Item>
               <Form.Item label="单人轻旅（无宠）" name="self_drive_single_person_price">
                 <InputNumber placeholder="路线默认价" min={0} style={{ width: '100%' }} />
               </Form.Item>
@@ -1556,12 +1551,6 @@ export default function RouteEdit() {
                 <Form.Item label="会员价(1人1宠)" name="member_price">
                   <InputNumber placeholder="会员专享价" min={0} style={{ width: '100%' }} />
                 </Form.Item>
-                <Form.Item label="会员价(一人两宠)" name="member_one_person_two_pet_price">
-                  <InputNumber placeholder="会员专享价" min={0} style={{ width: '100%' }} />
-                </Form.Item>
-                <Form.Item label="会员价(二人一宠)" name="member_two_person_one_pet_price">
-                  <InputNumber placeholder="会员专享价" min={0} style={{ width: '100%' }} />
-                </Form.Item>
                 <Form.Item label="会员价(单人)" name="member_single_person_price">
                   <InputNumber placeholder="会员专享价" min={0} style={{ width: '100%' }} />
                 </Form.Item>
@@ -1580,12 +1569,6 @@ export default function RouteEdit() {
               <>
                 <div style={{ fontWeight: 600, marginBottom: 8, marginTop: batchTravelType === 2 ? 0 : 12, color: '#1890ff', fontSize: 13 }}>自驾出行会员价</div>
                 <Form.Item label="会员自驾价(1人1宠)" name="member_self_drive_price">
-                  <InputNumber placeholder="会员专享价" min={0} style={{ width: '100%' }} />
-                </Form.Item>
-                <Form.Item label="会员价(一人两宠)" name="member_self_drive_one_person_two_pet_price">
-                  <InputNumber placeholder="会员专享价" min={0} style={{ width: '100%' }} />
-                </Form.Item>
-                <Form.Item label="会员价(二人一宠)" name="member_self_drive_two_person_one_pet_price">
                   <InputNumber placeholder="会员专享价" min={0} style={{ width: '100%' }} />
                 </Form.Item>
                 <Form.Item label="会员价(单人)" name="member_self_drive_single_person_price">

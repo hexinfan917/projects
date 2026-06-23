@@ -1,17 +1,14 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import Taro from '@tarojs/taro'
 import { View, Text, Image, ScrollView } from '@tarojs/components'
 import { getRouteAddons, getAddonCategories, getMemberCenter, IMAGE_BASE_URL } from '../../utils/api'
 import './index.scss'
 
-const WEEK_DAYS = ['日', '一', '二', '三', '四', '五', '六']
 const FILE_BASE_URL = IMAGE_BASE_URL
 
 // 套餐选项配置
 const PACKAGE_OPTIONS = [
   { key: 'couple', label: '一人一宠', priceField: 'base_price', basePerson: 1, basePet: 1 },
-  { key: 'one_person_two_pet', label: '一人两宠', priceField: 'one_person_two_pet_price', basePerson: 1, basePet: 2 },
-  { key: 'two_person_one_pet', label: '二人一宠', priceField: 'two_person_one_pet_price', basePerson: 2, basePet: 1 },
   { key: 'single_person', label: '单人轻旅（无宠）', priceField: 'single_person_price', basePerson: 1, basePet: 0 },
   { key: 'single_pet', label: '毛孩专属接送（无主人陪同）', priceField: 'single_pet_price', basePerson: 0, basePet: 1 },
 ]
@@ -20,19 +17,20 @@ interface BookingPopupProps {
   visible: boolean
   route: any
   schedules: any[]
+  initialDate?: string
   onClose: () => void
   onNext: (data: any) => void
 }
 
-export default function BookingPopup({ visible, route, schedules, onClose, onNext }: BookingPopupProps) {
+export default function BookingPopup({ visible, route, schedules, initialDate, onClose, onNext }: BookingPopupProps) {
   const isFree = route?.is_free === 1
   const [selectedPackage, setSelectedPackage] = useState('couple')
   const [extraPerson, setExtraPerson] = useState(0)
   const [extraPet, setExtraPet] = useState(0)
   const [travelType, setTravelType] = useState<'bus' | 'self_drive'>('bus')
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
-  const [showCalendar, setShowCalendar] = useState(false)
-  const [dateScrollId, setDateScrollId] = useState('')
+  const hasInitializedRef = useRef(false)
+  const userChangedRef = useRef(false)
   const [addonQuantities, setAddonQuantities] = useState<Record<number, number>>({})
   const [addons, setAddons] = useState<any[]>([])
   const [isMember, setIsMember] = useState(false)
@@ -46,15 +44,69 @@ export default function BookingPopup({ visible, route, schedules, onClose, onNex
     }
   }, [visible])
 
-  // 弹窗打开时默认选中第一个可用日期
+  // 计算排期最低价套餐与出行方式
+  const getBestPackage = (schedule: any) => {
+    if (isFree) return { packageKey: 'couple', travelType: 'bus' as const }
+    const candidates: { packageKey: string, travelType: 'bus' | 'self_drive', price: number }[] = []
+    if (schedule.travel_type !== 2) {
+      candidates.push(
+        { packageKey: 'couple', travelType: 'bus', price: isMember && schedule.member_price != null ? schedule.member_price : schedule.price },
+        { packageKey: 'single_person', travelType: 'bus', price: isMember && schedule.member_single_person_price != null ? schedule.member_single_person_price : schedule.single_person_price },
+        { packageKey: 'single_pet', travelType: 'bus', price: isMember && schedule.member_single_pet_price != null ? schedule.member_single_pet_price : schedule.single_pet_price },
+      )
+    }
+    if (schedule.travel_type !== 1) {
+      candidates.push(
+        { packageKey: 'couple', travelType: 'self_drive', price: isMember && schedule.member_self_drive_price != null ? schedule.member_self_drive_price : schedule.self_drive_price },
+        { packageKey: 'single_person', travelType: 'self_drive', price: isMember && schedule.member_self_drive_single_person_price != null ? schedule.member_self_drive_single_person_price : schedule.self_drive_single_person_price },
+      )
+    }
+    const available = candidates.filter(c => c.price != null && c.price > 0)
+    if (available.length === 0) return null
+    return available.reduce((min, c) => (c.price < min.price ? c : min))
+  }
+
+  // 弹窗打开时默认选中传入日期或第一个可用日期，并默认选中最低价套餐
   useEffect(() => {
     if (visible) {
       const dates = Object.keys(scheduleMap)
-      if (dates.length > 0 && !selectedDate) {
-        setSelectedDate(dates[0])
+      const hasDate = (initialDate && scheduleMap[initialDate]) || (dates.length > 0 && !selectedDate)
+      if (!hasDate) return
+      if (!hasInitializedRef.current) {
+        hasInitializedRef.current = true
+        userChangedRef.current = false
+        let targetDate: string | null = null
+        if (initialDate && scheduleMap[initialDate]) {
+          targetDate = initialDate
+          setSelectedDate(initialDate)
+        } else if (dates.length > 0 && !selectedDate) {
+          targetDate = dates[0]
+          setSelectedDate(dates[0])
+        }
+        if (targetDate) {
+          const best = getBestPackage(scheduleMap[targetDate])
+          if (best) {
+            setSelectedPackage(best.packageKey)
+            setTravelType(best.travelType)
+          }
+        }
+      }
+    } else {
+      hasInitializedRef.current = false
+      userChangedRef.current = false
+    }
+  }, [visible, scheduleMap, initialDate, selectedDate])
+
+  // 会员状态返回后，若用户未手动修改，重新应用最低价套餐
+  useEffect(() => {
+    if (visible && selectedDate && !userChangedRef.current) {
+      const best = getBestPackage(scheduleMap[selectedDate])
+      if (best) {
+        setSelectedPackage(best.packageKey)
+        setTravelType(best.travelType)
       }
     }
-  }, [visible, scheduleMap])
+  }, [isMember, visible, selectedDate, scheduleMap])
 
   // 加载行程选配
   useEffect(() => {
@@ -127,52 +179,6 @@ export default function BookingPopup({ visible, route, schedules, onClose, onNex
       }
     }
   }, [scheduleTravelType, isFree, selectedDate, addons])
-
-  // 可选月份
-  const availableMonths = useMemo(() => {
-    const monthSet = new Set<string>()
-    Object.keys(scheduleMap).forEach(dateStr => {
-      const [y, m] = dateStr.split('-')
-      monthSet.add(`${y}-${m}`)
-    })
-    return Array.from(monthSet).sort().map(str => {
-      const [y, m] = str.split('-').map(Number)
-      return { year: y, month: m, label: `${m}月` }
-    })
-  }, [scheduleMap])
-
-  const [activeMonthIdx, setActiveMonthIdx] = useState(0)
-  const activeMonth = availableMonths[activeMonthIdx] || null
-
-  // 当前月有排期的日期
-  const monthSchedules = useMemo(() => {
-    if (!activeMonth) return []
-    const prefix = `${activeMonth.year}-${String(activeMonth.month).padStart(2, '0')}`
-    return Object.entries(scheduleMap)
-      .filter(([dateStr]) => dateStr.startsWith(prefix))
-      .map(([dateStr, s]) => {
-        const d = new Date(dateStr + 'T00:00:00')
-        const day = d.getDate()
-        const week = WEEK_DAYS[d.getDay()]
-        return { dateStr, day, week, schedule: s }
-      })
-      .sort((a, b) => a.dateStr.localeCompare(b.dateStr))
-  }, [scheduleMap, activeMonth])
-
-  // 从日历弹窗选择日期后，自动切换到对应月份并滚动到选中日期
-  useEffect(() => {
-    if (selectedDate && availableMonths.length > 0) {
-      const [y, m] = selectedDate.split('-')
-      const idx = availableMonths.findIndex(am => am.year === Number(y) && am.month === Number(m))
-      if (idx !== -1) {
-        setActiveMonthIdx(idx)
-      }
-      // 延迟设置 scrollIntoView，确保 DOM 已更新
-      setTimeout(() => {
-        setDateScrollId(`date-${selectedDate}`)
-      }, 100)
-    }
-  }, [selectedDate, availableMonths])
 
   // 当前套餐配置
   const pkgConfig = PACKAGE_OPTIONS.find(p => p.key === selectedPackage)!
@@ -277,6 +283,7 @@ export default function BookingPopup({ visible, route, schedules, onClose, onNex
 
   // 切换套餐
   const handlePackageChange = (key: string) => {
+    userChangedRef.current = true
     setSelectedPackage(key)
     const cfg = PACKAGE_OPTIONS.find(p => p.key === key)!
     if (cfg.basePet === 0) setExtraPet(0)
@@ -285,6 +292,7 @@ export default function BookingPopup({ visible, route, schedules, onClose, onNex
 
   // 切换交通方式
   const handleTravelTypeChange = (type: 'bus' | 'self_drive') => {
+    userChangedRef.current = true
     setTravelType(type)
     if (type === 'self_drive') {
       // Only clear seat addons, keep non-seat addons
@@ -393,56 +401,6 @@ export default function BookingPopup({ visible, route, schedules, onClose, onNex
                 </Text>
               )}
             </View>
-          </View>
-
-          {/* 出发日期 */}
-          <View className='section'>
-            <View className='date-header'>
-              <Text className='section-title'>出发日期</Text>
-              <Text className='view-all' onClick={() => setShowCalendar(true)}>
-                查看全部 ▼
-              </Text>
-            </View>
-            {availableMonths.length > 0 && (
-              <View className='month-tabs'>
-                {availableMonths.map((m, idx) => (
-                  <Text
-                    key={`${m.year}-${m.month}`}
-                    className={`month-tab ${idx === activeMonthIdx ? 'active' : ''}`}
-                    onClick={() => setActiveMonthIdx(idx)}
-                  >
-                    {m.label}
-                  </Text>
-                ))}
-              </View>
-            )}
-            <ScrollView
-              className='date-cards'
-              scrollX
-              scrollWithAnimation
-              scrollIntoView={dateScrollId}
-            >
-              {monthSchedules.map(({ dateStr, day, week, schedule }) => {
-                const isFull = schedule.status === 2 || schedule.stock <= 0
-                return (
-                  <View
-                    key={dateStr}
-                    id={`date-${dateStr}`}
-                    className={`date-card ${selectedDate === dateStr ? 'active' : ''} ${isFull ? 'full' : ''}`}
-                    onClick={() => !isFull && setSelectedDate(dateStr)}
-                  >
-                    <Text className='date-day'>{String(activeMonth?.month || 0).padStart(2, '0')}/{String(day).padStart(2, '0')}</Text>
-                    <View className='date-week-price'>
-                      <Text>周{week}</Text>
-                      <Text className='date-price-text'>{isFree ? '免费' : `¥${getDisplayPrice(schedule)}起`}</Text>
-                    </View>
-                    <Text className='date-stock-text'>
-                      {isFull ? '已满' : (schedule.stock !== undefined && schedule.stock !== null ? `余${schedule.stock}` : '')}
-                    </Text>
-                  </View>
-                )
-              })}
-            </ScrollView>
           </View>
 
           {/* 交通方式 —— 免费路线隐藏 */}
@@ -679,60 +637,6 @@ export default function BookingPopup({ visible, route, schedules, onClose, onNex
         </View>
       </View>
 
-      {/* 日历弹窗 */}
-      {showCalendar && (
-        <View className='calendar-modal'>
-          <View className='calendar-mask' onClick={() => setShowCalendar(false)} />
-          <View className='calendar-content'>
-            <View className='calendar-header'>
-              <Text className='calendar-title'>选择日期</Text>
-              <Text className='calendar-close' onClick={() => setShowCalendar(false)}>✕</Text>
-            </View>
-            <ScrollView className='calendar-scroll' scrollY>
-              {availableMonths.map(m => {
-                const prefix = `${m.year}-${String(m.month).padStart(2, '0')}`
-                const days = Object.entries(scheduleMap)
-                  .filter(([d]) => d.startsWith(prefix))
-                  .map(([dateStr, s]) => {
-                    const d = new Date(dateStr + 'T00:00:00')
-                    return { dateStr, day: d.getDate(), week: WEEK_DAYS[d.getDay()], schedule: s }
-                  })
-                  .sort((a, b) => a.dateStr.localeCompare(b.dateStr))
-                return (
-                  <View key={prefix} className='calendar-month-block'>
-                    <Text className='calendar-month-title'>{m.year}年{m.month}月</Text>
-                    <View className='calendar-days-grid'>
-                      {days.map(({ dateStr, day, week, schedule }) => {
-                        const isFull = schedule.status === 2 || schedule.stock <= 0
-                        return (
-                          <View
-                            key={dateStr}
-                            className={`calendar-day-item ${selectedDate === dateStr ? 'active' : ''} ${isFull ? 'full' : ''}`}
-                            onClick={() => {
-                              if (isFull) return
-                              setSelectedDate(dateStr)
-                              setShowCalendar(false)
-                            }}
-                          >
-                            <Text className='cd-day'>{day}</Text>
-                            <Text className='cd-week'>周{week}</Text>
-                            <Text className='cd-price'>{isFree ? '免费' : `¥${getDisplayPrice(schedule)}起`}</Text>
-                            <Text className='cd-stock'>
-                              {schedule.stock !== undefined && schedule.stock !== null
-                                ? (isFull ? '已满' : `余${schedule.stock}`)
-                                : ''}
-                            </Text>
-                          </View>
-                        )
-                      })}
-                    </View>
-                  </View>
-                )
-              })}
-            </ScrollView>
-          </View>
-        </View>
-      )}
     </View>
   )
 }

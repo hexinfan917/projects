@@ -306,7 +306,7 @@ export default function PetEdit() {
             <Text className='form-label'>最近接种时间 <Text className='required'>*</Text></Text>
             <Picker mode='date' value={pet.vaccine_date || ''} onChange={onVaccineChange}>
               <View className={`picker-box ${pet.vaccine_date ? '' : 'placeholder'}`}>
-                <Text className='picker-text'>{pet.vaccine_date || '年 / 月 / 日'}</Text>
+                <Text className='picker-text'>{pet.vaccine_date || '年/月/日'}</Text>
                 <View className='calendar-icon' />
               </View>
             </Picker>

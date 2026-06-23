@@ -22,8 +22,8 @@ function App({ children }) {
     const isDevtools = systemInfo.platform === 'devtools'
     // 开发工具固定走 localhost，避免 build 模式被 Taro 覆盖 NODE_ENV 后命中线上
     const baseUrl = isDevtools
-      ? 'http://localhost:8000'
-      : (process.env.NODE_ENV === 'development' ? 'http://192.168.8.46:8000' : 'https://tailtravel.cn')
+      ? 'http://localhost:8081'
+      : (process.env.NODE_ENV === 'development' ? 'http://192.168.8.46:8081' : 'https://tailtravel.cn')
     Taro.request({
       url: `${baseUrl}/api/v1/settings/public`,
       method: 'GET',

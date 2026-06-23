@@ -138,7 +138,7 @@ export default function BannerManage() {
 
       const formData = new FormData();
       formData.append('file', compressedFile);
-      const res = await request('/api/v1/files/upload/image', {
+      const res = await request('/api/v1/files/upload/image?crop_ratio=0.75', {
         method: 'POST',
         data: formData,
         requestType: 'form',
@@ -317,6 +317,12 @@ export default function BannerManage() {
               </div>
             )}
           </Upload>
+          <div style={{ marginTop: 12, padding: 10, background: '#f6ffed', border: '1px solid #b7eb8f', borderRadius: 4, color: '#389e0d', fontSize: 13, lineHeight: 1.6 }}>
+            <div style={{ fontWeight: 600, marginBottom: 4 }}>图片尺寸建议</div>
+            <div>建议尺寸：宽 750px，高 1000~1200px（比例约 3:4）</div>
+            <div>文件格式：JPG / PNG，建议控制在 500KB 以内</div>
+            <div>上传后系统将自动按 750:1000 比例中心裁剪，请确保重要内容在画面中间。该图用于首页顶部沉浸式竖版轮播。</div>
+          </div>
         </div>
       </ModalForm>
     </PageContainer>

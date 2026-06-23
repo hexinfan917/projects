@@ -120,6 +120,12 @@ export default function Settings() {
                     />
                   </div>
                 )}
+                <div style={{ marginTop: 8, padding: 10, background: '#f6ffed', border: '1px solid #b7eb8f', borderRadius: 4, color: '#389e0d', fontSize: 13, lineHeight: 1.6 }}>
+                  <div style={{ fontWeight: 600, marginBottom: 4 }}>Logo 尺寸建议</div>
+                  <div>建议尺寸：宽 400px，高 400px（比例 1:1）</div>
+                  <div>文件格式：PNG（透明背景）或 JPG</div>
+                  <div>Logo 为品牌标识，系统不会进行裁剪，请按实际比例上传。</div>
+                </div>
               </div>
 
               <Form.Item name="site_description" label="网站描述">

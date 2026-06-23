@@ -78,7 +78,7 @@ export default function Routes() {
           ...r,
           price: displayPrice,
           has_schedule: hasSchedule,
-          cover_image: r.cover_image ? (r.cover_image.startsWith('http') ? r.cover_image : `${IMAGE_BASE_URL}${r.cover_image}`) + '?w=750&q=75' : ''
+          cover_image: r.cover_image ? (r.cover_image.startsWith('http') ? r.cover_image : `${IMAGE_BASE_URL}${r.cover_image}`) + '?w=750&q=85' : ''
         }
       })
       setRoutes(prev => refresh ? list : [...prev, ...list])
@@ -196,7 +196,7 @@ export default function Routes() {
         {routes.map(item => (
           <View key={item.id} className='route-card' onClick={() => goToDetail(item)}>
             <View className='route-image-wrap'>
-              <Image className='route-image' src={item.cover_image} mode='aspectFill' />
+              <Image className='route-image' src={item.cover_image} mode='widthFix' lazyLoad />
               {item.type_name ? <View className='route-tag'>{item.type_name}</View> : null}
             </View>
             <View className='route-info'>

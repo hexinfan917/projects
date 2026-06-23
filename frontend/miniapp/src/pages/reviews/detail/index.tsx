@@ -95,7 +95,7 @@ export default function ReviewDetail() {
       </View>
       <ScrollView className='scroll-container' scrollY>
         {coverImage && (
-          <Image className='detail-cover' src={coverImage} mode='aspectFill' />
+          <Image className='detail-cover' src={coverImage} mode='widthFix' lazyLoad />
         )}
         <View className='detail-content'>
           <Text className='detail-title'>{detail.title}</Text>
@@ -112,19 +112,20 @@ export default function ReviewDetail() {
               <Text className='gallery-title'>📷 活动图集 ({galleryImages.length}张)</Text>
               <View className='gallery-grid'>
                 {galleryImages.map((url: string, index: number) => (
-                  <Image
-                    key={index}
-                    className='gallery-image'
-                    src={getFullImageUrl(url)}
-                    mode='aspectFill'
-                    lazyLoad
-                    onClick={() => {
-                      Taro.previewImage({
-                        current: getFullImageUrl(url),
-                        urls: galleryImages.map(getFullImageUrl)
-                      })
-                    }}
-                  />
+                  <View key={index} className='gallery-item'>
+                    <Image
+                      className='gallery-image'
+                      src={getFullImageUrl(url)}
+                      mode='aspectFill'
+                      lazyLoad
+                      onClick={() => {
+                        Taro.previewImage({
+                          current: getFullImageUrl(url),
+                          urls: galleryImages.map(getFullImageUrl)
+                        })
+                      }}
+                    />
+                  </View>
                 ))}
               </View>
             </View>
