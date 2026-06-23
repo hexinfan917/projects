@@ -687,6 +687,7 @@ export default function OrderList() {
                   <Descriptions column={1} size="small">
                     <Descriptions.Item label="路线名称">{currentOrder.route_name}</Descriptions.Item>
                     <Descriptions.Item label="出行日期">{currentOrder.travel_date}</Descriptions.Item>
+                    <Descriptions.Item label="出行方式">{currentOrder.travel_type === 'bus' ? '大巴出行' : currentOrder.travel_type === 'self_drive' ? '自行前往' : '-'}</Descriptions.Item>
                     <Descriptions.Item label="出行人数">{currentOrder.participant_count}人</Descriptions.Item>
                     <Descriptions.Item label="携带宠物">{currentOrder.pet_count}只</Descriptions.Item>
                   </Descriptions>

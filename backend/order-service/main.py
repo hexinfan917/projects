@@ -262,6 +262,7 @@ async def get_orders(
             "travel_date": o.travel_date.isoformat(),
             "participant_count": o.participant_count,
             "pet_count": o.pet_count,
+            "travel_type": o.travel_type,
             "participants": o.participants or [],
             "pets": o.pets or [],
             "contact": o.contact or {},

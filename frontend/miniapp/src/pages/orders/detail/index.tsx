@@ -178,6 +178,12 @@ export default function OrderDetail() {
               </View>
               <Text className='detail-text'>成人：{order.participant_count}人 | 宠物：{order.pet_count}只</Text>
             </View>
+            <View className='detail-row'>
+              <View className='detail-icon-wrap'>
+                <Image className='detail-icon' src='/assets/icons/icon-bus.svg' mode='aspectFit' />
+              </View>
+              <Text className='detail-text'>出行方式：{order.travel_type === 'bus' ? '大巴出行' : order.travel_type === 'self_drive' ? '自行前往' : '-'}</Text>
+            </View>
           </View>
         </View>
 
