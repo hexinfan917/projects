@@ -78,7 +78,18 @@ export async function request(path: string, options: any = {}) {
     }
 
     if (res.statusCode >= 400) {
-      const msg = res.data?.message || res.data?.detail || `请求失败 (${res.statusCode})`
+      let msg = res.data?.message
+      if (!msg && res.data?.detail) {
+        const detail = res.data.detail
+        if (Array.isArray(detail)) {
+          msg = detail.map((d: any) => d.msg || JSON.stringify(d)).join('; ')
+        } else if (typeof detail === 'object') {
+          msg = JSON.stringify(detail)
+        } else {
+          msg = String(detail)
+        }
+      }
+      msg = msg || `请求失败 (${res.statusCode})`
       Taro.showToast({ title: msg, icon: 'none' })
       throw new Error(msg)
     }
