@@ -112,16 +112,6 @@ function HotelRoomModal({ room, visible, onClose }: any) {
       </View>
     </View>
   )
-  } catch (err: any) {
-    console.error('OrderConfirm render error:', err)
-    return (
-      <View className='order-confirm' style={{ paddingTop: '200rpx', paddingLeft: '32rpx', paddingRight: '32rpx' }}>
-        <Text style={{ fontSize: '32rpx', fontWeight: 'bold', color: '#ba1a1a' }}>页面加载出错</Text>
-        <Text style={{ marginTop: '20rpx', fontSize: '26rpx', color: '#666' }}>{err?.message || String(err)}</Text>
-        <Text style={{ marginTop: '40rpx', fontSize: '28rpx', color: '#0d631b' }} onClick={() => Taro.navigateBack()}>返回重试</Text>
-      </View>
-    )
-  }
 }
 
 export default function OrderConfirm() {
@@ -797,12 +787,13 @@ export default function OrderConfirm() {
 
   const pkgLabelMap: any = { couple: '一人一宠', single_person: '单人轻旅（无宠）', two_person_one_pet: '二人一宠', one_person_two_pet: '一人两宠', single_pet: '毛孩专属接送（无主人陪同）' }
 
-  try {
-  return (
-    <View className='order-confirm'>
-      {/* 顶部导航栏 */}
-      <View className='top-nav'>
-        <Text className='nav-back' onClick={() => {
+  return (() => {
+    try {
+      return (
+        <View className='order-confirm'>
+          {/* 顶部导航栏 */}
+          <View className='top-nav'>
+            <Text className='nav-back' onClick={() => {
           const pages = Taro.getCurrentPages()
           if (pages.length <= 1) {
             Taro.switchTab({ url: '/pages/index/index' })
@@ -1270,16 +1261,17 @@ export default function OrderConfirm() {
           </View>
         </View>
       )}
-    </View>
-  )
-  } catch (err: any) {
-    console.error('OrderConfirm render error:', err)
-    return (
-      <View className='order-confirm' style={{ paddingTop: '200rpx', paddingLeft: '32rpx', paddingRight: '32rpx' }}>
-        <Text style={{ fontSize: '32rpx', fontWeight: 'bold', color: '#ba1a1a' }}>页面加载出错</Text>
-        <Text style={{ marginTop: '20rpx', fontSize: '26rpx', color: '#666' }}>{err?.message || String(err)}</Text>
-        <Text style={{ marginTop: '40rpx', fontSize: '28rpx', color: '#0d631b' }} onClick={() => Taro.navigateBack()}>返回重试</Text>
-      </View>
-    )
-  }
+        </View>
+      )
+    } catch (err: any) {
+      console.error('OrderConfirm render error:', err)
+      return (
+        <View className='order-confirm' style={{ paddingTop: '200rpx', paddingLeft: '32rpx', paddingRight: '32rpx' }}>
+          <Text style={{ fontSize: '32rpx', fontWeight: 'bold', color: '#ba1a1a' }}>页面加载出错</Text>
+          <Text style={{ marginTop: '20rpx', fontSize: '26rpx', color: '#666' }}>{err?.message || String(err)}</Text>
+          <Text style={{ marginTop: '40rpx', fontSize: '28rpx', color: '#0d631b' }} onClick={() => Taro.navigateBack()}>返回重试</Text>
+        </View>
+      )
+    }
+  })()
 }
