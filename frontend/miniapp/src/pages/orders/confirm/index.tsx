@@ -112,6 +112,16 @@ function HotelRoomModal({ room, visible, onClose }: any) {
       </View>
     </View>
   )
+  } catch (err: any) {
+    console.error('OrderConfirm render error:', err)
+    return (
+      <View className='order-confirm' style={{ paddingTop: '200rpx', paddingLeft: '32rpx', paddingRight: '32rpx' }}>
+        <Text style={{ fontSize: '32rpx', fontWeight: 'bold', color: '#ba1a1a' }}>页面加载出错</Text>
+        <Text style={{ marginTop: '20rpx', fontSize: '26rpx', color: '#666' }}>{err?.message || String(err)}</Text>
+        <Text style={{ marginTop: '40rpx', fontSize: '28rpx', color: '#0d631b' }} onClick={() => Taro.navigateBack()}>返回重试</Text>
+      </View>
+    )
+  }
 }
 
 export default function OrderConfirm() {
@@ -264,7 +274,7 @@ export default function OrderConfirm() {
   const loadTravelers = async () => {
     try {
       const res = await getTravelers()
-      const list = res.data || []
+      const list = Array.isArray(res.data) ? res.data : []
       setTravelers(list)
       // 若之前有选中但已被删除的 ID，自动清理；无选中时只勾选一位默认出行人
       setSelectedTravelerIds(prev => {
@@ -295,7 +305,7 @@ export default function OrderConfirm() {
   const loadPets = async () => {
     try {
       const res = await getPets()
-      const list = res.data || []
+      const list = Array.isArray(res.data) ? res.data : []
       setPets(list)
       // 从路由参数判断套餐类型，避免 useDidShow 执行时 bookingParams 尚未初始化导致误判
       const params = Taro.getCurrentInstance().router?.params
@@ -787,6 +797,7 @@ export default function OrderConfirm() {
 
   const pkgLabelMap: any = { couple: '一人一宠', single_person: '单人轻旅（无宠）', two_person_one_pet: '二人一宠', one_person_two_pet: '一人两宠', single_pet: '毛孩专属接送（无主人陪同）' }
 
+  try {
   return (
     <View className='order-confirm'>
       {/* 顶部导航栏 */}
@@ -930,7 +941,7 @@ export default function OrderConfirm() {
                 </Text>
               </View>
             )}
-            {bookingParams.addons?.length > 0 && (
+            {(Array.isArray(bookingParams.addons) ? bookingParams.addons : []).length > 0 && (
               <View className='info-row'>
                 <Text className='info-label'>活动选配</Text>
                 <View className='info-value-column'>
@@ -1261,4 +1272,14 @@ export default function OrderConfirm() {
       )}
     </View>
   )
+  } catch (err: any) {
+    console.error('OrderConfirm render error:', err)
+    return (
+      <View className='order-confirm' style={{ paddingTop: '200rpx', paddingLeft: '32rpx', paddingRight: '32rpx' }}>
+        <Text style={{ fontSize: '32rpx', fontWeight: 'bold', color: '#ba1a1a' }}>页面加载出错</Text>
+        <Text style={{ marginTop: '20rpx', fontSize: '26rpx', color: '#666' }}>{err?.message || String(err)}</Text>
+        <Text style={{ marginTop: '40rpx', fontSize: '28rpx', color: '#0d631b' }} onClick={() => Taro.navigateBack()}>返回重试</Text>
+      </View>
+    )
+  }
 }
