@@ -1622,9 +1622,11 @@ async def admin_get_orders(
                 for p in order_pets:
                     # 优先按 id 匹配，再按名字匹配
                     pet_profile = None
-                    if p.get("id"):
+                    pet_id = p.get("id")
+                    if pet_id:
+                        pet_id_str = str(pet_id)
                         for profile in pet_map.values():
-                            if profile.get("id") == p.get("id"):
+                            if str(profile.get("id", "")) == pet_id_str:
                                 pet_profile = profile
                                 break
                     if not pet_profile:
