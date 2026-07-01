@@ -17,24 +17,6 @@ function App({ children }) {
       console.log('User not logged in')
     }
 
-    // 获取公开系统设置（版本号等）
-    const systemInfo = Taro.getSystemInfoSync()
-    const isDevtools = systemInfo.platform === 'devtools'
-    // 开发工具固定走 localhost，避免 build 模式被 Taro 覆盖 NODE_ENV 后命中线上
-    const baseUrl = isDevtools
-      ? 'http://localhost:8081'
-      : (process.env.NODE_ENV === 'development' ? 'http://192.168.8.46:8081' : 'https://tailtravel.cn')
-    Taro.request({
-      url: `${baseUrl}/api/v1/settings/public`,
-      method: 'GET',
-      success: (res: any) => {
-        if (res.data?.code === 200 && res.data.data?.mp_version) {
-          Taro.setStorageSync('app_version', res.data.data.mp_version.value)
-          console.log('[App] 版本号已更新:', res.data.data.mp_version.value)
-        }
-      }
-    })
-
     // 检查小程序更新
     const updateManager = Taro.getUpdateManager()
     updateManager.onCheckForUpdate((res) => {
@@ -48,15 +30,12 @@ function App({ children }) {
         content: '新版本已准备好，重启后即可使用最新功能',
         confirmText: '立即重启',
         cancelText: '稍后',
-        success: (modalRes) => {
-          if (modalRes.confirm) {
+        success: (res) => {
+          if (res.confirm) {
             updateManager.applyUpdate()
           }
-        },
+        }
       })
-    })
-    updateManager.onUpdateFailed(() => {
-      console.error('[Update] 新版本下载失败')
     })
   }, [])
 

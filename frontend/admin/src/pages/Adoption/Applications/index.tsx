@@ -60,6 +60,13 @@ export default function AdoptionApplicationsManage() {
       render: (_: any, record: any) => record.dog?.name || '-',
     },
     {
+      title: '用户ID',
+      dataIndex: 'user_id',
+      width: 100,
+      search: false,
+      render: (v: number) => v || '-',
+    },
+    {
       title: '申请人',
       dataIndex: 'name',
       width: 120,
@@ -120,27 +127,44 @@ export default function AdoptionApplicationsManage() {
           <Button type="link" size="small" icon={<EyeOutlined />} onClick={() => openDetail(record)}>
             详情
           </Button>
-          {record.status !== 1 && (
-            <Button type="link" size="small" onClick={() => updateStatus(record.id, 1)}>
-              通过
-            </Button>
-          )}
-          {record.status !== 3 && (
-            <Button type="link" size="small" style={{ color: '#1890ff' }} onClick={() => updateStatus(record.id, 3)}>
-              完成领养
-            </Button>
-          )}
-          {record.status !== 2 && (
-            <Popconfirm
-              title="确认拒绝"
-              description="拒绝后不可恢复，是否继续？"
-              onConfirm={() => updateStatus(record.id, 2)}
-            >
-              <Button type="link" danger size="small">
-                拒绝
+          {/* 待审核：显示全部操作 */}
+          {record.status === 0 && (
+            <>
+              <Button type="link" size="small" onClick={() => updateStatus(record.id, 1)}>
+                通过
               </Button>
-            </Popconfirm>
+              <Button type="link" size="small" style={{ color: '#1890ff' }} onClick={() => updateStatus(record.id, 3)}>
+                完成领养
+              </Button>
+              <Popconfirm
+                title="确认拒绝"
+                description="拒绝后不可恢复，是否继续？"
+                onConfirm={() => updateStatus(record.id, 2)}
+              >
+                <Button type="link" danger size="small">
+                  拒绝
+                </Button>
+              </Popconfirm>
+            </>
           )}
+          {/* 已通过：可完成领养或拒绝 */}
+          {record.status === 1 && (
+            <>
+              <Button type="link" size="small" style={{ color: '#1890ff' }} onClick={() => updateStatus(record.id, 3)}>
+                完成领养
+              </Button>
+              <Popconfirm
+                title="确认拒绝"
+                description="拒绝后不可恢复，是否继续？"
+                onConfirm={() => updateStatus(record.id, 2)}
+              >
+                <Button type="link" danger size="small">
+                  拒绝
+                </Button>
+              </Popconfirm>
+            </>
+          )}
+          {/* 已拒绝和已完成：只显示详情，无操作 */}
         </Space>
       ),
     },
@@ -177,18 +201,15 @@ export default function AdoptionApplicationsManage() {
         {current && (
           <>
             <Descriptions title="申请人信息" bordered column={2}>
+              <Descriptions.Item label="用户ID">{current.user_id || '-'}</Descriptions.Item>
               <Descriptions.Item label="姓名">{current.name}</Descriptions.Item>
               <Descriptions.Item label="性别">{current.gender || '-'}</Descriptions.Item>
               <Descriptions.Item label="年龄">{current.age || '-'}</Descriptions.Item>
               <Descriptions.Item label="电话">{current.phone}</Descriptions.Item>
-              <Descriptions.Item label="微信号">{current.wechat || '-'}</Descriptions.Item>
               <Descriptions.Item label="所在城市">{current.city || '-'}</Descriptions.Item>
               <Descriptions.Item label="住房情况">{current.housing || '-'}</Descriptions.Item>
               <Descriptions.Item label="申请时间">
                 {current.created_at ? dayjs(current.created_at).format('YYYY-MM-DD HH:mm') : '-'}
-              </Descriptions.Item>
-              <Descriptions.Item label="详细地址" span={2}>
-                {current.address || '-'}
               </Descriptions.Item>
               <Descriptions.Item label="养宠经验" span={2}>
                 {current.experience || '-'}
@@ -198,6 +219,7 @@ export default function AdoptionApplicationsManage() {
               </Descriptions.Item>
             </Descriptions>
             <Descriptions title="狗狗信息" bordered column={2} style={{ marginTop: 24 }}>
+              <Descriptions.Item label="狗狗ID">{current.dog?.id || '-'}</Descriptions.Item>
               <Descriptions.Item label="名字">{current.dog?.name || '-'}</Descriptions.Item>
               <Descriptions.Item label="品种">{current.dog?.breed || '-'}</Descriptions.Item>
             </Descriptions>
@@ -208,21 +230,32 @@ export default function AdoptionApplicationsManage() {
                 </Tag>
               </div>
               <Space>
-                {current.status !== 1 && (
-                  <Button type="primary" onClick={() => updateStatus(current.id, 1)}>
-                    通过
-                  </Button>
+                {/* 待审核：显示全部操作 */}
+                {current.status === 0 && (
+                  <>
+                    <Button type="primary" onClick={() => updateStatus(current.id, 1)}>
+                      通过
+                    </Button>
+                    <Button onClick={() => updateStatus(current.id, 3)}>
+                      完成领养
+                    </Button>
+                    <Button danger onClick={() => updateStatus(current.id, 2)}>
+                      拒绝
+                    </Button>
+                  </>
                 )}
-                {current.status !== 3 && (
-                  <Button onClick={() => updateStatus(current.id, 3)}>
-                    完成领养
-                  </Button>
+                {/* 已通过：可完成领养或拒绝 */}
+                {current.status === 1 && (
+                  <>
+                    <Button type="primary" onClick={() => updateStatus(current.id, 3)}>
+                      完成领养
+                    </Button>
+                    <Button danger onClick={() => updateStatus(current.id, 2)}>
+                      拒绝
+                    </Button>
+                  </>
                 )}
-                {current.status !== 2 && (
-                  <Button danger onClick={() => updateStatus(current.id, 2)}>
-                    拒绝
-                  </Button>
-                )}
+                {/* 已拒绝和已完成：无操作按钮 */}
               </Space>
             </div>
           </>

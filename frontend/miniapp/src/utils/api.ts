@@ -2,18 +2,25 @@ import Taro, { eventCenter } from '@tarojs/taro'
 
 // 环境切换：开发走本地网关，生产走线上域名
 // 小程序开发工具需勾选「设置 → 项目设置 → 不校验合法域名、web-view（业务域名）、TLS版本以及HTTPS证书」
-const isDev = process.env.NODE_ENV === 'development'
+// 使用微信的 getAccountInfoSync 获取小程序版本信息来区分环境
+let env = 'production'
+try {
+  const accountInfo = Taro.getAccountInfoSync()
+  // envVersion: 'develop' | 'trial' | 'release'
+  env = accountInfo.miniProgram.envVersion || 'production'
+} catch (e) {
+  // 如果获取失败，默认生产环境
+}
+
 // 模拟器用 localhost，真机预览用局域网 IP
 const systemInfo = Taro.getSystemInfoSync()
 const isDevtools = systemInfo.platform === 'devtools'
-// 优先按运行平台判断：开发工具固定走 localhost，避免 build 模式被 Taro 覆盖 NODE_ENV 后命中线上
-export const BASE_URL = isDevtools
-  ? 'http://localhost:8081'
-  : (isDev ? 'http://192.168.8.46:8081' : 'https://tailtravel.cn')
-// 图片使用生产域名（微信真机预览/体验版必须走已备案域名，内网IP会被拦截）
-// 注意：本地开发环境新上传的图片在生产服务器上不存在，真机预览时无法显示
-// 如需在真机上测试新图片，请手动将图片同步到生产服务器，或使用 ngrok 内网穿透
-export const IMAGE_BASE_URL = 'https://tailtravel.cn'
+// develop/trial 走本地，release 走线上
+export const BASE_URL = (env === 'develop' || env === 'trial')
+  ? (isDevtools ? 'http://localhost:8080' : 'http://192.168.31.44:8080')
+  : 'https://tailtravel.cn'
+// 图片基础 URL：开发环境使用 BASE_URL（本地），生产环境使用线上域名
+export const IMAGE_BASE_URL = (env === 'develop' || env === 'trial') ? BASE_URL : 'https://tailtravel.cn'
 
 /** 补全图片 URL 并添加压缩参数 */
 /** 安全返回：页面栈大于1时正常返回，否则跳转首页 */
@@ -28,9 +35,22 @@ export function safeNavigateBack(fallbackUrl?: string) {
 
 export function compressImageUrl(url?: string, width?: number): string {
   if (!url) return ''
-  const fullUrl = url.startsWith('http') ? url : `${IMAGE_BASE_URL}${url}`
+  // 开发环境使用 BASE_URL（本地），生产环境使用 IMAGE_BASE_URL（线上）
+  const baseUrl = (env === 'develop' || env === 'trial') ? BASE_URL : IMAGE_BASE_URL
+  const fullUrl = url.startsWith('http') ? url : `${baseUrl}${url}`
+  // 如果 URL 已经包含查询参数，不再添加压缩参数
+  if (fullUrl.includes('?')) return fullUrl
   const w = width || 800
   return `${fullUrl}?w=${w}&q=75`
+}
+
+/** 获取图片完整 URL（自动根据环境选择域名） */
+export function getImageUrl(url?: string): string {
+  if (!url) return ''
+  if (url.startsWith('http')) return url
+  // 开发环境使用 BASE_URL（本地），生产环境使用 IMAGE_BASE_URL（线上）
+  const baseUrl = (env === 'develop' || env === 'trial') ? BASE_URL : IMAGE_BASE_URL
+  return `${baseUrl}${url}`
 }
 
 export async function deleteAccount() {
@@ -74,7 +94,8 @@ export async function request(path: string, options: any = {}) {
       url: `${BASE_URL}${path}`,
       method: options.method || 'GET',
       data: options.data || {},
-      header: headers
+      header: headers,
+        timeout: 30000
     })
 
     console.log(`[Request] ${path} response status=${res.statusCode}`, res.data)
@@ -307,8 +328,8 @@ export function getAdoptionDogs(params?: any) {
   return request('/api/v1/adoption/dogs', { data: params, skipAuthModal: true })
 }
 
-export function getAdoptionDogDetail(id: number) {
-  return request(`/api/v1/adoption/dogs/${id}`, { skipAuthModal: true })
+export function getAdoptionDogDetail(id: number, options?: any) {
+  return request(`/api/v1/adoption/dogs/${id}`, { skipAuthModal: true, ...options })
 }
 
 export function submitAdoptionApplication(id: number, data: any) {

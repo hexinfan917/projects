@@ -14,6 +14,8 @@ class Banner(Base):
     
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     title: Mapped[Optional[str]] = mapped_column(String(200), nullable=True, comment="轮播图标题")
+    subtitle: Mapped[Optional[str]] = mapped_column(String(500), nullable=True, comment="轮播图副标题")
+    tag: Mapped[Optional[str]] = mapped_column(String(100), nullable=True, comment="轮播图标签，如精选路线")
     image_url: Mapped[str] = mapped_column(String(500), nullable=False, comment="图片URL")
     link_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True, comment="跳转链接")
     

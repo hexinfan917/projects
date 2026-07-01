@@ -1,6 +1,6 @@
 import { PageContainer, ProTable, ModalForm, ProFormText, ProFormSelect, ProFormDigit, ProFormRadio, ProFormDateTimePicker, ProFormTextArea, ProFormDependency } from '@ant-design/pro-components';
-import { Button, Tag, message, Popconfirm, Space } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import { Button, Tag, message, Popconfirm, Space, Modal, Select } from 'antd';
+import { PlusOutlined, EditOutlined, DeleteOutlined, GiftOutlined } from '@ant-design/icons';
 import { useRef, useState, useEffect } from 'react';
 import { request } from '@umijs/max';
 import dayjs from 'dayjs';
@@ -33,6 +33,12 @@ export default function CouponTemplateList() {
   const [routeList, setRouteList] = useState<any[]>([]);
   const [routeTypeList, setRouteTypeList] = useState<any[]>([]);
   const [userOptions, setUserOptions] = useState<any[]>([]);
+
+  // 发放弹窗状态
+  const [grantModalVisible, setGrantModalVisible] = useState(false);
+  const [grantTemplate, setGrantTemplate] = useState<any>(null);
+  const [grantUserOptions, setGrantUserOptions] = useState<any[]>([]);
+  const [selectedGrantUsers, setSelectedGrantUsers] = useState<number[]>([]);
 
   useEffect(() => {
     request('/api/v1/admin/routes', { params: { page: 1, page_size: 100 } })
@@ -109,6 +115,42 @@ export default function CouponTemplateList() {
     }
   };
 
+  // 打开发放弹窗
+  const openGrantModal = (record: any) => {
+    setGrantTemplate(record);
+    setSelectedGrantUsers([]);
+    setGrantUserOptions([]);
+    setGrantModalVisible(true);
+  };
+
+  // 确认发放
+  const handleGrant = async () => {
+    if (!selectedGrantUsers || selectedGrantUsers.length === 0) {
+      message.error('请选择要发放的用户');
+      return;
+    }
+    try {
+      const res = await request('/api/v1/admin/coupons/grant', {
+        method: 'POST',
+        data: {
+          template_id: grantTemplate.id,
+          user_ids: selectedGrantUsers,
+        },
+      });
+      if (res.code === 200) {
+        message.success(`成功发放${res.data?.granted_count || 0}张优惠券`);
+        setGrantModalVisible(false);
+        setGrantTemplate(null);
+        setSelectedGrantUsers([]);
+        tableRef.current?.reload();
+      } else {
+        message.error(res.message || '发放失败');
+      }
+    } catch (error) {
+      message.error('发放失败');
+    }
+  };
+
   const columns = [
     { title: 'ID', dataIndex: 'id', width: 60, search: false },
     { title: '名称', dataIndex: 'name', width: 180, ellipsis: true },
@@ -175,9 +217,12 @@ export default function CouponTemplateList() {
     {
       title: '操作',
       valueType: 'option',
-      width: 150,
+      width: 200,
       fixed: 'right',
       render: (_: any, record: any) => [
+        <Button key="grant" type="link" size="small" icon={<GiftOutlined />} onClick={() => openGrantModal(record)}>
+          发放
+        </Button>,
         <Button key="edit" type="link" size="small" icon={<EditOutlined />} onClick={() => openModal(record)}>
           编辑
         </Button>,
@@ -247,7 +292,7 @@ export default function CouponTemplateList() {
           label="类型"
           rules={[{ required: true }]}
           fieldProps={{
-            onChange: (value: number) => setCouponType(value),
+            onChange: (v: number) => setCouponType(v),
           }}
           options={[
             { label: '满减券', value: 1 },
@@ -257,43 +302,102 @@ export default function CouponTemplateList() {
           ]}
         />
         <ProFormDependency name={['type']}>
-          {({ type }) => {
-            if (type === 4) return null;
-            return (
-              <>
-                <ProFormDigit name="value" label="优惠值" rules={[{ required: true }]} min={0} step={0.01} tooltip="满减/立减填金额，折扣填0-1之间小数" />
-                <ProFormDigit name="min_amount" label="最低门槛金额" min={0} initialValue={0} tooltip="0表示无门槛" />
-                <ProFormDigit name="max_discount" label="折扣券最高优惠上限" min={0} initialValue={0} tooltip="仅折扣券有效，0表示不限制" />
-              </>
-            );
-          }}
+          {({ type }) => (
+            <>
+              {type !== 4 && (
+                <>
+                  <ProFormDigit
+                    name="value"
+                    label="优惠值"
+                    rules={[{ required: true }]}
+                    min={0}
+                    fieldProps={{ precision: type === 2 ? 1 : 2, step: type === 2 ? 0.1 : 1 }}
+                    tooltip={type === 2 ? '折扣值，如8.5折填8.5' : '满减/立减金额'}
+                  />
+                  <ProFormDigit
+                    name="min_amount"
+                    label="最低订单金额"
+                    min={0}
+                    fieldProps={{ precision: 2, step: 1 }}
+                    tooltip="订单金额达到此门槛才能使用，0表示无门槛"
+                  />
+                  {type === 2 && (
+                    <ProFormDigit
+                      name="max_discount"
+                      label="最高优惠金额"
+                      min={0}
+                      fieldProps={{ precision: 2, step: 1 }}
+                      tooltip="折扣券最高可减金额，0表示不限制"
+                    />
+                  )}
+                </>
+              )}
+            </>
+          )}
         </ProFormDependency>
-        <ProFormDigit name="total_count" label="发放总量" min={0} initialValue={0} tooltip="0表示不限量" />
-        <ProFormDigit name="per_user_limit" label="每人限领" min={0} initialValue={1} tooltip="0表示不限" />
-
+        <ProFormDigit
+          name="total_count"
+          label="发放总量"
+          min={0}
+          tooltip="0表示不限量"
+        />
+        <ProFormDigit
+          name="per_user_limit"
+          label="每人限领"
+          min={0}
+          tooltip="0表示不限"
+          initialValue={1}
+        />
         <ProFormRadio.Group
           name="valid_type"
           label="有效期类型"
+          rules={[{ required: true }]}
+          initialValue={1}
+          fieldProps={{
+            onChange: (e: any) => setApplicableType(e.target.value),
+          }}
           options={[
             { label: '领取后X天有效', value: 1 },
             { label: '固定时间段', value: 2 },
           ]}
         />
-        <ProFormDigit name="valid_days" label="领取后有效天数" min={1} initialValue={7} tooltip="valid_type=1时生效" />
-        <ProFormDateTimePicker name="valid_start_time" label="固定有效期开始" tooltip="valid_type=2时生效" />
-        <ProFormDateTimePicker name="valid_end_time" label="固定有效期结束" tooltip="valid_type=2时生效" />
-
+        <ProFormDependency name={['valid_type']}>
+          {({ valid_type }) => (
+            <>
+              {valid_type === 1 ? (
+                <ProFormDigit
+                  name="valid_days"
+                  label="领取后有效天数"
+                  rules={[{ required: true }]}
+                  min={1}
+                  initialValue={7}
+                />
+              ) : (
+                <>
+                  <ProFormDateTimePicker
+                    name="valid_start_time"
+                    label="固定有效期开始"
+                    rules={[{ required: true }]}
+                    fieldProps={{ format: 'YYYY-MM-DD HH:mm' }}
+                  />
+                  <ProFormDateTimePicker
+                    name="valid_end_time"
+                    label="固定有效期结束"
+                    rules={[{ required: true }]}
+                    fieldProps={{ format: 'YYYY-MM-DD HH:mm' }}
+                  />
+                </>
+              )}
+            </>
+          )}
+        </ProFormDependency>
         <ProFormSelect
           name="applicable_type"
           label="适用范围"
+          rules={[{ required: true }]}
           initialValue={1}
           fieldProps={{
-            onChange: (value: number) => {
-              setApplicableType(value);
-              if (value === 1) {
-                formRef.current?.setFieldsValue({ applicable_ids: [] });
-              }
-            },
+            onChange: (v: number) => setApplicableType(v),
           }}
           options={[
             { label: '全部路线', value: 1 },
@@ -302,50 +406,55 @@ export default function CouponTemplateList() {
             { label: '指定用户', value: 4 },
           ]}
         />
-        {applicableType === 2 && (
-          <ProFormSelect
-            name="applicable_ids"
-            label="适用路线"
-            mode="multiple"
-            showSearch
-            placeholder="请选择适用路线"
-            options={routeList.map((r: any) => ({ label: r.name, value: r.id }))}
-          />
-        )}
-        {applicableType === 3 && (
-          <ProFormSelect
-            name="applicable_ids"
-            label="适用路线类型"
-            mode="multiple"
-            placeholder="请选择适用路线类型"
-            options={routeTypeList.map((t: any) => ({ label: t.name, value: t.id }))}
-          />
-        )}
-        {applicableType === 4 && (
-          <ProFormSelect
-            name="applicable_ids"
-            label="适用用户"
-            mode="multiple"
-            showSearch
-            filterOption={false}
-            placeholder="输入手机号或昵称搜索用户"
-            fieldProps={{
-              onSearch: async (keyword: string) => {
-                if (!keyword || keyword.length < 2) return;
-                const res = await request('/api/v1/admin/users', { params: { keyword, page: 1, page_size: 20 } });
-                if (res.code === 200) {
-                  const opts = (res.data?.users || []).map((u: any) => ({
-                    label: `${u.nickname} (${u.phone || '-'})`,
-                    value: u.id,
-                  }));
-                  setUserOptions(opts);
-                }
-              },
-              notFoundContent: '输入关键词搜索用户',
-            }}
-            options={userOptions}
-          />
-        )}
+        <ProFormDependency name={['applicable_type']}>
+          {({ applicable_type }) => (
+            <>
+              {applicable_type === 2 && (
+                <ProFormSelect
+                  name="applicable_ids"
+                  label="适用路线"
+                  mode="multiple"
+                  placeholder="请选择适用路线"
+                  options={routeList.map((r: any) => ({ label: r.name, value: r.id }))}
+                />
+              )}
+              {applicable_type === 3 && (
+                <ProFormSelect
+                  name="applicable_ids"
+                  label="适用路线类型"
+                  mode="multiple"
+                  placeholder="请选择适用路线类型"
+                  options={routeTypeList.map((t: any) => ({ label: t.name, value: t.id }))}
+                />
+              )}
+              {applicable_type === 4 && (
+                <ProFormSelect
+                  name="applicable_ids"
+                  label="适用用户"
+                  mode="multiple"
+                  showSearch
+                  filterOption={false}
+                  placeholder="输入手机号或昵称搜索用户"
+                  fieldProps={{
+                    onSearch: async (keyword: string) => {
+                      if (!keyword || keyword.length < 2) return;
+                      const res = await request('/api/v1/admin/users', { params: { keyword, page: 1, page_size: 20 } });
+                      if (res.code === 200) {
+                        const opts = (res.data?.users || []).map((u: any) => ({
+                          label: `${u.nickname} (${u.phone || '-'})`,
+                          value: u.id,
+                        }));
+                        setUserOptions(opts);
+                      }
+                    },
+                    notFoundContent: '输入关键词搜索用户',
+                  }}
+                  options={userOptions}
+                />
+              )}
+            </>
+          )}
+        </ProFormDependency>
 
         <ProFormTextArea
           name="description"
@@ -362,6 +471,52 @@ export default function CouponTemplateList() {
           ]}
         />
       </ModalForm>
+
+      {/* 发放优惠券弹窗 */}
+      <Modal
+        title={`发放优惠券：${grantTemplate?.name || ''}`}
+        open={grantModalVisible}
+        onOk={handleGrant}
+        onCancel={() => {
+          setGrantModalVisible(false);
+          setGrantTemplate(null);
+          setSelectedGrantUsers([]);
+        }}
+        okText="确认发放"
+        cancelText="取消"
+        destroyOnClose
+      >
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ marginBottom: 8, color: '#666' }}>
+            已发放 / 总量：{grantTemplate?.claimed_count || 0} / {grantTemplate?.total_count > 0 ? grantTemplate?.total_count : '不限'}
+          </div>
+          <div style={{ marginBottom: 8, color: '#666' }}>
+            有效期：{grantTemplate?.valid_type === 1 ? `领取后${grantTemplate?.valid_days}天` : '固定时间段'}
+          </div>
+        </div>
+        <Select
+          mode="multiple"
+          showSearch
+          filterOption={false}
+          placeholder="输入手机号或昵称搜索用户"
+          style={{ width: '100%' }}
+          value={selectedGrantUsers}
+          onChange={(value: number[]) => setSelectedGrantUsers(value)}
+          onSearch={async (keyword: string) => {
+            if (!keyword || keyword.length < 2) return;
+            const res = await request('/api/v1/admin/users', { params: { keyword, page: 1, page_size: 20 } });
+            if (res.code === 200) {
+              const opts = (res.data?.users || []).map((u: any) => ({
+                label: `${u.nickname} (${u.phone || '-'})`,
+                value: u.id,
+              }));
+              setGrantUserOptions(opts);
+            }
+          }}
+          notFoundContent="输入关键词搜索用户"
+          options={grantUserOptions}
+        />
+      </Modal>
     </PageContainer>
   );
 }

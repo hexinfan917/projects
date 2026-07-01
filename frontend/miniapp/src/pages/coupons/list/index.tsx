@@ -125,7 +125,11 @@ export default function CouponList() {
               <View className='coupon-right-bottom'>
                 {item.type !== 4 && <Text className='coupon-tag'>不可退</Text>}
                 {item.status === 1 && (
-                  <View className='use-btn'>
+                  <View className='use-btn' onClick={(e) => {
+                    e.stopPropagation()
+                    // 跳转到路线列表（活动页面）
+                    Taro.switchTab({ url: '/pages/routes/index' })
+                  }}>
                     <Text className='use-btn-text'>去使用</Text>
                   </View>
                 )}

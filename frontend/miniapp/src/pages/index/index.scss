@@ -84,7 +84,7 @@
 // 1. 沉浸式 Hero 轮播
 .hero-section {
   position: relative;
-  height: 820rpx;
+  height: 700rpx;
   width: 100%;
   overflow: hidden;
 }
@@ -133,7 +133,7 @@
 
 .hero-content {
   position: absolute;
-  bottom: 140rpx;
+  bottom: 120rpx;
   left: 40rpx;
   right: 40rpx;
   color: #fff;
@@ -172,9 +172,10 @@
 .quick-modules-wrap {
   position: relative;
   z-index: 10;
-  margin-top: -48rpx;
-  margin-bottom: 32rpx;
-  padding: 0 40rpx;
+  margin-top: 0;
+  margin-bottom: 0;
+  padding: 24rpx 40rpx;
+  background: #fcfdfc;
 }
 
 .quick-modules-shadow {
@@ -185,7 +186,7 @@
   position: relative;
   background: transparent;
   border-radius: 0;
-  padding: 16rpx 28rpx;
+  padding: 0;
   box-shadow: none;
   display: flex;
   justify-content: space-between;
@@ -212,31 +213,32 @@
 }
 
 .quick-module-icon {
-  width: 72rpx;
-  height: 72rpx;
+  width: 96rpx;
+  height: 96rpx;
   border-radius: 24rpx;
-  background: rgba(255, 255, 255, 0.95);
+  background: #f0f0f0;
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.06);
 }
 
 .quick-module-icon-img {
-  width: 36rpx;
-  height: 36rpx;
+  width: 44rpx;
+  height: 44rpx;
   display: block;
 }
 
 .quick-module-label {
-  font-size: 22rpx;
-  font-weight: 500;
-  color: #fff;
-  text-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.4);
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #006B1B;
+  text-shadow: none;
 }
 
 // 区块通用
 .section-block {
-  margin-bottom: 48rpx;
+  margin-bottom: 16rpx;
 }
 
 .section-header-row {
@@ -244,7 +246,7 @@
   justify-content: space-between;
   align-items: flex-end;
   padding: 0 40rpx;
-  margin-bottom: 24rpx;
+  margin-bottom: 16rpx;
 }
 
 .section-title-main {
@@ -298,7 +300,7 @@
   display: inline-block;
   position: relative;
   width: 702rpx;
-  height: auto;
+  height: 420rpx;
   border-radius: 24rpx;
   overflow: hidden;
   margin-right: 20rpx;
@@ -317,9 +319,11 @@
   transition: transform 0.2s ease;
 
   .trip-image {
-    position: relative;
+    position: absolute;
+    top: 0;
+    left: 0;
     width: 100%;
-    height: auto;
+    height: 100%;
     display: block;
   }
 
@@ -563,24 +567,16 @@
 // 会员活动弹窗
 .member-popup-wrap {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  top: 0; left: 0; right: 0; bottom: 0;
   z-index: 1000;
   display: flex;
   align-items: center;
   justify-content: center;
-
   .member-popup-mask {
     position: absolute;
-    top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-    background: rgba(0, 0, 0, 0.6);
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.6);
   }
-
   .member-popup-content {
     position: relative;
     width: 80%;
@@ -589,8 +585,7 @@
     border-radius: 24rpx;
     padding: 40rpx 32rpx 32rpx;
     z-index: 1;
-    box-shadow: 0 16rpx 48rpx rgba(0, 0, 0, 0.2);
-
+    box-shadow: 0 16rpx 48rpx rgba(0,0,0,0.2);
     .member-popup-close {
       position: absolute;
       top: -60rpx;
@@ -599,20 +594,18 @@
       height: 48rpx;
       line-height: 48rpx;
       text-align: center;
-      background: rgba(255, 255, 255, 0.2);
+      background: rgba(255,255,255,0.2);
       color: #fff;
       border-radius: 50%;
       font-size: 28rpx;
       z-index: 2;
     }
-
     .member-popup-poster {
       width: 100%;
       border-radius: 16rpx;
       display: block;
       margin-bottom: 24rpx;
     }
-
     .member-popup-title {
       font-size: 36rpx;
       font-weight: 700;
@@ -621,7 +614,6 @@
       display: block;
       margin-bottom: 12rpx;
     }
-
     .member-popup-subtitle {
       font-size: 26rpx;
       color: #6b7280;
@@ -629,13 +621,11 @@
       display: block;
       margin-bottom: 20rpx;
     }
-
     .member-popup-benefits {
       background: #FFF8F5;
       border-radius: 12rpx;
       padding: 20rpx 24rpx;
       margin-bottom: 20rpx;
-
       .member-popup-benefit {
         font-size: 26rpx;
         color: #4b5563;
@@ -643,41 +633,35 @@
         line-height: 1.6;
       }
     }
-
     .member-popup-price-row {
       display: flex;
       align-items: baseline;
       justify-content: center;
       gap: 16rpx;
       margin-bottom: 24rpx;
-
       .member-popup-price {
         font-size: 40rpx;
         font-weight: 700;
         color: #FF6B35;
       }
-
       .member-popup-original {
         font-size: 26rpx;
         color: #9CA3AF;
         text-decoration: line-through;
       }
     }
-
     .member-popup-footer {
       .member-popup-btn {
         padding: 24rpx 0;
         border-radius: 44rpx;
         text-align: center;
-        box-shadow: 0 8rpx 24rpx rgba(255, 107, 53, 0.35);
-
+        box-shadow: 0 8rpx 24rpx rgba(255,107,53,0.35);
         .member-popup-btn-text {
           font-size: 32rpx;
           font-weight: 600;
           color: #fff;
         }
       }
-
       .member-popup-close-text {
         display: block;
         text-align: center;

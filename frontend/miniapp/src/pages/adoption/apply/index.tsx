@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import Taro from '@tarojs/taro'
-import { View, Text, Input, Textarea, Button, ScrollView, Image } from '@tarojs/components'
+import { View, Text, Input, Textarea, Button, ScrollView, Image, Picker } from '@tarojs/components'
 import { submitAdoptionApplication, getAdoptionDogDetail, safeNavigateBack, IMAGE_BASE_URL } from '../../../utils/api'
+import { CITY_DATA } from './cityData'
 import './index.scss'
 
 const GENDER_OPTIONS = ['男', '女']
@@ -16,12 +17,16 @@ export default function AdoptionApply() {
     age: '',
     phone: '',
     city: '',
+    district: '',
     housing: '',
     hasExperience: false,
     otherPets: '',
     reason: '',
     commitment: false,
   })
+  const [cityPickerVisible, setCityPickerVisible] = useState(false)
+  const [selectedCityIndex, setSelectedCityIndex] = useState(0)
+  const [selectedDistrictIndex, setSelectedDistrictIndex] = useState(0)
   const [submitting, setSubmitting] = useState(false)
   const [success, setSuccess] = useState(false)
 
@@ -53,7 +58,8 @@ export default function AdoptionApply() {
     if (!form.gender) return '请选择性别'
     if (!form.age.trim()) return '请填写年龄'
     if (!form.phone.trim()) return '请填写联系电话'
-    if (!form.city.trim()) return '请填写所在城市'
+    if (!form.city) return '请选择所在地区'
+    if (!form.district) return '请选择所在地区'
     if (!form.housing) return '请选择居住情况'
     if (!form.reason.trim()) return '请填写领养理由'
     if (!form.commitment) return '请勾选领养承诺'
@@ -74,7 +80,7 @@ export default function AdoptionApply() {
         gender: form.gender,
         age: form.age,
         phone: form.phone,
-        city: form.city,
+        city: `${form.city} ${form.district}`,
         housing: form.housing,
         experience: `${form.hasExperience ? '有养犬经历' : '无养犬经历'}；现有宠物：${form.otherPets || '无'}`,
         reason: form.reason,
@@ -184,13 +190,17 @@ export default function AdoptionApply() {
                 />
               </View>
               <View className='form-field'>
-                <Text className='field-label'>居住城市</Text>
-                <Input
-                  className='field-input'
-                  placeholder='例如：上海市 静安区'
-                  value={form.city}
-                  onInput={(e) => handleChange('city', e.detail.value)}
-                />
+                <Text className='field-label'>所在地区<Text className='required'>*</Text></Text>
+                <View className='city-picker-wrap' onClick={() => setCityPickerVisible(true)}>
+                  <View className={`city-picker-item ${form.city ? 'active' : ''}`}>
+                    <Text className='city-picker-text'>{form.city || '市'}</Text>
+                    <Text className='city-picker-arrow'>▼</Text>
+                  </View>
+                  <View className={`city-picker-item ${form.district ? 'active' : ''}`}>
+                    <Text className='city-picker-text'>{form.district || '区'}</Text>
+                    <Text className='city-picker-arrow'>▼</Text>
+                  </View>
+                </View>
               </View>
             </View>
           </View>
@@ -294,7 +304,6 @@ export default function AdoptionApply() {
           <Text className='submit-text'>{submitting ? '提交中...' : '提交申请'}</Text>
           <Text className='submit-icon'>▶</Text>
         </Button>
-        <Text className='submit-tip'>提交即代表您同意我们的《领养服务协议》</Text>
       </View>
 
       {/* 成功弹窗 */}
@@ -308,6 +317,66 @@ export default function AdoptionApply() {
             <Text className='success-desc'>我们的志愿者将在3个工作日内与您联系，请保持电话畅通。</Text>
             <View className='success-btn' onClick={handleSuccessConfirm}>
               <Text className='success-btn-text'>返回首页</Text>
+            </View>
+          </View>
+        </View>
+      )}
+      {/* 城市选择器弹窗 */}
+      {cityPickerVisible && (
+        <View className='city-picker-overlay' onClick={() => setCityPickerVisible(false)}>
+          <View className='city-picker-modal' onClick={(e) => e.stopPropagation()}>
+            <View className='city-picker-header'>
+              <Text className='city-picker-title'>选择所在地区</Text>
+              <Text className='city-picker-close' onClick={() => setCityPickerVisible(false)}>✕</Text>
+            </View>
+            <View className='city-picker-body'>
+              <View className='city-picker-column'>
+                <View className='city-picker-column-title'>城市</View>
+                <ScrollView className='city-picker-list' scrollY>
+                  {CITY_DATA.map((city, index) => (
+                    <View
+                      key={city.name}
+                      className={`city-picker-list-item ${selectedCityIndex === index ? 'active' : ''}`}
+                      onClick={() => {
+                        setSelectedCityIndex(index)
+                        setSelectedDistrictIndex(0)
+                      }}
+                    >
+                      <Text className='city-picker-list-text'>{city.name}</Text>
+                    </View>
+                  ))}
+                </ScrollView>
+              </View>
+              <View className='city-picker-column'>
+                <View className='city-picker-column-title'>区县</View>
+                <ScrollView className='city-picker-list' scrollY>
+                  {CITY_DATA[selectedCityIndex]?.districts.map((district, index) => (
+                    <View
+                      key={district}
+                      className={`city-picker-list-item ${selectedDistrictIndex === index ? 'active' : ''}`}
+                      onClick={() => setSelectedDistrictIndex(index)}
+                    >
+                      <Text className='city-picker-list-text'>{district}</Text>
+                    </View>
+                  ))}
+                </ScrollView>
+              </View>
+            </View>
+            <View className='city-picker-footer'>
+              <View className='city-picker-cancel' onClick={() => setCityPickerVisible(false)}>
+                <Text className='city-picker-cancel-text'>取消</Text>
+              </View>
+              <View
+                className='city-picker-confirm'
+                onClick={() => {
+                  const city = CITY_DATA[selectedCityIndex]
+                  const district = city.districts[selectedDistrictIndex]
+                  setForm(prev => ({ ...prev, city: city.name, district }))
+                  setCityPickerVisible(false)
+                }}
+              >
+                <Text className='city-picker-confirm-text'>确定</Text>
+              </View>
             </View>
           </View>
         </View>

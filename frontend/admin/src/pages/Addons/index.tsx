@@ -97,7 +97,10 @@ function RoomImageUploader({ value = [], onChange }: any) {
         </Button>
       </Upload>
       <div style={{ marginTop: 8, padding: 8, background: '#f6ffed', border: '1px solid #b7eb8f', borderRadius: 4, color: '#389e0d', fontSize: 12, lineHeight: 1.5 }}>
-        建议 750×420px（16:9），上传后自动中心裁剪
+        <div style={{ fontWeight: 600, marginBottom: 4 }}>酒店房型图片尺寸建议</div>
+        <div>建议尺寸：宽 750px，高 420px（比例 16:9）</div>
+        <div>文件格式：JPG / PNG，建议控制在 500KB 以内</div>
+        <div>上传后系统将自动按 16:9 比例中心裁剪。该图用于订单确认页酒店房型弹窗轮播展示。</div>
       </div>
     </div>
   );

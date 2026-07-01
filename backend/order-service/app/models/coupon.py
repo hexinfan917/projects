@@ -27,7 +27,7 @@ class CouponTemplate(Base):
     applicable_type: Mapped[int] = mapped_column(Integer, default=1, comment="1全部路线 2指定路线 3指定路线类型")
     applicable_ids: Mapped[Optional[list]] = mapped_column(JSON, comment="适用对象ID列表")
     is_exclusive: Mapped[int] = mapped_column(Integer, default=0, comment="1不可与其他优惠券叠加")
-    source_type: Mapped[int] = mapped_column(Integer, default=1, comment="1通用 2会员购买赠送 3会员每月发放")
+    source_type: Mapped[int] = mapped_column(Integer, default=1, comment="1通用 2会员购买赠送 3会员每月发放 4管理后台发放")
     description: Mapped[Optional[str]] = mapped_column(String(500), nullable=True, comment="使用说明")
     color: Mapped[str] = mapped_column(String(20), default="#FF6B35", comment="券面主题色")
     status: Mapped[int] = mapped_column(Integer, default=1, comment="0停用 1启用")

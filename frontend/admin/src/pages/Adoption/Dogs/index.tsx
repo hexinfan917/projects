@@ -108,7 +108,7 @@ export default function AdoptionDogsManage() {
       const formData = new FormData();
       formData.append('file', file);
       const token = localStorage.getItem('token');
-      const res = await fetch('/api/v1/files/upload/image?crop_ratio=0.8824', {
+      const res = await fetch('/api/v1/files/upload/image?crop_ratio=1.0', {
         method: 'POST',
         headers: {
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -300,9 +300,9 @@ export default function AdoptionDogsManage() {
           )}
           <div style={{ marginTop: 8, padding: 10, background: '#f6ffed', border: '1px solid #b7eb8f', borderRadius: 4, color: '#389e0d', fontSize: 13, lineHeight: 1.6 }}>
             <div style={{ fontWeight: 600, marginBottom: 4 }}>封面图尺寸建议</div>
-            <div>建议尺寸：宽 750px，高 850px（比例约 1:1.13）</div>
+            <div>建议尺寸：宽 750px，高 760px（比例约 1:1）</div>
             <div>文件格式：JPG / PNG，建议控制在 500KB 以内</div>
-            <div>上传后系统将自动按 750:850 比例中心裁剪。封面图用于小程序首页「狗狗领养」卡片和领养列表。</div>
+            <div>上传后系统将自动按 1:1 比例中心裁剪。封面图用于小程序首页「狗狗领养」轮播卡片和领养列表展示。</div>
           </div>
         </Form.Item>
         <Form.Item label="狗狗图集">
@@ -337,7 +337,7 @@ export default function AdoptionDogsManage() {
           <Upload
             name="file"
             action="/api/v1/files/upload/image"
-            data={{ crop_ratio: 0.9375 }}
+            data={{ crop_ratio: 1.0 }}
             headers={{ Authorization: `Bearer ${localStorage.getItem('token') || ''}` }}
             showUploadList={false}
             onChange={(info: any) => {
@@ -358,9 +358,9 @@ export default function AdoptionDogsManage() {
           </Upload>
           <div style={{ marginTop: 8, padding: 10, background: '#f6ffed', border: '1px solid #b7eb8f', borderRadius: 4, color: '#389e0d', fontSize: 13, lineHeight: 1.6 }}>
             <div style={{ fontWeight: 600, marginBottom: 4 }}>狗狗图集尺寸建议</div>
-            <div>建议尺寸：宽 750px，高 800px（比例约 1:1.07）</div>
+            <div>建议尺寸：宽 750px，高 800px（比例约 1:1）</div>
             <div>文件格式：JPG / PNG，建议控制在 500KB 以内</div>
-            <div>上传后系统将自动按 750:800 比例中心裁剪。图集用于小程序领养详情页顶部轮播。</div>
+            <div>上传后系统将自动按 1:1 比例中心裁剪。图集用于小程序领养详情页顶部轮播展示。</div>
           </div>
         </Form.Item>
         <Form.Item name="health_tags" label="健康标签">

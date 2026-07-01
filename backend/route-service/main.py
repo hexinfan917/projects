@@ -27,6 +27,18 @@ from common.response import success
 
 FILE_SERVICE_URL = os.getenv("FILE_SERVICE_URL", "http://localhost:8008")
 
+
+def _build_file_url(url: Optional[str]) -> Optional[str]:
+    """将相对路径的文件地址补全为 file-service 完整 URL"""
+    if not url:
+        return url
+    if url.startswith('http://') or url.startswith('https://'):
+        return url
+    # 移除开头的 /，避免双斜杠
+    path = url.lstrip('/')
+    return f"{FILE_SERVICE_URL}/{path}"
+
+
 settings.app_name = "route-service"
 settings.app_port = 8033
 logger = setup_logger("route-service")
@@ -206,9 +218,12 @@ async def get_routes(
         result = await db.execute(query)
         routes_db = result.scalars().all()
         
-        # 查询最近排期价格
+        # 查询最近排期价格（同时用于过滤和价格展示）
         route_ids = [r.id for r in routes_db]
         schedule_prices = await _get_nearest_schedule_prices(db, route_ids)
+        
+        # 过滤掉没有有效排期的路线（方案B：只显示有可预订排期的路线）
+        routes_db = [r for r in routes_db if r.id in schedule_prices]
         
         # 兜底逻辑：如果查询热门路线但结果为空，则自动将最新一条上架路线标记为热门并返回
         if is_hot == 1 and not routes_db:
@@ -226,6 +241,8 @@ async def get_routes(
                 await db.refresh(fallback_route)
                 routes_db = [fallback_route]
                 total = 1
+                # 重新查询排期价格
+                schedule_prices = await _get_nearest_schedule_prices(db, [fallback_route.id])
         
         # 转换为响应格式
         routes = []
@@ -374,8 +391,8 @@ async def get_route_detail(
             "type_name": type_map.get(r.route_type, "其他"),
             "title": r.title,
             "subtitle": r.subtitle,
-            "cover_image": r.cover_image,
-            "gallery": r.gallery or [],
+            "cover_image": _build_file_url(r.cover_image),
+            "gallery": [_build_file_url(u) for u in (r.gallery or [])],
             "description": r.description,
             "highlights": r.highlights or [],
             "highlights_detail": r.highlights_detail or '',
@@ -621,10 +638,70 @@ class RouteTypeCreateUpdate(BaseModel):
     status: int = 1
 
 class RouteCreateUpdate(BaseModel):
-    """路线创建/更新请求"""
-    name: str
+    """路线更新请求（支持部分更新）"""
+    name: Optional[str] = None
     route_no: Optional[str] = None
+    route_type: Optional[int] = None
+    title: Optional[str] = None
+    subtitle: Optional[str] = None
+    cover_image: Optional[str] = None
+    gallery: Optional[List[str]] = None
+    description: Optional[str] = None
+    highlights: Optional[List[str]] = None
+    highlights_detail: Optional[str] = None
+    fee_description: Optional[str] = None
+    fee_include: Optional[str] = None
+    fee_exclude: Optional[str] = None
+    notice: Optional[str] = None
+    content_modules: Optional[List[dict]] = None
+    suitable_breeds: Optional[List[str]] = None
+    unsuitable_breeds: Optional[List[str]] = None
+    duration: Optional[str] = None
+    difficulty: Optional[int] = None
+    min_participants: Optional[int] = None
+    max_participants: Optional[int] = None
+    base_price: Optional[float] = None
+    self_drive_discount: Optional[float] = None
+    single_person_price: Optional[float] = None
+    two_person_one_pet_price: Optional[float] = None
+    one_person_two_pet_price: Optional[float] = None
+    single_pet_price: Optional[float] = None
+    extra_person_price: Optional[float] = None
+    extra_pet_price: Optional[float] = None
+    # 自驾套餐价格
+    self_drive_base_price: Optional[float] = None
+    self_drive_single_person_price: Optional[float] = None
+    self_drive_two_person_one_pet_price: Optional[float] = None
+    self_drive_one_person_two_pet_price: Optional[float] = None
+    self_drive_single_pet_price: Optional[float] = None
+    self_drive_extra_person_price: Optional[float] = None
+    self_drive_extra_pet_price: Optional[float] = None
+    display_price: Optional[str] = None
+    safety_video_url: Optional[str] = None
+    safety_video_duration: Optional[int] = None
+    is_safety_required: Optional[int] = None
+    is_hot: Optional[int] = None
+    status: Optional[int] = None
+    is_free: Optional[int] = None
+    is_member_only: Optional[int] = None
+    is_insurance_required: Optional[int] = None
+    pet_insurance_price: Optional[float] = None
+    person_insurance_price: Optional[float] = None
+    pet_insurance_title: Optional[str] = None
+    pet_insurance_unit: Optional[str] = None
+    pet_insurance_desc: Optional[str] = None
+    person_insurance_title: Optional[str] = None
+    person_insurance_unit: Optional[str] = None
+    person_insurance_desc: Optional[str] = None
+    non_member_price: Optional[float] = None
+    sort_order: Optional[int] = None
+
+
+class RouteCreate(BaseModel):
+    """路线创建请求（必填字段）"""
+    name: str
     route_type: int
+    route_no: Optional[str] = None
     title: Optional[str] = None
     subtitle: Optional[str] = None
     cover_image: Optional[str] = None
@@ -777,7 +854,7 @@ async def process_content_modules(content_modules: list) -> list:
 
 @app.post("/api/v1/admin/routes")
 async def admin_create_route(
-    data: RouteCreateUpdate,
+    data: RouteCreate,
     db: AsyncSession = Depends(get_db)
 ):
     """创建路线（管理后台）"""
@@ -871,17 +948,14 @@ async def admin_update_route(
         if not route:
             return {"code": 404, "message": "路线不存在", "data": None}
         
-        # 更新字段 - 不 exclude_unset，允许设置 None 值清空字段
-        update_data = data.model_dump(exclude={'route_no'})
+        # 更新字段 - 只更新传入的非None字段（支持部分更新）
+        update_data = data.model_dump(exclude={'route_no'}, exclude_unset=True)
         if update_data.get('content_modules'):
             update_data['content_modules'] = await process_content_modules(update_data['content_modules'])
         # 处理富文本中的 base64 图片
         for rich_field in ['highlights_detail', 'fee_description', 'fee_include', 'fee_exclude', 'notice']:
             if update_data.get(rich_field):
                 update_data[rich_field] = await _process_rich_text(update_data[rich_field])
-        # sort_order 默认为 0
-        if update_data.get('sort_order') is None:
-            update_data['sort_order'] = 0
         # 价格字段已下放到排期管理，不再通过路线基本信息更新
         price_fields = ['base_price', 'self_drive_discount', 'single_person_price', 'two_person_one_pet_price',
                         'one_person_two_pet_price', 'single_pet_price', 'extra_person_price', 'extra_pet_price',
@@ -891,7 +965,7 @@ async def admin_update_route(
         for field in price_fields:
             update_data.pop(field, None)
         for field, value in update_data.items():
-            if value is not None or field in ['subtitle', 'title', 'description', 'is_hot', 'status', 'content_modules', 'is_free', 'display_price', 'is_member_only', 'is_insurance_required', 'pet_insurance_price', 'person_insurance_price', 'pet_insurance_title', 'pet_insurance_unit', 'pet_insurance_desc', 'person_insurance_title', 'person_insurance_unit', 'person_insurance_desc', 'non_member_price']:  # 允许清空这些字段
+            if value is not None:
                 setattr(route, field, value)
         
         await db.commit()
@@ -1036,7 +1110,7 @@ async def admin_get_routes(
                 "name": r.name,
                 "route_type": r.route_type,
                 "type_name": type_map.get(r.route_type, "其他"),
-                "cover_image": r.cover_image,
+                "cover_image": _build_file_url(r.cover_image),
                 "schedule_price": sp.get("price") if sp.get("price") else 0,
                 "schedule_self_drive_price": sp.get("self_drive_price") if sp.get("self_drive_price") else None,
                 "duration": r.duration,

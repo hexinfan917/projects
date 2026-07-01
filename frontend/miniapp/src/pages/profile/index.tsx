@@ -1,10 +1,9 @@
 import { useEffect, useState } from 'react'
 import Taro, { useDidShow } from '@tarojs/taro'
 import { View, Text, Image } from '@tarojs/components'
-import { getUserProfile, setActiveTab, compressImageUrl } from '../../utils/api'
+const logoIcon = '/assets/toplogo.png'
+import { getUserProfile, setActiveTab, getMemberCenter, compressImageUrl } from '../../utils/api'
 import './index.scss'
-
-const topLogo = '/assets/toplogo.png'
 
 const ICON_MAP: Record<string, string> = {
   '默认头像': '/assets/icons/profile/head.png',
@@ -15,6 +14,7 @@ const ICON_MAP: Record<string, string> = {
   '会员中心': '/assets/icons/profile/vip.png',
   '优惠券': '/assets/icons/profile/coupon.png',
   '出行人管理': '/assets/icons/profile/traveler.png',
+  '领养记录': '/assets/icons/profile/adoption.png',
   '我的足迹': '/assets/icons/profile/footprint.png',
   '联系客服': '/assets/icons/profile/service.png',
   '关于我们': '/assets/icons/profile/about.png',
@@ -32,6 +32,7 @@ const MENU = [
   { label: '会员中心', path: '/pages/member/center/index', needLogin: true },
   { label: '优惠券', path: '/pages/coupons/list/index', needLogin: true },
   { label: '出行人管理', path: '/pages/profile/travelers/index', needLogin: true },
+  { label: '领养记录', path: '/pages/adoption/records/index', needLogin: true },
   { label: '我的足迹', path: '/pages/profile/footprint/index', needLogin: true },
   { label: '联系客服', action: 'service' },
   { label: '关于我们', path: '/pages/profile/about/index' },
@@ -41,6 +42,7 @@ const MENU = [
 export default function Profile() {
   const [user, setUser] = useState<any>(null)
   const [serviceVisible, setServiceVisible] = useState(false)
+  const [memberInfo, setMemberInfo] = useState<any>(null)
 
   const loadUser = () => {
     const token = Taro.getStorageSync('access_token')
@@ -54,9 +56,25 @@ export default function Profile() {
     })
   }
 
+  const loadMemberInfo = async () => {
+    try {
+      const res = await getMemberCenter()
+      const data = res.data || res
+      setMemberInfo(data)
+    } catch (e) {
+      console.error('loadMemberInfo failed:', e)
+    }
+  }
+
   useDidShow(() => {
     setActiveTab(3, 'pages/profile/index')
     loadUser()
+    const token = Taro.getStorageSync('access_token')
+    if (token) {
+      loadMemberInfo()
+    } else {
+      setMemberInfo(null)
+    }
   })
 
   useEffect(() => {
@@ -109,118 +127,152 @@ export default function Profile() {
 
   return (
     <View className={`profile-page ${serviceVisible ? 'no-scroll' : ''}`}>
-      <View className={`profile-top-section ${user ? '' : 'no-vip'}`}>
-        <View className='profile-navbar'>
-          <Image className='profile-navbar-logo' src={topLogo} mode='aspectFit' />
-          <Text className='profile-navbar-title'>尾巴PetWay</Text>
+      {/* 浅绿色 header 背景 */}
+      <View className='profile-header-bg'>
+        {/* 顶部导航栏 */}
+        <View className='custom-navbar'>
+          <View className='navbar-bg' />
+          <View className='navbar-content'>
+            <View className='navbar-left'>
+              <Image className='navbar-icon' src={logoIcon} mode='aspectFit' />
+              <Text className='navbar-title'>尾巴PetWay</Text>
+            </View>
+          </View>
         </View>
 
-        <View className='profile-header' onClick={user ? undefined : goLogin}>
-          <View className='profile-header-inner'>
-            <View className='profile-avatar-wrap'>
-              {user?.avatar ? (
-                <Image className='profile-avatar' src={compressImageUrl(user.avatar, 200)} mode='aspectFill' />
-              ) : (
-                <Image className='profile-avatar' src={ICON_MAP['默认头像']} mode='aspectFill' />
-              )}
-            </View>
-            <View className='profile-user-meta'>
-              <View className='profile-name-row'>
-                <Text className='profile-nickname'>{user ? (user.nickname || '尾巴人') : '点击登录/注册'}</Text>
-                {user && (
-                  <View className='profile-edit-btn' onClick={() => Taro.navigateTo({ url: '/pages/profile/edit/index' })}>
-                    <Text className='profile-edit-text'>编辑资料</Text>
-                  </View>
-                )}
-              </View>
-              {!user && <Text className='profile-subtitle'>解锁更多宠友精彩内容</Text>}
-            </View>
-            {!user && (
-              <View className='profile-header-arrow'>
-                <Text className='profile-header-arrow-text'>›</Text>
+        {/* 用户信息卡 */}
+        <View className='user-header' onClick={user ? undefined : goLogin}>
+          <View className='user-avatar-wrap'>
+            {user?.avatar ? (
+              <Image className='user-avatar' src={compressImageUrl(user.avatar, 200)} mode='aspectFill' />
+            ) : (
+              <Image className='user-avatar' src={ICON_MAP['默认头像']} mode='aspectFill' />
+            )}
+          </View>
+          <View className='user-info'>
+            {user ? (
+              <>
+                <Text className='user-nickname'>{user.nickname || '尾巴人'}</Text>
+                <View className='user-edit-btn' onClick={(e) => { e.stopPropagation(); Taro.navigateTo({ url: '/pages/profile/edit/index' }) }}>
+                  <Text className='user-edit-text'>编辑资料</Text>
+                </View>
+              </>
+            ) : (
+              <View className='login-wrap' onClick={goLogin}>
+                <Text className='login-text'>点击登录/注册</Text>
+                <Text className='login-subtext'>解锁更多宠友精彩内容</Text>
               </View>
             )}
           </View>
+          {!user && (
+            <View className='login-arrow' onClick={goLogin}>
+              <Text className='login-arrow-text'>›</Text>
+            </View>
+          )}
         </View>
-
-        {/* VIP 会员卡片 */}
-        {user && (
-          <View className='profile-vip-card' onClick={() => Taro.navigateTo({ url: '/pages/member/center/index' })}>
-            <View className='profile-vip-header'>
-              <View className='profile-vip-title'>
-                <Text className='profile-vip-text'>VIP</Text>
-                <Text className='profile-vip-subtitle'>会员</Text>
-              </View>
-              <View className='profile-vip-actions'>
-                <View className='profile-vip-tag'>
-                  <Text className='profile-vip-tag-text'>享专属优惠</Text>
-                </View>
-                <View className='profile-vip-btn'>
-                  <Text className='profile-vip-btn-text'>立即开通</Text>
-                  <Text className='profile-vip-btn-arrow'>›</Text>
-                </View>
-              </View>
-            </View>
-            <View className='profile-vip-body'>
-              <View className='profile-vip-price-row'>
-                <Text className='profile-vip-price'>
-                  <Text className='profile-vip-price-currency'>¥</Text>9.9/年，开通年度会员
-                </Text>
-              </View>
-              <View className='profile-vip-original-row'>
-                <Text className='profile-vip-original'>¥99</Text>
-              </View>
-            </View>
-          </View>
-        )}
       </View>
 
-      <View className={`profile-order-card ${user ? '' : 'no-vip'}`}>
-        <View className='profile-card-header'>
-          <Text className='profile-card-title'>我的订单</Text>
-          <View className='profile-card-more' onClick={() => goOrders()}>
-            <Text className='profile-card-more-text'>全部</Text>
-            <Text className='profile-card-more-arrow'>›</Text>
+      {/* 内容区 */}
+      <View className='profile-content'>
+        {/* VIP 会员入口 */}
+        {user && (
+          <View
+            className='vip-card'
+            onClick={() => Taro.navigateTo({ url: '/pages/member/center/index' })}
+          >
+            {memberInfo?.is_member || !!memberInfo?.member_info ? (
+              <View className='vip-member-card'>
+                <View className='vip-member-badge'>生效中</View>
+                <View className='vip-member-main'>
+                  <View className='vip-member-left'>
+                    <Text className='vip-member-title'>尾巴PetWay会员</Text>
+                    <Text className='vip-member-time'>购买时间：{memberInfo.member_info?.start_date?.split('T')[0] || '-'}</Text>
+                  </View>
+                  <View className='vip-member-right'>
+                    <Text className='vip-member-icon'>VIP</Text>
+                  </View>
+                </View>
+              </View>
+            ) : (
+              <View className='vip-not-member'>
+                <View className='vip-not-top'>
+                  <View className='vip-title-wrap'>
+                    <Text className='vip-big-title'>VIP</Text>
+                    <Text className='vip-subtitle'>会员</Text>
+                  </View>
+                  <View className='vip-tags'>
+                    <Text className='vip-tag'>享专属优惠</Text>
+                    <Text className='vip-tag vip-tag-primary'>立即开通 ›</Text>
+                  </View>
+                </View>
+                <View className='vip-promo'>
+                  <Text className='vip-promo-price'>¥9.9/年，开通年度会员</Text>
+                  <Text className='vip-promo-original'>¥99</Text>
+                </View>
+              </View>
+            )}
+          </View>
+        )}
+
+        {/* 我的订单 */}
+        <View className='order-card'>
+          <View className='order-header'>
+            <Text className='order-title'>我的订单</Text>
+            <View className='order-more' onClick={() => goOrders()}>
+              <Text className='order-more-text'>全部 ›</Text>
+            </View>
+          </View>
+          <View className='order-entries'>
+            {ORDER_ENTRIES.map(e => (
+              <View
+                key={e.label}
+                className='order-entry'
+                onClick={() => {
+                  if (e.action === 'refund') {
+                    if (!checkLogin()) return
+                    Taro.navigateTo({ url: '/pages/orders/list/index?status=refund' })
+                  } else if (e.status) {
+                    goOrders(e.status)
+                  }
+                }}
+              >
+                <View className='order-icon-wrap'>
+                  <Image className='order-icon-img' src={ICON_MAP[e.label]} mode='aspectFit' />
+                </View>
+                <Text className='order-label'>{e.label}</Text>
+              </View>
+            ))}
           </View>
         </View>
-        <View className='profile-order-entries'>
-          {ORDER_ENTRIES.map(e => (
+
+        {/* 菜单列表 */}
+        <View className='menu-card'>
+          {MENU.map((item, idx) => (
             <View
-              key={e.label}
-              className='profile-order-entry'
-              onClick={() => {
-                if (e.action === 'refund') {
-                  if (!checkLogin()) return
-                  Taro.navigateTo({ url: '/pages/orders/list/index?status=refund' })
-                } else if (e.status) {
-                  goOrders(e.status)
-                }
-              }}
+              key={item.label}
+              className={`menu-item ${idx === MENU.length - 1 ? 'menu-item-last' : ''}`}
+              onClick={() => handleMenu(item)}
             >
-              <Image className='profile-order-icon' src={ICON_MAP[e.label]} mode='aspectFit' />
-              <Text className='profile-order-label'>{e.label}</Text>
+              <View className='menu-icon-wrap'>
+                <Image className='menu-icon-img' src={ICON_MAP[item.label]} mode='aspectFit' />
+              </View>
+              <Text className='menu-label'>{item.label}</Text>
+              <Text className='menu-arrow'>›</Text>
             </View>
           ))}
         </View>
-      </View>
 
-      <View className='profile-menu-section'>
-        <View className='profile-menu-card'>
-          {MENU.map(item => (
-            <View key={item.label} className='profile-menu-item' onClick={() => handleMenu(item)}>
-              <Image className='profile-menu-icon' src={ICON_MAP[item.label]} mode='aspectFit' />
-              <Text className='profile-menu-label'>{item.label}</Text>
-              <Text className='profile-menu-arrow'>›</Text>
-            </View>
-          ))}
-        </View>
+        {/* 退出登录 */}
         {user && (
-          <View className='profile-logout-card' onClick={handleLogout}>
-            <Text className='profile-logout-text'>退出登录</Text>
+          <View className='logout-section'>
+            <View className='logout-btn' onClick={handleLogout}>
+              <Text className='logout-text'>退出登录</Text>
+            </View>
           </View>
         )}
       </View>
 
+      {/* 客服弹窗 */}
       {serviceVisible && (
         <View className='service-modal' catchMove>
           <View className='service-mask' onClick={() => setServiceVisible(false)} catchMove />

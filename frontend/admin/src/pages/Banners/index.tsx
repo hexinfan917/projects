@@ -138,7 +138,7 @@ export default function BannerManage() {
 
       const formData = new FormData();
       formData.append('file', compressedFile);
-      const res = await request('/api/v1/files/upload/image?crop_ratio=0.75', {
+      const res = await request('/api/v1/files/upload/image?crop_ratio=1.0', {
         method: 'POST',
         data: formData,
         requestType: 'form',
@@ -173,6 +173,20 @@ export default function BannerManage() {
       dataIndex: 'title',
       width: 250,
       ellipsis: true,
+    },
+    {
+      title: '标签',
+      dataIndex: 'tag',
+      width: 120,
+      search: false,
+      render: (tag: string) => tag ? <Tag color="green">{tag}</Tag> : '-',
+    },
+    {
+      title: '副标题',
+      dataIndex: 'subtitle',
+      width: 250,
+      ellipsis: true,
+      search: false,
     },
     {
       title: '链接',
@@ -283,7 +297,9 @@ export default function BannerManage() {
           },
         }}
       >
-        <ProFormText name="title" label="标题" />
+        <ProFormText name="title" label="标题" placeholder="轮播图主标题，显示在图片上方" />
+        <ProFormText name="subtitle" label="副标题" placeholder="轮播图副标题，显示在标题下方" />
+        <ProFormText name="tag" label="标签" placeholder="如：精选路线、精品路线、限时特惠" />
         <ProFormText name="link_url" label="跳转链接" placeholder="可选，填写后点击轮播图可跳转" />
         <ProFormDigit name="sort_order" label="排序" min={0} max={9999} initialValue={0} tooltip="数字越大越靠前" />
         <ProFormSelect
@@ -319,9 +335,9 @@ export default function BannerManage() {
           </Upload>
           <div style={{ marginTop: 12, padding: 10, background: '#f6ffed', border: '1px solid #b7eb8f', borderRadius: 4, color: '#389e0d', fontSize: 13, lineHeight: 1.6 }}>
             <div style={{ fontWeight: 600, marginBottom: 4 }}>图片尺寸建议</div>
-            <div>建议尺寸：宽 750px，高 1000~1200px（比例约 3:4）</div>
+            <div>建议尺寸：宽 750px，高 700px（比例约 1:1）</div>
             <div>文件格式：JPG / PNG，建议控制在 500KB 以内</div>
-            <div>上传后系统将自动按 750:1000 比例中心裁剪，请确保重要内容在画面中间。该图用于首页顶部沉浸式竖版轮播。</div>
+            <div>上传后系统将自动按 1:1 比例中心裁剪。该图用于首页顶部沉浸式竖版轮播，请确保重要内容在画面中间。</div>
           </div>
         </div>
       </ModalForm>

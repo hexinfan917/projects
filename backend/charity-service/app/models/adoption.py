@@ -3,7 +3,7 @@
 """
 from datetime import datetime
 from typing import Optional
-from sqlalchemy import String, Integer, Text, JSON, DateTime, func, ForeignKey
+from sqlalchemy import String, Integer, Text, JSON, DateTime, func, ForeignKey, UniqueConstraint
 from sqlalchemy.dialects.mysql import LONGTEXT
 from sqlalchemy.orm import Mapped, mapped_column
 from common.database import Base
@@ -38,10 +38,14 @@ class AdoptionDog(Base):
 class AdoptionApplication(Base):
     """领养申请表"""
     __tablename__ = "adoption_applications"
+    __table_args__ = (
+        UniqueConstraint('dog_id', 'openid', name='uk_dog_openid'),
+    )
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True, comment="主键ID")
     dog_id: Mapped[int] = mapped_column(Integer, nullable=False, comment="狗狗ID")
     openid: Mapped[str] = mapped_column(String(100), nullable=False, comment="申请人openid")
+    user_id: Mapped[Optional[int]] = mapped_column(Integer, comment="申请人用户ID")
 
     name: Mapped[str] = mapped_column(String(50), nullable=False, comment="姓名")
     gender: Mapped[Optional[str]] = mapped_column(String(10), comment="性别")

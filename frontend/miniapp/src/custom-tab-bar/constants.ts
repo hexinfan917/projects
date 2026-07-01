@@ -1,1 +1,1 @@
-export const TAB_BAR_SELECT_EVENT = 'TAB_BAR_SELECT_EVENT'
+export const TAB_BAR_SELECT_EVENT = 'activeTabChange'

@@ -90,7 +90,7 @@ export default function CompleteInfo() {
         const uploadRes: any = await uploadFile(avatarFilePath)
         const data = JSON.parse(uploadRes.data)
         if (data.code === 200 && data.data?.url) {
-          finalAvatar = data.data.url
+          finalAvatar = fullImageUrl(data.data.url)
         }
       }
 

@@ -625,6 +625,7 @@ def application_to_dict(app, dog=None) -> dict:
         "id": app.id,
         "dog_id": app.dog_id,
         "openid": app.openid,
+        "user_id": app.user_id,
         "name": app.name,
         "gender": app.gender,
         "age": app.age,
@@ -752,9 +753,40 @@ async def apply_adoption_dog(
         if not name or not phone:
             return {"code": 400, "message": "请填写姓名和联系电话", "data": None}
 
+        # 检查是否已申请过
+        existing_result = await db.execute(
+            select(AdoptionApplication).where(
+                AdoptionApplication.dog_id == dog_id,
+                AdoptionApplication.openid == user["openid"]
+            )
+        )
+        existing_app = existing_result.scalar_one_or_none()
+        
+        if existing_app:
+            # 已拒绝的可以重新申请，更新原有记录
+            if existing_app.status == 2:
+                existing_app.name = name
+                existing_app.gender = data.get("gender") or None
+                existing_app.age = data.get("age") or None
+                existing_app.phone = phone
+                existing_app.wechat = data.get("wechat") or None
+                existing_app.city = data.get("city") or None
+                existing_app.address = data.get("address") or None
+                existing_app.housing = data.get("housing") or None
+                existing_app.experience = data.get("experience") or None
+                existing_app.reason = data.get("reason") or None
+                existing_app.status = 0  # 重置为待审核
+                existing_app.user_id = user.get("user_id")  # 更新用户ID
+                await db.commit()
+                await db.refresh(existing_app)
+                return success({"id": existing_app.id}, message="重新申请提交成功")
+            else:
+                return {"code": 400, "message": "您已申请过该狗狗，请勿重复申请", "data": None}
+
         application = AdoptionApplication(
             dog_id=dog_id,
             openid=user["openid"],
+            user_id=user.get("user_id"),
             name=name,
             gender=data.get("gender") or None,
             age=data.get("age") or None,
@@ -1022,16 +1054,46 @@ async def admin_update_adoption_application_status(
         if new_status not in [0, 1, 2, 3]:
             return {"code": 400, "message": "无效的状态值", "data": None}
 
+        # 状态流转校验
+        current_status = app.status
+        valid_transitions = {
+            0: [1, 2, 3],      # 待审核 → 通过/拒绝/完成领养
+            1: [2, 3],          # 已通过 → 拒绝/完成领养
+            2: [],              # 已拒绝 → 不可操作
+            3: [],              # 已完成 → 不可操作
+        }
+        if new_status not in valid_transitions.get(current_status, []):
+            return {"code": 400, "message": "非法的状态流转", "data": None}
+
         app.status = new_status
         if "admin_remark" in data:
             app.admin_remark = data["admin_remark"]
 
-        # 如果状态变为已完成领养，同步把狗狗状态改为已领养
-        if new_status == 3:
+        # 状态联动处理
+        if new_status in [1, 3]:
+            # 通过或完成领养：狗狗状态改为已领养
             dog_result = await db.execute(select(AdoptionDog).where(AdoptionDog.id == app.dog_id))
             dog = dog_result.scalar_one_or_none()
             if dog:
                 dog.status = 2
+        elif new_status == 2:
+            # 拒绝：检查该狗是否还有其他进行中的申请，没有则恢复为可申请
+            from sqlalchemy import and_
+            other_result = await db.execute(
+                select(AdoptionApplication).where(
+                    and_(
+                        AdoptionApplication.dog_id == app.dog_id,
+                        AdoptionApplication.id != application_id,
+                        AdoptionApplication.status.in_([0, 1])
+                    )
+                )
+            )
+            other_app = other_result.scalar_one_or_none()
+            if not other_app:
+                dog_result = await db.execute(select(AdoptionDog).where(AdoptionDog.id == app.dog_id))
+                dog = dog_result.scalar_one_or_none()
+                if dog:
+                    dog.status = 1
 
         await db.commit()
         return success(None, message="更新成功")

@@ -31,6 +31,19 @@ const STATUS_SUBTITLE: any = {
 const GENDER_MAP: any = { 0: '/assets/icons/icon-female.svg', 1: '/assets/icons/icon-male.svg' }
 const BREED_TYPE_MAP: any = { 1: '小型', 2: '中型', 3: '大型', 4: '巨型' }
 
+// 套餐类型映射
+const PACKAGE_TYPE_MAP: any = {
+  couple: '一人一宠',
+  single_person: '单人轻旅（无宠）',
+  single_pet: '毛孩专属接送（无主人陪同）'
+}
+
+// 出行方式映射
+const TRAVEL_TYPE_MAP: any = {
+  bus: '大巴出行',
+  self_drive: '自驾出行'
+}
+
 function fullImageUrl(url?: string) {
   if (!url) return ''
   return compressImageUrl(url, 200)
@@ -166,6 +179,17 @@ export default function OrderDetail() {
           </View>
           <View className='info-card'>
             <Text className='route-name'>{order.route_name}</Text>
+            {/* 套餐类型标签 */}
+            <View className='package-tag-row'>
+              <Text className={`package-tag ${order.package_type === 'single_person' ? 'package-single' : 'package-couple'}`}>
+                {PACKAGE_TYPE_MAP[order.package_type] || (order.pet_count === 0 ? '单人轻旅（无宠）' : '一人一宠')}
+              </Text>
+              {order.travel_type && (
+                <Text className='travel-type-tag'>
+                  {TRAVEL_TYPE_MAP[order.travel_type] || order.travel_type}
+                </Text>
+              )}
+            </View>
             <View className='detail-row'>
               <View className='detail-icon-wrap'>
                 <Image className='detail-icon' src='/assets/icons/icon-calendar.svg' mode='aspectFit' />
@@ -182,33 +206,62 @@ export default function OrderDetail() {
         </View>
 
         {/* 出行人与宠物 */}
-        {(order.contact?.name || (order.pets && order.pets.length > 0)) && (
+        {(order.contact?.name || (order.participants && order.participants.length > 0) || (order.pets && order.pets.length > 0)) && (
           <View className='section'>
             <View className='section-header'>
               <Image className='section-icon' src='/assets/icons/icon-paw.svg' mode='aspectFit' />
               <Text className='section-title'>出行人与宠物</Text>
             </View>
             <View className='info-card'>
-              {order.contact?.name && (
-                <View className='contact-block'>
-                  <View className='contact-item'>
-                    <Text className='contact-item-label'>姓名</Text>
-                    <Text className='contact-item-value'>{order.contact.name}</Text>
-                  </View>
-                  {order.contact.id_card && (
-                    <View className='contact-item'>
-                      <Text className='contact-item-label'>身份证号</Text>
-                      <Text className='contact-item-value'>{order.contact.id_card}</Text>
-                    </View>
-                  )}
-                  {order.contact.phone && (
-                    <View className='contact-item'>
-                      <Text className='contact-item-label'>手机号</Text>
-                      <Text className='contact-item-value'>{order.contact.phone}</Text>
-                    </View>
-                  )}
+              {/* 所有出行人（统一显示为出行人） */}
+              {(order.contact?.name || (order.participants && order.participants.length > 0)) && (
+                <View className='travelers-section'>
+                  {/* 合并联系人和所有参与者，统一显示 */}
+                  {(() => {
+                    // 收集所有出行人：联系人 + participants
+                    const allTravelers: any[] = []
+                    if (order.contact?.name) {
+                      allTravelers.push({
+                        name: order.contact.name,
+                        phone: order.contact.phone || '',
+                        id_card: order.contact.id_card || '',
+                      })
+                    }
+                    if (order.participants && order.participants.length > 0) {
+                      order.participants.forEach((p: any) => {
+                        // 避免重复（根据手机号）
+                        const exists = allTravelers.some(t => t.phone && t.phone === p.phone)
+                        if (!exists) {
+                          allTravelers.push({
+                            name: p.name || '未命名',
+                            phone: p.phone || '',
+                            id_card: p.id_card || '',
+                          })
+                        }
+                      })
+                    }
+                    return allTravelers.map((traveler, idx) => (
+                      <View key={idx} className={`traveler-item ${idx < allTravelers.length - 1 ? 'traveler-item-border' : ''}`}>
+                        <View className='traveler-row'>
+                          <Text className='traveler-label'>出行人</Text>
+                          <Text className='traveler-name'>{traveler.name}</Text>
+                        </View>
+                        <View className='traveler-info-row'>
+                          <Text className='traveler-info-label'>身份证号</Text>
+                          <Text className='traveler-info-value'>{traveler.id_card || '-'}</Text>
+                        </View>
+                        <View className='traveler-info-row'>
+                          <Text className='traveler-info-label'>手机号</Text>
+                          <Text className='traveler-info-value'>{traveler.phone || '-'}</Text>
+                        </View>
+                      </View>
+                    ))
+                  })()}
                 </View>
               )}
+
+              {/* 宠物信息 */}
+              {/* 宠物信息 */}
               {order.pets && order.pets.map((pet: any, idx: number) => {
                 const avatarUrl = fullImageUrl(pet.avatar)
                 const genderIcon = GENDER_MAP[pet.gender]

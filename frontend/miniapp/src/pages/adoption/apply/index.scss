@@ -51,6 +51,7 @@
   .scroll-container {
     flex: 1;
     padding-top: 200rpx;
+    background: #fbf9f4;
   }
 
   /* ---------- 狗狗摘要卡片 ---------- */
@@ -111,6 +112,7 @@
   /* ---------- 表单区块 ---------- */
   .form-sections {
     padding: 0 32rpx;
+    background: #fbf9f4;
   }
 
   .form-section {
@@ -134,10 +136,10 @@
     }
 
     .form-group {
-      background: #fff;
+      background: #fbf9f4;
       border-radius: 28rpx;
       padding: 8rpx 28rpx 28rpx;
-      box-shadow: 0 4rpx 20rpx rgba(140, 106, 93, 0.04);
+      box-shadow: none;
     }
 
     .form-field {
@@ -149,6 +151,11 @@
         color: #424841;
         margin-bottom: 16rpx;
         font-weight: 500;
+
+        .required {
+          color: #e74c3c;
+          margin-left: 4rpx;
+        }
       }
 
       .field-input {
@@ -156,7 +163,7 @@
         height: 80rpx;
         font-size: 28rpx;
         color: #1b1c19;
-        background: #fff;
+        background: #fbf9f4;
         border: 2rpx solid #e4e2dd;
         border-radius: 16rpx;
         padding: 0 24rpx;
@@ -173,7 +180,7 @@
         font-size: 28rpx;
         color: #1b1c19;
         line-height: 1.6;
-        background: #fff;
+        background: #fbf9f4;
         border: 2rpx solid #e4e2dd;
         border-radius: 16rpx;
         padding: 20rpx 24rpx;
@@ -193,7 +200,7 @@
         padding: 24rpx;
         border-radius: 20rpx;
         border: 2rpx solid #e4e2dd;
-        background: #fff;
+        background: #fbf9f4;
         transition: all 0.15s ease;
 
         &.active {
@@ -240,7 +247,7 @@
       align-items: center;
       justify-content: space-between;
       padding: 0 24rpx;
-      background: #fff;
+      background: #fbf9f4;
       border: 2rpx solid #e4e2dd;
       border-radius: 16rpx;
       box-sizing: border-box;
@@ -271,11 +278,11 @@
         padding: 20rpx 24rpx;
         border-radius: 40rpx;
         border: 2rpx solid #e4e2dd;
-        background: #fff;
+        background: #fbf9f4;
 
         &.active {
           border-color: #436444;
-          background: #c6edc4;
+          background: #fbf9f4;
 
           .radio-dot {
             background: #436444;
@@ -320,12 +327,12 @@
       gap: 16rpx;
       padding: 24rpx;
       border-radius: 20rpx;
-      background: rgba(67, 100, 68, 0.05);
-      border: 2rpx solid rgba(67, 100, 68, 0.1);
+      background: #fbf9f4;
+      border: 2rpx solid #e4e2dd;
 
       &.active {
-        background: rgba(67, 100, 68, 0.08);
-        border-color: rgba(67, 100, 68, 0.2);
+        background: #fbf9f4;
+        border-color: #436444;
       }
 
       .commitment-check {
@@ -361,6 +368,164 @@
 
   .safe-bottom-space {
     height: 200rpx;
+  }
+
+  /* ---------- 城市选择器 ---------- */
+  .city-picker-wrap {
+    display: flex;
+    gap: 20rpx;
+
+    .city-picker-item {
+      flex: 1;
+      height: 80rpx;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24rpx;
+      background: #fbf9f4;
+      border: 2rpx solid #e4e2dd;
+      border-radius: 16rpx;
+      box-sizing: border-box;
+
+      &.active {
+        border-color: #436444;
+
+        .city-picker-text {
+          color: #1b1c19;
+        }
+      }
+
+      .city-picker-text {
+        font-size: 28rpx;
+        color: #9ca3af;
+      }
+
+      .city-picker-arrow {
+        font-size: 22rpx;
+        color: #737970;
+      }
+    }
+  }
+
+  .city-picker-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 200;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+  }
+
+  .city-picker-modal {
+    width: 100%;
+    max-height: 70vh;
+    background: #fbf9f4;
+    border-radius: 40rpx 40rpx 0 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .city-picker-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 32rpx 40rpx;
+    border-bottom: 1rpx solid #e4e2dd;
+
+    .city-picker-title {
+      font-size: 32rpx;
+      font-weight: 700;
+      color: #1b1c19;
+    }
+
+    .city-picker-close {
+      font-size: 32rpx;
+      color: #737970;
+      padding: 8rpx;
+    }
+  }
+
+  .city-picker-body {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+    min-height: 400rpx;
+  }
+
+  .city-picker-column {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+
+    .city-picker-column-title {
+      text-align: center;
+      font-size: 26rpx;
+      color: #737970;
+      padding: 20rpx 0;
+      border-bottom: 1rpx solid #e4e2dd;
+    }
+  }
+
+  .city-picker-list {
+    flex: 1;
+    height: 0;
+  }
+
+  .city-picker-list-item {
+    padding: 24rpx 32rpx;
+    text-align: center;
+
+    &.active {
+      background: rgba(67, 100, 68, 0.08);
+
+      .city-picker-list-text {
+        color: #436444;
+        font-weight: 600;
+      }
+    }
+
+    .city-picker-list-text {
+      font-size: 28rpx;
+      color: #1b1c19;
+    }
+  }
+
+  .city-picker-footer {
+    display: flex;
+    gap: 20rpx;
+    padding: 24rpx 40rpx calc(24rpx + env(safe-area-inset-bottom));
+    border-top: 1rpx solid #e4e2dd;
+
+    .city-picker-cancel,
+    .city-picker-confirm {
+      flex: 1;
+      height: 80rpx;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 40rpx;
+    }
+
+    .city-picker-cancel {
+      background: #e4e2dd;
+
+      .city-picker-cancel-text {
+        font-size: 28rpx;
+        color: #737970;
+        font-weight: 600;
+      }
+    }
+
+    .city-picker-confirm {
+      background: #436444;
+
+      .city-picker-confirm-text {
+        font-size: 28rpx;
+        color: #fff;
+        font-weight: 600;
+      }
+    }
   }
 
   /* ---------- 底部提交栏 ---------- */

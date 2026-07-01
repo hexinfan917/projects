@@ -76,9 +76,6 @@ export default function ReviewList() {
           <Text className='page-back-icon'>‹</Text>
         </View>
         <Text className='navbar-title'>回忆足迹</Text>
-        <View className='navbar-more'>
-          <Text className='navbar-more-icon'>⋯</Text>
-        </View>
       </View>
 
       <ScrollView

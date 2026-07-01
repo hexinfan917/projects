@@ -298,6 +298,51 @@ export default function OrderList() {
     });
   };
 
+  // 构建出行人清单数据（每个出行人一行，用于保险购买）
+  const buildTravelerSheetData = (rows: any[]) => {
+    const orderMap = new Map<string, any[]>();
+    rows.forEach((r: any) => {
+      const list = orderMap.get(r.order_no) || [];
+      list.push(r);
+      orderMap.set(r.order_no, list);
+    });
+
+    const result: any[] = [];
+    Array.from(orderMap.entries()).forEach(([orderNo, list]: [string, any[]]) => {
+      const first = list[0];
+      const contactRow = list.find((r: any) => r.role === '联系人') || first;
+
+      // 每个出行人（包括联系人）生成一行
+      list.forEach((r: any) => {
+        const petCount = Number(first.pet_count) || 0;
+        const pets: string[] = [];
+        for (let i = 1; i <= petCount; i++) {
+          const name = first[`pet${i}_name`];
+          if (!name) continue;
+          const breed = first[`pet${i}_breed`] || '';
+          const gender = first[`pet${i}_gender`] || '';
+          const age = first[`pet${i}_age_str`] || '';
+          pets.push(`宠物${i} 昵称:${name} ${breed ? '品种:' + breed : ''} ${gender ? '性别:' + gender : ''} ${age ? '年龄:' + age : ''}`.trim());
+        }
+
+        result.push({
+          orderNo,
+          routeName: first.route_name || '',
+          travelDate: first.travel_date || '',
+          travelerName: r.person_name || '',
+          travelerPhone: r.person_phone || '',
+          travelerIdCard: r.person_id_card || '',
+          travelerRole: r.role || '出行人',
+          contactName: contactRow.person_name || '',
+          contactPhone: contactRow.person_phone || '',
+          pets: pets.join('  '),
+        });
+      });
+    });
+
+    return result;
+  };
+
   // 统一订单导出 Excel：字段精简、清晰
   const buildUnifiedExportExcel = async (rows: any[]) => {
     if (!rows.length) {
@@ -309,7 +354,9 @@ export default function OrderList() {
     const maxPets = data.reduce((max, d) => Math.max(max, d.avatars.length, d.vaccineBooks.length), 0);
 
     const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet('订单导出');
+    
+    // ===== Sheet1: 订单汇总 =====
+    const worksheet = workbook.addWorksheet('订单汇总');
 
     const columns: any[] = [
       { header: '报名订单号', key: 'orderNo', width: 22 },
@@ -379,6 +426,40 @@ export default function OrderList() {
 
     // 表头加粗
     worksheet.getRow(1).font = { bold: true };
+
+    // ===== Sheet2: 出行人清单（用于保险购买） =====
+    const travelerSheet = workbook.addWorksheet('出行人清单');
+    travelerSheet.columns = [
+      { header: '报名订单号', key: 'orderNo', width: 22 },
+      { header: '路线名称', key: 'routeName', width: 20 },
+      { header: '出行日期', key: 'travelDate', width: 12 },
+      { header: '出行人姓名', key: 'travelerName', width: 12 },
+      { header: '出行人手机号', key: 'travelerPhone', width: 14 },
+      { header: '出行人身份证号', key: 'travelerIdCard', width: 22 },
+      { header: '身份', key: 'travelerRole', width: 10 },
+      { header: '联系人姓名', key: 'contactName', width: 12 },
+      { header: '联系人手机号', key: 'contactPhone', width: 14 },
+      { header: '宠物信息', key: 'pets', width: 50 },
+    ];
+
+    const travelerData = buildTravelerSheetData(rows);
+    travelerData.forEach((d: any) => {
+      const row = travelerSheet.addRow({
+        orderNo: d.orderNo,
+        routeName: d.routeName,
+        travelDate: d.travelDate,
+        travelerName: d.travelerName,
+        travelerPhone: d.travelerPhone,
+        travelerIdCard: d.travelerIdCard,
+        travelerRole: d.travelerRole,
+        contactName: d.contactName,
+        contactPhone: d.contactPhone,
+        pets: d.pets,
+      });
+      const petCell = row.getCell('pets');
+      petCell.alignment = { wrapText: true, vertical: 'top' };
+    });
+    travelerSheet.getRow(1).font = { bold: true };
 
     const buffer = await workbook.xlsx.writeBuffer();
     const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
@@ -687,6 +768,16 @@ export default function OrderList() {
                   <Descriptions column={1} size="small">
                     <Descriptions.Item label="路线名称">{currentOrder.route_name}</Descriptions.Item>
                     <Descriptions.Item label="出行日期">{currentOrder.travel_date}</Descriptions.Item>
+                    <Descriptions.Item label="套餐类型">
+                      <Tag color={currentOrder.package_type === 'single_person' ? 'green' : currentOrder.package_type === 'single_pet' ? 'blue' : 'orange'}>
+                        {currentOrder.package_type === 'single_person' ? '单人轻旅（无宠）' : currentOrder.package_type === 'single_pet' ? '毛孩专属接送' : '一人一宠'}
+                      </Tag>
+                    </Descriptions.Item>
+                    <Descriptions.Item label="出行方式">
+                      <Tag color="blue">
+                        {currentOrder.travel_type === 'bus' ? '大巴出行' : currentOrder.travel_type === 'self_drive' ? '自驾出行' : currentOrder.travel_type || '-'}
+                      </Tag>
+                    </Descriptions.Item>
                     <Descriptions.Item label="出行人数">{currentOrder.participant_count}人</Descriptions.Item>
                     <Descriptions.Item label="携带宠物">{currentOrder.pet_count}只</Descriptions.Item>
                   </Descriptions>
@@ -741,28 +832,59 @@ export default function OrderList() {
               </Card>
             )}
 
-            {/* 出行人信息（同行人） */}
-            {currentOrder.participants && currentOrder.participants.length > 0 && (
-              <Card title="出行人信息（同行人）" size="small" style={{ marginBottom: 16 }}>
-                <Table
-                  size="small"
-                  pagination={false}
-                  bordered
-                  dataSource={currentOrder.participants}
-                  columns={[
-                    { title: '姓名', dataIndex: 'name', key: 'name' },
-                    { title: '手机号', dataIndex: 'phone', key: 'phone', render: (v: string) => v || '-' },
-                    { title: '身份证号', dataIndex: 'id_card', key: 'id_card', render: (v: string) => v || '-' },
-                    { title: '性别', dataIndex: 'gender', key: 'gender', render: (v: number) => v === 1 ? '男' : v === 2 ? '女' : '未知' },
-                  ]}
-                  rowKey={(record: any, idx: number) => record.id || idx}
-                />
-              </Card>
-            )}
+            {/* 出行人信息（所有出行人，标记账号本人） */}
+            {(() => {
+              // 合并联系人和所有参与者
+              const allTravelers: any[] = [];
+              // 先添加 participants
+              if (currentOrder.participants && currentOrder.participants.length > 0) {
+                currentOrder.participants.forEach((p: any) => {
+                  allTravelers.push({...p});
+                });
+              }
+              // 添加联系人（如果不在 participants 中）
+              if (currentOrder.contact?.name) {
+                const exists = allTravelers.some((t: any) => t.phone === currentOrder.contact.phone);
+                if (!exists) {
+                  allTravelers.push({
+                    name: currentOrder.contact.name,
+                    phone: currentOrder.contact.phone,
+                    id_card: currentOrder.contact.id_card,
+                    gender: currentOrder.contact.gender,
+                  });
+                }
+              }
+              // 通过用户手机号判断哪个是账号本人
+              const userPhone = currentOrder.user_phone;
+              return (
+                <Card title={`出行人信息（共${allTravelers.length}人）`} size="small" style={{ marginBottom: 16 }}>
+                  <Table
+                    size="small"
+                    pagination={false}
+                    bordered
+                    dataSource={allTravelers}
+                    columns={[
+                      { title: '姓名', dataIndex: 'name', key: 'name', render: (v: string, record: any) => (
+                        <span>
+                          {v || '未命名'}
+                          {userPhone && record.phone === userPhone && (
+                            <Tag color="green" style={{ marginLeft: 8 }}>账号本人</Tag>
+                          )}
+                        </span>
+                      )},
+                      { title: '手机号', dataIndex: 'phone', key: 'phone', render: (v: string) => v || '-' },
+                      { title: '身份证号', dataIndex: 'id_card', key: 'id_card', render: (v: string) => v || '-' },
+                      { title: '性别', dataIndex: 'gender', key: 'gender', render: (v: number) => v === 1 ? '男' : v === 2 ? '女' : '未知' },
+                    ]}
+                    rowKey={(record: any, idx: number) => record.phone || idx}
+                  />
+                </Card>
+              );
+            })()}
 
-            {/* 联系人信息（默认出行人） */}
+            {/* 联系人信息（订单联系人 - 下单时填写的联系人） */}
             {currentOrder.contact && (
-              <Card title="联系人信息（默认出行人）" size="small" style={{ marginBottom: 16 }}>
+              <Card title="联系人信息（订单联系人）" size="small" style={{ marginBottom: 16 }}>
                 <Descriptions column={2} size="small">
                   <Descriptions.Item label="姓名">{currentOrder.contact.name || '-'}</Descriptions.Item>
                   <Descriptions.Item label="手机">{currentOrder.contact.phone || '-'}</Descriptions.Item>

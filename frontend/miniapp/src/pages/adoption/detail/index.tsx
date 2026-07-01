@@ -21,6 +21,12 @@ export default function AdoptionDetail() {
   useDidShow(() => {
     const token = Taro.getStorageSync('access_token')
     setIsLoggedIn(!!token)
+    // 返回时重新加载详情，刷新申请状态
+    const instance = Taro.getCurrentInstance()
+    const id = instance.router?.params?.id
+    if (id) {
+      loadDetail(Number(id))
+    }
   })
 
   useShareAppMessage(() => {
@@ -34,7 +40,15 @@ export default function AdoptionDetail() {
   const loadDetail = async (id: number) => {
     try {
       Taro.showLoading({ title: '加载中' })
-      const res = await getAdoptionDogDetail(id)
+      const token = Taro.getStorageSync('access_token')
+      console.log('[AdoptionDetail] loadDetail, token=', token ? 'exists' : 'missing', 'isLoggedIn=', isLoggedIn)
+      const options: any = {}
+      if (!token) {
+        // 未登录时不带 Authorization header
+        options.header = {}
+      }
+      const res = await getAdoptionDogDetail(id, options)
+      console.log('[AdoptionDetail] loadDetail response:', res.data?.application_status)
       if (res.code === 200 && res.data) {
         setDetail(res.data)
       } else {
@@ -49,18 +63,12 @@ export default function AdoptionDetail() {
 
   const handleApply = () => {
     if (!isLoggedIn) {
-      Taro.showModal({
-        title: '提示',
-        content: '请先登录',
-        success: (res) => {
-          if (res.confirm) {
-            Taro.navigateTo({ url: '/pages/login/index' })
-          }
-        }
-      })
+      // 未登录直接跳转登录页
+      Taro.navigateTo({ url: '/pages/login/index' })
       return
     }
-    if (detail.application_status) {
+    // 已拒绝(status=2)可以重新申请
+    if (detail.application_status && detail.application_status.status !== 2) {
       Taro.showToast({ title: `您已申请：${detail.application_status.status_name}`, icon: 'none' })
       return
     }
@@ -103,8 +111,15 @@ export default function AdoptionDetail() {
   let btnDisabled = detail.status !== 1
   if (detail.status === 1) {
     if (detail.application_status) {
-      btnText = detail.application_status.status_name
-      btnDisabled = true
+      const appStatus = detail.application_status.status
+      // 已拒绝(status=2)可以重新申请
+      if (appStatus === 2 || appStatus === 'rejected') {
+        btnText = '重新申请'
+        btnDisabled = false
+      } else {
+        btnText = detail.application_status.status_name
+        btnDisabled = true
+      }
     } else {
       btnText = '申请领养'
       btnDisabled = false
@@ -156,7 +171,7 @@ export default function AdoptionDetail() {
                 <Text className='detail-name'>{detail.name}</Text>
               </View>
               <View className='location-row'>
-                <Text className='location-icon'>📍</Text>
+                <Image className='location-icon' src='/assets/icons/icon-location.svg' mode='aspectFit' />
                 <Text className='location-text'>{detail.location || '待补充'}</Text>
               </View>
             </View>

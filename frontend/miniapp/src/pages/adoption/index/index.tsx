@@ -9,16 +9,28 @@ export default function AdoptionList() {
   const [loading, setLoading] = useState(false)
   const [page, setPage] = useState(1)
   const [hasMore, setHasMore] = useState(true)
+  const [keyword, setKeyword] = useState('')
+  const [refreshing, setRefreshing] = useState(false)
 
   useEffect(() => {
     loadList(1)
   }, [])
 
-  const loadList = async (p: number) => {
-    if (loading) return
+  const loadList = async (p: number, searchKeyword?: string) => {
+    if (loading && !refreshing) return
     try {
-      setLoading(true)
-      const res = await getAdoptionDogs({ page: p, page_size: 10, status: 1 })
+      if (refreshing) {
+        setLoading(true)
+      } else {
+        setLoading(true)
+      }
+      const params: any = { page: p, page_size: 10, status: 1 }
+      if (searchKeyword !== undefined) {
+        params.keyword = searchKeyword
+      } else if (keyword) {
+        params.keyword = keyword
+      }
+      const res = await getAdoptionDogs(params)
       if (res.code === 200 && res.data?.dogs) {
         const items = res.data.dogs.map((d: any) => ({
           id: d.id,
@@ -44,6 +56,7 @@ export default function AdoptionList() {
       console.error('Load adoption list failed:', error)
     } finally {
       setLoading(false)
+      setRefreshing(false)
     }
   }
 
@@ -55,6 +68,21 @@ export default function AdoptionList() {
     if (hasMore && !loading) {
       loadList(page + 1)
     }
+  }
+
+  const onRefresh = () => {
+    setRefreshing(true)
+    loadList(1)
+  }
+
+  const handleSearchInput = (e: any) => {
+    setKeyword(e.detail.value)
+  }
+
+  const handleSearchConfirm = (e: any) => {
+    const value = e.detail.value
+    setKeyword(value)
+    loadList(1, value)
   }
 
   const renderDesc = (item: any) => {
@@ -82,28 +110,35 @@ export default function AdoptionList() {
           </View>
           <View className='search-input-wrap'>
             <Text className='search-icon'>🔍</Text>
-            <Input className='search-input' placeholder='搜索狗狗姓名或品种...' type='text' confirmType='search' />
+            <Input
+              className='search-input'
+              placeholder='搜索狗狗姓名或品种...'
+              type='text'
+              confirmType='search'
+              value={keyword}
+              onInput={handleSearchInput}
+              onConfirm={handleSearchConfirm}
+            />
+          </View>
+          <View className='my-records-btn' onClick={() => {
+            const token = Taro.getStorageSync('access_token')
+            if (!token) {
+              Taro.navigateTo({ url: '/pages/login/index' })
+              return
+            }
+            Taro.navigateTo({ url: '/pages/adoption/records/index' })
+          }}>
+            <Text className='my-records-text'>我的申请</Text>
           </View>
         </View>
-        <ScrollView className='filter-scroll' scrollX showScrollbar={false}>
-          <View className='filter-row'>
-            <View className='filter-btn active'>
-              <Text className='filter-btn-icon'>☰</Text>
-              <Text className='filter-btn-text'>筛选</Text>
-            </View>
-            <View className='filter-btn'><Text className='filter-btn-text'>性别</Text></View>
-            <View className='filter-btn'><Text className='filter-btn-text'>年龄</Text></View>
-            <View className='filter-btn'><Text className='filter-btn-text'>体重</Text></View>
-            <View className='filter-btn'><Text className='filter-btn-text'>品种</Text></View>
-          </View>
-        </ScrollView>
       </View>
 
       <ScrollView
         className='scroll-container'
         scrollY
         refresherEnabled
-        onRefresherRefresh={() => loadList(1)}
+        refresherTriggered={refreshing}
+        onRefresherRefresh={onRefresh}
         onScrollToLower={onScrollToLower}
       >
         <View className='adoption-list'>

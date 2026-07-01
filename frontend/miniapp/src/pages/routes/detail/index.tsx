@@ -1,5 +1,5 @@
-import { useEffect, useState, useMemo } from 'react'
-import Taro, { useShareAppMessage, useShareTimeline } from '@tarojs/taro'
+import { useEffect, useState, useMemo, useRef } from 'react'
+import Taro, { useShareAppMessage, useShareTimeline, useDidShow } from '@tarojs/taro'
 import { View, Text, Image, ScrollView, RichText, Swiper, SwiperItem, Button } from '@tarojs/components'
 import { getRouteDetail, getRouteSchedules, getMemberCenter, IMAGE_BASE_URL, safeNavigateBack } from '../../../utils/api'
 import BookingPopup from '../../../components/BookingPopup'
@@ -70,8 +70,11 @@ export default function RouteDetail() {
   const [route, setRoute] = useState<any>(null)
   const [schedules, setSchedules] = useState<any[]>([])
   const [showBookingPopup, setShowBookingPopup] = useState(false)
+  const [showSchedulePopup, setShowSchedulePopup] = useState(false)
   const [bookingInitialDate, setBookingInitialDate] = useState<string | undefined>(undefined)
+  const [selectedDate, setSelectedDate] = useState<string | undefined>(undefined)
   const [isMember, setIsMember] = useState(false)
+  const hasInitializedRef = useRef(false)
 
   useEffect(() => {
     const instance = Taro.getCurrentInstance()
@@ -81,6 +84,37 @@ export default function RouteDetail() {
     }
   }, [])
 
+  // 页面显示时（包括从登录页返回），重置日期选择为第一个可用日期
+  useDidShow(() => {
+    const token = Taro.getStorageSync('access_token')
+    const pages = Taro.getCurrentPages()
+    const prevPage = pages.length > 1 ? pages[pages.length - 2] : null
+    const isFromLogin = prevPage?.route?.includes('login') || prevPage?.route?.includes('pages/login')
+    
+    if (token && isFromLogin) {
+      // 从登录页返回且已登录，重置为第一个可用日期，让用户重新选择
+      // 使用 setTimeout 确保 schedules 已加载
+      setTimeout(() => {
+        const today = new Date()
+        today.setHours(0, 0, 0, 0)
+        const currentSchedules = schedules || []
+        const availableSchedules = currentSchedules
+          .filter((s: any) => {
+            if (!s.schedule_date) return false
+            const d = new Date(s.schedule_date + 'T00:00:00')
+            return d >= today && s.status !== 2 && s.stock > 0
+          })
+          .sort((a: any, b: any) => a.schedule_date.localeCompare(b.schedule_date))
+        if (availableSchedules.length > 0) {
+          setSelectedDate(availableSchedules[0].schedule_date)
+        }
+      }, 100)
+      // 清除bookingInitialDate，不自动打开弹窗
+      setBookingInitialDate(undefined)
+      setShowBookingPopup(false)
+    }
+  })
+
   const loadData = async (id: number) => {
     try {
       const [rres, mres, sres] = await Promise.all([
@@ -88,9 +122,28 @@ export default function RouteDetail() {
         getMemberCenter().catch(() => ({ data: { is_member: false } })),
         getRouteSchedules(id)
       ])
-      setRoute(rres.data || {})
+      const routeData = rres.data || {}
+      const scheduleData = sres.data?.schedules || []
+      setRoute(routeData)
       setIsMember(!!mres.data?.is_member)
-      setSchedules(sres.data?.schedules || [])
+      setSchedules(scheduleData)
+      
+      // 默认选中第一个可用日期（只在首次加载时设置）
+      if (!hasInitializedRef.current) {
+        hasInitializedRef.current = true
+        const today = new Date()
+        today.setHours(0, 0, 0, 0)
+        const availableSchedules = (scheduleData || [])
+          .filter((s: any) => {
+            if (!s.schedule_date) return false
+            const d = new Date(s.schedule_date + 'T00:00:00')
+            return d >= today && s.status !== 2 && s.stock > 0
+          })
+          .sort((a: any, b: any) => a.schedule_date.localeCompare(b.schedule_date))
+        if (availableSchedules.length > 0) {
+          setSelectedDate(availableSchedules[0].schedule_date)
+        }
+      }
     } catch (err) {
       console.error(err)
     }
@@ -194,8 +247,13 @@ export default function RouteDetail() {
   const handleOpenBooking = (dateStr?: string) => {
     const token = Taro.getStorageSync('access_token')
     if (!token) {
+      // 未登录时跳转到登录页，不保存日期选择状态
       Taro.navigateTo({ url: '/pages/login/index' })
       return
+    }
+    // 已登录时才保存日期选择并打开预订弹窗
+    if (dateStr) {
+      setSelectedDate(dateStr)
     }
     if (!hasAnySchedule) {
       Taro.showToast({ title: '当前暂无营期', icon: 'none' })
@@ -241,6 +299,11 @@ export default function RouteDetail() {
     )
   }
 
+  const handlePreviewImage = (currentUrl: string) => {
+    const urls = images.map((img: string) => img.startsWith('http') ? img : `${IMAGE_BASE_URL}${img}`)
+    Taro.previewImage({ current: currentUrl, urls })
+  }
+
   const bannerImages = (route.gallery?.length > 0 ? route.gallery : [route.cover_image]).filter(Boolean)
   const images = bannerImages.length > 0 ? bannerImages : ['/assets/images/placeholder-cover.png']
 
@@ -283,9 +346,21 @@ export default function RouteDetail() {
               src={(images[0].startsWith('http') ? images[0] : `${IMAGE_BASE_URL}${images[0]}`) + '?w=750&q=75'}
               mode='aspectFill'
               lazyLoad
+              onClick={() => handlePreviewImage(images[0].startsWith('http') ? images[0] : `${IMAGE_BASE_URL}${images[0]}`)}
             />
           ) : (
-            <Swiper className='hero-swiper' indicatorDots autoplay interval={4000}>
+            <Swiper 
+              className='hero-swiper' 
+              indicatorDots 
+              autoplay 
+              interval={4000}
+              onClick={(e) => {
+                // 获取当前显示的swiper索引
+                const current = (e as any).detail?.current || 0
+                const img = images[current]
+                handlePreviewImage(img.startsWith('http') ? img : `${IMAGE_BASE_URL}${img}`)
+              }}
+            >
               {images.map((img: string, idx: number) => (
                 <SwiperItem key={idx}>
                   <Image
@@ -298,7 +373,6 @@ export default function RouteDetail() {
               ))}
             </Swiper>
           )}
-
         </View>
 
         {/* 标题与价格 */}
@@ -327,7 +401,7 @@ export default function RouteDetail() {
               <View className='section-accent' />
               <Text className='section-header-title'>出发日期</Text>
             </View>
-            <View className='view-all' onClick={() => handleOpenBooking()}>
+            <View className='view-all' onClick={() => setShowSchedulePopup(true)}>
               <Text className='view-all-text'>查看全部</Text>
               <Text className='view-all-icon'>▼</Text>
             </View>
@@ -342,8 +416,16 @@ export default function RouteDetail() {
                   {upcomingSchedules.map((item, idx) => (
                     <View
                       key={item.dateStr}
-                      className={`date-card ${idx === 0 ? 'active' : ''} ${item.isFull ? 'full' : ''}`}
-                      onClick={() => !item.isFull && handleOpenBooking(item.dateStr)}
+                      className={`date-card ${selectedDate === item.dateStr ? 'active' : ''} ${item.isFull ? 'full' : ''}`}
+                      onClick={() => {
+                        if (!item.isFull) {
+                          const token = Taro.getStorageSync('access_token')
+                          if (token) {
+                            setSelectedDate(item.dateStr)
+                          }
+                          handleOpenBooking(item.dateStr)
+                        }
+                      }}
                     >
                       <Text className='date-md'>{item.month}/{item.day}</Text>
                       <View className='date-week-price'>
@@ -436,7 +518,7 @@ export default function RouteDetail() {
           )}
         </View>
         {hasAnySchedule ? (
-          <View className='booking-btn' onClick={() => handleOpenBooking()}>
+          <View className='booking-btn' onClick={() => handleOpenBooking(selectedDate)}>
             {route?.is_free ? '免费报名' : '立即预订'}
           </View>
         ) : (
@@ -452,6 +534,81 @@ export default function RouteDetail() {
         onClose={() => setShowBookingPopup(false)}
         onNext={handleBookingNext}
       />
+
+      {/* 排期列表弹窗 */}
+      {showSchedulePopup && (
+        <View className='schedule-popup'>
+          <View className='schedule-popup-mask' onClick={() => setShowSchedulePopup(false)} />
+          <View className='schedule-popup-content'>
+            <View className='schedule-popup-header'>
+              <Text className='schedule-popup-title'>选择日期</Text>
+              <Text className='schedule-popup-close' onClick={() => setShowSchedulePopup(false)}>✕</Text>
+            </View>
+            <ScrollView className='schedule-popup-scroll' scrollY>
+              {(() => {
+                // 获取所有排期（不限3个）
+                const allSchedules = Object.entries(scheduleMap)
+                  .sort(([a], [b]) => a.localeCompare(b))
+                  .map(([dateStr, schedule]) => {
+                    const d = new Date(dateStr + 'T00:00:00')
+                    const year = d.getFullYear()
+                    const month = String(d.getMonth() + 1).padStart(2, '0')
+                    const day = String(d.getDate()).padStart(2, '0')
+                    const week = WEEK_DAYS[d.getDay()]
+                    const isFull = schedule.status === 2 || schedule.stock <= 0
+                    let priceText = '免费'
+                    if (!route?.is_free) {
+                      const price = getLowestPrice(schedule)
+                      priceText = price > 0 ? `¥${price}起` : '¥--'
+                    }
+                    let stockText = ''
+                    if (schedule.stock !== undefined && schedule.stock !== null) {
+                      stockText = isFull ? '已满' : `余${schedule.stock}`
+                    }
+                    return { dateStr, year, month, day, week, priceText, stockText, isFull, schedule }
+                  })
+                
+                // 按年月分组
+                const groups: Record<string, any[]> = {}
+                allSchedules.forEach((item: any) => {
+                  const key = `${item.year}年${item.month}月`
+                  if (!groups[key]) groups[key] = []
+                  groups[key].push(item)
+                })
+                
+                return Object.entries(groups).map(([monthLabel, items]) => (
+                  <View key={monthLabel}>
+                    <Text className='schedule-month-label'>{monthLabel}</Text>
+                    <View className='schedule-grid'>
+                      {items.map((item: any) => (
+                        <View
+                          key={item.dateStr}
+                          className={`schedule-grid-item ${selectedDate === item.dateStr ? 'active' : ''} ${item.isFull ? 'full' : ''}`}
+                          onClick={() => {
+                            if (!item.isFull) {
+                              const token = Taro.getStorageSync('access_token')
+                              if (token) {
+                                setSelectedDate(item.dateStr)
+                              }
+                              setShowSchedulePopup(false)
+                              handleOpenBooking(item.dateStr)
+                            }
+                          }}
+                        >
+                          <Text className='schedule-grid-day'>{item.day}</Text>
+                          <Text className='schedule-grid-week'>周{item.week}</Text>
+                          <Text className='schedule-grid-price'>{item.priceText}</Text>
+                          {item.stockText && <Text className='schedule-grid-stock'>{item.stockText}</Text>}
+                        </View>
+                      ))}
+                    </View>
+                  </View>
+                ))
+              })()}
+            </ScrollView>
+          </View>
+        </View>
+      )}
     </View>
   )
 }

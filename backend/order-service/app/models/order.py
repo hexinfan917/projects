@@ -62,6 +62,9 @@ class Order(Base):
     # 出行方式
     travel_type: Mapped[Optional[str]] = mapped_column(String(20), nullable=True, comment="出行方式")
     
+    # 套餐类型
+    package_type: Mapped[Optional[str]] = mapped_column(String(50), nullable=True, comment="套餐类型: couple-一人一宠, single_person-单人轻旅, single_pet-毛孩专属接送")
+    
     # 其他
     remark: Mapped[Optional[str]] = mapped_column(Text, nullable=True, comment="用户备注")
     qrcode: Mapped[Optional[str]] = mapped_column(String(500), nullable=True, comment="核销二维码")

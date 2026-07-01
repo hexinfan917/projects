@@ -39,22 +39,6 @@
       font-weight: 700;
       color: #181c1d;
     }
-
-    .navbar-more {
-      position: absolute;
-      right: 32rpx;
-      width: 72rpx;
-      height: 72rpx;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-
-      .navbar-more-icon {
-        font-size: 40rpx;
-        color: #3a6845;
-        font-weight: 700;
-      }
-    }
   }
 
   // 滚动区域
@@ -142,7 +126,7 @@
               color: #717971;
 
               &.liked {
-                color: #3a6845;
+                color: #e53935;
               }
             }
 

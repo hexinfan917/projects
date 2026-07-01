@@ -8,8 +8,7 @@ import { BASE_URL } from '../../../utils/api'
 
 function fullImageUrl(url?: string) {
   if (!url) return ''
-  if (url.startsWith('http')) return compressImageUrl(url, 200)
-  return `${BASE_URL}${url}?w=200&q=75`
+  return compressImageUrl(url, 200)
 }
 
 function calcAge(birthDate?: string) {

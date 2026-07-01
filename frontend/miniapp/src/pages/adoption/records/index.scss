@@ -1,0 +1,220 @@
+.adoption-records-page {
+  height: 100vh;
+  background: #f5f7f5;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 顶部导航 */
+.records-navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 120rpx 32rpx 20rpx;
+  background: rgba(245, 247, 245, 0.92);
+  backdrop-filter: blur(12rpx);
+
+  .page-back {
+    position: absolute;
+    left: 32rpx;
+    width: 72rpx;
+    height: 72rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    .page-back-icon {
+      font-size: 48rpx;
+      color: #1b1c19;
+      font-weight: 700;
+    }
+  }
+
+  .navbar-title {
+    font-size: 36rpx;
+    font-weight: 700;
+    color: #436444;
+  }
+
+  .navbar-spacer {
+    position: absolute;
+    right: 32rpx;
+    width: 72rpx;
+  }
+}
+
+/* 状态筛选 Tab */
+.records-tabs {
+  position: fixed;
+  top: 200rpx;
+  left: 0;
+  right: 0;
+  z-index: 99;
+  background: #f5f7f5;
+  border-bottom: 1rpx solid #e4e2dd;
+  padding: 0 32rpx;
+
+  .tabs-scroll {
+    white-space: nowrap;
+    height: 88rpx;
+  }
+
+  .tab-item {
+    display: inline-flex;
+    align-items: center;
+    height: 88rpx;
+    padding: 0 24rpx;
+    margin-right: 16rpx;
+
+    &.active {
+      .tab-text {
+        color: #436444;
+        font-weight: 700;
+      }
+
+      &::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 24rpx;
+        right: 24rpx;
+        height: 4rpx;
+        background: #436444;
+        border-radius: 2rpx;
+      }
+    }
+
+    .tab-text {
+      font-size: 28rpx;
+      color: #737970;
+    }
+  }
+}
+
+/* 记录列表 */
+.records-list {
+  flex: 1;
+  padding: 288rpx 32rpx 32rpx;
+}
+
+/* 空状态 */
+.records-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding-top: 200rpx;
+
+  .empty-icon {
+    font-size: 80rpx;
+    margin-bottom: 24rpx;
+  }
+
+  .empty-text {
+    font-size: 32rpx;
+    color: #1b1c19;
+    font-weight: 600;
+    margin-bottom: 12rpx;
+  }
+
+  .empty-tip {
+    font-size: 26rpx;
+    color: #737970;
+  }
+}
+
+/* 记录卡片 */
+.record-card {
+  display: flex;
+  align-items: center;
+  gap: 24rpx;
+  background: #fff;
+  border-radius: 24rpx;
+  padding: 24rpx;
+  margin-bottom: 20rpx;
+  box-shadow: 0 2rpx 12rpx rgba(140, 106, 93, 0.04);
+
+  &:active {
+    opacity: 0.9;
+  }
+
+  .record-dog-image {
+    width: 120rpx;
+    height: 120rpx;
+    border-radius: 16rpx;
+    flex-shrink: 0;
+    background: #e4e2dd;
+  }
+
+  .record-info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .record-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8rpx;
+  }
+
+  .record-dog-name {
+    font-size: 32rpx;
+    font-weight: 700;
+    color: #1b1c19;
+  }
+
+  .record-status {
+    padding: 6rpx 16rpx;
+    border-radius: 24rpx;
+
+    .record-status-text {
+      font-size: 22rpx;
+      font-weight: 600;
+    }
+  }
+
+  .record-breed {
+    font-size: 26rpx;
+    color: #737970;
+    margin-bottom: 8rpx;
+  }
+
+  .record-date {
+    font-size: 24rpx;
+    color: #9ca3af;
+  }
+
+  .record-arrow {
+    font-size: 32rpx;
+    color: #c2c8be;
+    flex-shrink: 0;
+  }
+}
+
+/* 加载中 */
+.records-loading {
+  text-align: center;
+  padding: 32rpx 0;
+
+  .loading-text {
+    font-size: 26rpx;
+    color: #9ca3af;
+  }
+}
+
+/* 没有更多 */
+.records-no-more {
+  text-align: center;
+  padding: 32rpx 0;
+
+  .no-more-text {
+    font-size: 24rpx;
+    color: #9ca3af;
+  }
+}

@@ -1,18 +1,10 @@
 @import '../../styles/global.scss';
 
-$bg-green: #dff5df;
-$header-green: #006b1b;
-
-page {
-  background-color: #fff !important;
-  height: 100%;
-}
-
+/* 我的页面 */
 .profile-page {
   min-height: 100vh;
-  background: #fff;
-  padding-bottom: calc(300rpx + env(safe-area-inset-bottom));
-  box-sizing: border-box;
+  background: #f7f8fa;
+  padding-bottom: calc(120rpx + env(safe-area-inset-bottom));
 }
 
 .profile-page.no-scroll {
@@ -20,359 +12,439 @@ page {
   height: 100vh;
 }
 
-/* 上半部分绿色背景区域 */
-.profile-top-section {
-  background: $bg-green;
-  padding-bottom: 0;
+/* 浅绿色 header 背景 */
+.profile-header-bg {
+  background: #dcf5d0;
+  padding-top: 0;
+  padding-left: 24rpx;
+  padding-right: 24rpx;
+  padding-bottom: 116rpx;
   position: relative;
+  overflow: hidden;
 }
 
-.profile-top-section.no-vip {
-  padding-bottom: 96rpx;
+/* 我的页面顶部导航栏不固定 */
+.profile-page .custom-navbar {
+  position: relative;
+  height: auto;
+  padding-top: calc(64rpx + env(safe-area-inset-top));
+  margin-bottom: 40rpx;
 }
 
-/* 自定义导航栏 */
-.profile-navbar {
+.profile-page .navbar-bg {
+  display: none;
+}
+
+.navbar-content {
   display: flex;
   align-items: center;
-  padding: calc(64rpx + env(safe-area-inset-top)) 24rpx 40rpx;
-  background: $bg-green;
+  justify-content: space-between;
 }
 
-.profile-navbar-logo {
+.navbar-left {
+  display: flex;
+  align-items: center;
+}
+
+.navbar-icon {
   width: 56rpx;
   height: 56rpx;
   margin-right: 12rpx;
 }
 
-.profile-navbar-title {
+.navbar-title {
   font-size: 34rpx;
   font-weight: 700;
-  color: $header-green;
+  color: #006b1b;
 }
 
-/* 顶部用户卡片 */
-.profile-header {
-  background: $header-green;
-  margin: 0 24rpx 12rpx;
-  border-radius: 24rpx;
-  padding: 40rpx 32rpx;
+.profile-content {
+  margin-top: -116rpx;
+  padding: 0 24rpx;
   position: relative;
-  overflow: hidden;
+  z-index: 2;
 }
 
-.profile-header-inner {
+.profile-header-bg::before {
+  content: '';
+  position: absolute;
+  top: -80rpx;
+  right: -80rpx;
+  width: 400rpx;
+  height: 400rpx;
+  background: rgba(46, 125, 50, 0.05);
+  border-radius: 50%;
+}
+
+/* 用户信息卡 */
+.user-header {
+  background: #0d631b;
+  border-radius: 24rpx;
+  padding: 32rpx;
   display: flex;
   align-items: center;
+  gap: 24rpx;
+  box-shadow: 0 8rpx 24rpx rgba(13, 99, 27, 0.2);
   position: relative;
   z-index: 1;
 }
 
-.profile-avatar-wrap {
-  width: 140rpx;
-  height: 140rpx;
-  border-radius: 50%;
-  background: #fff;
-  overflow: hidden;
-  margin-right: 28rpx;
+.user-avatar-wrap {
+  position: relative;
   flex-shrink: 0;
 }
 
-.profile-avatar {
-  width: 100%;
-  height: 100%;
+.user-avatar {
+  width: 160rpx;
+  height: 160rpx;
+  border-radius: 50%;
+  border: 4rpx solid rgba(255, 255, 255, 0.2);
+  background: #fff;
   display: block;
 }
 
-.profile-user-meta {
+.user-info {
   flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
+  min-width: 0;
 }
 
-.profile-name-row {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
+.user-nickname {
+  display: block;
+  font-size: 40rpx;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 16rpx;
 }
 
-.profile-edit-btn {
-  margin-top: 14rpx;
+.user-edit-btn {
+  display: inline-flex;
+  background: rgba(255, 255, 255, 0.2);
   padding: 8rpx 24rpx;
-  background: rgba(255, 255, 255, 0.25);
   border-radius: 24rpx;
 }
 
-.profile-edit-text {
-  font-size: 24rpx;
-  color: #fff;
-  line-height: 1.4;
+.user-edit-text {
+  font-size: 22rpx;
+  color: rgba(255, 255, 255, 0.9);
 }
 
-.profile-nickname {
-  font-size: 38rpx;
+.login-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.login-text {
+  font-size: 40rpx;
   font-weight: 700;
   color: #fff;
-  line-height: 1.4;
 }
 
-.profile-subtitle {
+.login-subtext {
   font-size: 24rpx;
   color: rgba(255, 255, 255, 0.75);
-  margin-top: 8rpx;
-  line-height: 1.4;
 }
 
-.profile-header-arrow {
+.login-arrow {
   display: flex;
   align-items: center;
   justify-content: center;
   margin-left: 16rpx;
 }
 
-.profile-header-arrow-text {
+.login-arrow-text {
   font-size: 48rpx;
-  color: rgba(255, 255, 255, 0.7);
+  color: rgba(255, 255, 255, 0.6);
   line-height: 1;
 }
 
-/* VIP 会员卡片 */
-.profile-vip-card {
-  background: linear-gradient(135deg, #f5e6d0 0%, #f8ead6 100%);
+/* VIP 卡片 */
+.vip-card {
+  background: #f5e6cc;
   border-radius: 24rpx;
-  margin: 0 16rpx;
-  padding: 56rpx 36rpx 48rpx;
+  padding: 32rpx;
+  margin-top: 24rpx;
+  margin-bottom: 24rpx;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.06);
+  position: relative;
+  overflow: hidden;
+}
+
+.vip-card::before {
+  content: '';
+  position: absolute;
+  right: -32rpx;
+  bottom: -32rpx;
+  width: 160rpx;
+  height: 160rpx;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 50%;
+}
+
+/* 已开通会员 */
+.vip-member-card {
   position: relative;
   z-index: 1;
 }
 
-.profile-vip-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 44rpx;
+.vip-member-badge {
+  display: inline-block;
+  background: rgba(139, 105, 20, 0.15);
+  color: #8b6914;
+  font-size: 20rpx;
+  font-weight: 600;
+  padding: 6rpx 16rpx;
+  border-radius: 8rpx;
+  margin-bottom: 16rpx;
 }
 
-.profile-vip-title {
+.vip-member-main {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.vip-member-left {
+  flex: 1;
+}
+
+.vip-member-title {
+  font-size: 36rpx;
+  font-weight: 700;
+  color: #8a5d2e;
+  display: block;
+  margin-bottom: 8rpx;
+}
+
+.vip-member-time {
+  font-size: 24rpx;
+  color: rgba(138, 93, 46, 0.7);
+  display: block;
+}
+
+.vip-member-right {
+  width: 100rpx;
+  height: 100rpx;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #eecda3 0%, #d4a373 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4rpx 16rpx rgba(180, 150, 80, 0.3);
+  flex-shrink: 0;
+}
+
+.vip-member-icon {
+  font-size: 36rpx;
+  font-weight: 700;
+  color: #fff;
+  font-style: italic;
+}
+
+/* 未开通会员 */
+.vip-not-member {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  z-index: 1;
+}
+
+.vip-not-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20rpx;
+}
+
+.vip-title-wrap {
   display: flex;
   align-items: baseline;
 }
 
-.profile-vip-text {
-  font-size: 56rpx;
-  font-weight: 700;
+.vip-big-title {
+  font-size: 52rpx;
+  font-weight: 800;
+  color: #8a5d2e;
+  letter-spacing: 4rpx;
   font-style: italic;
-  color: #8b6914;
-  line-height: 1;
-  margin-right: 8rpx;
 }
 
-.profile-vip-subtitle {
-  font-size: 30rpx;
+.vip-subtitle {
+  font-size: 32rpx;
   font-weight: 600;
-  color: #8b6914;
-  line-height: 1;
+  color: #8a5d2e;
+  margin-left: 8rpx;
 }
 
-.profile-vip-actions {
+.vip-tags {
   display: flex;
+  gap: 12rpx;
+}
+
+.vip-tag {
+  background: rgba(139, 69, 19, 0.12);
+  color: #8a5d2e;
+  font-size: 24rpx;
+  padding: 8rpx 16rpx;
+  border-radius: 24rpx;
+  font-weight: 500;
+}
+
+.vip-tag-primary {
+  background: #8a5d2e;
+  color: #fff;
+  font-weight: 600;
+}
+
+.vip-promo {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8rpx;
+}
+
+.vip-promo-price {
+  font-size: 36rpx;
+  font-weight: 700;
+  color: #8a5d2e;
+}
+
+.vip-promo-original {
+  font-size: 26rpx;
+  color: #999;
+  text-decoration: line-through;
+}
+
+/* 订单卡片 */
+.order-card {
+  background: #fff;
+  border-radius: 24rpx;
+  padding: 32rpx;
+  margin-top: 24rpx;
+  margin-bottom: 24rpx;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.04);
+}
+
+.order-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 32rpx;
+}
+
+.order-title {
+  font-size: 32rpx;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+.order-more {
+  display: flex;
+  align-items: center;
+}
+
+.order-more-text {
+  font-size: 24rpx;
+  color: #999;
+}
+
+.order-entries {
+  display: flex;
+  justify-content: space-around;
+}
+
+.order-entry {
+  display: flex;
+  flex-direction: column;
   align-items: center;
   gap: 12rpx;
 }
 
-.profile-vip-tag {
-  padding: 6rpx 16rpx;
-  background: rgba(139, 105, 20, 0.12);
-  border-radius: 20rpx;
-}
-
-.profile-vip-tag-text {
-  font-size: 22rpx;
-  color: #8b6914;
-  line-height: 1.4;
-}
-
-.profile-vip-btn {
+.order-icon-wrap {
+  width: 96rpx;
+  height: 96rpx;
+  border-radius: 24rpx;
   display: flex;
   align-items: center;
-  padding: 8rpx 20rpx;
-  background: #8b6914;
-  border-radius: 28rpx;
+  justify-content: center;
 }
 
-.profile-vip-btn-text {
+.order-icon-img {
+  width: 56rpx;
+  height: 56rpx;
+}
+
+.order-label {
   font-size: 24rpx;
-  color: #fff;
-  line-height: 1.4;
+  color: #666;
   font-weight: 500;
 }
 
-.profile-vip-btn-arrow {
-  font-size: 26rpx;
-  color: #fff;
-  margin-left: 4rpx;
-  line-height: 1;
-}
-
-.profile-vip-body {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-}
-
-.profile-vip-price-row {
-  margin-bottom: 8rpx;
-}
-
-.profile-vip-price {
-  font-size: 36rpx;
-  font-weight: 600;
-  color: #8b6914;
-}
-
-.profile-vip-price-currency {
-  font-size: 24rpx;
-  font-weight: 600;
-}
-
-.profile-vip-original {
-  font-size: 26rpx;
-  color: #a89b7e;
-  text-decoration: line-through;
-}
-
-/* 我的订单卡片 */
-.profile-order-card {
+/* 菜单卡片 */
+.menu-card {
   background: #fff;
   border-radius: 24rpx;
-  margin: 0 24rpx 12rpx;
-  padding: 36rpx 40rpx 44rpx;
-  min-height: 260rpx;
-  box-sizing: border-box;
-  position: relative;
-  z-index: 1;
+  padding: 0 32rpx;
+  margin-bottom: 24rpx;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.04);
 }
 
-.profile-order-card.no-vip {
-  margin-top: -96rpx;
-}
-
-.profile-card-header {
+.menu-item {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  margin-bottom: 40rpx;
+  padding: 28rpx 0;
+  border-bottom: 1rpx solid #f5f5f5;
 }
 
-.profile-card-title {
-  font-size: 34rpx;
-  font-weight: 700;
-  color: #1f2937;
-}
-
-.profile-card-more {
-  display: flex;
-  align-items: center;
-}
-
-.profile-card-more-text {
-  font-size: 26rpx;
-  color: #9ca3af;
-}
-
-.profile-card-more-arrow {
-  font-size: 30rpx;
-  color: #9ca3af;
-  margin-left: 8rpx;
-}
-
-/* 订单入口 */
-.profile-order-entries {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.profile-order-entry {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.profile-order-icon {
-  width: 60rpx;
-  height: 60rpx;
-  display: block;
-  margin-bottom: 16rpx;
-}
-
-.profile-order-label {
-  font-size: 26rpx;
-  color: #4b5563;
-}
-
-/* 下方白色区域菜单卡片 */
-.profile-menu-section {
-  background: #fff;
-  padding: 0 24rpx;
-}
-
-.profile-menu-card {
-  background: #fff;
-  border-radius: 24rpx;
-  padding: 0 32rpx 16rpx;
-}
-
-/* 退出登录 */
-.profile-logout-card {
-  background: #fff;
-  border-radius: 24rpx;
-  margin-top: 24rpx;
-  padding: 34rpx 0;
-  text-align: center;
-}
-
-.profile-logout-text {
-  font-size: 30rpx;
-  color: #c23531;
-  font-weight: 500;
-}
-
-.profile-menu-item {
-  display: flex;
-  align-items: center;
-  padding: 34rpx 0;
-  border-bottom: 1rpx solid #f0f0f0;
-  position: relative;
-}
-
-.profile-menu-item:last-child {
+.menu-item-last {
   border-bottom: none;
 }
 
-.profile-menu-item:active {
-  opacity: 0.7;
-}
-
-.profile-menu-icon {
-  width: 42rpx;
-  height: 42rpx;
-  display: block;
+.menu-icon-wrap {
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: 20rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   margin-right: 24rpx;
   flex-shrink: 0;
 }
 
-.profile-menu-label {
-  flex: 1;
-  font-size: 30rpx;
-  color: #1f2937;
+.menu-icon-img {
+  width: 48rpx;
+  height: 48rpx;
 }
 
-.profile-menu-arrow {
+.menu-label {
+  flex: 1;
+  font-size: 30rpx;
+  color: #333;
+  font-weight: 500;
+}
+
+.menu-arrow {
   font-size: 28rpx;
-  color: #d1d5db;
+  color: #ccc;
+}
+
+/* 退出登录 */
+.logout-section {
+  margin: 40rpx 0;
+}
+
+.logout-btn {
+  background: #fff;
+  border-radius: 24rpx;
+  padding: 28rpx 0;
+  text-align: center;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.04);
+}
+
+.logout-text {
+  font-size: 30rpx;
+  color: #b02500;
+  font-weight: 600;
 }
 
 /* 客服弹窗 */
@@ -414,7 +486,7 @@ page {
   display: block;
   font-size: 34rpx;
   font-weight: 700;
-  color: #1f2937;
+  color: #2c2f2e;
   margin-bottom: 24rpx;
 }
 
@@ -426,7 +498,7 @@ page {
 
 .qr-modal-tip {
   font-size: 26rpx;
-  color: #9ca3af;
+  color: #999;
   margin-top: 20rpx;
   margin-bottom: 24rpx;
   text-align: center;

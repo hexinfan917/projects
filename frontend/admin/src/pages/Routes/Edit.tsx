@@ -231,7 +231,7 @@ export default function RouteEdit() {
   const uploadProps = {
     name: 'file',
     action: '/api/v1/files/upload/image',
-    data: { crop_ratio: 1.7857 },
+    data: { crop_ratio: 1.34 },
     headers: {
       Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
     },
@@ -348,6 +348,7 @@ export default function RouteEdit() {
           end_time: newEndTime?.format('HH:mm') || '17:00',
           stock: newStock,
           status: 1,
+          price: 0,
         },
       });
       if (res.code === 200) {
@@ -359,6 +360,8 @@ export default function RouteEdit() {
         await fetchSchedules();
       } else if (res.code === 409) {
         message.error(res.message || '该日期已存在排期，请勿重复添加');
+      } else {
+        message.error(res.message || `添加排期失败 (错误码: ${res.code})`);
       }
     } catch (error: any) {
       const msg = error?.response?.data?.message || error?.message || '添加排期失败';
@@ -809,9 +812,9 @@ export default function RouteEdit() {
                 extra={
                   <div style={{ marginTop: 8, padding: 10, background: '#f6ffed', border: '1px solid #b7eb8f', borderRadius: 4, color: '#389e0d', fontSize: 13, lineHeight: 1.6 }}>
                     <div style={{ fontWeight: 600, marginBottom: 4 }}>封面图片尺寸建议</div>
-                    <div>建议尺寸：宽 750px，高 480px（比例约 1.56:1）</div>
+                    <div>建议尺寸：宽 750px，高 420px（比例约 16:9）</div>
                     <div>文件格式：JPG / PNG，建议控制在 500KB 以内</div>
-                    <div>该图片会用于首页「热门活动」卡片和路线详情页顶部轮播。上传后系统将自动按 750:480 比例中心裁剪，请确保重要内容在画面中间。</div>
+                    <div>上传后系统将自动按 16:9 比例中心裁剪。该图用于小程序首页路线卡片和路线列表展示。</div>
                   </div>
                 }
               >
@@ -847,7 +850,7 @@ export default function RouteEdit() {
                     name="file"
                     action="/api/v1/files/upload/image"
                     headers={{ Authorization: `Bearer ${localStorage.getItem('token')}` }}
-                    data={{ crop_ratio: 1.5625 }}
+                    data={{ crop_ratio: 1.7857 }}
                     showUploadList={false}
                     onChange={(info) => {
                       if (info.file.status === 'done') {
@@ -871,9 +874,9 @@ export default function RouteEdit() {
                 extra={
                   <div style={{ marginTop: 8, padding: 10, background: '#f6ffed', border: '1px solid #b7eb8f', borderRadius: 4, color: '#389e0d', fontSize: 13, lineHeight: 1.6 }}>
                     <div style={{ fontWeight: 600, marginBottom: 4 }}>路线图集尺寸建议</div>
-                    <div>建议尺寸：宽 750px，高 420px（比例 16:9）</div>
+                    <div>建议尺寸：宽 750px，高 560px（比例约 4:3）</div>
                     <div>文件格式：JPG / PNG，建议控制在 500KB 以内</div>
-                    <div>上传后系统将自动按 750:420 比例中心裁剪。路线详情页顶部轮播使用此尺寸，可上传 2 倍图（1500×840px）以获得更清晰的显示效果。</div>
+                    <div>上传后系统将自动按 4:3 比例中心裁剪。图集用于小程序路线详情页顶部轮播展示。</div>
                   </div>
                 }
               >

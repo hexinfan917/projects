@@ -304,14 +304,17 @@ export default function OrderConfirm() {
         }
         return cleaned
       })
-      // 自动选中新添加的宠物
+      // 自动选中新添加的宠物（单人轻旅套餐不自动勾选）
       const pendingId = Taro.getStorageSync('order_confirm_select_pet_id')
-      if (pendingId) {
+      if (pendingId && bookingParams?.packageType !== 'single_person') {
         Taro.removeStorageSync('order_confirm_select_pet_id')
         const found = list.find((p: any) => String(p.id) === String(pendingId))
         if (found) {
           setSelectedPetIds(prev => prev.includes(found.id) ? prev : [...prev, found.id])
         }
+      } else if (pendingId && bookingParams?.packageType === 'single_person') {
+        // 单人轻旅套餐，清除 pendingId 但不选中宠物
+        Taro.removeStorageSync('order_confirm_select_pet_id')
       }
     } catch (err: any) {
       if (err?.statusCode === 401) {
@@ -556,6 +559,7 @@ export default function OrderConfirm() {
         addons: isFreeOrder ? [] : [...(bookingParams?.addons || []), ...selectedAddons],
         addon_amount: isFreeOrder ? 0 : addonTotal,
         travel_type: isFreeOrder ? 'self_drive' : bookingParams?.travelType,
+        package_type: bookingParams?.packageType,
         is_free: isFreeOrder,
         is_member_only: route?.is_member_only ?? 0,
         is_insurance_required: route?.is_insurance_required ?? 1

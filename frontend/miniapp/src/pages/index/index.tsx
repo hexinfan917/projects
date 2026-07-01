@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import Taro, { useDidShow, useShareAppMessage, useShareTimeline } from '@tarojs/taro'
-import { setActiveTab, getRoutes, getCharityActivities, getReviews, getBanners, getMemberPopup, logPopupAction, getMemberCenter, getAdoptionDogs, IMAGE_BASE_URL } from '../../utils/api'
-import { View, Text, Swiper, SwiperItem, Image, ScrollView, Input } from '@tarojs/components'
+import { setActiveTab, getRoutes, getReviews, getBanners, getMemberPopup, logPopupAction, getMemberCenter, getAdoptionDogs, IMAGE_BASE_URL } from '../../utils/api'
+import { View, Text, Swiper, SwiperItem, Image, ScrollView } from '@tarojs/components'
 const logoIcon = '/assets/toplogo.png'
 
 import './index.scss'
@@ -24,10 +24,8 @@ export default function Index() {
   const [banners, setBanners] = useState<any[]>([])
   const [routes, setRoutes] = useState<any[]>([])
   const [reviews, setReviews] = useState<any[]>([])
-  const [charities, setCharities] = useState<any[]>([])
   const [adoptionDogs, setAdoptionDogs] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [searchKeyword, setSearchKeyword] = useState('')
   const [popupVisible, setPopupVisible] = useState(false)
   const [popupData, setPopupData] = useState<any>(null)
   const [isMember, setIsMember] = useState(false)
@@ -55,9 +53,6 @@ export default function Index() {
     setActiveTab(0, 'pages/index/index')
     loadPopup()
     getMemberCenter().then(res => setIsMember(!!res.data?.is_member)).catch(() => setIsMember(false))
-    setTimeout(() => {
-      setSearchKeyword('')
-    }, 50)
   })
 
   useEffect(() => {
@@ -108,6 +103,8 @@ export default function Index() {
   const loadHomeData = async () => {
     try {
       setLoading(true)
+      
+      // 顺序加载所有数据，避免 Promise.allSettled 兼容性问题
       const bannerRes = await getBanners()
       if (bannerRes.code === 200 && bannerRes.data?.banners) {
         setBanners(bannerRes.data.banners.map((b: any) => ({
@@ -149,19 +146,6 @@ export default function Index() {
         })))
       }
 
-      const charityRes = await getCharityActivities({ page_size: 3, status: 1 })
-      if (charityRes.code === 200 && charityRes.data?.activities) {
-        setCharities(charityRes.data.activities.map((a: any) => ({
-          id: a.id,
-          title: a.title,
-          subtitle: a.subtitle || '',
-          date: a.start_date || '',
-          location: a.location || '',
-          status: a.status_name || '报名中',
-          image: a.cover_image ? (a.cover_image.startsWith('http') ? a.cover_image : `${IMAGE_BASE_URL}${a.cover_image}`) + '?w=750&q=75' : 'https://via.placeholder.com/700x380/96C93D/FFFFFF?text=Charity',
-        })))
-      }
-
       const adoptionRes = await getAdoptionDogs({ page_size: 3, status: 1 })
       if (adoptionRes.code === 200 && adoptionRes.data?.dogs) {
         setAdoptionDogs(adoptionRes.data.dogs.map((d: any) => ({
@@ -196,10 +180,6 @@ export default function Index() {
     Taro.navigateTo({ url: `/pages/reviews/detail/index?id=${id}` })
   }
 
-  const goToCharityDetail = (id: number) => {
-    Taro.navigateTo({ url: `/pages/charities/detail/index?id=${id}` })
-  }
-
   const goToAdoptionDetail = (id: number) => {
     Taro.navigateTo({ url: `/pages/adoption/detail/index?id=${id}` })
   }
@@ -208,23 +188,15 @@ export default function Index() {
     Taro.navigateTo({ url: '/pages/adoption/index/index' })
   }
 
-  const handleHomeSearch = () => {
-    if (searchKeyword.trim()) {
-      const kw = searchKeyword.trim()
-      Taro.navigateTo({
-        url: `/pages/search/index?keyword=${encodeURIComponent(kw)}`,
-        complete: () => {
-          setSearchKeyword('')
-        }
-      })
-    }
-  }
-
-  const clearHomeSearch = () => {
-    setSearchKeyword('')
-  }
-
   const handleQuickModule = (module: typeof QUICK_MODULES[0]) => {
+    if (module.key === 'personality') {
+      Taro.showToast({ title: '功能正在开发中，敬请期待', icon: 'none' })
+      return
+    }
+    if (module.path === '/pages/adoption/index/index') {
+      goToAdoptionList()
+      return
+    }
     if (module.path.startsWith('/pages/')) {
       if (module.path === '/pages/routes/index') {
         Taro.switchTab({ url: module.path })
@@ -234,9 +206,9 @@ export default function Index() {
     }
   }
 
-  // 轮播图占位兜底
+  // 轮播图兜底 - 无数据时显示默认占位
   const displayBanners = banners.length > 0 ? banners : [
-    { id: 0, image: '', link_url: '', title: '湖畔森呼吸 · 房车之旅', subtitle: '带上毛孩子，开启一场逃离都市的治愈之旅', tag: '精品路线' },
+    { id: 0, image: '', link_url: '', title: '', subtitle: '', tag: '' },
   ]
 
   return (
@@ -319,88 +291,86 @@ export default function Index() {
           </View>
 
           <ScrollView className='trip-scroll' scrollX showScrollbar={false}>
-            {routes.map((route, index) => (
+            {routes.map((route) => (
               <View key={route.id} className='trip-card' onClick={() => goToRouteDetail(route)}>
-                <Image className='trip-image' src={route.cover_image} mode='widthFix' lazyLoad />
+                <Image className='trip-image' src={route.cover_image} mode='aspectFill' lazyLoad />
                 <View className='trip-tag'>{route.type}</View>
                 <View className='trip-overlay'>
                   <Text className='trip-name'>{route.name}</Text>
-                  {route.subtitle ? <Text className='trip-subtitle'>{route.subtitle}</Text> : null}
+                  <Text className='trip-subtitle'>{route.subtitle || route.location}</Text>
                 </View>
               </View>
             ))}
           </ScrollView>
         </View>
 
-        {/* 4. 狗狗领养 - 情感轮播 */}
-        <View className='section-block adoption-section'>
-          <View className='section-header-row'>
-            <View>
-              <Text className='section-title-main'>狗狗领养</Text>
-              <Text className='section-title-sub'>给流浪的小生命一个温暖的家</Text>
+        {/* 4. 狗狗领养 - 轮播图 */}
+        {adoptionDogs.length > 0 && (
+          <View className='section-block adoption-section'>
+            <View className='section-header-row'>
+              <View>
+                <Text className='section-title-main'>狗狗领养</Text>
+                <Text className='section-title-sub'>给流浪的它一个温暖的家</Text>
+              </View>
+              <Text className='section-more' onClick={goToAdoptionList}>更多 {'>'}</Text>
             </View>
-            <Text className='section-more' onClick={goToAdoptionList}>更多 {'>'}</Text>
-          </View>
-
-          <View className='adoption-carousel'>
-            <Swiper
-              className='adoption-swiper'
-              autoplay
-              interval={6000}
-              duration={800}
-              circular
-              indicatorColor='rgba(255,255,255,0.4)'
-              indicatorActiveColor='#22C55E'
-            >
-              {adoptionDogs.map((dog, idx) => (
-                <SwiperItem key={String(dog.id)}>
-                  <View className='adoption-slide' onClick={() => goToAdoptionDetail(dog.id)}>
-                    <Image className='adoption-image' src={dog.image} mode='aspectFill' lazyLoad />
-                    <View className='adoption-gradient' />
-                    <View className='adoption-content'>
-                      <Text className='adotion-quote'>“{idx === 0 ? '我在等一个你' : '带我回家吧'}”</Text>
-                      <Text className='adoption-desc'>{dog.name} · {dog.breed || ''} {dog.age || ''} · {dog.location || '给它一个家'}</Text>
-                      <View className='adoption-btn'>
-                        <Text className='adoption-btn-text'>{idx === 0 ? '了解 TA 的故事' : '申请领养'}</Text>
+            <View className='adoption-carousel'>
+              <Swiper
+                className='adoption-swiper'
+                autoplay
+                interval={4000}
+                duration={500}
+                circular
+              >
+                {adoptionDogs.map((dog) => (
+                  <SwiperItem key={dog.id}>
+                    <View className='adoption-slide' onClick={() => goToAdoptionDetail(dog.id)}>
+                      <Image className='adoption-image' src={dog.image} mode='aspectFill' lazyLoad />
+                      <View className='adoption-gradient' />
+                      <View className='adoption-content'>
+                        <Text className='adotion-quote'>{dog.name}</Text>
+                        <Text className='adoption-desc'>{dog.breed} · {dog.age} · {dog.location}</Text>
+                        <View className='adoption-btn'>
+                          <Text className='adoption-btn-text'>了解详情</Text>
+                        </View>
                       </View>
                     </View>
-                  </View>
-                </SwiperItem>
-              ))}
-              {adoptionDogs.length === 0 && (
-                <SwiperItem>
-                  <View className='adoption-slide adoption-slide-empty'>
-                    <Text className='adoption-empty-text'>暂无待领养信息</Text>
-                  </View>
-                </SwiperItem>
-              )}
-            </Swiper>
+                  </SwiperItem>
+                ))}
+              </Swiper>
+            </View>
           </View>
-        </View>
+        )}
 
-        {/* 5. 过往精彩回顾 - 横向滚动 */}
-        <View className='section-block memories-section'>
-          <View className='memories-header'>
-            <Text className='memories-title'>过往精彩回顾</Text>
-            <Text className='memories-label'>Memories</Text>
-          </View>
-          <ScrollView className='memories-scroll' scrollX showScrollbar={false}>
-            {reviews.map(review => (
-              <View key={review.id} className='memory-card' onClick={() => goToReviewDetail(review.id)}>
-                <Image className='memory-image' src={review.image} mode='widthFix' lazyLoad />
-                <View className='memory-overlay'>
-                  <Text className='memory-title'>{review.location} · {review.date ? review.date.split('-')[0] : '2024'}</Text>
-                </View>
+        {/* 5. 狗狗回顾 - 横向滚动卡片（复用 trip-card 样式） */}
+        {reviews.length > 0 && (
+          <View className='section-block review-section'>
+            <View className='section-header-row'>
+              <View>
+                <Text className='section-title-main'>狗狗回顾</Text>
+                <Text className='section-title-sub'>记录每一次与毛孩子的美好瞬间</Text>
               </View>
-            ))}
-          </ScrollView>
-        </View>
+              <Text className='section-more' onClick={() => Taro.navigateTo({ url: '/pages/reviews/list/index' })}>更多 {'>'}</Text>
+            </View>
+            <ScrollView className='trip-scroll' scrollX showScrollbar={false}>
+              {reviews.map((review) => (
+                <View key={review.id} className='trip-card' onClick={() => goToReviewDetail(review.id)}>
+                  <Image className='trip-image' src={review.image} mode='aspectFill' lazyLoad />
+                  <View className='trip-overlay'>
+                    <Text className='trip-name'>{review.title}</Text>
+                    <Text className='trip-subtitle'>{review.date || review.location}</Text>
+                  </View>
+                </View>
+              ))}
+            </ScrollView>
+          </View>
+        )}
 
-        {/* 底部安全区占位 */}
+        {/* 安全区占位 */}
         <View className='safe-bottom-placeholder' />
       </ScrollView>
 
-      {/* 会员活动弹窗 */}
+      {/* 弹窗 */}
       {popupVisible && popupData && (
         <View className='member-popup-wrap'>
           <View className='member-popup-mask' onClick={handlePopupClose} />
@@ -423,9 +393,9 @@ export default function Index() {
               </View>
             )}
             <View className='member-popup-footer'>
-              <View
-                className='member-popup-btn'
-                style={{ backgroundColor: popupData.primary_btn_color || '#22C55E' }}
+              <View 
+                className='member-popup-btn' 
+                style={{ backgroundColor: popupData.primary_btn_color || '#FF6B35' }}
                 onClick={handlePopupOpen}
               >
                 <Text className='member-popup-btn-text'>{popupData.primary_btn_text || '立即开通'}</Text>

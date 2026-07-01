@@ -125,7 +125,9 @@
           flex-shrink: 0;
 
           .location-icon {
-            font-size: 24rpx;
+            width: 24rpx;
+            height: 24rpx;
+            flex-shrink: 0;
           }
 
           .location-text {

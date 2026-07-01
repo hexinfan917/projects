@@ -70,32 +70,29 @@ export default function BookingPopup({ visible, route, schedules, initialDate, o
   useEffect(() => {
     if (visible) {
       const dates = Object.keys(scheduleMap)
-      const hasDate = (initialDate && scheduleMap[initialDate]) || (dates.length > 0 && !selectedDate)
-      if (!hasDate) return
-      if (!hasInitializedRef.current) {
-        hasInitializedRef.current = true
-        userChangedRef.current = false
-        let targetDate: string | null = null
-        if (initialDate && scheduleMap[initialDate]) {
-          targetDate = initialDate
-          setSelectedDate(initialDate)
-        } else if (dates.length > 0 && !selectedDate) {
-          targetDate = dates[0]
-          setSelectedDate(dates[0])
-        }
-        if (targetDate) {
-          const best = getBestPackage(scheduleMap[targetDate])
-          if (best) {
-            setSelectedPackage(best.packageKey)
-            setTravelType(best.travelType)
-          }
+      // 每次打开弹窗都重新初始化，确保传入的 initialDate 被正确应用
+      hasInitializedRef.current = true
+      userChangedRef.current = false
+      let targetDate: string | null = null
+      if (initialDate && scheduleMap[initialDate]) {
+        targetDate = initialDate
+        setSelectedDate(initialDate)
+      } else if (dates.length > 0) {
+        targetDate = dates[0]
+        setSelectedDate(dates[0])
+      }
+      if (targetDate) {
+        const best = getBestPackage(scheduleMap[targetDate])
+        if (best) {
+          setSelectedPackage(best.packageKey)
+          setTravelType(best.travelType)
         }
       }
     } else {
       hasInitializedRef.current = false
       userChangedRef.current = false
     }
-  }, [visible, scheduleMap, initialDate, selectedDate])
+  }, [visible, scheduleMap, initialDate])
 
   // 会员状态返回后，若用户未手动修改，重新应用最低价套餐
   useEffect(() => {
@@ -377,7 +374,7 @@ export default function BookingPopup({ visible, route, schedules, initialDate, o
       <View className='popup-content'>
         {/* 顶部关闭 */}
         <View className='popup-header'>
-          <Text className='popup-title'>选择日期 · 套餐 · 人数</Text>
+          <Text className='popup-title'>选择交通方式 · 套餐 · 人数</Text>
           <Text className='popup-close' onClick={onClose}>✕</Text>
         </View>
 

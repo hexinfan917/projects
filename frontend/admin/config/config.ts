@@ -170,6 +170,11 @@ const routes = [
           path: '/coupons/use-records',
           component: './Coupons/UseRecords',
         },
+        {
+          name: '发放记录',
+          path: '/coupons/grant-records',
+          component: './Coupons/GrantRecords',
+        },
       ],
     },
     {
@@ -225,7 +230,7 @@ export default defineConfig({
   },
   proxy: {
     '/api': {
-      target: 'http://localhost:8081',
+      target: 'http://localhost:8080',
       changeOrigin: true,
     },
   },
