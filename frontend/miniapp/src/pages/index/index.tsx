@@ -28,6 +28,7 @@ export default function Index() {
   const [loading, setLoading] = useState(true)
   const [popupVisible, setPopupVisible] = useState(false)
   const [popupData, setPopupData] = useState<any>(null)
+  const [heroCurrent, setHeroCurrent] = useState(0)
   const [isMember, setIsMember] = useState(false)
 
   // 分享给好友
@@ -243,10 +244,20 @@ export default function Index() {
             interval={5000}
             duration={800}
             circular
+            current={heroCurrent}
+            onChange={(e) => setHeroCurrent(e.detail.current)}
           >
             {displayBanners.map((banner, idx) => (
               <SwiperItem key={String(banner.id || idx)}>
-                <View className='hero-slide' onClick={() => banner.link_url && Taro.navigateTo({ url: banner.link_url })}>
+                <View className='hero-slide' onClick={() => {
+                  if (banner.link_url) {
+                    Taro.navigateTo({ url: banner.link_url })
+                  } else {
+                    // 没有链接时，切换到下一张
+                    const nextIndex = (heroCurrent + 1) % displayBanners.length
+                    setHeroCurrent(nextIndex)
+                  }
+                }}>
                   {banner.image ? (
                     <Image className='hero-image' src={banner.image} mode='aspectFill' lazyLoad />
                   ) : (
@@ -262,6 +273,21 @@ export default function Index() {
               </SwiperItem>
             ))}
           </Swiper>
+          {/* 向下滚动提示 */}
+          <View className='scroll-hint' onClick={(e) => {
+            e.stopPropagation()
+            const nextIndex = (heroCurrent + 1) % displayBanners.length
+            setHeroCurrent(nextIndex)
+          }}>
+            <View className='scroll-hint-arrow'>
+              <View className='scroll-hint-line scroll-hint-left' />
+              <View className='scroll-hint-line scroll-hint-right' />
+            </View>
+            <View className='scroll-hint-arrow'>
+              <View className='scroll-hint-line scroll-hint-left' />
+              <View className='scroll-hint-line scroll-hint-right' />
+            </View>
+          </View>
         </View>
 
         {/* 2. 四大功能模块 */}

@@ -542,8 +542,13 @@ export default function RouteEdit() {
       title: '状态',
       dataIndex: 'status',
       key: 'status',
-      render: (status: number) => {
+      render: (status: number, record: any) => {
+        const isSoldOut = record.stock !== undefined && record.stock !== null && record.stock <= 0;
         const statusMap: any = { 0: '关闭', 1: '可售', 2: '已满', 3: '已结束' };
+        // 库存为0时显示已售罄，否则显示数据库状态
+        if (isSoldOut) {
+          return <span style={{ color: '#999' }}>已售罄</span>;
+        }
         return statusMap[status] || '未知';
       },
     },

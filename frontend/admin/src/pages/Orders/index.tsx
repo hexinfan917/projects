@@ -350,7 +350,68 @@ export default function OrderList() {
       return;
     }
 
-    const data = aggregateInsuranceData(rows);
+    // 判断数据格式：如果是普通订单列表（有 id 字段），转换为保险导出格式
+    const isInsuranceFormat = rows[0].role !== undefined || rows[0].person_name !== undefined;
+    
+    let data: any[];
+    let travelerData: any[];
+    
+    if (isInsuranceFormat) {
+      // 保险导出格式（按人头展开）
+      data = aggregateInsuranceData(rows);
+      travelerData = buildTravelerSheetData(rows);
+    } else {
+      // 普通订单列表格式
+      data = rows.map((order: any) => {
+        const participants = order.participants || [];
+        const pets = order.pets || [];
+        const contact = order.contact || {};
+        
+        const travelers = participants
+          .map((p: any) => {
+            const parts = [p.name, p.phone, p.id_card].filter(Boolean);
+            return parts.join(' / ');
+          })
+          .filter(Boolean)
+          .join('\n');
+        
+        const petInfo = pets.map((p: any, i: number) => {
+          const parts = [
+            `宠物${i + 1}`,
+            `昵称:${p.name || ''}`,
+            p.breed ? `品种:${p.breed}` : '',
+            p.gender !== undefined ? `性别:${p.gender === 1 ? '公' : '母'}` : '',
+            p.age_str ? `年龄:${p.age_str}` : '',
+            p.weight ? `体重:${p.weight}kg` : '',
+          ].filter(Boolean);
+          return parts.join('  ');
+        }).join('\r\n');
+        
+        return {
+          orderNo: order.order_no || '',
+          userId: order.user_id || '',
+          routeName: order.route_name || '',
+          travelDate: order.travel_date || '',
+          status: order.status_name || order.status || '',
+          payAmount: order.pay_amount || '',
+          createdAt: order.created_at || '',
+          peopleCount: order.participant_count || 0,
+          petCount: order.pet_count || 0,
+          peoplePetSummary: `${order.participant_count || 0}人/${order.pet_count || 0}宠`,
+          contactName: contact.name || '',
+          contactPhone: contact.phone || '',
+          contactIdCard: contact.id_card || '',
+          travelers,
+          pets: petInfo,
+          avatars: pets.map((p: any) => p.avatar || '').filter(Boolean),
+          vaccineBooks: pets.map((p: any) => p.vaccine_book || '').filter(Boolean),
+        };
+      });
+      
+      // 普通格式不需要出行人清单sheet
+      travelerData = [];
+    }
+    
     const maxPets = data.reduce((max, d) => Math.max(max, d.avatars.length, d.vaccineBooks.length), 0);
 
     const workbook = new ExcelJS.Workbook();
@@ -361,11 +422,10 @@ export default function OrderList() {
     const columns: any[] = [
       { header: '报名订单号', key: 'orderNo', width: 22 },
       { header: '用户ID', key: 'userId', width: 10 },
+      { header: '下单时间', key: 'createdAt', width: 18 },
+      { header: '订单状态', key: 'status', width: 12 },
       { header: '路线名称', key: 'routeName', width: 20 },
       { header: '出行日期', key: 'travelDate', width: 12 },
-      { header: '订单状态', key: 'status', width: 12 },
-      { header: '实付金额', key: 'payAmount', width: 12 },
-      { header: '下单时间', key: 'createdAt', width: 18 },
       { header: '人数/宠物', key: 'peoplePetSummary', width: 12 },
       { header: '联系人', key: 'contactName', width: 12 },
       { header: '联系电话', key: 'contactPhone', width: 14 },
@@ -374,6 +434,7 @@ export default function OrderList() {
       { header: '宠物数量', key: 'petCount', width: 10 },
       { header: '宠物信息', key: 'pets', width: 50 },
     ];
+    // 每个宠物添加独立的头像和疫苗本列
     for (let i = 1; i <= maxPets; i++) {
       columns.push({ header: `宠物${i}头像`, key: `avatar${i}`, width: 15 });
       columns.push({ header: `宠物${i}疫苗本`, key: `vaccineBook${i}`, width: 15 });
@@ -384,11 +445,10 @@ export default function OrderList() {
       const rowData: any = {
         orderNo: d.orderNo,
         userId: d.userId,
+        createdAt: d.createdAt,
+        status: d.status,
         routeName: d.routeName,
         travelDate: d.travelDate,
-        status: d.status,
-        payAmount: d.payAmount,
-        createdAt: d.createdAt,
         peoplePetSummary: d.peoplePetSummary,
         contactName: d.contactName,
         contactPhone: d.contactPhone,
@@ -427,39 +487,40 @@ export default function OrderList() {
     // 表头加粗
     worksheet.getRow(1).font = { bold: true };
 
-    // ===== Sheet2: 出行人清单（用于保险购买） =====
-    const travelerSheet = workbook.addWorksheet('出行人清单');
-    travelerSheet.columns = [
-      { header: '报名订单号', key: 'orderNo', width: 22 },
-      { header: '路线名称', key: 'routeName', width: 20 },
-      { header: '出行日期', key: 'travelDate', width: 12 },
-      { header: '出行人姓名', key: 'travelerName', width: 12 },
-      { header: '出行人手机号', key: 'travelerPhone', width: 14 },
-      { header: '出行人身份证号', key: 'travelerIdCard', width: 22 },
-      { header: '身份', key: 'travelerRole', width: 10 },
-      { header: '联系人姓名', key: 'contactName', width: 12 },
-      { header: '联系人手机号', key: 'contactPhone', width: 14 },
-      { header: '宠物信息', key: 'pets', width: 50 },
-    ];
+    // ===== Sheet2: 出行人清单（仅保险导出格式有数据） =====
+    if (travelerData.length > 0) {
+      const travelerSheet = workbook.addWorksheet('出行人清单');
+      travelerSheet.columns = [
+        { header: '报名订单号', key: 'orderNo', width: 22 },
+        { header: '路线名称', key: 'routeName', width: 20 },
+        { header: '出行日期', key: 'travelDate', width: 12 },
+        { header: '出行人姓名', key: 'travelerName', width: 12 },
+        { header: '出行人手机号', key: 'travelerPhone', width: 14 },
+        { header: '出行人身份证号', key: 'travelerIdCard', width: 22 },
+        { header: '身份', key: 'travelerRole', width: 10 },
+        { header: '联系人姓名', key: 'contactName', width: 12 },
+        { header: '联系人手机号', key: 'contactPhone', width: 14 },
+        { header: '宠物信息', key: 'pets', width: 50 },
+      ];
 
-    const travelerData = buildTravelerSheetData(rows);
-    travelerData.forEach((d: any) => {
-      const row = travelerSheet.addRow({
-        orderNo: d.orderNo,
-        routeName: d.routeName,
-        travelDate: d.travelDate,
-        travelerName: d.travelerName,
-        travelerPhone: d.travelerPhone,
-        travelerIdCard: d.travelerIdCard,
-        travelerRole: d.travelerRole,
-        contactName: d.contactName,
-        contactPhone: d.contactPhone,
-        pets: d.pets,
+      travelerData.forEach((d: any) => {
+        const row = travelerSheet.addRow({
+          orderNo: d.orderNo,
+          routeName: d.routeName,
+          travelDate: d.travelDate,
+          travelerName: d.travelerName,
+          travelerPhone: d.travelerPhone,
+          travelerIdCard: d.travelerIdCard,
+          travelerRole: d.travelerRole,
+          contactName: d.contactName,
+          contactPhone: d.contactPhone,
+          pets: d.pets,
+        });
+        const petCell = row.getCell('pets');
+        petCell.alignment = { wrapText: true, vertical: 'top' };
       });
-      const petCell = row.getCell('pets');
-      petCell.alignment = { wrapText: true, vertical: 'top' };
-    });
-    travelerSheet.getRow(1).font = { bold: true };
+      travelerSheet.getRow(1).font = { bold: true };
+    }
 
     const buffer = await workbook.xlsx.writeBuffer();
     const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
@@ -476,24 +537,44 @@ export default function OrderList() {
       message.loading('正在生成订单导出...', 0);
       const filterValues = formRef.current?.getFieldsValue?.() || {};
       const hasSelection = selectedRowKeys.length > 0;
-      const res = await request('/api/v1/admin/orders/insurance-export', {
-        params: {
-          ids: hasSelection ? selectedRowKeys.join(',') : undefined,
-          status: filterValues.status,
-          is_free: filterValues.is_free,
-          keyword: filterValues.route_name,
-          order_no: orderNoFromUrl || undefined,
-        },
-      });
+      
+      let exportData: any[] = [];
+      
+      if (hasSelection) {
+        // 有选择记录时，使用普通订单列表接口，按订单维度导出
+        const res = await request('/api/v1/admin/orders', {
+          params: {
+            ids: selectedRowKeys.join(','),
+            page_size: selectedRowKeys.length,
+          },
+        });
+        if (res.code === 200 && res.data?.orders) {
+          exportData = res.data.orders;
+        }
+      } else {
+        // 没有选择时，使用保险导出接口（按人头展开）
+        const res = await request('/api/v1/admin/orders/insurance-export', {
+          params: {
+            status: filterValues.status,
+            is_free: filterValues.is_free,
+            keyword: filterValues.route_name,
+            order_no: orderNoFromUrl || undefined,
+          },
+        });
+        if (res.code === 200 && res.data) {
+          exportData = res.data;
+        }
+      }
+      
       message.destroy();
 
-      if (res.code !== 200 || !res.data?.length) {
+      if (!exportData.length) {
         message.warning('暂无数据可导出');
         return;
       }
 
-      await buildUnifiedExportExcel(res.data);
-      message.success(`已导出 ${res.data.length} 条记录`);
+      await buildUnifiedExportExcel(exportData);
+      message.success(`已导出 ${exportData.length} 条记录`);
     } catch (error: any) {
       message.destroy();
       console.error('订单导出失败:', error);
@@ -778,6 +859,20 @@ export default function OrderList() {
                         {currentOrder.travel_type === 'bus' ? '大巴出行' : currentOrder.travel_type === 'self_drive' ? '自驾出行' : currentOrder.travel_type || '-'}
                       </Tag>
                     </Descriptions.Item>
+                    {(() => {
+                      const basePerson = currentOrder.package_type === 'single_pet' ? 0 : (currentOrder.package_type === 'single_person' ? 1 : 1)
+                      const basePet = currentOrder.package_type === 'single_person' ? 0 : (currentOrder.package_type === 'single_pet' ? 1 : 1)
+                      const extraPerson = Math.max(0, (currentOrder.participant_count || 0) - basePerson)
+                      const extraPet = Math.max(0, (currentOrder.pet_count || 0) - basePet)
+                      if (extraPerson <= 0 && extraPet <= 0) return null
+                      return (
+                        <Descriptions.Item label="额外增加">
+                          <Tag color="purple">
+                            {extraPerson > 0 ? `成人+${extraPerson} ` : ''}{extraPet > 0 ? `宠物+${extraPet}` : ''}
+                          </Tag>
+                        </Descriptions.Item>
+                      )
+                    })()}
                     <Descriptions.Item label="出行人数">{currentOrder.participant_count}人</Descriptions.Item>
                     <Descriptions.Item label="携带宠物">{currentOrder.pet_count}只</Descriptions.Item>
                   </Descriptions>

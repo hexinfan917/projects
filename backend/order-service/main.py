@@ -1511,6 +1511,7 @@ async def admin_get_orders(
     route_id: Optional[int] = None,
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
+    ids: Optional[str] = None,
     page: int = 1,
     page_size: int = 10,
     db: AsyncSession = Depends(get_db)
@@ -1522,23 +1523,32 @@ async def admin_get_orders(
         
         query = select(Order)
         
-        # 筛选条件
-        if status is not None:
-            query = query.where(Order.status == status)
-        if is_free is not None:
-            query = query.where(Order.is_free == is_free)
-        if order_no:
-            query = query.where(Order.order_no.contains(order_no))
-        if keyword:
-            query = query.where(Order.route_name.contains(keyword))
-        if user_id:
-            query = query.where(Order.user_id == user_id)
-        if route_id:
-            query = query.where(Order.route_id == route_id)
-        if start_date:
-            query = query.where(Order.created_at >= start_date)
-        if end_date:
-            query = query.where(Order.created_at <= end_date)
+        # 如果传入 ids，优先按 ids 查询（导出场景）
+        if ids:
+            try:
+                id_list = [int(x.strip()) for x in ids.split(",") if x.strip()]
+                if id_list:
+                    query = query.where(Order.id.in_(id_list))
+            except ValueError:
+                return {"code": 400, "message": "ids 参数格式错误", "data": None}
+        else:
+            # 筛选条件
+            if status is not None:
+                query = query.where(Order.status == status)
+            if is_free is not None:
+                query = query.where(Order.is_free == is_free)
+            if order_no:
+                query = query.where(Order.order_no.contains(order_no))
+            if keyword:
+                query = query.where(Order.route_name.contains(keyword))
+            if user_id:
+                query = query.where(Order.user_id == user_id)
+            if route_id:
+                query = query.where(Order.route_id == route_id)
+            if start_date:
+                query = query.where(Order.created_at >= start_date)
+            if end_date:
+                query = query.where(Order.created_at <= end_date)
         
         query = query.order_by(Order.created_at.desc())
         

@@ -202,6 +202,24 @@ export default function OrderDetail() {
               </View>
               <Text className='detail-text'>成人：{order.participant_count}人 | 宠物：{order.pet_count}只</Text>
             </View>
+            {/* 额外增加信息 */}
+            {(() => {
+              const basePerson = order.package_type === 'single_pet' ? 0 : (order.package_type === 'single_person' ? 1 : 1)
+              const basePet = order.package_type === 'single_person' ? 0 : (order.package_type === 'single_pet' ? 1 : 1)
+              const extraPerson = Math.max(0, (order.participant_count || 0) - basePerson)
+              const extraPet = Math.max(0, (order.pet_count || 0) - basePet)
+              if (extraPerson <= 0 && extraPet <= 0) return null
+              return (
+                <View className='detail-row'>
+                  <View className='detail-icon-wrap'>
+                    <Image className='detail-icon' src='/assets/icons/icon-add.svg' mode='aspectFit' />
+                  </View>
+                  <Text className='detail-text'>
+                    额外增加：{extraPerson > 0 ? `成人+${extraPerson} ` : ''}{extraPet > 0 ? `宠物+${extraPet}` : ''}
+                  </Text>
+                </View>
+              )
+            })()}
           </View>
         </View>
 
