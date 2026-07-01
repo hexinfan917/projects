@@ -408,8 +408,60 @@ export default function OrderList() {
         };
       });
       
-      // 普通格式不需要出行人清单sheet
+      // 构建普通订单格式的出行人清单数据
       travelerData = [];
+      rows.forEach((order: any) => {
+        const participants = order.participants || [];
+        const contact = order.contact || {};
+        const pets = order.pets || [];
+        
+        // 构建宠物信息文本
+        const petInfo = pets.map((p: any, i: number) => {
+          const parts = [
+            `宠物${i + 1}`,
+            `昵称:${p.name || ''}`,
+            p.breed ? `品种:${p.breed}` : '',
+            p.gender !== undefined ? `性别:${p.gender === 1 ? '公' : '母'}` : '',
+            p.age_str ? `年龄:${p.age_str}` : '',
+          ].filter(Boolean);
+          return parts.join(' ');
+        }).join('  ');
+        
+        // 联系人作为第一行
+        if (contact.name) {
+          travelerData.push({
+            orderNo: order.order_no || '',
+            routeName: order.route_name || '',
+            travelDate: order.travel_date || '',
+            travelerName: contact.name || '',
+            travelerPhone: contact.phone || '',
+            travelerIdCard: contact.id_card || '',
+            travelerRole: '联系人',
+            contactName: contact.name || '',
+            contactPhone: contact.phone || '',
+            pets: petInfo,
+          });
+        }
+        
+        // 每个参与者一行
+        participants.forEach((p: any) => {
+          // 跳过重复的联系人
+          if (p.phone === contact.phone && p.name === contact.name) return;
+          
+          travelerData.push({
+            orderNo: order.order_no || '',
+            routeName: order.route_name || '',
+            travelDate: order.travel_date || '',
+            travelerName: p.name || '',
+            travelerPhone: p.phone || '',
+            travelerIdCard: p.id_card || '',
+            travelerRole: '出行人',
+            contactName: contact.name || '',
+            contactPhone: contact.phone || '',
+            pets: petInfo,
+          });
+        });
+      });
     }
     
     const maxPets = data.reduce((max, d) => Math.max(max, d.avatars.length, d.vaccineBooks.length), 0);
@@ -487,7 +539,7 @@ export default function OrderList() {
     // 表头加粗
     worksheet.getRow(1).font = { bold: true };
 
-    // ===== Sheet2: 出行人清单（仅保险导出格式有数据） =====
+    // ===== Sheet2: 出行人清单 =====
     if (travelerData.length > 0) {
       const travelerSheet = workbook.addWorksheet('出行人清单');
       travelerSheet.columns = [
