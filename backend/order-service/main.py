@@ -1591,6 +1591,50 @@ async def admin_get_orders(
             contact = o.contact or {}
             if isinstance(contact, dict) and o.user_id and o.user_id in id_card_map:
                 contact = {**contact, "id_card": id_card_map[o.user_id]}
+            
+            # 补全宠物档案信息（头像、年龄、疫苗本等）
+            order_pets = o.pets or []
+            enriched_pets = []
+            if o.user_id and order_pets:
+                pet_result = await db.execute(
+                    text("""
+                        SELECT id, user_id, name, breed, age_str, gender, weight, avatar, vaccine_book
+                        FROM pet_profiles
+                        WHERE user_id = :user_id
+                    """),
+                    {"user_id": o.user_id}
+                )
+                pet_map = {}
+                for row in pet_result.fetchall():
+                    key = (row[1], row[2])  # (user_id, name)
+                    pet_map[key] = {
+                        "id": row[0],
+                        "user_id": row[1],
+                        "name": row[2],
+                        "breed": row[3],
+                        "age_str": row[4],
+                        "gender": row[5],
+                        "weight": float(row[6]) if row[6] is not None else None,
+                        "avatar": row[7],
+                        "vaccine_book": row[8],
+                    }
+                
+                for p in order_pets:
+                    pet_key = (o.user_id, p.get("name"))
+                    pet_profile = pet_map.get(pet_key) or {}
+                    enriched_pets.append({
+                        "id": pet_profile.get("id") or p.get("id") or "",
+                        "name": p.get("name") or pet_profile.get("name") or "",
+                        "breed": p.get("breed") or pet_profile.get("breed") or "",
+                        "gender": p.get("gender") if p.get("gender") is not None else pet_profile.get("gender"),
+                        "age_str": pet_profile.get("age_str") or "",
+                        "weight": p.get("weight") if p.get("weight") is not None else pet_profile.get("weight"),
+                        "avatar": pet_profile.get("avatar") or "",
+                        "vaccine_book": pet_profile.get("vaccine_book") or "",
+                    })
+            else:
+                enriched_pets = order_pets
+            
             orders.append({
                 "id": o.id,
                 "order_no": o.order_no,
@@ -1604,7 +1648,7 @@ async def admin_get_orders(
                 "participant_count": o.participant_count,
                 "pet_count": o.pet_count,
                 "participants": o.participants or [],
-                "pets": o.pets or [],
+                "pets": enriched_pets,
                 "contact": contact,
                 "route_price": float(o.route_price) if o.route_price else 0,
                 "insurance_price": float(o.insurance_price) if o.insurance_price else 0,
