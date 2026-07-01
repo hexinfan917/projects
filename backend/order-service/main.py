@@ -1620,8 +1620,16 @@ async def admin_get_orders(
                     }
                 
                 for p in order_pets:
-                    pet_key = (o.user_id, p.get("name"))
-                    pet_profile = pet_map.get(pet_key) or {}
+                    # 优先按 id 匹配，再按名字匹配
+                    pet_profile = None
+                    if p.get("id"):
+                        for profile in pet_map.values():
+                            if profile.get("id") == p.get("id"):
+                                pet_profile = profile
+                                break
+                    if not pet_profile:
+                        pet_key = (o.user_id, p.get("name"))
+                        pet_profile = pet_map.get(pet_key) or {}
                     enriched_pets.append({
                         "id": pet_profile.get("id") or p.get("id") or "",
                         "name": p.get("name") or pet_profile.get("name") or "",
