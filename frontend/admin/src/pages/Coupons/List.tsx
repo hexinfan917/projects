@@ -441,7 +441,7 @@ export default function CouponTemplateList() {
                       const res = await request('/api/v1/admin/users', { params: { keyword, page: 1, page_size: 20 } });
                       if (res.code === 200) {
                         const opts = (res.data?.users || []).map((u: any) => ({
-                          label: `${u.nickname} (${u.phone || '-'})`,
+                          label: `${u.nickname} (${u.phone || '-'}) ID: ${u.id}`,
                           value: u.id,
                         }));
                         setUserOptions(opts);
@@ -507,7 +507,7 @@ export default function CouponTemplateList() {
             const res = await request('/api/v1/admin/users', { params: { keyword, page: 1, page_size: 20 } });
             if (res.code === 200) {
               const opts = (res.data?.users || []).map((u: any) => ({
-                label: `${u.nickname} (${u.phone || '-'})`,
+                label: `${u.nickname} (${u.phone || '-'}) ID: ${u.id}`,
                 value: u.id,
               }));
               setGrantUserOptions(opts);
