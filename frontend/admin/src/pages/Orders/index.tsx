@@ -433,6 +433,7 @@ export default function OrderList() {
             orderNo: order.order_no || '',
             routeName: order.route_name || '',
             travelDate: order.travel_date || '',
+            peoplePetSummary: `${order.participant_count || 0}人/${order.pet_count || 0}宠`,
             travelerName: contact.name || '',
             travelerPhone: contact.phone || '',
             travelerIdCard: contact.id_card || '',
@@ -452,6 +453,7 @@ export default function OrderList() {
             orderNo: order.order_no || '',
             routeName: order.route_name || '',
             travelDate: order.travel_date || '',
+            peoplePetSummary: `${order.participant_count || 0}人/${order.pet_count || 0}宠`,
             travelerName: p.name || '',
             travelerPhone: p.phone || '',
             travelerIdCard: p.id_card || '',
@@ -546,6 +548,7 @@ export default function OrderList() {
         { header: '报名订单号', key: 'orderNo', width: 22 },
         { header: '路线名称', key: 'routeName', width: 20 },
         { header: '出行日期', key: 'travelDate', width: 12 },
+        { header: '人数/宠物', key: 'peoplePetSummary', width: 12 },
         { header: '出行人姓名', key: 'travelerName', width: 12 },
         { header: '出行人手机号', key: 'travelerPhone', width: 14 },
         { header: '出行人身份证号', key: 'travelerIdCard', width: 22 },
@@ -576,6 +579,7 @@ export default function OrderList() {
           orderNo: d.orderNo,
           routeName: d.routeName,
           travelDate: d.travelDate,
+          peoplePetSummary: d.peoplePetSummary || '',
           travelerName: d.travelerName,
           travelerPhone: d.travelerPhone,
           travelerIdCard: d.travelerIdCard,
@@ -588,11 +592,11 @@ export default function OrderList() {
         petCell.alignment = { wrapText: true, vertical: 'top' };
       });
 
-      // 合并同一个订单号的单元格（订单号、路线名称、出行日期、联系人姓名、联系人手机号、宠物信息列）
+      // 合并同一个订单号的单元格（订单号、路线名称、出行日期、人数/宠物、联系人姓名、联系人手机号、宠物信息列）
       orderRowMap.forEach((range, orderNo) => {
         if (range.startRow < range.endRow) {
-          // 需要合并的列：A(订单号), B(路线名称), C(出行日期), H(联系人姓名), I(联系人手机号), J(宠物信息)
-          const columnsToMerge = ['A', 'B', 'C', 'H', 'I', 'J'];
+          // 需要合并的列：A(订单号), B(路线名称), C(出行日期), D(人数/宠物), H(联系人姓名), I(联系人手机号), J(宠物信息)
+          const columnsToMerge = ['A', 'B', 'C', 'D', 'H', 'I', 'J'];
           columnsToMerge.forEach((col) => {
             travelerSheet.mergeCells(`${col}${range.startRow}`, `${col}${range.endRow}`);
           });
