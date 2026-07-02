@@ -730,8 +730,8 @@ export default function OrderConfirm() {
 
   useEffect(() => {
     if (!route?.id) return
-    // 路线价格≤20时不加载优惠券（小额订单不可用券）
-    if (routePrice <= 20) {
+    // 免费路线不加载优惠券
+    if (routePrice <= 0) {
       setAvailableCoupons([])
       setSelectedCouponId(null)
       setCouponDiscount(0)
