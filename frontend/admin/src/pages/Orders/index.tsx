@@ -595,8 +595,8 @@ export default function OrderList() {
       // 合并同一个订单号的单元格（订单号、路线名称、出行日期、人数/宠物、联系人姓名、联系人手机号、宠物信息列）
       orderRowMap.forEach((range, orderNo) => {
         if (range.startRow < range.endRow) {
-          // 需要合并的列：A(订单号), B(路线名称), C(出行日期), D(人数/宠物), H(联系人姓名), I(联系人手机号), J(宠物信息)
-          const columnsToMerge = ['A', 'B', 'C', 'D', 'H', 'I', 'J'];
+          // 需要合并的列：A(订单号), B(路线名称), C(出行日期), D(人数/宠物), I(联系人姓名), J(联系人手机号), K(宠物信息)
+          const columnsToMerge = ['A', 'B', 'C', 'D', 'I', 'J', 'K'];
           columnsToMerge.forEach((col) => {
             travelerSheet.mergeCells(`${col}${range.startRow}`, `${col}${range.endRow}`);
           });
