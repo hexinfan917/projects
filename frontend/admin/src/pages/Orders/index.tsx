@@ -555,6 +555,22 @@ export default function OrderList() {
         { header: '宠物信息', key: 'pets', width: 50 },
       ];
 
+      // 按订单号分组，记录每个订单的起始行和结束行（用于合并单元格）
+      const orderRowMap = new Map<string, { startRow: number; endRow: number }>();
+      let currentRow = 2; // 从第2行开始（第1行是表头）
+
+      travelerData.forEach((d: any, index: number) => {
+        const orderNo = d.orderNo;
+        if (!orderRowMap.has(orderNo)) {
+          orderRowMap.set(orderNo, { startRow: currentRow, endRow: currentRow });
+        } else {
+          const range = orderRowMap.get(orderNo)!;
+          range.endRow = currentRow;
+        }
+        currentRow++;
+      });
+
+      // 重新遍历，添加数据
       travelerData.forEach((d: any) => {
         const row = travelerSheet.addRow({
           orderNo: d.orderNo,
@@ -571,6 +587,18 @@ export default function OrderList() {
         const petCell = row.getCell('pets');
         petCell.alignment = { wrapText: true, vertical: 'top' };
       });
+
+      // 合并同一个订单号的单元格（订单号、路线名称、出行日期、联系人姓名、联系人手机号、宠物信息列）
+      orderRowMap.forEach((range, orderNo) => {
+        if (range.startRow < range.endRow) {
+          // 需要合并的列：A(订单号), B(路线名称), C(出行日期), H(联系人姓名), I(联系人手机号), J(宠物信息)
+          const columnsToMerge = ['A', 'B', 'C', 'H', 'I', 'J'];
+          columnsToMerge.forEach((col) => {
+            travelerSheet.mergeCells(`${col}${range.startRow}`, `${col}${range.endRow}`);
+          });
+        }
+      });
+
       travelerSheet.getRow(1).font = { bold: true };
     }
 
