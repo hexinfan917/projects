@@ -918,17 +918,8 @@ async def create_order(
         contact_info = data.contact or {}
     logger.info(f"[DEBUG] user_id={user_id}, contact_info={contact_info}")
     
-    # 构建完整的出行人列表：包含前端传入的所有出行人
-    # 旧版本小程序会把第一个出行人同时作为 contact 传入，这里把它也加入 participants
+    # 构建完整的出行人列表：前端传入的 participants 即为实际出行人
     all_participants = data.participants or []
-    if data.contact and data.contact.get('name'):
-        contact_in_participants = any(
-            p.get('id_card') == data.contact.get('id_card') or 
-            p.get('phone') == data.contact.get('phone')
-            for p in all_participants
-        )
-        if not contact_in_participants:
-            all_participants = [data.contact] + all_participants
     
     # 创建订单
     order = Order(

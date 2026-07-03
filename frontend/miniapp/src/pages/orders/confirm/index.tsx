@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react'
 import Taro, { useDidShow } from '@tarojs/taro'
 import { View, Text, Image, Swiper, SwiperItem, ScrollView } from '@tarojs/components'
-import { getRouteDetail, getRouteSchedules, getPets, getTravelers, createOrder, getRouteAddons, getAddonCategories, getAvailableCoupons, calculateCoupon, getAgreements, getMemberCenter, compressImageUrl, payOrder } from '../../../utils/api'
+import { getRouteDetail, getRouteSchedules, getPets, getTravelers, createOrder, getRouteAddons, getAddonCategories, getAvailableCoupons, calculateCoupon, getAgreements, getMemberCenter, getUserProfile, compressImageUrl, payOrder } from '../../../utils/api'
 import './index.scss'
 
 const GENDER_MAP: any = { 0: '母', 1: '公' }
@@ -142,6 +142,7 @@ export default function OrderConfirm() {
   const [showPriceDetail, setShowPriceDetail] = useState(false)
   const [agreements, setAgreements] = useState<any[]>([])
   const [agreed, setAgreed] = useState(false)
+  const [userInfo, setUserInfo] = useState<any>(null)
 
   // 从弹窗传入的参数
   const [bookingParams, setBookingParams] = useState<any>(null)
@@ -200,9 +201,21 @@ export default function OrderConfirm() {
   }
 
   useDidShow(() => {
+    loadUserInfo()
     loadTravelers()
     loadPets()
   })
+
+  const loadUserInfo = async () => {
+    try {
+      const res = await getUserProfile()
+      if (res.code === 200 && res.data) {
+        setUserInfo(res.data)
+      }
+    } catch (e) {
+      console.error('load user info error', e)
+    }
+  }
 
   const loadRouteData = async (routeId: number, scheduleId: number, bp?: any) => {
     try {
@@ -456,8 +469,9 @@ export default function OrderConfirm() {
       return
     }
     try {
-      const contact = selectedTravelers[0]
-      const participants = selectedTravelers.slice(1)
+      // 联系人固定为当前登录账号本人，所有选中的出行人都作为实际出行人
+      const contact = userInfo || selectedTravelers[0] || {}
+      const participants = selectedTravelers
       const selectedAddons = addons
         .filter((a: any) => {
           if (a.category === 'dog_ticket' && a.extra_config?.options?.length > 0) {
@@ -527,7 +541,7 @@ export default function OrderConfirm() {
         schedule_id: schedule.id,
         route_name: route.name,
         travel_date: schedule.schedule_date,
-        contact: { name: contact.name, phone: contact.phone, id_card: contact.id_card },
+        contact: { name: contact.real_name || contact.nickname || contact.name || '', phone: contact.phone || '', id_card: contact.id_card || '' },
         participants,
         pets: isSinglePersonPackage ? [] : selectedPets.map(p => ({ id: p.id, name: p.name, breed: p.breed, weight: p.weight, gender: p.gender })),
         participant_count: selectedTravelers.length,
