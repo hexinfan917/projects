@@ -15,12 +15,12 @@ try {
 // 模拟器用 localhost，真机预览用局域网 IP
 const systemInfo = Taro.getSystemInfoSync()
 const isDevtools = systemInfo.platform === 'devtools'
-// develop/trial 走本地，release 走线上
-export const BASE_URL = (env === 'develop' || env === 'trial')
+// develop 走本地（开发者工具 / 真机预览），trial/release 走线上
+export const BASE_URL = (env === 'develop')
   ? (isDevtools ? 'http://localhost:8081' : 'http://192.168.31.44:8081')
   : 'https://tailtravel.cn'
 // 图片基础 URL：开发环境使用 BASE_URL（本地），生产环境使用线上域名
-export const IMAGE_BASE_URL = (env === 'develop' || env === 'trial') ? BASE_URL : 'https://tailtravel.cn'
+export const IMAGE_BASE_URL = (env === 'develop') ? BASE_URL : 'https://tailtravel.cn'
 
 /** 补全图片 URL 并添加压缩参数 */
 /** 安全返回：页面栈大于1时正常返回，否则跳转首页 */
@@ -36,7 +36,7 @@ export function safeNavigateBack(fallbackUrl?: string) {
 export function compressImageUrl(url?: string, width?: number): string {
   if (!url) return ''
   // 开发环境使用 BASE_URL（本地），生产环境使用 IMAGE_BASE_URL（线上）
-  const baseUrl = (env === 'develop' || env === 'trial') ? BASE_URL : IMAGE_BASE_URL
+  const baseUrl = (env === 'develop') ? BASE_URL : IMAGE_BASE_URL
   const fullUrl = url.startsWith('http') ? url : `${baseUrl}${url}`
   // 如果 URL 已经包含查询参数，不再添加压缩参数
   if (fullUrl.includes('?')) return fullUrl
@@ -49,7 +49,7 @@ export function getImageUrl(url?: string): string {
   if (!url) return ''
   if (url.startsWith('http')) return url
   // 开发环境使用 BASE_URL（本地），生产环境使用 IMAGE_BASE_URL（线上）
-  const baseUrl = (env === 'develop' || env === 'trial') ? BASE_URL : IMAGE_BASE_URL
+  const baseUrl = (env === 'develop') ? BASE_URL : IMAGE_BASE_URL
   return `${baseUrl}${url}`
 }
 
