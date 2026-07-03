@@ -62,6 +62,13 @@ class WechatService:
         result = await db.execute(select(User).where(User.openid == openid))
         user = result.scalar_one_or_none()
         
+        # 开发环境：如果根据 openid 找不到用户，尝试根据手机号查找（避免重复创建用户）
+        if not user and phone and openid == "mock_openid_dev":
+            result = await db.execute(select(User).where(User.phone == phone))
+            user = result.scalar_one_or_none()
+            if user:
+                logger.info(f"[Login] Found existing user by phone in dev mode: user_id={user.id}")
+        
         is_new_user = False
         if not user:
             # 创建新用户
@@ -260,13 +267,20 @@ class WechatService:
             logger.warning("WeChat not configured, skip phone get")
             return None
         
-        # 开发环境跳过手机号获取，避免浪费次数
-        # 通过判断 appid 是否包含测试标识或环境变量控制
+        # 开发环境可跳过手机号获取，避免浪费 API 次数
+        # 同时支持 APP_ENV / ENV 环境变量，以及 ENABLE_WECHAT_PHONE 强制开启
         import os
-        env = os.environ.get('ENV', os.environ.get('env', 'development')).lower()
-        # 本地开发环境特征：localhost 或 127.0.0.1 的回调地址
-        if env in ('development', 'dev', 'local', 'test') or 'test' in self.appid.lower():
-            logger.info("[_get_phone_by_code] Development mode, skipping phone number fetch to save API quota")
+        env = (
+            os.environ.get('APP_ENV') or
+            os.environ.get('ENV') or
+            os.environ.get('env') or
+            'development'
+        ).lower()
+        force_phone = os.environ.get('ENABLE_WECHAT_PHONE', '').lower() in ('1', 'true', 'yes', 'on')
+        is_dev = env in ('development', 'dev', 'local', 'test')
+
+        if is_dev and not force_phone:
+            logger.info("[_get_phone_by_code] Development mode, skipping phone number fetch to save API quota. Set ENABLE_WECHAT_PHONE=true to enable.")
             return None
         
         # 尝试获取手机号，如果失败则清除缓存重试一次
