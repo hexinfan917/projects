@@ -209,9 +209,6 @@ export default function PetEdit() {
         if (res?.code !== 200) {
           throw new Error(res?.message || '保存失败')
         }
-        if (res?.data?.id) {
-          Taro.setStorageSync('order_confirm_select_pet_id', res.data.id)
-        }
       }
       Taro.showToast({ title: '保存成功', icon: 'success' })
       setTimeout(() => {

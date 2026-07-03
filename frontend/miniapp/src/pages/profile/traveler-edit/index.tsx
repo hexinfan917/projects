@@ -182,7 +182,6 @@ export default function TravelerEdit() {
       } else {
         const res: any = await createTraveler(form)
         if (res?.code !== 200) throw new Error(res?.message || '保存失败')
-        if (res?.data?.id) Taro.setStorageSync('order_confirm_select_traveler_id', res.data.id)
         Taro.showToast({ title: '保存成功', icon: 'success' })
 
         if (isSelf && !hasCriticalProfile) {
