@@ -714,7 +714,7 @@ async def get_adoption_dog_detail(
             app_result = await db.execute(
                 select(AdoptionApplication).where(
                     AdoptionApplication.dog_id == dog_id,
-                    AdoptionApplication.openid == user["openid"]
+                    AdoptionApplication.user_id == user["user_id"]
                 ).order_by(AdoptionApplication.created_at.desc())
             )
             latest_app = app_result.scalar_one_or_none()
@@ -757,7 +757,7 @@ async def apply_adoption_dog(
         existing_result = await db.execute(
             select(AdoptionApplication).where(
                 AdoptionApplication.dog_id == dog_id,
-                AdoptionApplication.openid == user["openid"]
+                AdoptionApplication.user_id == user["user_id"]
             )
         )
         existing_app = existing_result.scalar_one_or_none()
@@ -819,7 +819,7 @@ async def get_my_adoption_applications(
 ):
     """获取我的领养申请"""
     try:
-        query = select(AdoptionApplication).where(AdoptionApplication.openid == user["openid"])
+        query = select(AdoptionApplication).where(AdoptionApplication.user_id == user["user_id"])
 
         if status is not None:
             query = query.where(AdoptionApplication.status == status)
@@ -1077,14 +1077,15 @@ async def admin_update_adoption_application_status(
             if dog:
                 dog.status = 2
         elif new_status == 2:
-            # 拒绝：检查该狗是否还有其他进行中的申请，没有则恢复为可申请
+            # 拒绝：检查该狗是否还有已通过/已完成领养的申请，没有则恢复为可申请
+            # 待审核的申请不影响狗狗状态
             from sqlalchemy import and_
             other_result = await db.execute(
                 select(AdoptionApplication).where(
                     and_(
                         AdoptionApplication.dog_id == app.dog_id,
                         AdoptionApplication.id != application_id,
-                        AdoptionApplication.status.in_([0, 1])
+                        AdoptionApplication.status.in_([1, 3])
                     )
                 )
             )

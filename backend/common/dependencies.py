@@ -35,7 +35,8 @@ async def get_current_user(
     token = credentials.credentials
     
     # 开发环境支持mock token（生产环境禁用）
-    if settings.app_env != "production" and (token.startswith('mock_token_') or token.endswith('_dev')):
+    # 注意：token.endswith('_dev') 会误伤真实JWT，只保留 mock_token_ 前缀判断
+    if settings.app_env != "production" and token.startswith('mock_token_'):
         return {
             "user_id": 1,
             "openid": "mock_openid_dev",

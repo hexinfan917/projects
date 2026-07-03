@@ -91,7 +91,7 @@ async def auto_cancel_expired_orders():
                 # 查询所有待支付且创建时间超过15分钟的订单
                 result = await db.execute(
                     text("""
-                        SELECT id, order_no, schedule_id 
+                        SELECT id, order_no, schedule_id, seat_count 
                         FROM orders 
                         WHERE status = 10 AND created_at < DATE_SUB(NOW(), INTERVAL 15 MINUTE)
                     """)
@@ -102,6 +102,7 @@ async def auto_cancel_expired_orders():
                     order_id = row["id"]
                     schedule_id = row["schedule_id"]
                     order_no = row["order_no"]
+                    restore_count = row["seat_count"] or 0
                     
                     # 查询订单是否使用了优惠券
                     coupon_result = await db.execute(
@@ -121,19 +122,19 @@ async def auto_cancel_expired_orders():
                         {"order_id": order_id}
                     )
                     
-                    # 只有订单确实被取消了，才恢复库存（一个订单恢复 1 个）
-                    if cancel_result.rowcount > 0:
+                    # 只有订单确实被取消了，才恢复库存（根据实际占座数恢复；自驾不占座则不恢复）
+                    if cancel_result.rowcount > 0 and restore_count > 0:
                         if schedule_id:
                             await db.execute(
                                 text("""
                                     UPDATE route_schedules 
-                                    SET stock = stock + 1, sold = sold - 1 
-                                    WHERE id = :schedule_id AND sold >= 1
+                                    SET stock = stock + :restore_count, sold = sold - :restore_count 
+                                    WHERE id = :schedule_id AND sold >= :restore_count
                                 """),
-                                {"schedule_id": schedule_id}
+                                {"schedule_id": schedule_id, "restore_count": restore_count}
                             )
                         await db.commit()
-                        logger.info(f"Auto cancelled expired order: {order_no}, restored stock for schedule {schedule_id}")
+                        logger.info(f"Auto cancelled expired order: {order_no}, restored {restore_count} stock for schedule {schedule_id}")
                     else:
                         await db.commit()
                         logger.info(f"Auto cancel skipped: {order_no} was already cancelled")
@@ -498,21 +499,8 @@ async def get_order_detail(
     if not o:
         return success({})
     
-    # 查询默认出行人身份证（用于补充联系人信息）
-    contact_id_card = None
-    if o.user_id:
-        traveler_res = await db.execute(
-            text("SELECT id_card FROM travelers WHERE user_id = :user_id AND is_default = 1 AND status = 1 LIMIT 1"),
-            {"user_id": o.user_id}
-        )
-        traveler_row = traveler_res.fetchone()
-        if traveler_row:
-            contact_id_card = traveler_row[0]
-    
-    # 组装联系人信息（补充身份证号）
+    # 直接使用订单存储的联系人信息
     contact = o.contact or {}
-    if contact_id_card and isinstance(contact, dict):
-        contact = {**contact, "id_card": contact_id_card}
     
     # 补全宠物档案信息（按 id 优先匹配，再按名字匹配）
     order_pets = o.pets or []
@@ -877,17 +865,21 @@ async def create_order(
     except Exception:
         raise BadRequestException("出行日期格式错误")
     
-    # 校验并扣减库存（一个订单扣 1 个库存）
-    stock_result = await db.execute(
-        text("""
-            UPDATE route_schedules 
-            SET stock = stock - 1, sold = sold + 1 
-            WHERE id = :schedule_id AND stock >= 1
-        """),
-        {"schedule_id": data.schedule_id}
-    )
-    if stock_result.rowcount == 0:
-        raise BadRequestException("该排期库存不足或已售罄，请选择其他日期")
+    # 计算占座数（免费订单按1个占位，大巴按人+宠，自驾不占座）
+    seat_count = 1 if order_is_free else (data.participant_count + data.pet_count if data.travel_type == 'bus' else 0)
+    
+    # 校验并扣减库存
+    if seat_count > 0:
+        stock_result = await db.execute(
+            text("""
+                UPDATE route_schedules 
+                SET stock = stock - :seat_count, sold = sold + :seat_count 
+                WHERE id = :schedule_id AND stock >= :seat_count
+            """),
+            {"schedule_id": data.schedule_id, "seat_count": seat_count}
+        )
+        if stock_result.rowcount == 0:
+            raise BadRequestException("该排期库存不足或已售罄，请选择其他日期")
     
     # 查询路线封面图
     route_cover = None
@@ -914,16 +906,18 @@ async def create_order(
             user_real_name = user_row[1]
             user_id_card = user_row[2]
     
-    # 构建联系人信息（优先使用账号本人信息）
+    # 构建联系人信息（使用用户选择的第一个出行人）
     contact_info = data.contact or {}
-    if user_phone:
-        # 如果用户有真实姓名，使用真实姓名作为联系人
-        contact_name = user_real_name or contact_info.get('name') or '未知'
+    logger.info(f"[DEBUG] data.contact={data.contact}, user_phone={user_phone}, user_real_name={user_real_name}")
+    if not contact_info.get('name') and user_phone:
+        # 只有当用户没有选择出行人时，才回退到账号本人信息
+        contact_name = user_real_name or '未知'
         contact_info = {
             'name': contact_name,
             'phone': user_phone,
-            'id_card': user_id_card or contact_info.get('id_card') or ''
+            'id_card': user_id_card or ''
         }
+    logger.info(f"[DEBUG] final contact_info={contact_info}")
     
     # 构建完整的出行人列表（包含所有出行人：原联系人 + 原参与者）
     all_participants = data.participants or []
@@ -936,15 +930,6 @@ async def create_order(
         )
         if not contact_in_participants:
             all_participants = [data.contact] + all_participants
-    # 如果账号本人信息不在 participants 中，添加进去
-    if contact_info and contact_info.get('name'):
-        contact_in_participants = any(
-            p.get('id_card') == contact_info.get('id_card') or 
-            p.get('phone') == contact_info.get('phone')
-            for p in all_participants
-        )
-        if not contact_in_participants:
-            all_participants = [contact_info] + all_participants
     
     # 创建订单
     order = Order(
@@ -958,7 +943,7 @@ async def create_order(
         travel_date=travel_date,
         participant_count=data.participant_count,
         pet_count=data.pet_count,
-        seat_count=(1 if order_is_free else (data.participant_count + data.pet_count if data.travel_type == 'bus' else 0)),
+        seat_count=seat_count,
         participants=all_participants,
         pets=data.pets,
         contact=contact_info,
@@ -1000,7 +985,7 @@ async def create_order(
             json.dumps({
                 "order_id": order.id,
                 "schedule_id": data.schedule_id,
-                "seat_count": (1 if getattr(data, 'is_free', 0) else (data.participant_count + data.pet_count if data.travel_type == 'bus' else 0))
+                "seat_count": seat_count
             })
         )
     except:
@@ -1145,19 +1130,20 @@ async def cancel_order(
     if status_result.rowcount == 0:
         return success({"message": "订单状态已变更，请刷新后重试"})
     
-    # 状态更新成功，恢复库存（一个订单恢复 1 个库存）
-    if order.schedule_id:
+    # 状态更新成功，恢复库存（根据订单实际占座数恢复；自驾不占座则不恢复）
+    restore_count = getattr(order, 'seat_count', None) or 0
+    if order.schedule_id and restore_count > 0:
         await db.execute(
             text("""
                 UPDATE route_schedules 
-                SET stock = stock + 1, sold = sold - 1 
-                WHERE id = :schedule_id AND sold >= 1
+                SET stock = stock + :restore_count, sold = sold - :restore_count 
+                WHERE id = :schedule_id AND sold >= :restore_count
             """),
-            {"schedule_id": order.schedule_id}
+            {"schedule_id": order.schedule_id, "restore_count": restore_count}
         )
     
-    # 恢复优惠券：待支付订单直接恢复；已支付订单等退款完成后再恢复
-    if order.coupon_id and order.status == 10:
+    # 恢复优惠券：待支付/待出行（含免费）订单直接恢复；已支付且需退款订单等退款完成后再恢复
+    if order.coupon_id and order.status in [10, 20]:
         await db.execute(
             text("UPDATE user_coupons SET status = 1, used_at = NULL, used_order_id = NULL WHERE id = :coupon_id"),
             {"coupon_id": order.coupon_id}
@@ -1619,19 +1605,26 @@ async def admin_get_orders(
                         "vaccine_book": row[8],
                     }
                 
+                logger.info(f"[admin orders] pet_map keys: {list(pet_map.keys())}, pet_map ids: {[p.get('id') for p in pet_map.values()]}")
+                
                 for p in order_pets:
                     # 优先按 id 匹配，再按名字匹配
                     pet_profile = None
                     pet_id = p.get("id")
+                    logger.info(f"[admin orders] matching pet_id: {pet_id}, type: {type(pet_id)}")
                     if pet_id:
                         pet_id_str = str(pet_id)
                         for profile in pet_map.values():
-                            if str(profile.get("id", "")) == pet_id_str:
+                            profile_id = profile.get("id")
+                            logger.info(f"[admin orders] comparing pet_id_str: {pet_id_str} with profile_id: {profile_id}, type: {type(profile_id)}")
+                            if str(profile_id) == pet_id_str:
                                 pet_profile = profile
+                                logger.info(f"[admin orders] matched! pet_profile: {pet_profile}")
                                 break
                     if not pet_profile:
                         pet_key = (o.user_id, p.get("name"))
                         pet_profile = pet_map.get(pet_key) or {}
+                        logger.info(f"[admin orders] fallback by name, pet_key: {pet_key}, found: {bool(pet_profile)}")
                     enriched_pets.append({
                         "id": pet_profile.get("id") or p.get("id") or "",
                         "name": p.get("name") or pet_profile.get("name") or "",
@@ -2137,25 +2130,26 @@ async def admin_update_order(
                 return {"code": 400, "message": "目标日期没有可用排期", "data": None}
             new_schedule_id = schedule_row[0]
 
-        # 处理库存变化（换排期时恢复旧排期1个库存，扣减新排期1个库存）
-        if old_schedule_id != new_schedule_id:
+        # 处理库存变化（换排期时按订单占座数恢复旧排期库存、扣减新排期库存；自驾不占座则跳过）
+        seat_count = getattr(order, 'seat_count', None) or 0
+        if old_schedule_id != new_schedule_id and seat_count > 0:
             # 恢复旧排期库存
             await db.execute(
                 text("""
                     UPDATE route_schedules 
-                    SET stock = stock + 1, sold = sold - 1 
-                    WHERE id = :schedule_id AND sold >= 1
+                    SET stock = stock + :seat_count, sold = sold - :seat_count 
+                    WHERE id = :schedule_id AND sold >= :seat_count
                 """),
-                {"schedule_id": old_schedule_id}
+                {"schedule_id": old_schedule_id, "seat_count": seat_count}
             )
             # 扣减新排期库存
             stock_result = await db.execute(
                 text("""
                     UPDATE route_schedules 
-                    SET stock = stock - 1, sold = sold + 1 
-                    WHERE id = :schedule_id AND stock >= 1
+                    SET stock = stock - :seat_count, sold = sold + :seat_count 
+                    WHERE id = :schedule_id AND stock >= :seat_count
                 """),
-                {"schedule_id": new_schedule_id}
+                {"schedule_id": new_schedule_id, "seat_count": seat_count}
             )
             if stock_result.rowcount == 0:
                 return {"code": 400, "message": "目标排期库存不足", "data": None}
@@ -2232,15 +2226,16 @@ async def admin_cancel_order(
         if status_result.rowcount == 0:
             return {"code": 400, "message": "订单状态已变更，请刷新后重试", "data": None}
 
-        # 状态更新成功，恢复库存（一个订单恢复 1 个库存）
-        if order.schedule_id:
+        # 状态更新成功，恢复库存（根据订单实际占座数恢复；自驾不占座则不恢复）
+        restore_count = getattr(order, 'seat_count', None) or 0
+        if order.schedule_id and restore_count > 0:
             await db.execute(
                 text("""
                     UPDATE route_schedules
-                    SET stock = stock + 1, sold = sold - 1
-                    WHERE id = :schedule_id AND sold >= 1
+                    SET stock = stock + :restore_count, sold = sold - :restore_count
+                    WHERE id = :schedule_id AND sold >= :restore_count
                 """),
-                {"schedule_id": order.schedule_id}
+                {"schedule_id": order.schedule_id, "restore_count": restore_count}
             )
 
         # 恢复优惠券
@@ -2982,13 +2977,16 @@ async def admin_grant_coupons(
         valid_start = template.valid_start_time or now
         valid_end = template.valid_end_time or (now + timedelta(days=7))
     
+    # 是否强制发放（忽略每人限领）
+    force = data.get('force', False)
+    
     # 给每个用户发放优惠券
     granted_count = 0
     skipped_users = []
     
     for user_id in user_ids:
-        # 检查用户限领
-        if template.per_user_limit > 0:
+        # 检查用户限领（非强制发放时生效）
+        if not force and template.per_user_limit > 0:
             user_count_result = await db.execute(
                 select(func.count()).where(
                     UserCoupon.template_id == template_id,
@@ -3297,6 +3295,8 @@ async def get_available_coupons_for_order(
     else:
         discount_base = amount
     
+    logger.info(f"[available-for-order] route_id={route_id}, route_price={route_price}, amount={amount}, discount_base={discount_base}, is_free_route={is_free_route}, is_member={is_member}")
+    
     for c in coupons:
         template = template_map.get(c.template_id)
         
@@ -3308,6 +3308,7 @@ async def get_available_coupons_for_order(
         
         # 检查金额门槛（只按路线价格校验，不含保险/选配）
         if min_amount > 0 and discount_base < min_amount:
+            logger.info(f"[available-for-order] coupon {c.id} ({c.name}) unavailable: discount_base={discount_base} < min_amount={min_amount}")
             unavailable.append({
                 "id": c.id,
                 "name": c.name,
@@ -3689,9 +3690,11 @@ async def admin_get_user_coupons(
             uc.id, uc.coupon_no, uc.name, uc.type, uc.value, uc.min_amount,
             uc.status, uc.valid_start_time, uc.valid_end_time, uc.used_at,
             uc.used_order_id, uc.source_type, uc.user_id, uc.created_at, uc.template_id,
-            u.nickname, u.phone
+            u.nickname, u.phone,
+            o.order_no
         FROM user_coupons uc
         LEFT JOIN users u ON uc.user_id = u.id
+        LEFT JOIN orders o ON uc.used_order_id = o.id
         WHERE {where_sql}
         ORDER BY uc.created_at DESC
         LIMIT :limit OFFSET :offset
@@ -3716,6 +3719,7 @@ async def admin_get_user_coupons(
             "valid_end_time": row["valid_end_time"].isoformat() if row["valid_end_time"] else None,
             "used_at": row["used_at"].isoformat() if row["used_at"] else None,
             "used_order_id": row["used_order_id"],
+            "order_no": row["order_no"],
             "source_type": row["source_type"],
             "source_type_text": {1: "通用", 2: "会员购买赠送", 3: "会员每月发放", 4: "管理后台发放"}.get(row["source_type"], "未知"),
             "template_id": row["template_id"],

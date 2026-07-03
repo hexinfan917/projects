@@ -5,7 +5,7 @@ $ErrorActionPreference = "Continue"
 $services = @(
     @{Name="Gateway";       Path="gateway";        Port=8080},
     @{Name="User Service";  Path="user-service";   Port=8001},
-    @{Name="Route Service"; Path="route-service";  Port=8002},
+    @{Name="Route Service"; Path="route-service";  Port=8033},
     @{Name="Order Service"; Path="order-service";  Port=8003},
     @{Name="Map Service";   Path="map-service";    Port=8004},
     @{Name="Content Service"; Path="content-service"; Port=8005},
