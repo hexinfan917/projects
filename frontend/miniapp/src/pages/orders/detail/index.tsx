@@ -271,33 +271,13 @@ export default function OrderDetail() {
         </View>
 
         {/* 出行人与宠物 */}
-        {(order.contact?.name || (order.participants && order.participants.length > 0) || (order.pets && order.pets.length > 0)) && (
+        {((order.participants && order.participants.length > 0) || (order.pets && order.pets.length > 0)) && (
           <View className='section'>
             <View className='section-header'>
               <Image className='section-icon' src='/assets/icons/icon-paw.svg' mode='aspectFit' />
               <Text className='section-title'>出行人与宠物</Text>
             </View>
             <View className='info-card'>
-              {/* 联系人 */}
-              {order.contact?.name && (
-                <View className='travelers-section'>
-                  <View className='traveler-item traveler-item-border'>
-                    <View className='traveler-row'>
-                      <Text className='traveler-label'>联系人</Text>
-                      <Text className='traveler-name'>{order.contact.name}</Text>
-                    </View>
-                    <View className='traveler-info-row'>
-                      <Text className='traveler-info-label'>身份证号</Text>
-                      <Text className='traveler-info-value'>{order.contact.id_card || '-'}</Text>
-                    </View>
-                    <View className='traveler-info-row'>
-                      <Text className='traveler-info-label'>手机号</Text>
-                      <Text className='traveler-info-value'>{order.contact.phone || '-'}</Text>
-                    </View>
-                  </View>
-                </View>
-              )}
-
               {/* 实际出行人 */}
               {order.participants && order.participants.length > 0 && (
                 <View className='travelers-section'>
