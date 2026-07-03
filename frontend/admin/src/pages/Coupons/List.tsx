@@ -1,5 +1,5 @@
 import { PageContainer, ProTable, ModalForm, ProFormText, ProFormSelect, ProFormDigit, ProFormRadio, ProFormDateTimePicker, ProFormTextArea, ProFormDependency } from '@ant-design/pro-components';
-import { Button, Tag, message, Popconfirm, Space, Modal, Select } from 'antd';
+import { Button, Tag, message, Popconfirm, Space, Modal, Select, Checkbox } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, GiftOutlined } from '@ant-design/icons';
 import { useRef, useState, useEffect } from 'react';
 import { request } from '@umijs/max';
@@ -39,6 +39,7 @@ export default function CouponTemplateList() {
   const [grantTemplate, setGrantTemplate] = useState<any>(null);
   const [grantUserOptions, setGrantUserOptions] = useState<any[]>([]);
   const [selectedGrantUsers, setSelectedGrantUsers] = useState<number[]>([]);
+  const [grantForce, setGrantForce] = useState(false);
 
   useEffect(() => {
     request('/api/v1/admin/routes', { params: { page: 1, page_size: 100 } })
@@ -120,6 +121,7 @@ export default function CouponTemplateList() {
     setGrantTemplate(record);
     setSelectedGrantUsers([]);
     setGrantUserOptions([]);
+    setGrantForce(false);
     setGrantModalVisible(true);
   };
 
@@ -135,13 +137,25 @@ export default function CouponTemplateList() {
         data: {
           template_id: grantTemplate.id,
           user_ids: selectedGrantUsers,
+          force: grantForce,
         },
       });
       if (res.code === 200) {
-        message.success(`成功发放${res.data?.granted_count || 0}张优惠券`);
+        const { granted_count, skipped_count, skipped_users } = res.data || {};
+        if (granted_count === 0) {
+          const reasons = (skipped_users || [])
+            .map((item: any) => `用户ID ${item.user_id}: ${item.reason}`)
+            .join('；');
+          message.warning(`发放失败：0 张成功，${skipped_count || 0} 张被跳过。${reasons || ''}`);
+        } else if (skipped_count > 0) {
+          message.warning(`成功发放 ${granted_count} 张，${skipped_count} 位用户已达领取上限被跳过`);
+        } else {
+          message.success(`成功发放${granted_count}张优惠券`);
+        }
         setGrantModalVisible(false);
         setGrantTemplate(null);
         setSelectedGrantUsers([]);
+        setGrantForce(false);
         tableRef.current?.reload();
       } else {
         message.error(res.message || '发放失败');
@@ -403,7 +417,6 @@ export default function CouponTemplateList() {
             { label: '全部路线', value: 1 },
             { label: '指定路线', value: 2 },
             { label: '指定路线类型', value: 3 },
-            { label: '指定用户', value: 4 },
           ]}
         />
         <ProFormDependency name={['applicable_type']}>
@@ -481,6 +494,7 @@ export default function CouponTemplateList() {
           setGrantModalVisible(false);
           setGrantTemplate(null);
           setSelectedGrantUsers([]);
+          setGrantForce(false);
         }}
         okText="确认发放"
         cancelText="取消"
@@ -516,6 +530,17 @@ export default function CouponTemplateList() {
           notFoundContent="输入关键词搜索用户"
           options={grantUserOptions}
         />
+        <div style={{ marginTop: 16 }}>
+          <Checkbox
+            checked={grantForce}
+            onChange={(e) => setGrantForce(e.target.checked)}
+          >
+            强制发放（忽略每人限领数量）
+          </Checkbox>
+          <div style={{ marginTop: 8, fontSize: 12, color: '#999' }}>
+            提示：不勾选时，已达到领取上限的用户将被跳过；勾选后将绕过限领规则发放。
+          </div>
+        </div>
       </Modal>
     </PageContainer>
   );
