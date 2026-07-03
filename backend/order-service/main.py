@@ -906,22 +906,21 @@ async def create_order(
             user_real_name = user_row[1]
             user_id_card = user_row[2]
     
-    # 构建联系人信息（使用用户选择的第一个出行人）
-    contact_info = data.contact or {}
-    logger.info(f"[DEBUG] data.contact={data.contact}, user_phone={user_phone}, user_real_name={user_real_name}")
-    if not contact_info.get('name') and user_phone:
-        # 只有当用户没有选择出行人时，才回退到账号本人信息
-        contact_name = user_real_name or '未知'
+    # 构建联系人信息：固定为下单账号本人
+    if user_id and user_phone:
         contact_info = {
-            'name': contact_name,
+            'name': user_real_name or '未知',
             'phone': user_phone,
             'id_card': user_id_card or ''
         }
-    logger.info(f"[DEBUG] final contact_info={contact_info}")
+    else:
+        # 未获取到用户信息时回退到前端传入的联系人
+        contact_info = data.contact or {}
+    logger.info(f"[DEBUG] user_id={user_id}, contact_info={contact_info}")
     
-    # 构建完整的出行人列表（包含所有出行人：原联系人 + 原参与者）
+    # 构建完整的出行人列表：包含前端传入的所有出行人
+    # 旧版本小程序会把第一个出行人同时作为 contact 传入，这里把它也加入 participants
     all_participants = data.participants or []
-    # 将原联系人（下单时选择的第一个出行人）加入 participants（避免重复）
     if data.contact and data.contact.get('name'):
         contact_in_participants = any(
             p.get('id_card') == data.contact.get('id_card') or 
@@ -1546,21 +1545,25 @@ async def admin_get_orders(
         result = await db.execute(query)
         orders_db = result.scalars().all()
         
-        # 批量查询用户默认出行人身份证号（避免N+1）
+        # 批量查询用户信息（用于联系人显示）和会员状态（避免N+1）
         user_ids = [o.user_id for o in orders_db if o.user_id]
-        id_card_map = {}
+        user_map = {}
         member_map = {}
         if user_ids:
             from sqlalchemy import text
-            traveler_res = await db.execute(
+            user_res = await db.execute(
                 text("""
-                    SELECT user_id, id_card FROM travelers 
-                    WHERE user_id IN :user_ids AND is_default = 1 AND status = 1
+                    SELECT id, nickname, real_name, phone, id_card FROM users 
+                    WHERE id IN :user_ids
                 """),
                 {"user_ids": tuple(user_ids)}
             )
-            for row in traveler_res.fetchall():
-                id_card_map[row[0]] = row[1]
+            for row in user_res.fetchall():
+                user_map[row[0]] = {
+                    "name": row[2] or row[1] or "未知",
+                    "phone": row[3] or "",
+                    "id_card": row[4] or ""
+                }
             # 批量查询会员状态
             member_res = await db.execute(
                 text("""
@@ -1574,9 +1577,7 @@ async def admin_get_orders(
         
         orders = []
         for o in orders_db:
-            contact = o.contact or {}
-            if isinstance(contact, dict) and o.user_id and o.user_id in id_card_map:
-                contact = {**contact, "id_card": id_card_map[o.user_id]}
+            contact = user_map.get(o.user_id, {"name": "", "phone": "", "id_card": ""}) if o.user_id else (o.contact or {})
             
             # 补全宠物档案信息（头像、年龄、疫苗本等）
             order_pets = o.pets or []
@@ -1934,21 +1935,22 @@ async def admin_get_order_detail(
             if route_row:
                 route_cover = route_row[0]
         
-        # 查询默认出行人身份证（用于补充联系人信息）
-        contact_id_card = None
+        # 查询联系人信息（固定为下单账号本人）
+        contact = {"name": "", "phone": "", "id_card": ""}
+        user_phone = None
         if o.user_id:
-            traveler_res = await db.execute(
-                text("SELECT id_card FROM travelers WHERE user_id = :user_id AND is_default = 1 AND status = 1 LIMIT 1"),
+            user_res = await db.execute(
+                text("SELECT nickname, real_name, phone, id_card FROM users WHERE id = :user_id LIMIT 1"),
                 {"user_id": o.user_id}
             )
-            traveler_row = traveler_res.fetchone()
-            if traveler_row:
-                contact_id_card = traveler_row[0]
-        
-        # 组装联系人信息（补充身份证号）
-        contact = o.contact or {}
-        if contact_id_card and isinstance(contact, dict):
-            contact = {**contact, "id_card": contact_id_card}
+            user_row = user_res.fetchone()
+            if user_row:
+                contact = {
+                    "name": user_row[1] or user_row[0] or "未知",
+                    "phone": user_row[2] or "",
+                    "id_card": user_row[3] or ""
+                }
+                user_phone = user_row[2]
         
         # 补全宠物档案信息
         order_pets = o.pets or []
@@ -2019,17 +2021,6 @@ async def admin_get_order_detail(
             select(RefundRecord).where(RefundRecord.order_id == o.id).order_by(RefundRecord.created_at.desc())
         )
         refund_records = refund_records_result.scalars().all()
-        
-        # 查询用户手机号（用于判断联系人）
-        user_phone = None
-        if o.user_id:
-            user_res = await db.execute(
-                text("SELECT phone FROM users WHERE id = :user_id LIMIT 1"),
-                {"user_id": o.user_id}
-            )
-            user_row = user_res.fetchone()
-            if user_row:
-                user_phone = user_row[0]
         
         order = {
             "id": o.id,
