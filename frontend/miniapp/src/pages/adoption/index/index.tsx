@@ -10,20 +10,15 @@ export default function AdoptionList() {
   const [page, setPage] = useState(1)
   const [hasMore, setHasMore] = useState(true)
   const [keyword, setKeyword] = useState('')
-  const [refreshing, setRefreshing] = useState(false)
 
   useEffect(() => {
     loadList(1)
   }, [])
 
   const loadList = async (p: number, searchKeyword?: string) => {
-    if (loading && !refreshing) return
+    if (loading) return
     try {
-      if (refreshing) {
-        setLoading(true)
-      } else {
-        setLoading(true)
-      }
+      setLoading(true)
       const params: any = { page: p, page_size: 10, status: 1 }
       if (searchKeyword !== undefined) {
         params.keyword = searchKeyword
@@ -56,7 +51,6 @@ export default function AdoptionList() {
       console.error('Load adoption list failed:', error)
     } finally {
       setLoading(false)
-      setRefreshing(false)
     }
   }
 
@@ -68,11 +62,6 @@ export default function AdoptionList() {
     if (hasMore && !loading) {
       loadList(page + 1)
     }
-  }
-
-  const onRefresh = () => {
-    setRefreshing(true)
-    loadList(1)
   }
 
   const handleSearchInput = (e: any) => {
@@ -136,9 +125,7 @@ export default function AdoptionList() {
       <ScrollView
         className='scroll-container'
         scrollY
-        refresherEnabled
-        refresherTriggered={refreshing}
-        onRefresherRefresh={onRefresh}
+        style={{ height: '100%' }}
         onScrollToLower={onScrollToLower}
       >
         <View className='adoption-list'>
