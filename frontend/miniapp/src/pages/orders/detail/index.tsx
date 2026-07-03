@@ -278,50 +278,45 @@ export default function OrderDetail() {
               <Text className='section-title'>出行人与宠物</Text>
             </View>
             <View className='info-card'>
-              {/* 所有出行人（统一显示为出行人） */}
-              {(order.contact?.name || (order.participants && order.participants.length > 0)) && (
+              {/* 联系人 */}
+              {order.contact?.name && (
                 <View className='travelers-section'>
-                  {/* 合并联系人和所有参与者，统一显示 */}
-                  {(() => {
-                    // 收集所有出行人：联系人 + participants
-                    const allTravelers: any[] = []
-                    if (order.contact?.name) {
-                      allTravelers.push({
-                        name: order.contact.name,
-                        phone: order.contact.phone || '',
-                        id_card: order.contact.id_card || '',
-                      })
-                    }
-                    if (order.participants && order.participants.length > 0) {
-                      order.participants.forEach((p: any) => {
-                        // 避免重复（根据手机号）
-                        const exists = allTravelers.some(t => t.phone && t.phone === p.phone)
-                        if (!exists) {
-                          allTravelers.push({
-                            name: p.name || '未命名',
-                            phone: p.phone || '',
-                            id_card: p.id_card || '',
-                          })
-                        }
-                      })
-                    }
-                    return allTravelers.map((traveler, idx) => (
-                      <View key={idx} className={`traveler-item ${idx < allTravelers.length - 1 ? 'traveler-item-border' : ''}`}>
-                        <View className='traveler-row'>
-                          <Text className='traveler-label'>出行人</Text>
-                          <Text className='traveler-name'>{traveler.name}</Text>
-                        </View>
-                        <View className='traveler-info-row'>
-                          <Text className='traveler-info-label'>身份证号</Text>
-                          <Text className='traveler-info-value'>{traveler.id_card || '-'}</Text>
-                        </View>
-                        <View className='traveler-info-row'>
-                          <Text className='traveler-info-label'>手机号</Text>
-                          <Text className='traveler-info-value'>{traveler.phone || '-'}</Text>
-                        </View>
+                  <View className='traveler-item traveler-item-border'>
+                    <View className='traveler-row'>
+                      <Text className='traveler-label'>联系人</Text>
+                      <Text className='traveler-name'>{order.contact.name}</Text>
+                    </View>
+                    <View className='traveler-info-row'>
+                      <Text className='traveler-info-label'>身份证号</Text>
+                      <Text className='traveler-info-value'>{order.contact.id_card || '-'}</Text>
+                    </View>
+                    <View className='traveler-info-row'>
+                      <Text className='traveler-info-label'>手机号</Text>
+                      <Text className='traveler-info-value'>{order.contact.phone || '-'}</Text>
+                    </View>
+                  </View>
+                </View>
+              )}
+
+              {/* 实际出行人 */}
+              {order.participants && order.participants.length > 0 && (
+                <View className='travelers-section'>
+                  {order.participants.map((traveler: any, idx: number) => (
+                    <View key={idx} className={`traveler-item ${idx < order.participants.length - 1 ? 'traveler-item-border' : ''}`}>
+                      <View className='traveler-row'>
+                        <Text className='traveler-label'>出行人</Text>
+                        <Text className='traveler-name'>{traveler.name || '未命名'}</Text>
                       </View>
-                    ))
-                  })()}
+                      <View className='traveler-info-row'>
+                        <Text className='traveler-info-label'>身份证号</Text>
+                        <Text className='traveler-info-value'>{traveler.id_card || '-'}</Text>
+                      </View>
+                      <View className='traveler-info-row'>
+                        <Text className='traveler-info-label'>手机号</Text>
+                        <Text className='traveler-info-value'>{traveler.phone || '-'}</Text>
+                      </View>
+                    </View>
+                  ))}
                 </View>
               )}
 

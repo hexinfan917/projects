@@ -1011,55 +1011,24 @@ export default function OrderList() {
               </Card>
             )}
 
-            {/* 出行人信息（所有出行人，标记账号本人） */}
-            {(() => {
-              // 合并联系人和所有参与者
-              const allTravelers: any[] = [];
-              // 先添加 participants
-              if (currentOrder.participants && currentOrder.participants.length > 0) {
-                currentOrder.participants.forEach((p: any) => {
-                  allTravelers.push({...p});
-                });
-              }
-              // 添加联系人（如果不在 participants 中）
-              if (currentOrder.contact?.name) {
-                const exists = allTravelers.some((t: any) => t.phone === currentOrder.contact.phone);
-                if (!exists) {
-                  allTravelers.push({
-                    name: currentOrder.contact.name,
-                    phone: currentOrder.contact.phone,
-                    id_card: currentOrder.contact.id_card,
-                    gender: currentOrder.contact.gender,
-                  });
-                }
-              }
-              // 通过用户手机号判断哪个是账号本人
-              const userPhone = currentOrder.user_phone;
-              return (
-                <Card title={`出行人信息（共${allTravelers.length}人）`} size="small" style={{ marginBottom: 16 }}>
-                  <Table
-                    size="small"
-                    pagination={false}
-                    bordered
-                    dataSource={allTravelers}
-                    columns={[
-                      { title: '姓名', dataIndex: 'name', key: 'name', render: (v: string, record: any) => (
-                        <span>
-                          {v || '未命名'}
-                          {userPhone && record.phone === userPhone && (
-                            <Tag color="green" style={{ marginLeft: 8 }}>账号本人</Tag>
-                          )}
-                        </span>
-                      )},
-                      { title: '手机号', dataIndex: 'phone', key: 'phone', render: (v: string) => v || '-' },
-                      { title: '身份证号', dataIndex: 'id_card', key: 'id_card', render: (v: string) => v || '-' },
-                      { title: '性别', dataIndex: 'gender', key: 'gender', render: (v: number) => v === 1 ? '男' : v === 2 ? '女' : '未知' },
-                    ]}
-                    rowKey={(record: any, idx: number) => record.phone || idx}
-                  />
-                </Card>
-              );
-            })()}
+            {/* 出行人信息（仅实际出行人） */}
+            {currentOrder.participants && currentOrder.participants.length > 0 && (
+              <Card title={`出行人信息（共${currentOrder.participants.length}人）`} size="small" style={{ marginBottom: 16 }}>
+                <Table
+                  size="small"
+                  pagination={false}
+                  bordered
+                  dataSource={currentOrder.participants}
+                  columns={[
+                    { title: '姓名', dataIndex: 'name', key: 'name', render: (v: string) => v || '未命名' },
+                    { title: '手机号', dataIndex: 'phone', key: 'phone', render: (v: string) => v || '-' },
+                    { title: '身份证号', dataIndex: 'id_card', key: 'id_card', render: (v: string) => v || '-' },
+                    { title: '性别', dataIndex: 'gender', key: 'gender', render: (v: number) => v === 1 ? '男' : v === 2 ? '女' : '未知' },
+                  ]}
+                  rowKey={(record: any, idx: number) => record.phone || idx}
+                />
+              </Card>
+            )}
 
             {/* 联系人信息（订单联系人 - 下单时填写的联系人） */}
             {currentOrder.contact && (
