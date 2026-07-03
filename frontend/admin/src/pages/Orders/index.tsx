@@ -666,6 +666,12 @@ export default function OrderList() {
 
   const columns = [
     {
+      title: 'ID',
+      dataIndex: 'id',
+      width: 70,
+      search: false,
+    },
+    {
       title: '订单号',
       dataIndex: 'order_no',
       width: 180,
