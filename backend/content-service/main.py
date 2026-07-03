@@ -14,7 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import datetime
 
 from common.config import settings
-from common.database import init_db, close_db, get_db
+from common.database import close_db, get_db
 from common.redis_client import redis_client
 from common.middleware import setup_cors, RequestLogMiddleware
 from common.exceptions import APIException, api_exception_handler
@@ -34,7 +34,6 @@ logger = setup_logger("content-service")
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info(f"Starting {settings.app_name}...")
-    await init_db()
     await redis_client.connect()
     yield
     await redis_client.close()

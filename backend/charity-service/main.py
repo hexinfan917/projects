@@ -15,7 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from io import BytesIO
 
 from common.config import settings
-from common.database import get_db, init_db, close_db
+from common.database import get_db, close_db
 from common.redis_client import redis_client
 from common.middleware import setup_cors, RequestLogMiddleware
 from common.exceptions import APIException, api_exception_handler
@@ -32,7 +32,6 @@ logger = setup_logger("charity-service")
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info(f"Starting {settings.app_name}...")
-    await init_db()
     await redis_client.connect()
     yield
     await redis_client.close()
