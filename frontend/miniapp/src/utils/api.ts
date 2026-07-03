@@ -17,7 +17,7 @@ const systemInfo = Taro.getSystemInfoSync()
 const isDevtools = systemInfo.platform === 'devtools'
 // develop/trial 走本地，release 走线上
 export const BASE_URL = (env === 'develop' || env === 'trial')
-  ? (isDevtools ? 'http://localhost:8080' : 'http://192.168.31.44:8080')
+  ? (isDevtools ? 'http://localhost:8081' : 'http://192.168.31.44:8081')
   : 'https://tailtravel.cn'
 // 图片基础 URL：开发环境使用 BASE_URL（本地），生产环境使用线上域名
 export const IMAGE_BASE_URL = (env === 'develop' || env === 'trial') ? BASE_URL : 'https://tailtravel.cn'
@@ -377,6 +377,11 @@ export function useCoupon(couponId: number) {
 // 协议/文档
 export function getAgreements(params?: any) {
   return request('/api/v1/agreements', { data: params, skipAuthModal: true })
+}
+
+// 公开系统设置
+export function getPublicSettings() {
+  return request('/api/v1/settings/public', { skipAuthModal: true })
 }
 
 export function getAgreementDetail(id: number) {
