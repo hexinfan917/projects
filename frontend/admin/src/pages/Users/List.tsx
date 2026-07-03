@@ -269,8 +269,16 @@ export default function UserList() {
       title: '头像',
       dataIndex: 'avatar',
       width: 80,
-      render: (avatar: string, record: any) =>
-        avatar ? <Avatar src={avatar} size={48} shape="square">{record.name?.[0]}</Avatar> : '-',
+      render: (avatar: string) =>
+        avatar ? (
+          <Image
+            src={avatar}
+            width={48}
+            height={48}
+            style={{ objectFit: 'cover', borderRadius: 4, cursor: 'pointer' }}
+            preview={{ mask: '查看' }}
+          />
+        ) : '-',
     },
     { title: '宠物ID', dataIndex: 'id', width: 80 },
     { title: '宠物名称', dataIndex: 'name', width: 120 },
