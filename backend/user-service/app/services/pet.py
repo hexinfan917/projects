@@ -93,7 +93,7 @@ class PetService:
         data.pop('breed_type', None)
 
         # 将 None 的可选字段替换为空字符串，避免数据库 NOT NULL 报错
-        for field in ['breed', 'avatar', 'health_notes']:
+        for field in ['breed', 'avatar', 'health_notes', 'vaccine_book']:
             if data.get(field) is None:
                 data[field] = ''
         
@@ -107,11 +107,6 @@ class PetService:
             user_id=user_id,
             **data
         )
-        
-        # 如果是第一个宠物，设为默认
-        existing_pets = await self.get_user_pets(user_id, db)
-        if not existing_pets:
-            pet.is_default = 1
         
         db.add(pet)
         await db.commit()
@@ -178,7 +173,7 @@ class PetService:
         update_data.pop('breed_type', None)
 
         # 将 None 的可选字段替换为空字符串，避免数据库 NOT NULL 报错
-        for field in ['breed', 'avatar', 'health_notes']:
+        for field in ['breed', 'avatar', 'health_notes', 'vaccine_book']:
             if update_data.get(field) is None:
                 update_data[field] = ''
         

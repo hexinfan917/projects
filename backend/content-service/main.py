@@ -408,6 +408,8 @@ async def admin_get_banners(
             banners.append({
                 "id": b.id,
                 "title": b.title,
+                "subtitle": b.subtitle,
+                "tag": b.tag,
                 "image_url": b.image_url,
                 "link_url": b.link_url,
                 "status": b.status,
@@ -436,6 +438,8 @@ async def admin_get_banner_detail(banner_id: int, db: AsyncSession = Depends(get
         return success({
             "id": b.id,
             "title": b.title,
+            "subtitle": b.subtitle,
+            "tag": b.tag,
             "image_url": b.image_url,
             "link_url": b.link_url,
             "status": b.status,
@@ -455,6 +459,8 @@ async def admin_create_banner(data: dict, db: AsyncSession = Depends(get_db)):
         
         banner = Banner(
             title=data.get("title"),
+            subtitle=data.get("subtitle"),
+            tag=data.get("tag"),
             image_url=data.get("image_url"),
             link_url=data.get("link_url"),
             status=data.get("status", 1),
@@ -483,6 +489,8 @@ async def admin_update_banner(banner_id: int, data: dict, db: AsyncSession = Dep
             return {"code": 404, "message": "轮播图不存在", "data": None}
         
         banner.title = data.get("title", banner.title)
+        banner.subtitle = data.get("subtitle", banner.subtitle)
+        banner.tag = data.get("tag", banner.tag)
         banner.image_url = data.get("image_url", banner.image_url)
         banner.link_url = data.get("link_url", banner.link_url)
         banner.status = data.get("status", banner.status)
@@ -534,6 +542,8 @@ async def get_banners(db: AsyncSession = Depends(get_db)):
             banners.append({
                 "id": b.id,
                 "title": b.title,
+                "subtitle": b.subtitle,
+                "tag": b.tag,
                 "image_url": b.image_url,
                 "link_url": b.link_url,
             })

@@ -418,12 +418,14 @@ async def admin_get_pets(
                 "breed": p.breed,
                 "breed_type": p.breed_type,
                 "birth_date": p.birth_date.isoformat() if p.birth_date else None,
+                "age_str": p.age_str,
                 "gender": p.gender,
                 "weight": float(p.weight) if p.weight else None,
                 "avatar": p.avatar,
                 "tags": p.tags or [],
                 "health_notes": p.health_notes,
                 "vaccine_date": p.vaccine_date.isoformat() if p.vaccine_date else None,
+                "vaccine_book": p.vaccine_book,
                 "is_default": p.is_default,
                 "created_at": p.created_at.isoformat() if p.created_at else None,
             })
@@ -477,12 +479,14 @@ async def admin_get_pet_detail(
                 "breed": p.breed,
                 "breed_type": p.breed_type,
                 "birth_date": p.birth_date.isoformat() if p.birth_date else None,
+                "age_str": p.age_str,
                 "gender": p.gender,
                 "weight": float(p.weight) if p.weight else None,
                 "avatar": p.avatar,
                 "tags": p.tags or [],
                 "health_notes": p.health_notes,
                 "vaccine_date": p.vaccine_date.isoformat() if p.vaccine_date else None,
+                "vaccine_book": p.vaccine_book,
                 "is_default": p.is_default,
                 "status": p.status,
                 "created_at": p.created_at.isoformat() if p.created_at else None,
@@ -512,7 +516,7 @@ async def admin_update_pet(
         if not pet:
             return {"code": 404, "message": "宠物不存在", "data": None}
         
-        allowed_fields = ['name', 'breed', 'breed_type', 'birth_date', 'age_str', 'gender', 'weight', 'avatar', 'tags', 'health_notes', 'vaccine_date', 'is_default']
+        allowed_fields = ['name', 'breed', 'breed_type', 'birth_date', 'age_str', 'gender', 'weight', 'avatar', 'tags', 'health_notes', 'vaccine_date', 'vaccine_book', 'is_default']
         
         for field in allowed_fields:
             if field in pet_data:

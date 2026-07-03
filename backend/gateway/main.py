@@ -22,7 +22,7 @@ from common.logger import setup_logger
 import httpx
 
 settings.app_name = "api-gateway"
-settings.app_port = 8000
+settings.app_port = 8080
 logger = setup_logger("gateway")
 
 # JWT 配置
@@ -48,6 +48,8 @@ PUBLIC_PATHS = [
     r"^/api/v1/agreements/\d+$",
     r"^/api/v1/charities/activities$",
     r"^/api/v1/charities/activities/\d+$",
+    r"^/api/v1/adoption/dogs$",
+    r"^/api/v1/adoption/dogs/\d+$",
     r"^/api/v1/pay/notify$",
     r"^/api/v1/pay/refund/notify$",
     r"^/api/v1/map/.*",
@@ -137,7 +139,10 @@ LOCAL_SERVICE_ROUTES = {
     "/api/v1/charities": "http://localhost:8009",
     "/api/v1/admin/charities": "http://localhost:8009",
     "/api/v1/charity": "http://localhost:8009",
+    "/api/v1/adoption": "http://localhost:8009",
+    "/api/v1/admin/adoption": "http://localhost:8009",
     "/api/v1/coupons": "http://localhost:8003",
+    "/api/v1/admin/coupons": "http://localhost:8003",
     "/api/v1/admin/coupon-templates": "http://localhost:8003",
     "/api/v1/admin/user-coupons": "http://localhost:8003",
     "/api/v1/member/orders": "http://localhost:8003",
@@ -311,10 +316,12 @@ async def proxy(request: Request, path: str):
                 headers={"content-type": content_type}
             )
     except Exception as e:
+        import traceback
         logger.error(f"Proxy error: {e}")
+        logger.error(f"Traceback: {traceback.format_exc()}")
         return JSONResponse(
             status_code=500,
-            content={"code": 500, "message": "Service unavailable", "data": None},
+            content={"code": 500, "message": f"Service unavailable: {str(e)}", "data": None},
             media_type="application/json; charset=utf-8"
         )
 

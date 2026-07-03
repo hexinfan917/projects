@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import Taro from '@tarojs/taro'
 import { Provider } from './store'
+import { getPublicSettings } from './utils/api'
 import './styles/global.scss'
 
 function App({ children }) {
@@ -17,22 +18,22 @@ function App({ children }) {
       console.log('User not logged in')
     }
 
-    // 获取公开系统设置（版本号等）
-    const systemInfo = Taro.getSystemInfoSync()
-    const isDevtools = systemInfo.platform === 'devtools'
-    const baseUrl = process.env.NODE_ENV === 'development'
-      ? (isDevtools ? 'http://localhost:8000' : 'http://192.168.8.46:8000')
-      : 'https://tailtravel.cn'
-    Taro.request({
-      url: `${baseUrl}/api/v1/settings/public`,
-      method: 'GET',
-      success: (res: any) => {
-        if (res.data?.code === 200 && res.data.data?.mp_version) {
-          Taro.setStorageSync('app_version', res.data.data.mp_version.value)
-          console.log('[App] 版本号已更新:', res.data.data.mp_version.value)
+    // 加载公开系统设置（如小程序版本号）
+    const loadPublicSettings = async () => {
+      try {
+        const res: any = await getPublicSettings()
+        if (res.code === 200 && res.data) {
+          const versionSetting = res.data.mp_version
+          if (versionSetting?.value) {
+            Taro.setStorageSync('app_version', versionSetting.value)
+            console.log('[App] 小程序版本号:', versionSetting.value)
+          }
         }
+      } catch (e) {
+        console.error('[App] 加载公开设置失败:', e)
       }
-    })
+    }
+    loadPublicSettings()
 
     // 检查小程序更新
     const updateManager = Taro.getUpdateManager()
@@ -47,15 +48,12 @@ function App({ children }) {
         content: '新版本已准备好，重启后即可使用最新功能',
         confirmText: '立即重启',
         cancelText: '稍后',
-        success: (modalRes) => {
-          if (modalRes.confirm) {
+        success: (res) => {
+          if (res.confirm) {
             updateManager.applyUpdate()
           }
-        },
+        }
       })
-    })
-    updateManager.onUpdateFailed(() => {
-      console.error('[Update] 新版本下载失败')
     })
   }, [])
 

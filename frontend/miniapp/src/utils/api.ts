@@ -2,17 +2,25 @@ import Taro, { eventCenter } from '@tarojs/taro'
 
 // 环境切换：开发走本地网关，生产走线上域名
 // 小程序开发工具需勾选「设置 → 项目设置 → 不校验合法域名、web-view（业务域名）、TLS版本以及HTTPS证书」
-const isDev = process.env.NODE_ENV === 'development'
+// 使用微信的 getAccountInfoSync 获取小程序版本信息来区分环境
+let env = 'production'
+try {
+  const accountInfo = Taro.getAccountInfoSync()
+  // envVersion: 'develop' | 'trial' | 'release'
+  env = accountInfo.miniProgram.envVersion || 'production'
+} catch (e) {
+  // 如果获取失败，默认生产环境
+}
+
 // 模拟器用 localhost，真机预览用局域网 IP
 const systemInfo = Taro.getSystemInfoSync()
 const isDevtools = systemInfo.platform === 'devtools'
-export const BASE_URL = isDev
-  ? (isDevtools ? 'http://localhost:8000' : 'http://192.168.8.46:8000')
+// develop/trial 走本地，release 走线上
+export const BASE_URL = (env === 'develop' || env === 'trial')
+  ? (isDevtools ? 'http://localhost:8081' : 'http://192.168.31.44:8081')
   : 'https://tailtravel.cn'
-// 图片使用生产域名（微信真机预览/体验版必须走已备案域名，内网IP会被拦截）
-// 注意：本地开发环境新上传的图片在生产服务器上不存在，真机预览时无法显示
-// 如需在真机上测试新图片，请手动将图片同步到生产服务器，或使用 ngrok 内网穿透
-export const IMAGE_BASE_URL = 'https://tailtravel.cn'
+// 图片基础 URL：开发环境使用 BASE_URL（本地），生产环境使用线上域名
+export const IMAGE_BASE_URL = (env === 'develop' || env === 'trial') ? BASE_URL : 'https://tailtravel.cn'
 
 /** 补全图片 URL 并添加压缩参数 */
 /** 安全返回：页面栈大于1时正常返回，否则跳转首页 */
@@ -27,20 +35,49 @@ export function safeNavigateBack(fallbackUrl?: string) {
 
 export function compressImageUrl(url?: string, width?: number): string {
   if (!url) return ''
-  const fullUrl = url.startsWith('http') ? url : `${IMAGE_BASE_URL}${url}`
+  // 开发环境使用 BASE_URL（本地），生产环境使用 IMAGE_BASE_URL（线上）
+  const baseUrl = (env === 'develop' || env === 'trial') ? BASE_URL : IMAGE_BASE_URL
+  const fullUrl = url.startsWith('http') ? url : `${baseUrl}${url}`
+  // 如果 URL 已经包含查询参数，不再添加压缩参数
+  if (fullUrl.includes('?')) return fullUrl
   const w = width || 800
   return `${fullUrl}?w=${w}&q=75`
+}
+
+/** 获取图片完整 URL（自动根据环境选择域名） */
+export function getImageUrl(url?: string): string {
+  if (!url) return ''
+  if (url.startsWith('http')) return url
+  // 开发环境使用 BASE_URL（本地），生产环境使用 IMAGE_BASE_URL（线上）
+  const baseUrl = (env === 'develop' || env === 'trial') ? BASE_URL : IMAGE_BASE_URL
+  return `${baseUrl}${url}`
 }
 
 export async function deleteAccount() {
   return request('/api/v1/user/account', { method: 'DELETE' })
 }
 
+const ACTIVE_TAB_EVENT = 'activeTabChange'
+
 export function setActiveTab(index: number, expectedRoute: string) {
   const pages = Taro.getCurrentPages()
   const currentRoute = (pages[pages.length - 1]?.route || '').replace(/\.html$/, '')
   if (currentRoute === expectedRoute) {
     Taro.setStorageSync('active_tab_index', index)
+    // 通过事件中心强制同步，避免 setData 在自定义 TabBar 函数组件中不生效
+    eventCenter.trigger(ACTIVE_TAB_EVENT, index)
+    // 同步更新自定义 TabBar 高亮状态
+    try {
+      const page = Taro.getCurrentInstance().page as any
+      if (page && typeof page.getTabBar === 'function') {
+        const tabBar = page.getTabBar()
+        if (tabBar) {
+          tabBar.setData({ selected: index })
+        }
+      }
+    } catch (e) {
+      // ignore
+    }
   }
 }
 
@@ -57,7 +94,8 @@ export async function request(path: string, options: any = {}) {
       url: `${BASE_URL}${path}`,
       method: options.method || 'GET',
       data: options.data || {},
-      header: headers
+      header: headers,
+        timeout: 30000
     })
 
     console.log(`[Request] ${path} response status=${res.statusCode}`, res.data)
@@ -83,7 +121,18 @@ export async function request(path: string, options: any = {}) {
     }
 
     if (res.statusCode >= 400) {
-      const msg = res.data?.message || res.data?.detail || `请求失败 (${res.statusCode})`
+      let msg = res.data?.message
+      if (!msg && res.data?.detail) {
+        const detail = res.data.detail
+        if (Array.isArray(detail)) {
+          msg = detail.map((d: any) => d.msg || JSON.stringify(d)).join('; ')
+        } else if (typeof detail === 'object') {
+          msg = JSON.stringify(detail)
+        } else {
+          msg = String(detail)
+        }
+      }
+      msg = msg || `请求失败 (${res.statusCode})`
       Taro.showToast({ title: msg, icon: 'none' })
       throw new Error(msg)
     }
@@ -274,6 +323,23 @@ export function getCharityRegisterStatus(activityId: number) {
   return request(`/api/v1/charities/activities/${activityId}/register/status`)
 }
 
+// 领养
+export function getAdoptionDogs(params?: any) {
+  return request('/api/v1/adoption/dogs', { data: params, skipAuthModal: true })
+}
+
+export function getAdoptionDogDetail(id: number, options?: any) {
+  return request(`/api/v1/adoption/dogs/${id}`, { skipAuthModal: true, ...options })
+}
+
+export function submitAdoptionApplication(id: number, data: any) {
+  return request(`/api/v1/adoption/dogs/${id}/apply`, { method: 'POST', data })
+}
+
+export function getMyAdoptionApplications(params?: any) {
+  return request('/api/v1/adoption/my-applications', { data: params })
+}
+
 // 行程选配
 export function getRouteAddons(routeId: number, category?: string) {
   return request(`/api/v1/routes/${routeId}/addons`, { data: category ? { category } : {}, skipAuthModal: true })
@@ -311,6 +377,11 @@ export function useCoupon(couponId: number) {
 // 协议/文档
 export function getAgreements(params?: any) {
   return request('/api/v1/agreements', { data: params, skipAuthModal: true })
+}
+
+// 公开系统设置
+export function getPublicSettings() {
+  return request('/api/v1/settings/public', { skipAuthModal: true })
 }
 
 export function getAgreementDetail(id: number) {

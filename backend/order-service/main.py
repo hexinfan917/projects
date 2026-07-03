@@ -37,6 +37,28 @@ logger = setup_logger("order-service")
 VERIFY_SECRET = os.getenv("ORDER_VERIFY_SECRET", "petway-verify-secret-2024")
 
 
+def parse_pet_tags(raw):
+    """解析宠物标签字段，支持 JSON 字符串、列表或 null/None 字符串"""
+    if raw is None:
+        return []
+    if isinstance(raw, list):
+        return raw
+    if isinstance(raw, str):
+        s = raw.strip()
+        if not s or s.lower() in ("null", "none", ""):
+            return []
+        try:
+            parsed = json.loads(s)
+            if isinstance(parsed, list):
+                return parsed
+            if parsed is None:
+                return []
+            return [str(parsed)]
+        except (json.JSONDecodeError, ValueError):
+            return [s]
+    return [str(raw)]
+
+
 def generate_verify_code(order_no: str) -> str:
     """生成订单核销码（HMAC-SHA256）"""
     return hmac.new(
@@ -44,6 +66,12 @@ def generate_verify_code(order_no: str) -> str:
         order_no.encode('utf-8'),
         hashlib.sha256
     ).hexdigest()[:16].upper()
+
+
+def generate_refund_no() -> str:
+    """生成退款单号"""
+    import random
+    return f"REF{datetime.now().strftime('%Y%m%d%H%M%S')}{random.randint(1000, 9999)}"
 
 
 def verify_order_code(order_no: str, code: str) -> bool:
@@ -63,7 +91,7 @@ async def auto_cancel_expired_orders():
                 # 查询所有待支付且创建时间超过15分钟的订单
                 result = await db.execute(
                     text("""
-                        SELECT id, order_no, schedule_id 
+                        SELECT id, order_no, schedule_id, seat_count 
                         FROM orders 
                         WHERE status = 10 AND created_at < DATE_SUB(NOW(), INTERVAL 15 MINUTE)
                     """)
@@ -74,6 +102,7 @@ async def auto_cancel_expired_orders():
                     order_id = row["id"]
                     schedule_id = row["schedule_id"]
                     order_no = row["order_no"]
+                    restore_count = row["seat_count"] or 0
                     
                     # 查询订单是否使用了优惠券
                     coupon_result = await db.execute(
@@ -93,24 +122,209 @@ async def auto_cancel_expired_orders():
                         {"order_id": order_id}
                     )
                     
-                    # 只有订单确实被取消了，才恢复库存（一个订单恢复 1 个）
-                    if cancel_result.rowcount > 0:
+                    # 只有订单确实被取消了，才恢复库存（根据实际占座数恢复；自驾不占座则不恢复）
+                    if cancel_result.rowcount > 0 and restore_count > 0:
                         if schedule_id:
                             await db.execute(
                                 text("""
                                     UPDATE route_schedules 
-                                    SET stock = stock + 1, sold = sold - 1 
-                                    WHERE id = :schedule_id AND sold >= 1
+                                    SET stock = stock + :restore_count, sold = sold - :restore_count 
+                                    WHERE id = :schedule_id AND sold >= :restore_count
                                 """),
-                                {"schedule_id": schedule_id}
+                                {"schedule_id": schedule_id, "restore_count": restore_count}
                             )
                         await db.commit()
-                        logger.info(f"Auto cancelled expired order: {order_no}, restored stock for schedule {schedule_id}")
+                        logger.info(f"Auto cancelled expired order: {order_no}, restored {restore_count} stock for schedule {schedule_id}")
                     else:
                         await db.commit()
                         logger.info(f"Auto cancel skipped: {order_no} was already cancelled")
         except Exception as e:
             logger.error(f"Auto cancel task error: {e}")
+
+
+async def auto_expire_coupons():
+    """
+    后台任务：自动将过期优惠券状态更新为已过期（每天凌晨3点执行）
+    """
+    while True:
+        try:
+            # 计算距离下一个凌晨3点的时间
+            now = datetime.now()
+            next_run = now.replace(hour=3, minute=0, second=0, microsecond=0)
+            if next_run <= now:
+                next_run += timedelta(days=1)
+            sleep_seconds = (next_run - now).total_seconds()
+            await asyncio.sleep(sleep_seconds)
+            
+            # 执行过期更新
+            async with AsyncSessionLocal() as db:
+                result = await db.execute(
+                    text("""
+                        UPDATE user_coupons 
+                        SET status = 3 
+                        WHERE valid_end_time < NOW() AND status = 1
+                    """)
+                )
+                await db.commit()
+                affected = result.rowcount
+                if affected > 0:
+                    logger.info(f"Auto expired {affected} coupons")
+        except Exception as e:
+            logger.error(f"Auto expire coupons task error: {e}")
+            await asyncio.sleep(3600)  # 出错后1小时再试
+
+
+async def auto_grant_monthly_member_coupons():
+    """
+    后台任务：每月1日凌晨4点给会员发放月度优惠券
+    
+    配置方式：在 member_plans.benefit_config 中添加 monthly_coupons 字段
+    格式示例：
+    {
+        "monthly_coupons": {
+            "templates": [
+                {"template_id": 1, "count": 2, "valid_days": 30},
+                {"template_id": 2, "count": 1, "valid_days": 30}
+            ]
+        }
+    }
+    """
+    while True:
+        try:
+            # 计算距离下个月1日凌晨4点的时间
+            now = datetime.now()
+            if now.day == 1 and now.hour < 4:
+                # 今天就是1号且还没到4点，今天执行
+                next_run = now.replace(hour=4, minute=0, second=0, microsecond=0)
+            else:
+                # 下个月1日
+                if now.month == 12:
+                    next_run = now.replace(year=now.year + 1, month=1, day=1, hour=4, minute=0, second=0, microsecond=0)
+                else:
+                    next_run = now.replace(month=now.month + 1, day=1, hour=4, minute=0, second=0, microsecond=0)
+            sleep_seconds = (next_run - now).total_seconds()
+            logger.info(f"Monthly coupon grant task will run at {next_run}, sleep {sleep_seconds/3600:.1f} hours")
+            await asyncio.sleep(sleep_seconds)
+            
+            # 执行月度优惠券发放
+            async with AsyncSessionLocal() as db:
+                # 查询所有生效中的会员及其套餐配置
+                result = await db.execute(
+                    text("""
+                        SELECT um.user_id, um.plan_id, mp.benefit_config, um.id as membership_id
+                        FROM user_memberships um
+                        JOIN member_plans mp ON um.plan_id = mp.id
+                        WHERE um.status = 1 AND um.end_date >= CURDATE()
+                    """)
+                )
+                memberships = result.mappings().all()
+                
+                total_granted = 0
+                skipped = 0
+                current_month = datetime.now().strftime("%Y-%m")
+                
+                for membership in memberships:
+                    user_id = membership["user_id"]
+                    plan_id = membership["plan_id"]
+                    benefit_config = membership["benefit_config"]
+                    
+                    # 解析 benefit_config
+                    if isinstance(benefit_config, str):
+                        try:
+                            benefit_config = json.loads(benefit_config)
+                        except:
+                            continue
+                    
+                    if not benefit_config or not isinstance(benefit_config, dict):
+                        continue
+                    
+                    monthly_config = benefit_config.get("monthly_coupons", {})
+                    templates_config = monthly_config.get("templates", [])
+                    
+                    if not templates_config:
+                        continue
+                    
+                    # 检查本月是否已发放（防止重复发放）
+                    # 通过查询本月是否已有source_type=3且source_id=plan_id的记录
+                    check_result = await db.execute(
+                        text("""
+                            SELECT COUNT(*) FROM user_coupons 
+                            WHERE user_id = :user_id 
+                            AND source_type = 3 
+                            AND source_id = :plan_id 
+                            AND DATE_FORMAT(created_at, '%Y-%m') = :current_month
+                        """),
+                        {"user_id": user_id, "plan_id": plan_id, "current_month": current_month}
+                    )
+                    already_granted = check_result.scalar() or 0
+                    
+                    if already_granted > 0:
+                        skipped += 1
+                        logger.debug(f"Monthly coupons already granted for user {user_id} in {current_month}, skipping")
+                        continue
+                    
+                    for item in templates_config:
+                        template_id = item.get("template_id")
+                        count = item.get("count", 1)
+                        valid_days = item.get("valid_days", 30)
+                        
+                        if not template_id:
+                            continue
+                        
+                        # 查询模板
+                        template_result = await db.execute(
+                            text("SELECT * FROM coupon_templates WHERE id = :template_id AND status = 1"),
+                            {"template_id": template_id}
+                        )
+                        template = template_result.mappings().one_or_none()
+                        if not template:
+                            logger.warning(f"Monthly coupon template not found: {template_id}")
+                            continue
+                        
+                        # 发放优惠券
+                        valid_start = datetime.now()
+                        valid_end = valid_start + timedelta(days=valid_days)
+                        
+                        for _ in range(count):
+                            await db.execute(
+                                text("""
+                                    INSERT INTO user_coupons (
+                                        user_id, template_id, coupon_no, name, type, value, 
+                                        min_amount, max_discount, applicable_type, applicable_ids, 
+                                        valid_start_time, valid_end_time, status, source_type, source_id, 
+                                        description, created_at
+                                    ) VALUES (
+                                        :user_id, :template_id, :coupon_no, :name, :type, :value,
+                                        :min_amount, :max_discount, :applicable_type, :applicable_ids,
+                                        :valid_start, :valid_end, 1, 3, :source_id, :description, NOW()
+                                    )
+                                """),
+                                {
+                                    "user_id": user_id,
+                                    "template_id": template["id"],
+                                    "coupon_no": generate_coupon_no(),
+                                    "name": template["name"],
+                                    "type": template["type"],
+                                    "value": template["value"],
+                                    "min_amount": template["min_amount"],
+                                    "max_discount": template["max_discount"],
+                                    "applicable_type": template["applicable_type"],
+                                    "applicable_ids": json.dumps(template["applicable_ids"]) if template["applicable_ids"] else None,
+                                    "valid_start": valid_start,
+                                    "valid_end": valid_end,
+                                    "source_id": plan_id,
+                                    "description": template.get("description") or f"会员每月发放 - {template['name']}",
+                                }
+                            )
+                            total_granted += 1
+                
+                await db.commit()
+                logger.info(f"Monthly member coupons granted: {total_granted} coupons, {skipped} members skipped (already granted) out of {len(memberships)} total members")
+        except Exception as e:
+            logger.error(f"Auto grant monthly coupons task error: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
+            await asyncio.sleep(3600)  # 出错后1小时再试
 
 
 @asynccontextmanager
@@ -119,6 +333,10 @@ async def lifespan(app: FastAPI):
     await redis_client.connect()
     # 启动自动取消任务
     asyncio.create_task(auto_cancel_expired_orders())
+    # 启动自动过期优惠券任务
+    asyncio.create_task(auto_expire_coupons())
+    # 启动会员每月发放优惠券任务
+    asyncio.create_task(auto_grant_monthly_member_coupons())
     yield
     await redis_client.close()
 
@@ -149,6 +367,7 @@ class CreateOrderRequest(BaseModel):
     addons: List[dict] = []
     addon_amount: float = 0
     travel_type: Optional[str] = None
+    package_type: Optional[str] = None
     is_free: int = 0
     is_member_only: Optional[int] = 0
     is_insurance_required: Optional[int] = 1
@@ -176,6 +395,7 @@ STATUS_MAP = {
     40: "退款中",
     45: "退款驳回",
     50: "已退款",
+    55: "部分退款",
     60: "已完成",
     70: "已评价"
 }
@@ -208,6 +428,18 @@ async def get_orders(
     result = await db.execute(query)
     orders_db = result.scalars().all()
     
+    # 补充缺失的路线封面图（旧订单可能没有保存 route_cover）
+    route_ids = list({o.route_id for o in orders_db if o.route_id and not o.route_cover})
+    route_cover_map = {}
+    if route_ids:
+        placeholders = ",".join([f":id_{i}" for i in range(len(route_ids))])
+        params = {f"id_{i}": route_id for i, route_id in enumerate(route_ids)}
+        cover_result = await db.execute(
+            text(f"SELECT id, cover_image FROM routes WHERE id IN ({placeholders})"),
+            params
+        )
+        route_cover_map = {row["id"]: row["cover_image"] for row in cover_result.mappings().all()}
+    
     orders = []
     for o in orders_db:
         orders.append({
@@ -217,10 +449,12 @@ async def get_orders(
             "route_id": o.route_id,
             "is_free": o.is_free,
             "route_name": o.route_name,
-            "route_cover": o.route_cover,
+            "route_cover": o.route_cover or route_cover_map.get(o.route_id, ""),
             "travel_date": o.travel_date.isoformat(),
             "participant_count": o.participant_count,
             "pet_count": o.pet_count,
+            "travel_type": o.travel_type,
+            "package_type": o.package_type,
             "participants": o.participants or [],
             "pets": o.pets or [],
             "contact": o.contact or {},
@@ -228,6 +462,7 @@ async def get_orders(
             "insurance_price": float(o.insurance_price),
             "addon_amount": float(o.addon_amount),
             "travel_type": o.travel_type,
+            "package_type": o.package_type,
             "pay_amount": float(o.pay_amount),
             "status": o.status,
             "status_name": STATUS_MAP.get(o.status, "未知"),
@@ -264,6 +499,80 @@ async def get_order_detail(
     if not o:
         return success({})
     
+    # 直接使用订单存储的联系人信息
+    contact = o.contact or {}
+    
+    # 补全宠物档案信息（按 id 优先匹配，再按名字匹配）
+    order_pets = o.pets or []
+    pets = order_pets
+    if o.user_id and order_pets:
+        pet_result = await db.execute(
+            text("""
+                SELECT id, user_id, name, breed, breed_type, birth_date, age_str,
+                       gender, weight, vaccine_date, vaccine_book, health_notes,
+                       avatar, tags, is_default, status, created_at, updated_at
+                FROM pet_profiles
+                WHERE user_id = :user_id
+            """),
+            {"user_id": o.user_id}
+        )
+        pet_map_by_id = {}
+        pet_map_by_name = {}
+        for row in pet_result.fetchall():
+            pet_data = {
+                "id": row[0],
+                "user_id": row[1],
+                "name": row[2],
+                "breed": row[3],
+                "breed_type": row[4],
+                "birth_date": row[5].isoformat() if row[5] else None,
+                "age_str": row[6],
+                "gender": row[7],
+                "weight": row[8],
+                "vaccine_date": row[9].isoformat() if row[9] else None,
+                "vaccine_book": row[10],
+                "health_notes": row[11],
+                "avatar": row[12],
+                "tags": parse_pet_tags(row[13]),
+                "is_default": row[14],
+                "status": row[15],
+                "created_at": row[16].isoformat() if row[16] else None,
+                "updated_at": row[17].isoformat() if row[17] else None,
+            }
+            pet_map_by_id[row[0]] = pet_data
+            pet_map_by_name[(row[1], row[2])] = pet_data
+        
+        enriched_pets = []
+        for p in order_pets:
+            pet_profile = pet_map_by_id.get(p.get("id")) or pet_map_by_name.get((o.user_id, p.get("name"))) or {}
+            enriched_pets.append({
+                "id": pet_profile.get("id") or p.get("id") or "",
+                "name": p.get("name") or pet_profile.get("name") or "",
+                "breed": p.get("breed") if p.get("breed") is not None else pet_profile.get("breed") or "",
+                "breed_type": pet_profile.get("breed_type") or "",
+                "gender": p.get("gender") if p.get("gender") is not None else pet_profile.get("gender"),
+                "birth_date": pet_profile.get("birth_date") or "",
+                "age_str": pet_profile.get("age_str") or "",
+                "weight": p.get("weight") if p.get("weight") is not None else (float(pet_profile.get("weight")) if pet_profile.get("weight") is not None else None),
+                "vaccine_date": pet_profile.get("vaccine_date") or "",
+                "vaccine_book": pet_profile.get("vaccine_book") or "",
+                "health_notes": pet_profile.get("health_notes") or "",
+                "avatar": pet_profile.get("avatar") or "",
+                "tags": pet_profile.get("tags") or [],
+                "is_default": pet_profile.get("is_default") or 0,
+                "status": pet_profile.get("status") or 1,
+                "created_at": pet_profile.get("created_at") or "",
+                "updated_at": pet_profile.get("updated_at") or "",
+            })
+        pets = enriched_pets
+    
+    # 查询退款记录
+    from app.models.refund_record import RefundRecord
+    refund_records_result = await db.execute(
+        select(RefundRecord).where(RefundRecord.order_id == o.id).order_by(RefundRecord.created_at.desc())
+    )
+    refund_records = refund_records_result.scalars().all()
+    
     order = {
         "id": o.id,
         "order_no": o.order_no,
@@ -277,17 +586,19 @@ async def get_order_detail(
         "participant_count": o.participant_count,
         "pet_count": o.pet_count,
         "participants": o.participants or [],
-        "pets": o.pets or [],
-        "contact": o.contact or {},
+        "pets": pets,
+        "contact": contact,
         "route_price": float(o.route_price),
         "insurance_price": float(o.insurance_price),
         "equipment_price": float(o.equipment_price),
         "addon_amount": float(o.addon_amount),
         "addons": o.addons or [],
         "travel_type": o.travel_type,
+        "package_type": o.package_type,
         "total_amount": float(o.total_amount),
         "discount_amount": float(o.discount_amount),
         "pay_amount": float(o.pay_amount),
+        "refunded_amount": float(o.refunded_amount or 0),
         "status": o.status,
         "status_name": STATUS_MAP.get(o.status, "未知"),
                 
@@ -298,7 +609,19 @@ async def get_order_detail(
         "created_at": o.created_at.isoformat(),
         "qrcode": o.qrcode,
         "guide_info": o.guide_info or {},
-        "refund_reject_reason": o.refund_reject_reason
+        "refund_reject_reason": o.refund_reject_reason,
+        "refund_records": [
+            {
+                "id": r.id,
+                "refund_no": r.refund_no,
+                "amount": float(r.amount),
+                "reason": r.reason,
+                "type": r.type,
+                "status": r.status,
+                "created_at": r.created_at.isoformat() if r.created_at else None
+            }
+            for r in refund_records
+        ]
     }
     
     return success(order)
@@ -475,6 +798,14 @@ async def create_order(
                     applicable_type = template.applicable_type if template else coupon.applicable_type
                     applicable_ids = template.applicable_ids if template else coupon.applicable_ids
                     
+                    # 校验是否不可叠加（is_exclusive=1时，不能与其他优惠同时使用）
+                    # 当前系统只有优惠券一种优惠方式，此校验主要为将来扩展预留
+                    is_exclusive = template.is_exclusive if template else (coupon.is_exclusive or 0)
+                    if is_exclusive == 1:
+                        # 当前只有优惠券一种优惠，所以此校验总是通过
+                        # 将来如果有会员折扣、活动折扣等，需要在这里校验是否同时使用了其他优惠
+                        pass
+                    
                     # 所有优惠券只减免路线价格，不减保险/装备/选配
                     discount_base = actual_route_price
                     
@@ -483,7 +814,20 @@ async def create_order(
                         # 校验适用范围
                         applicable = True
                         if applicable_type == 2 and applicable_ids:
+                            # 指定路线
                             if data.route_id not in applicable_ids:
+                                applicable = False
+                        elif applicable_type == 3 and applicable_ids:
+                            # 指定路线类型
+                            route_result = await db.execute(
+                                select(Route.route_type).where(Route.id == data.route_id)
+                            )
+                            route_type = route_result.scalar()
+                            if route_type not in applicable_ids:
+                                applicable = False
+                        elif applicable_type == 4 and applicable_ids:
+                            # 指定用户
+                            if user_id not in applicable_ids:
                                 applicable = False
                         
                         if applicable:
@@ -521,17 +865,71 @@ async def create_order(
     except Exception:
         raise BadRequestException("出行日期格式错误")
     
-    # 校验并扣减库存（一个订单扣 1 个库存）
-    stock_result = await db.execute(
-        text("""
-            UPDATE route_schedules 
-            SET stock = stock - 1, sold = sold + 1 
-            WHERE id = :schedule_id AND stock >= 1
-        """),
-        {"schedule_id": data.schedule_id}
-    )
-    if stock_result.rowcount == 0:
-        raise BadRequestException("该排期库存不足或已售罄，请选择其他日期")
+    # 计算占座数（免费订单按1个占位，大巴按人+宠，自驾不占座）
+    seat_count = 1 if order_is_free else (data.participant_count + data.pet_count if data.travel_type == 'bus' else 0)
+    
+    # 校验并扣减库存
+    if seat_count > 0:
+        stock_result = await db.execute(
+            text("""
+                UPDATE route_schedules 
+                SET stock = stock - :seat_count, sold = sold + :seat_count 
+                WHERE id = :schedule_id AND stock >= :seat_count
+            """),
+            {"schedule_id": data.schedule_id, "seat_count": seat_count}
+        )
+        if stock_result.rowcount == 0:
+            raise BadRequestException("该排期库存不足或已售罄，请选择其他日期")
+    
+    # 查询路线封面图
+    route_cover = None
+    if data.route_id:
+        route_cover_result = await db.execute(
+            text("SELECT cover_image FROM routes WHERE id = :route_id"),
+            {"route_id": data.route_id}
+        )
+        route_cover_row = route_cover_result.mappings().first()
+        route_cover = route_cover_row["cover_image"] if route_cover_row else None
+    
+    # 查询用户手机号和真实姓名（用于设置联系人为账号本人）
+    user_phone = None
+    user_real_name = None
+    user_id_card = None
+    if user_id:
+        user_res = await db.execute(
+            text("SELECT phone, real_name, id_card FROM users WHERE id = :user_id LIMIT 1"),
+            {"user_id": user_id}
+        )
+        user_row = user_res.fetchone()
+        if user_row:
+            user_phone = user_row[0]
+            user_real_name = user_row[1]
+            user_id_card = user_row[2]
+    
+    # 构建联系人信息（使用用户选择的第一个出行人）
+    contact_info = data.contact or {}
+    logger.info(f"[DEBUG] data.contact={data.contact}, user_phone={user_phone}, user_real_name={user_real_name}")
+    if not contact_info.get('name') and user_phone:
+        # 只有当用户没有选择出行人时，才回退到账号本人信息
+        contact_name = user_real_name or '未知'
+        contact_info = {
+            'name': contact_name,
+            'phone': user_phone,
+            'id_card': user_id_card or ''
+        }
+    logger.info(f"[DEBUG] final contact_info={contact_info}")
+    
+    # 构建完整的出行人列表（包含所有出行人：原联系人 + 原参与者）
+    all_participants = data.participants or []
+    # 将原联系人（下单时选择的第一个出行人）加入 participants（避免重复）
+    if data.contact and data.contact.get('name'):
+        contact_in_participants = any(
+            p.get('id_card') == data.contact.get('id_card') or 
+            p.get('phone') == data.contact.get('phone')
+            for p in all_participants
+        )
+        if not contact_in_participants:
+            all_participants = [data.contact] + all_participants
     
     # 创建订单
     order = Order(
@@ -541,19 +939,21 @@ async def create_order(
         route_id=data.route_id,
         is_free=order_is_free,
         route_name=data.route_name,
+        route_cover=route_cover,
         travel_date=travel_date,
         participant_count=data.participant_count,
         pet_count=data.pet_count,
-        seat_count=(1 if order_is_free else (data.participant_count + data.pet_count if data.travel_type == 'bus' else 0)),
-        participants=data.participants,
+        seat_count=seat_count,
+        participants=all_participants,
         pets=data.pets,
-        contact=data.contact,
+        contact=contact_info,
         route_price=actual_route_price,
         insurance_price=actual_insurance_price,
         equipment_price=data.equipment_price,
         addon_amount=data.addon_amount,
         addons=data.addons,
         travel_type=data.travel_type,
+        package_type=data.package_type,
         total_amount=total_amount,
         discount_amount=discount_amount,
         coupon_id=coupon_id,
@@ -585,7 +985,7 @@ async def create_order(
             json.dumps({
                 "order_id": order.id,
                 "schedule_id": data.schedule_id,
-                "seat_count": (1 if getattr(data, 'is_free', 0) else (data.participant_count + data.pet_count if data.travel_type == 'bus' else 0))
+                "seat_count": seat_count
             })
         )
     except:
@@ -730,19 +1130,20 @@ async def cancel_order(
     if status_result.rowcount == 0:
         return success({"message": "订单状态已变更，请刷新后重试"})
     
-    # 状态更新成功，恢复库存（一个订单恢复 1 个库存）
-    if order.schedule_id:
+    # 状态更新成功，恢复库存（根据订单实际占座数恢复；自驾不占座则不恢复）
+    restore_count = getattr(order, 'seat_count', None) or 0
+    if order.schedule_id and restore_count > 0:
         await db.execute(
             text("""
                 UPDATE route_schedules 
-                SET stock = stock + 1, sold = sold - 1 
-                WHERE id = :schedule_id AND sold >= 1
+                SET stock = stock + :restore_count, sold = sold - :restore_count 
+                WHERE id = :schedule_id AND sold >= :restore_count
             """),
-            {"schedule_id": order.schedule_id}
+            {"schedule_id": order.schedule_id, "restore_count": restore_count}
         )
     
-    # 恢复优惠券：待支付订单直接恢复；已支付订单等退款完成后再恢复
-    if order.coupon_id and order.status == 10:
+    # 恢复优惠券：待支付/待出行（含免费）订单直接恢复；已支付且需退款订单等退款完成后再恢复
+    if order.coupon_id and order.status in [10, 20]:
         await db.execute(
             text("UPDATE user_coupons SET status = 1, used_at = NULL, used_order_id = NULL WHERE id = :coupon_id"),
             {"coupon_id": order.coupon_id}
@@ -779,8 +1180,8 @@ async def refund_order(
     if not order:
         return {"code": 404, "message": "订单不存在", "data": None}
     
-    # 只能对待出行或退款驳回的订单申请退款
-    if order.status not in [20, 45]:
+    # 只能对待出行、部分退款或退款驳回的订单申请退款
+    if order.status not in [20, 45, 55]:
         return {"code": 400, "message": "当前订单状态不允许申请退款", "data": None}
     
     # 更新订单状态为退款中，清空之前的拒绝原因
@@ -1096,6 +1497,7 @@ async def admin_get_orders(
     route_id: Optional[int] = None,
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
+    ids: Optional[str] = None,
     page: int = 1,
     page_size: int = 10,
     db: AsyncSession = Depends(get_db)
@@ -1107,23 +1509,32 @@ async def admin_get_orders(
         
         query = select(Order)
         
-        # 筛选条件
-        if status is not None:
-            query = query.where(Order.status == status)
-        if is_free is not None:
-            query = query.where(Order.is_free == is_free)
-        if order_no:
-            query = query.where(Order.order_no.contains(order_no))
-        if keyword:
-            query = query.where(Order.route_name.contains(keyword))
-        if user_id:
-            query = query.where(Order.user_id == user_id)
-        if route_id:
-            query = query.where(Order.route_id == route_id)
-        if start_date:
-            query = query.where(Order.created_at >= start_date)
-        if end_date:
-            query = query.where(Order.created_at <= end_date)
+        # 如果传入 ids，优先按 ids 查询（导出场景）
+        if ids:
+            try:
+                id_list = [int(x.strip()) for x in ids.split(",") if x.strip()]
+                if id_list:
+                    query = query.where(Order.id.in_(id_list))
+            except ValueError:
+                return {"code": 400, "message": "ids 参数格式错误", "data": None}
+        else:
+            # 筛选条件
+            if status is not None:
+                query = query.where(Order.status == status)
+            if is_free is not None:
+                query = query.where(Order.is_free == is_free)
+            if order_no:
+                query = query.where(Order.order_no.contains(order_no))
+            if keyword:
+                query = query.where(Order.route_name.contains(keyword))
+            if user_id:
+                query = query.where(Order.user_id == user_id)
+            if route_id:
+                query = query.where(Order.route_id == route_id)
+            if start_date:
+                query = query.where(Order.created_at >= start_date)
+            if end_date:
+                query = query.where(Order.created_at <= end_date)
         
         query = query.order_by(Order.created_at.desc())
         
@@ -1166,6 +1577,67 @@ async def admin_get_orders(
             contact = o.contact or {}
             if isinstance(contact, dict) and o.user_id and o.user_id in id_card_map:
                 contact = {**contact, "id_card": id_card_map[o.user_id]}
+            
+            # 补全宠物档案信息（头像、年龄、疫苗本等）
+            order_pets = o.pets or []
+            enriched_pets = []
+            if o.user_id and order_pets:
+                pet_result = await db.execute(
+                    text("""
+                        SELECT id, user_id, name, breed, age_str, gender, weight, avatar, vaccine_book
+                        FROM pet_profiles
+                        WHERE user_id = :user_id
+                    """),
+                    {"user_id": o.user_id}
+                )
+                pet_map = {}
+                for row in pet_result.fetchall():
+                    key = (row[1], row[2])  # (user_id, name)
+                    pet_map[key] = {
+                        "id": row[0],
+                        "user_id": row[1],
+                        "name": row[2],
+                        "breed": row[3],
+                        "age_str": row[4],
+                        "gender": row[5],
+                        "weight": float(row[6]) if row[6] is not None else None,
+                        "avatar": row[7],
+                        "vaccine_book": row[8],
+                    }
+                
+                logger.info(f"[admin orders] pet_map keys: {list(pet_map.keys())}, pet_map ids: {[p.get('id') for p in pet_map.values()]}")
+                
+                for p in order_pets:
+                    # 优先按 id 匹配，再按名字匹配
+                    pet_profile = None
+                    pet_id = p.get("id")
+                    logger.info(f"[admin orders] matching pet_id: {pet_id}, type: {type(pet_id)}")
+                    if pet_id:
+                        pet_id_str = str(pet_id)
+                        for profile in pet_map.values():
+                            profile_id = profile.get("id")
+                            logger.info(f"[admin orders] comparing pet_id_str: {pet_id_str} with profile_id: {profile_id}, type: {type(profile_id)}")
+                            if str(profile_id) == pet_id_str:
+                                pet_profile = profile
+                                logger.info(f"[admin orders] matched! pet_profile: {pet_profile}")
+                                break
+                    if not pet_profile:
+                        pet_key = (o.user_id, p.get("name"))
+                        pet_profile = pet_map.get(pet_key) or {}
+                        logger.info(f"[admin orders] fallback by name, pet_key: {pet_key}, found: {bool(pet_profile)}")
+                    enriched_pets.append({
+                        "id": pet_profile.get("id") or p.get("id") or "",
+                        "name": p.get("name") or pet_profile.get("name") or "",
+                        "breed": p.get("breed") or pet_profile.get("breed") or "",
+                        "gender": p.get("gender") if p.get("gender") is not None else pet_profile.get("gender"),
+                        "age_str": pet_profile.get("age_str") or "",
+                        "weight": p.get("weight") if p.get("weight") is not None else pet_profile.get("weight"),
+                        "avatar": pet_profile.get("avatar") or "",
+                        "vaccine_book": pet_profile.get("vaccine_book") or "",
+                    })
+            else:
+                enriched_pets = order_pets
+            
             orders.append({
                 "id": o.id,
                 "order_no": o.order_no,
@@ -1179,7 +1651,7 @@ async def admin_get_orders(
                 "participant_count": o.participant_count,
                 "pet_count": o.pet_count,
                 "participants": o.participants or [],
-                "pets": o.pets or [],
+                "pets": enriched_pets,
                 "contact": contact,
                 "route_price": float(o.route_price) if o.route_price else 0,
                 "insurance_price": float(o.insurance_price) if o.insurance_price else 0,
@@ -1202,6 +1674,237 @@ async def admin_get_orders(
         import traceback
         logger.error(traceback.format_exc())
         return {"code": 500, "message": f"查询失败: {str(e)}", "data": None}
+
+
+@app.get("/api/v1/admin/orders/insurance-export")
+async def admin_export_orders_for_insurance(
+    status: Optional[int] = None,
+    is_free: Optional[int] = None,
+    keyword: Optional[str] = None,
+    order_no: Optional[str] = None,
+    travel_date: Optional[str] = None,
+    ids: Optional[str] = None,
+    page_size: int = 5000,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    保险专用订单导出
+    按人头展开，每行包含：订单信息 + 个人完整信息 + 该订单所有宠物信息
+    """
+    try:
+        from app.models.order import Order
+        from sqlalchemy import text
+
+        # 1. 查询符合条件的订单（默认导出所有状态，可通过 status 参数筛选）
+        query = select(Order)
+        if ids:
+            try:
+                id_list = [int(x.strip()) for x in ids.split(",") if x.strip()]
+                if id_list:
+                    query = query.where(Order.id.in_(id_list))
+            except ValueError:
+                return {"code": 400, "message": "ids 参数格式错误", "data": None}
+        if status:
+            query = query.where(Order.status == status)
+        if is_free is not None:
+            query = query.where(Order.is_free == is_free)
+        if keyword:
+            query = query.where(or_(
+                Order.route_name.contains(keyword),
+                Order.order_no.contains(keyword)
+            ))
+        if order_no:
+            query = query.where(Order.order_no.contains(order_no))
+        if travel_date:
+            query = query.where(Order.travel_date == travel_date)
+
+        query = query.order_by(Order.travel_date.asc(), Order.created_at.desc()).limit(page_size)
+        result = await db.execute(query)
+        orders_db = result.scalars().all()
+
+        if not orders_db:
+            return success([])
+
+        user_ids = [o.user_id for o in orders_db if o.user_id]
+
+        # 2. 批量查询出行人表补全身份证、生日、性别、紧急联系人等信息
+        traveler_map: dict = {}
+        if user_ids:
+            traveler_result = await db.execute(
+                text("""
+                    SELECT id, user_id, name, phone, id_card, gender, birthday,
+                           emergency_name, emergency_phone
+                    FROM travelers
+                    WHERE user_id IN :user_ids AND status = 1
+                """),
+                {"user_ids": tuple(user_ids)}
+            )
+            for row in traveler_result.fetchall():
+                key = (row[1], row[2])  # (user_id, name)
+                traveler_map[key] = {
+                    "id": row[0],
+                    "user_id": row[1],
+                    "name": row[2],
+                    "phone": row[3],
+                    "id_card": row[4],
+                    "gender": row[5],
+                    "birthday": row[6].isoformat() if row[6] else None,
+                    "emergency_name": row[7],
+                    "emergency_phone": row[8],
+                }
+
+        # 3. 批量查询宠物档案表补全宠物完整信息
+        pet_map: dict = {}
+        if user_ids:
+            pet_result = await db.execute(
+                text("""
+                    SELECT id, user_id, name, breed, breed_type, birth_date, age_str,
+                           gender, weight, vaccine_date, vaccine_book, health_notes,
+                           avatar, tags, is_default, status, created_at, updated_at
+                    FROM pet_profiles
+                    WHERE user_id IN :user_ids
+                """),
+                {"user_ids": tuple(user_ids)}
+            )
+            for row in pet_result.fetchall():
+                key = (row[1], row[2])  # (user_id, name)
+                pet_map[key] = {
+                    "id": row[0],
+                    "user_id": row[1],
+                    "name": row[2],
+                    "breed": row[3],
+                    "breed_type": row[4],
+                    "birth_date": row[5].isoformat() if row[5] else None,
+                    "age_str": row[6],
+                    "gender": row[7],
+                    "weight": float(row[8]) if row[8] is not None else None,
+                    "vaccine_date": row[9].isoformat() if row[9] else None,
+                    "vaccine_book": row[10],
+                    "health_notes": row[11],
+                    "avatar": row[12],
+                    "tags": parse_pet_tags(row[13]),
+                    "is_default": row[14],
+                    "status": row[15],
+                    "created_at": row[16].isoformat() if row[16] else None,
+                    "updated_at": row[17].isoformat() if row[17] else None,
+                }
+
+        # 4. 组装保险导出数据
+        rows = []
+        for o in orders_db:
+            contact = o.contact or {}
+            participants = o.participants or []
+            pets_in_order = o.pets or []
+
+            # 补全联系人信息
+            contact_key = (o.user_id, contact.get("name"))
+            contact_traveler = traveler_map.get(contact_key) or {}
+            contact_full = {
+                "name": contact.get("name") or contact_traveler.get("name") or "",
+                "phone": contact.get("phone") or contact_traveler.get("phone") or "",
+                "id_card": contact.get("id_card") or contact_traveler.get("id_card") or "",
+                "gender": contact_traveler.get("gender") or 0,
+                "birthday": contact_traveler.get("birthday") or "",
+                "emergency_name": contact_traveler.get("emergency_name") or "",
+                "emergency_phone": contact_traveler.get("emergency_phone") or "",
+            }
+
+            # 构建该订单下所有宠物的完整信息
+            order_pets_full = []
+            for p in pets_in_order:
+                pet_key = (o.user_id, p.get("name"))
+                pet_profile = pet_map.get(pet_key) or {}
+                order_pets_full.append({
+                    "id": pet_profile.get("id") or "",
+                    "name": p.get("name") or pet_profile.get("name") or "",
+                    "breed": p.get("breed") or pet_profile.get("breed") or "",
+                    "breed_type": pet_profile.get("breed_type") or "",
+                    "gender": p.get("gender") if p.get("gender") is not None else pet_profile.get("gender"),
+                    "birth_date": pet_profile.get("birth_date") or "",
+                    "age_str": pet_profile.get("age_str") or "",
+                    "weight": p.get("weight") if p.get("weight") is not None else (float(pet_profile.get("weight")) if pet_profile.get("weight") is not None else None),
+                    "vaccine_date": pet_profile.get("vaccine_date") or "",
+                    "vaccine_book": pet_profile.get("vaccine_book") or "",
+                    "health_notes": pet_profile.get("health_notes") or "",
+                    "avatar": pet_profile.get("avatar") or "",
+                    "tags": pet_profile.get("tags") or [],
+                    "is_default": pet_profile.get("is_default") or 0,
+                    "status": pet_profile.get("status") or 1,
+                    "created_at": pet_profile.get("created_at") or "",
+                    "updated_at": pet_profile.get("updated_at") or "",
+                })
+
+            # 要导出的人员列表：联系人 + 所有出行人
+            persons = [{"role": "联系人", **contact_full}]
+            for idx, participant in enumerate(participants):
+                part_key = (o.user_id, participant.get("name"))
+                part_traveler = traveler_map.get(part_key) or {}
+                persons.append({
+                    "role": f"出行人{idx + 1}",
+                    "name": participant.get("name") or part_traveler.get("name") or "",
+                    "phone": participant.get("phone") or part_traveler.get("phone") or "",
+                    "id_card": participant.get("id_card") or part_traveler.get("id_card") or "",
+                    "gender": participant.get("gender") if participant.get("gender") is not None else part_traveler.get("gender"),
+                    "birthday": part_traveler.get("birthday") or "",
+                    "emergency_name": part_traveler.get("emergency_name") or "",
+                    "emergency_phone": part_traveler.get("emergency_phone") or "",
+                })
+
+            # 每人生成一行
+            for person in persons:
+                row = {
+                    "order_no": o.order_no or "",
+                    "user_id": o.user_id,
+                    "route_name": o.route_name or "",
+                    "travel_date": o.travel_date.isoformat() if o.travel_date else "",
+                    "status": o.status,
+                    "status_name": STATUS_MAP.get(o.status, "未知"),
+                    "pay_amount": float(o.pay_amount) if o.pay_amount is not None else 0,
+                    "created_at": o.created_at.isoformat() if o.created_at else "",
+                    "role": person["role"],
+                    "person_name": person["name"],
+                    "person_phone": person["phone"],
+                    "person_id_card": person["id_card"],
+                    "person_gender": {0: "未知", 1: "男", 2: "女"}.get(person["gender"], "未知"),
+                    "person_birthday": person["birthday"],
+                    "emergency_name": person["emergency_name"],
+                    "emergency_phone": person["emergency_phone"],
+                    "pet_count": len(order_pets_full),
+                }
+                # 动态追加宠物字段
+                for i, pet in enumerate(order_pets_full, start=1):
+                    prefix = f"pet{i}_"
+                    row[f"{prefix}id"] = pet["id"]
+                    row[f"{prefix}name"] = pet["name"]
+                    row[f"{prefix}breed"] = pet["breed"]
+                    row[f"{prefix}breed_type"] = {1: "小型", 2: "中型", 3: "大型", 4: "巨型"}.get(pet["breed_type"], "")
+                    row[f"{prefix}gender"] = {0: "母", 1: "公"}.get(pet["gender"], "未知")
+                    row[f"{prefix}birth_date"] = pet["birth_date"]
+                    row[f"{prefix}age_str"] = pet["age_str"]
+                    row[f"{prefix}weight"] = pet["weight"] if pet["weight"] is not None else ""
+                    row[f"{prefix}vaccine_date"] = pet["vaccine_date"]
+                    row[f"{prefix}vaccine_book"] = pet["vaccine_book"]
+                    row[f"{prefix}health_notes"] = pet["health_notes"]
+                    row[f"{prefix}avatar"] = pet["avatar"]
+                    tags = pet.get("tags") if isinstance(pet, dict) else None
+                    if isinstance(tags, list):
+                        row[f"{prefix}tags"] = ",".join(str(t) for t in tags)
+                    elif tags:
+                        row[f"{prefix}tags"] = str(tags)
+                    else:
+                        row[f"{prefix}tags"] = ""
+                    row[f"{prefix}is_default"] = pet["is_default"]
+                    row[f"{prefix}status"] = pet["status"]
+                    row[f"{prefix}created_at"] = pet["created_at"]
+                    row[f"{prefix}updated_at"] = pet["updated_at"]
+                rows.append(row)
+
+        return success(rows)
+    except Exception as e:
+        logger.error(f"Error exporting orders for insurance: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
+        return {"code": 500, "message": f"导出失败: {str(e)}", "data": None}
 
 
 @app.get("/api/v1/admin/orders/{order_id}")
@@ -1247,10 +1950,92 @@ async def admin_get_order_detail(
         if contact_id_card and isinstance(contact, dict):
             contact = {**contact, "id_card": contact_id_card}
         
+        # 补全宠物档案信息
+        order_pets = o.pets or []
+        pets = order_pets
+        if o.user_id and order_pets:
+            pet_result = await db.execute(
+                text("""
+                    SELECT id, user_id, name, breed, breed_type, birth_date, age_str,
+                           gender, weight, vaccine_date, vaccine_book, health_notes,
+                           avatar, tags, is_default, status, created_at, updated_at
+                    FROM pet_profiles
+                    WHERE user_id = :user_id
+                """),
+                {"user_id": o.user_id}
+            )
+            pet_map = {}
+            for row in pet_result.fetchall():
+                key = (row[1], row[2])  # (user_id, name)
+                pet_map[key] = {
+                    "id": row[0],
+                    "user_id": row[1],
+                    "name": row[2],
+                    "breed": row[3],
+                    "breed_type": row[4],
+                    "birth_date": row[5].isoformat() if row[5] else None,
+                    "age_str": row[6],
+                    "gender": row[7],
+                    "weight": row[8],
+                    "vaccine_date": row[9].isoformat() if row[9] else None,
+                    "vaccine_book": row[10],
+                    "health_notes": row[11],
+                    "avatar": row[12],
+                    "tags": parse_pet_tags(row[13]),
+                    "is_default": row[14],
+                    "status": row[15],
+                    "created_at": row[16].isoformat() if row[16] else None,
+                    "updated_at": row[17].isoformat() if row[17] else None,
+                }
+            
+            enriched_pets = []
+            for p in order_pets:
+                pet_key = (o.user_id, p.get("name"))
+                pet_profile = pet_map.get(pet_key) or {}
+                enriched_pets.append({
+                    "id": pet_profile.get("id") or p.get("id") or "",
+                    "name": p.get("name") or pet_profile.get("name") or "",
+                    "breed": p.get("breed") or pet_profile.get("breed") or "",
+                    "breed_type": pet_profile.get("breed_type") or "",
+                    "gender": p.get("gender") if p.get("gender") is not None else pet_profile.get("gender"),
+                    "birth_date": pet_profile.get("birth_date") or "",
+                    "age_str": pet_profile.get("age_str") or "",
+                    "weight": p.get("weight") if p.get("weight") is not None else (float(pet_profile.get("weight")) if pet_profile.get("weight") is not None else None),
+                    "vaccine_date": pet_profile.get("vaccine_date") or "",
+                    "vaccine_book": pet_profile.get("vaccine_book") or "",
+                    "health_notes": pet_profile.get("health_notes") or "",
+                    "avatar": pet_profile.get("avatar") or "",
+                    "tags": pet_profile.get("tags") or [],
+                    "is_default": pet_profile.get("is_default") or 0,
+                    "status": pet_profile.get("status") or 1,
+                    "created_at": pet_profile.get("created_at") or "",
+                    "updated_at": pet_profile.get("updated_at") or "",
+                })
+            pets = enriched_pets
+        
+        # 查询退款记录
+        from app.models.refund_record import RefundRecord
+        refund_records_result = await db.execute(
+            select(RefundRecord).where(RefundRecord.order_id == o.id).order_by(RefundRecord.created_at.desc())
+        )
+        refund_records = refund_records_result.scalars().all()
+        
+        # 查询用户手机号（用于判断联系人）
+        user_phone = None
+        if o.user_id:
+            user_res = await db.execute(
+                text("SELECT phone FROM users WHERE id = :user_id LIMIT 1"),
+                {"user_id": o.user_id}
+            )
+            user_row = user_res.fetchone()
+            if user_row:
+                user_phone = user_row[0]
+        
         order = {
             "id": o.id,
             "order_no": o.order_no,
             "user_id": o.user_id,
+            "user_phone": user_phone,
             "route_id": o.route_id,
             "is_free": o.is_free,
             "route_name": o.route_name,
@@ -1258,8 +2043,10 @@ async def admin_get_order_detail(
             "travel_date": o.travel_date.isoformat() if o.travel_date else None,
             "participant_count": o.participant_count,
             "pet_count": o.pet_count,
+            "travel_type": o.travel_type,
+            "package_type": o.package_type,
             "participants": o.participants or [],
-            "pets": o.pets or [],
+            "pets": pets,
             "contact": contact,
             "route_price": float(o.route_price) if o.route_price else 0,
             "insurance_price": float(o.insurance_price) if o.insurance_price else 0,
@@ -1269,6 +2056,7 @@ async def admin_get_order_detail(
             "discount_amount": float(o.discount_amount) if o.discount_amount else 0,
             "pay_amount": float(o.pay_amount) if o.pay_amount else 0,
             "total_amount": float(o.total_amount) if o.total_amount else 0,
+            "refunded_amount": float(o.refunded_amount or 0),
             "status": o.status,
             "status_name": STATUS_MAP.get(o.status, "未知"),
                 
@@ -1279,6 +2067,18 @@ async def admin_get_order_detail(
             "created_at": o.created_at.isoformat() if o.created_at else None,
             "updated_at": o.updated_at.isoformat() if o.updated_at else None,
             "refund_reject_reason": o.refund_reject_reason,
+            "refund_records": [
+                {
+                    "id": r.id,
+                    "refund_no": r.refund_no,
+                    "amount": float(r.amount),
+                    "reason": r.reason,
+                    "type": r.type,
+                    "status": r.status,
+                    "created_at": r.created_at.isoformat() if r.created_at else None
+                }
+                for r in refund_records
+            ]
         }
         
         return success(order)
@@ -1330,25 +2130,26 @@ async def admin_update_order(
                 return {"code": 400, "message": "目标日期没有可用排期", "data": None}
             new_schedule_id = schedule_row[0]
 
-        # 处理库存变化（换排期时恢复旧排期1个库存，扣减新排期1个库存）
-        if old_schedule_id != new_schedule_id:
+        # 处理库存变化（换排期时按订单占座数恢复旧排期库存、扣减新排期库存；自驾不占座则跳过）
+        seat_count = getattr(order, 'seat_count', None) or 0
+        if old_schedule_id != new_schedule_id and seat_count > 0:
             # 恢复旧排期库存
             await db.execute(
                 text("""
                     UPDATE route_schedules 
-                    SET stock = stock + 1, sold = sold - 1 
-                    WHERE id = :schedule_id AND sold >= 1
+                    SET stock = stock + :seat_count, sold = sold - :seat_count 
+                    WHERE id = :schedule_id AND sold >= :seat_count
                 """),
-                {"schedule_id": old_schedule_id}
+                {"schedule_id": old_schedule_id, "seat_count": seat_count}
             )
             # 扣减新排期库存
             stock_result = await db.execute(
                 text("""
                     UPDATE route_schedules 
-                    SET stock = stock - 1, sold = sold + 1 
-                    WHERE id = :schedule_id AND stock >= 1
+                    SET stock = stock - :seat_count, sold = sold + :seat_count 
+                    WHERE id = :schedule_id AND stock >= :seat_count
                 """),
-                {"schedule_id": new_schedule_id}
+                {"schedule_id": new_schedule_id, "seat_count": seat_count}
             )
             if stock_result.rowcount == 0:
                 return {"code": 400, "message": "目标排期库存不足", "data": None}
@@ -1425,15 +2226,16 @@ async def admin_cancel_order(
         if status_result.rowcount == 0:
             return {"code": 400, "message": "订单状态已变更，请刷新后重试", "data": None}
 
-        # 状态更新成功，恢复库存（一个订单恢复 1 个库存）
-        if order.schedule_id:
+        # 状态更新成功，恢复库存（根据订单实际占座数恢复；自驾不占座则不恢复）
+        restore_count = getattr(order, 'seat_count', None) or 0
+        if order.schedule_id and restore_count > 0:
             await db.execute(
                 text("""
                     UPDATE route_schedules
-                    SET stock = stock + 1, sold = sold - 1
-                    WHERE id = :schedule_id AND sold >= 1
+                    SET stock = stock + :restore_count, sold = sold - :restore_count
+                    WHERE id = :schedule_id AND sold >= :restore_count
                 """),
-                {"schedule_id": order.schedule_id}
+                {"schedule_id": order.schedule_id, "restore_count": restore_count}
             )
 
         # 恢复优惠券
@@ -1470,13 +2272,13 @@ async def admin_refund_order(
         if not order:
             return {"code": 404, "message": "订单不存在", "data": None}
         
-        # 检查订单状态是否允许退款
-        if order.status not in [20, 60, 70]:  # 待出行、已完成、已评价
+        # 检查订单状态是否允许退款（待出行、部分退款、已完成、已评价）
+        if order.status not in [20, 55, 60, 70]:
             return {"code": 400, "message": "当前订单状态不允许退款", "data": None}
         
-        # 防止重复退款：已经退款成功过的订单不允许再次退款
-        if order.refund_time:
-            return {"code": 400, "message": "该订单已退款成功，不可重复退款", "data": None}
+        # 防止超退
+        if order.refunded_amount and float(order.refunded_amount) >= float(order.pay_amount or 0):
+            return {"code": 400, "message": "该订单已退完全部金额，不可重复退款", "data": None}
         
         refund_type = refund_data.get('refund_type', 'full')
         refund_reason = refund_data.get('refund_reason', '')
@@ -1523,8 +2325,8 @@ async def admin_get_refunds(
     try:
         from app.models.order import Order
         
-        # 查询退款中(40)、退款驳回(45)或已退款(50)的订单
-        query = select(Order).where(Order.status.in_([40, 45, 50]))
+        # 查询退款中(40)、退款驳回(45)、已退款(50)或部分退款(55)的订单
+        query = select(Order).where(Order.status.in_([40, 45, 50, 55]))
         
         if status:
             query = query.where(Order.status == status)
@@ -1577,7 +2379,7 @@ async def admin_direct_refund(
     """管理后台直接退款（不走申请+审核流程，一键完成微信退款）"""
     try:
         from app.models.order import Order
-        from datetime import datetime
+        from app.models.refund_record import RefundRecord
         
         result = await db.execute(select(Order).where(Order.id == order_id))
         order = result.scalar_one_or_none()
@@ -1586,24 +2388,41 @@ async def admin_direct_refund(
             return {"code": 404, "message": "订单不存在", "data": None}
         
         # 检查订单状态是否允许退款
-        if order.status not in [20, 60, 70]:
+        if order.status not in [20, 55, 60, 70]:
             return {"code": 400, "message": "当前订单状态不允许退款", "data": None}
         
-        # 防止重复退款
-        if order.status == 50 or order.refund_time:
-            return {"code": 400, "message": "该订单已退款成功，不可重复退款", "data": None}
+        # 防止超退
+        already_refunded = float(order.refunded_amount or 0)
+        pay_amount = float(order.pay_amount or 0)
+        if already_refunded >= pay_amount:
+            return {"code": 400, "message": "该订单已退完全部金额，不可重复退款", "data": None}
         
         refund_type = refund_data.get('refund_type', 'full')
         refund_reason = refund_data.get('refund_reason', '后台直接退款')
         
         # 计算退款金额
         if refund_type == 'full':
-            refund_amount = float(order.pay_amount)
+            refund_amount = pay_amount - already_refunded
         else:
             refund_amount = float(refund_data.get('refund_amount', 0))
         
         if refund_amount <= 0:
             return {"code": 400, "message": "退款金额必须大于0", "data": None}
+        
+        if already_refunded + refund_amount > pay_amount:
+            return {"code": 400, "message": f"累计退款不能超过实付金额，剩余可退: {pay_amount - already_refunded:.2f}", "data": None}
+        
+        # 生成退款单号并创建记录
+        refund_no = generate_refund_no()
+        record = RefundRecord(
+            order_id=order_id,
+            refund_no=refund_no,
+            amount=refund_amount,
+            reason=refund_reason,
+            type=refund_type,
+            status=10,
+        )
+        db.add(record)
         
         # 先更新为退款中
         order.status = 40
@@ -1637,42 +2456,55 @@ async def admin_direct_refund(
         except Exception as e:
             logger.error(f"Call pay-service refund failed: {e}")
             # 退款服务调用失败，回滚状态
-            order.status = 20
+            order.status = 20 if already_refunded == 0 else 55
             order.refund_amount = 0
             order.refund_reason = f"退款服务调用失败: {str(e)}"
+            record.status = 30
+            record.fail_reason = str(e)
             await db.commit()
             return {"code": 500, "message": f"退款服务调用失败: {str(e)}", "data": None}
         
         if pay_result.get("code") != 200:
             logger.error(f"Pay-service refund error: {pay_result}")
             # 微信退款失败，回滚状态
-            order.status = 20
+            order.status = 20 if already_refunded == 0 else 55
             order.refund_amount = 0
             order.refund_reason = f"退款失败: {pay_result.get('message', '未知错误')}"
+            record.status = 30
+            record.fail_reason = pay_result.get('message', '微信退款返回错误')
             await db.commit()
             return {"code": 500, "message": f"退款失败: {pay_result.get('message', '微信退款返回错误')}", "data": None}
         
-        # 退款成功，更新为已退款
-        order.status = 50
-        order.refund_time = datetime.now()
+        # 退款成功
+        record.status = 20
+        record.transaction_id = pay_result.get("data", {}).get("refund_id", "")
+        order.refunded_amount = already_refunded + refund_amount
+        
+        # 判断是否为最后一笔退款
+        if order.refunded_amount >= pay_amount:
+            order.status = 50
+            order.refund_time = datetime.now()
+            # 全额退款才恢复优惠券
+            if order.coupon_id:
+                await db.execute(
+                    text("UPDATE user_coupons SET status = 1, used_at = NULL, used_order_id = NULL WHERE id = :coupon_id"),
+                    {"coupon_id": order.coupon_id}
+                )
+                logger.info(f"Coupon restored after full refund: coupon_id={order.coupon_id}, order_id={order_id}")
+        else:
+            order.status = 55  # 部分退款，优惠券不恢复（订单仍有效）
+        
         await db.commit()
         
-        # 退款成功，恢复优惠券
-        if order.coupon_id:
-            await db.execute(
-                text("UPDATE user_coupons SET status = 1, used_at = NULL, used_order_id = NULL WHERE id = :coupon_id"),
-                {"coupon_id": order.coupon_id}
-            )
-            await db.commit()
-            logger.info(f"Coupon restored after refund: coupon_id={order.coupon_id}, order_id={order_id}")
-        
-        logger.info(f"Order {order_id} direct refund success: amount={refund_amount}")
+        logger.info(f"Order {order_id} direct refund success: amount={refund_amount}, total_refunded={order.refunded_amount}")
         
         return success({
             "order_id": order_id,
             "refund_amount": refund_amount,
-            "status": 50,
-            "refund_time": order.refund_time.isoformat()
+            "refunded_amount": float(order.refunded_amount),
+            "status": order.status,
+            "status_name": STATUS_MAP.get(order.status, "未知"),
+            "refund_time": order.refund_time.isoformat() if order.refund_time else None
         }, message="退款成功")
     except Exception as e:
         logger.error(f"Error direct refunding order: {e}")
@@ -1684,13 +2516,14 @@ async def admin_direct_refund(
 @app.post("/api/v1/admin/refunds/{order_id}/approve")
 async def admin_approve_refund(
     order_id: int,
+    data: dict = {},
     authorization: Optional[str] = Header(None),
     db: AsyncSession = Depends(get_db)
 ):
-    """审核通过退款"""
+    """审核通过退款（支持全额或部分）"""
     try:
         from app.models.order import Order
-        from datetime import datetime
+        from app.models.refund_record import RefundRecord
         
         result = await db.execute(select(Order).where(Order.id == order_id))
         order = result.scalar_one_or_none()
@@ -1701,11 +2534,38 @@ async def admin_approve_refund(
         if order.status != 40:
             return {"code": 400, "message": "订单不是退款中状态", "data": None}
         
+        already_refunded = float(order.refunded_amount or 0)
+        pay_amount = float(order.pay_amount or 0)
+        
+        # 判断是全额还是部分
+        refund_type = data.get('refund_type', 'full')
+        if refund_type == 'partial':
+            refund_amount = float(data.get('refund_amount', 0))
+            if refund_amount <= 0:
+                return {"code": 400, "message": "退款金额必须大于0", "data": None}
+            if already_refunded + refund_amount > pay_amount:
+                return {"code": 400, "message": f"累计退款不能超过实付金额，剩余可退: {pay_amount - already_refunded:.2f}", "data": None}
+        else:
+            refund_amount = pay_amount - already_refunded
+        
+        # 创建退款记录
+        refund_no = generate_refund_no()
+        record = RefundRecord(
+            order_id=order_id,
+            refund_no=refund_no,
+            amount=refund_amount,
+            reason=order.refund_reason or "用户申请退款",
+            type=refund_type,
+            status=10,
+        )
+        db.add(record)
+        await db.flush()
+        
         # 调用 pay-service 发起退款
         pay_service_url = os.getenv("PAY_SERVICE_URL", "http://localhost:8006")
         refund_payload = {
             "order_no": order.order_no,
-            "refund_amount": float(order.refund_amount or order.pay_amount),
+            "refund_amount": refund_amount,
             "reason": order.refund_reason or "用户申请退款",
             "transaction_id": order.pay_trade_no or order.pay_transaction_id or "",
             "total_amount": float(order.pay_amount or order.total_amount or 0)
@@ -1725,38 +2585,52 @@ async def admin_approve_refund(
                 pay_result = pay_response.json()
         except Exception as e:
             logger.error(f"Call pay-service refund failed: {e}")
+            record.status = 30
+            record.fail_reason = str(e)
+            await db.commit()
             return {"code": 500, "message": f"退款服务调用失败: {str(e)}", "data": None}
         
         if pay_result.get("code") != 200:
             logger.error(f"Pay-service refund error: {pay_result}")
-            # 退款失败，回滚订单状态到待出行，允许重新发起退款
-            order.status = 20
-            order.refund_amount = 0
-            order.refund_reason = f"退款失败: {pay_result.get('message', '未知错误')}"
+            record.status = 30
+            record.fail_reason = pay_result.get('message', '退款服务返回错误')
             await db.commit()
             return {"code": 500, "message": f"退款失败: {pay_result.get('message', '退款服务返回错误')}", "data": None}
         
-        # 更新为已退款状态
-        order.status = 50
-        order.refund_time = datetime.now()
-        await db.commit()
+        # 退款成功
+        record.status = 20
+        record.transaction_id = pay_result.get("data", {}).get("refund_id", "")
+        order.refunded_amount = already_refunded + refund_amount
         
-        # 退款成功，恢复优惠券
-        if order.coupon_id:
-            await db.execute(
-                text("UPDATE user_coupons SET status = 1, used_at = NULL, used_order_id = NULL WHERE id = :coupon_id"),
-                {"coupon_id": order.coupon_id}
-            )
-            await db.commit()
-            logger.info(f"Coupon restored after refund approve: coupon_id={order.coupon_id}, order_id={order_id}")
+        # 判断是否为最后一笔退款
+        if order.refunded_amount >= pay_amount:
+            order.status = 50
+            order.refund_time = datetime.now()
+            # 全额退款才恢复优惠券
+            if order.coupon_id:
+                await db.execute(
+                    text("UPDATE user_coupons SET status = 1, used_at = NULL, used_order_id = NULL WHERE id = :coupon_id"),
+                    {"coupon_id": order.coupon_id}
+                )
+                logger.info(f"Coupon restored after full refund approve: coupon_id={order.coupon_id}, order_id={order_id}")
+        else:
+            order.status = 55  # 部分退款，优惠券不恢复（订单仍有效）
+            order.refund_amount = 0  # 清空当前退款金额，允许再次申请
+        
+        await db.commit()
         
         return success({
             "order_id": order_id,
-            "status": 50,
-            "refund_time": order.refund_time.isoformat()
+            "refund_amount": refund_amount,
+            "refunded_amount": float(order.refunded_amount),
+            "status": order.status,
+            "status_name": STATUS_MAP.get(order.status, "未知"),
+            "refund_time": order.refund_time.isoformat() if order.refund_time else None
         }, message="退款审核通过")
     except Exception as e:
         logger.error(f"Error approving refund: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
         return {"code": 500, "message": f"审核失败: {str(e)}", "data": None}
 
 
@@ -1971,13 +2845,19 @@ def generate_member_order_no() -> str:
 
 
 def calculate_discount(coupon_type: int, value: float, order_amount: float, max_discount: float = 0) -> float:
-    """计算优惠金额"""
+    """计算优惠金额
+    
+    折扣券value存储格式：8.5表示8.5折
+    计算：优惠金额 = 订单金额 * (1 - value/10)
+    例如：8.5折，value=8.5，优惠=订单金额 * 0.15
+    """
     if coupon_type == 4:  # 礼品券不参与订单金额抵扣
         return 0
     if coupon_type == 1:  # 满减券
         return min(value, order_amount)
     elif coupon_type == 2:  # 折扣券
-        discount = order_amount * (1 - value)
+        # value是折数，如8.5表示8.5折，即支付85%
+        discount = order_amount * (1 - value / 10)
         if max_discount > 0:
             discount = min(discount, max_discount)
         return round(discount, 2)
@@ -2049,6 +2929,105 @@ async def get_user_coupons(
         data.append(item)
     
     return success({"list": data, "total": total, "page": page, "page_size": page_size})
+
+
+@app.post("/api/v1/admin/coupons/grant")
+async def admin_grant_coupons(
+    data: dict,
+    db: AsyncSession = Depends(get_db)
+):
+    """管理后台主动发放优惠券给指定用户"""
+    from app.models.coupon import CouponTemplate, UserCoupon
+    
+    template_id = data.get("template_id")
+    user_ids = data.get("user_ids", [])
+    
+    if not template_id:
+        return {"code": 400, "message": "缺少优惠券模板ID", "data": None}
+    
+    if not user_ids or not isinstance(user_ids, list):
+        return {"code": 400, "message": "缺少用户ID列表", "data": None}
+    
+    # 查询模板
+    result = await db.execute(select(CouponTemplate).where(CouponTemplate.id == template_id))
+    template = result.scalar_one_or_none()
+    
+    if not template or template.status != 1:
+        return {"code": 400, "message": "优惠券模板不存在或已停用", "data": None}
+    
+    now = datetime.now()
+    if template.valid_type == 2 and template.valid_end_time and template.valid_end_time <= now:
+        return {"code": 400, "message": "优惠券模板已过期", "data": None}
+    
+    # 检查库存
+    if template.total_count > 0:
+        claimed_count_result = await db.execute(
+            select(func.count()).where(UserCoupon.template_id == template_id)
+        )
+        claimed_count = claimed_count_result.scalar()
+        remaining = template.total_count - claimed_count
+        if remaining < len(user_ids):
+            return {"code": 400, "message": f"库存不足，剩余{remaining}张，需发放{len(user_ids)}张", "data": None}
+    
+    # 计算有效期
+    if template.valid_type == 1:
+        valid_start = now
+        valid_end = now + timedelta(days=template.valid_days)
+    else:
+        valid_start = template.valid_start_time or now
+        valid_end = template.valid_end_time or (now + timedelta(days=7))
+    
+    # 是否强制发放（忽略每人限领）
+    force = data.get('force', False)
+    
+    # 给每个用户发放优惠券
+    granted_count = 0
+    skipped_users = []
+    
+    for user_id in user_ids:
+        # 检查用户限领（非强制发放时生效）
+        if not force and template.per_user_limit > 0:
+            user_count_result = await db.execute(
+                select(func.count()).where(
+                    UserCoupon.template_id == template_id,
+                    UserCoupon.user_id == user_id
+                )
+            )
+            user_count = user_count_result.scalar()
+            if user_count >= template.per_user_limit:
+                skipped_users.append({"user_id": user_id, "reason": "已达到领取上限"})
+                continue
+        
+        # 创建用户优惠券
+        user_coupon = UserCoupon(
+            user_id=user_id,
+            template_id=template.id,
+            coupon_no=generate_coupon_no(),
+            name=template.name,
+            type=template.type,
+            value=template.value,
+            min_amount=template.min_amount,
+            max_discount=template.max_discount,
+            applicable_type=template.applicable_type,
+            applicable_ids=template.applicable_ids,
+            valid_start_time=valid_start,
+            valid_end_time=valid_end,
+            status=1,
+            source_type=4,  # 4=管理后台发放
+            source_id=template.id,
+            description=template.description,
+        )
+        db.add(user_coupon)
+        granted_count += 1
+    
+    await db.flush()
+    await db.commit()
+    
+    return success({
+        "granted_count": granted_count,
+        "skipped_count": len(skipped_users),
+        "skipped_users": skipped_users,
+    }, message=f"成功发放{granted_count}张优惠券")
 
 
 @app.get("/api/v1/coupons/claim-center")
@@ -2316,6 +3295,8 @@ async def get_available_coupons_for_order(
     else:
         discount_base = amount
     
+    logger.info(f"[available-for-order] route_id={route_id}, route_price={route_price}, amount={amount}, discount_base={discount_base}, is_free_route={is_free_route}, is_member={is_member}")
+    
     for c in coupons:
         template = template_map.get(c.template_id)
         
@@ -2327,6 +3308,7 @@ async def get_available_coupons_for_order(
         
         # 检查金额门槛（只按路线价格校验，不含保险/选配）
         if min_amount > 0 and discount_base < min_amount:
+            logger.info(f"[available-for-order] coupon {c.id} ({c.name}) unavailable: discount_base={discount_base} < min_amount={min_amount}")
             unavailable.append({
                 "id": c.id,
                 "name": c.name,
@@ -2384,6 +3366,7 @@ async def get_available_coupons_for_order(
             "discount_amount": discount,
             "valid_end_time": c.valid_end_time.isoformat() if c.valid_end_time else None,
             "description": c.description,
+            "is_exclusive": template.is_exclusive if template else (c.is_exclusive or 0),
             "is_best": False,
         }
         available.append(item)
@@ -2659,6 +3642,8 @@ async def admin_get_user_coupons(
     type: Optional[int] = None,
     keyword: Optional[str] = None,
     user_id: Optional[int] = None,
+    source_type: Optional[int] = None,
+    template_id: Optional[int] = None,
     page: int = 1,
     page_size: int = 10,
     db: AsyncSession = Depends(get_db)
@@ -2677,6 +3662,12 @@ async def admin_get_user_coupons(
     if user_id is not None:
         where_clauses.append("uc.user_id = :user_id")
         params["user_id"] = user_id
+    if source_type is not None:
+        where_clauses.append("uc.source_type = :source_type")
+        params["source_type"] = source_type
+    if template_id is not None:
+        where_clauses.append("uc.template_id = :template_id")
+        params["template_id"] = template_id
     if keyword:
         where_clauses.append("(uc.name LIKE :keyword OR uc.coupon_no LIKE :keyword OR u.nickname LIKE :keyword OR u.phone LIKE :keyword)")
         params["keyword"] = f"%{keyword}%"
@@ -2698,10 +3689,12 @@ async def admin_get_user_coupons(
         SELECT 
             uc.id, uc.coupon_no, uc.name, uc.type, uc.value, uc.min_amount,
             uc.status, uc.valid_start_time, uc.valid_end_time, uc.used_at,
-            uc.used_order_id, uc.source_type, uc.user_id, uc.created_at,
-            u.nickname, u.phone
+            uc.used_order_id, uc.source_type, uc.user_id, uc.created_at, uc.template_id,
+            u.nickname, u.phone,
+            o.order_no
         FROM user_coupons uc
         LEFT JOIN users u ON uc.user_id = u.id
+        LEFT JOIN orders o ON uc.used_order_id = o.id
         WHERE {where_sql}
         ORDER BY uc.created_at DESC
         LIMIT :limit OFFSET :offset
@@ -2726,7 +3719,10 @@ async def admin_get_user_coupons(
             "valid_end_time": row["valid_end_time"].isoformat() if row["valid_end_time"] else None,
             "used_at": row["used_at"].isoformat() if row["used_at"] else None,
             "used_order_id": row["used_order_id"],
+            "order_no": row["order_no"],
             "source_type": row["source_type"],
+            "source_type_text": {1: "通用", 2: "会员购买赠送", 3: "会员每月发放", 4: "管理后台发放"}.get(row["source_type"], "未知"),
+            "template_id": row["template_id"],
             "user_id": row["user_id"],
             "nickname": row["nickname"],
             "phone": row["phone"],

@@ -20,9 +20,21 @@ export default function Login() {
   const [avatarUrl, setAvatarUrl] = useState('')
   const [avatarFilePath, setAvatarFilePath] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [statusBarHeight, setStatusBarHeight] = useState(40)
 
   useEffect(() => {
+    const sys = Taro.getSystemInfoSync()
+    setStatusBarHeight((sys.statusBarHeight || 20) * 2)
     loadAgreements()
+    
+    // 监听隐私授权需求（基础库 2.32.3+）
+    if ((Taro as any).onNeedPrivacyAuthorization) {
+      (Taro as any).onNeedPrivacyAuthorization((resolve: any, reject: any) => {
+        console.log('[Privacy] onNeedPrivacyAuthorization triggered')
+        // 微信会自动弹出官方隐私弹窗，这里不需要额外处理
+        // 如果需要在弹窗前做自定义操作，可以在这里实现
+      })
+    }
   }, [])
 
   const loadAgreements = async () => {
@@ -100,10 +112,17 @@ export default function Login() {
       Taro.showToast({ title: '请先同意用户协议', icon: 'none' })
       return
     }
-    // 用户拒绝授权手机号
+    // 用户拒绝授权手机号或隐私协议
     if (e.detail?.errMsg && e.detail.errMsg.includes('fail')) {
       console.log('[GetPhoneNumber] user denied:', e.detail?.errMsg)
-      Taro.showToast({ title: '需要绑定手机号才能登录', icon: 'none' })
+      // 错误码112：隐私协议未声明
+      if (e.detail.errno === 112) {
+        Taro.showToast({ title: '隐私协议未声明手机号权限，请联系管理员', icon: 'none', duration: 3000 })
+      } else if (e.detail.errno === 104) {
+        Taro.showToast({ title: '请先同意隐私保护指引', icon: 'none', duration: 2000 })
+      } else {
+        Taro.showToast({ title: '需要绑定手机号才能登录', icon: 'none' })
+      }
       return
     }
 
@@ -177,7 +196,7 @@ export default function Login() {
       if (avatarFilePath && avatarFilePath.startsWith('wxfile://')) {
         const uploadRes: any = await uploadFile(avatarFilePath)
         const data = JSON.parse(uploadRes.data)
-        if (data.code === 200 && data.data?.url) finalAvatar = data.data.url
+        if (data.code === 200 && data.data?.url) finalAvatar = fullImageUrl(data.data.url)
       }
       const res: any = await updateUserProfile({
         nickname: nickname.trim() || undefined,
@@ -210,13 +229,13 @@ export default function Login() {
   // ------------------------
 
   return (
-    <View className='login-page' style={{ paddingTop: '140rpx' }}>
+    <View className='login-page' style={{ paddingTop: `${statusBarHeight + 140}rpx` }}>
 
         <View className='page-back' onClick={() => safeNavigateBack()}>
           <Image className='page-back-icon' src='/assets/icons/return.png' mode='aspectFit' />
         </View>
       {/* 顶部导航栏 */}
-      <View className='login-header-bar'>
+      <View className='login-header-bar' style={{ paddingTop: `${statusBarHeight}rpx`, height: `${statusBarHeight + 88}rpx` }}>
         <View className='header-spacer' />
         <Text className='header-title'>Welcome</Text>
         <View className='header-spacer' />
@@ -238,7 +257,11 @@ export default function Login() {
       {/* 登录操作区域 */}
       <View className='action-section'>
         <View className='btn-wrapper'>
-          <Button className='wx-login-btn' openType='getPhoneNumber' onGetPhoneNumber={handleGetPhoneNumber}>
+          <Button 
+            className='wx-login-btn' 
+            openType='getPhoneNumber|agreePrivacyAuthorization' 
+            onGetPhoneNumber={handleGetPhoneNumber}
+          >
             <Text className='btn-icon'>📱</Text>
             <Text className='btn-text'>手机号快捷登录</Text>
           </Button>

@@ -91,7 +91,7 @@ export default function CharityManage() {
       const formData = new FormData();
       formData.append('file', file);
       const token = localStorage.getItem('token');
-      const res = await fetch('/api/v1/files/upload/image', {
+      const res = await fetch('/api/v1/files/upload/image?crop_ratio=1.7857', {
         method: 'POST',
         headers: {
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -469,6 +469,12 @@ export default function CharityManage() {
               删除封面
             </Button>
           )}
+          <div style={{ marginTop: 8, padding: 10, background: '#f6ffed', border: '1px solid #b7eb8f', borderRadius: 4, color: '#389e0d', fontSize: 13, lineHeight: 1.6 }}>
+            <div style={{ fontWeight: 600, marginBottom: 4 }}>封面图尺寸建议</div>
+            <div>建议尺寸：宽 750px，高 420px（比例 16:9）</div>
+            <div>文件格式：JPG / PNG，建议控制在 500KB 以内</div>
+            <div>上传后系统将自动按 16:9 比例中心裁剪。封面图用于小程序公益活动列表和详情页顶部，宽度撑满屏幕，高度根据比例自适应。</div>
+          </div>
         </Form.Item>
         <ProFormSelect
           name="activity_type"

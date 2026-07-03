@@ -101,6 +101,13 @@ export default function CouponUseRecords() {
       ),
     },
     {
+      title: '订单号',
+      dataIndex: 'order_no',
+      width: 180,
+      search: false,
+      render: (_: any, record: any) => record.order_no || '-',
+    },
+    {
       title: '核销时间',
       dataIndex: 'used_at',
       width: 170,

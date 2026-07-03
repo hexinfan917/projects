@@ -1,46 +1,48 @@
 .member-pay-page {
   min-height: 100vh;
   background: #f5f7f5;
+  padding-top: calc(212rpx + env(safe-area-inset-top));
   padding-bottom: 160rpx;
+  box-sizing: border-box;
 }
 
 .custom-navbar {
-  position: relative;
-  height: 200rpx;
-  padding-top: 0;
-  box-sizing: content-box;
-  .navbar-bg {
-    position: absolute;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: linear-gradient(135deg, #22C55E 0%, #4ADE80 100%);
-    border-radius: 0 0 40rpx 40rpx;
-  }
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  background: #f5f7f5;
+  padding: calc(100rpx + env(safe-area-inset-top)) 30rpx 24rpx;
+  box-sizing: border-box;
+
   .navbar-content {
     position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
-    height: 100%;
-    padding: 0 30rpx;
-    box-sizing: border-box;
+    height: 88rpx;
+
     .page-back {
       position: absolute;
-      left: 30rpx;
+      left: 0;
       top: 50%;
       transform: translateY(-50%);
-      width: 60rpx;
-      height: 60rpx;
+      width: 64rpx;
+      height: 64rpx;
       display: flex;
       align-items: center;
-      z-index: 2;
+      justify-content: center;
+
       .page-back-icon {
-        color: #fff;
-        font-size: 40rpx;
+        width: 40rpx;
+        height: 40rpx;
       }
     }
+
     .navbar-title {
-      color: #fff;
-      font-size: 36rpx;
+      color: #1f2937;
+      font-size: 34rpx;
       font-weight: 600;
     }
   }
@@ -52,9 +54,11 @@
 
 .plan-info-card {
   background: #fff;
-  border-radius: 20rpx;
+  border-radius: 24rpx;
   padding: 40rpx;
   margin-bottom: 20rpx;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.04);
+
   .plan-info-name {
     font-size: 36rpx;
     font-weight: 700;
@@ -62,21 +66,25 @@
     display: block;
     margin-bottom: 12rpx;
   }
+
   .plan-info-duration {
     font-size: 26rpx;
     color: #9CA3AF;
     display: block;
     margin-bottom: 24rpx;
   }
+
   .plan-info-price-row {
     display: flex;
     align-items: baseline;
     gap: 16rpx;
+
     .plan-info-price {
       font-size: 48rpx;
       font-weight: 700;
       color: #8B4513;
     }
+
     .plan-info-original {
       font-size: 28rpx;
       color: #9CA3AF;
@@ -87,9 +95,11 @@
 
 .pay-section {
   background: #fff;
-  border-radius: 20rpx;
+  border-radius: 24rpx;
   padding: 30rpx;
   margin-bottom: 20rpx;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.04);
+
   .pay-section-title {
     font-size: 32rpx;
     font-weight: 600;
@@ -106,9 +116,11 @@
     gap: 16rpx;
     padding: 16rpx 0;
     border-bottom: 1rpx solid #f3f4f6;
+
     &:last-child {
       border-bottom: none;
     }
+
     .pay-benefit-icon {
       width: 40rpx;
       height: 40rpx;
@@ -120,6 +132,7 @@
       align-items: center;
       justify-content: center;
     }
+
     .pay-benefit-text {
       font-size: 28rpx;
       color: #4b5563;
@@ -131,23 +144,28 @@
   display: flex;
   align-items: center;
   gap: 20rpx;
+
   .pay-method-icon {
     font-size: 40rpx;
   }
+
   .pay-method-name {
     flex: 1;
     font-size: 30rpx;
     color: #1f2937;
   }
+
   .pay-method-check {
     width: 40rpx;
     height: 40rpx;
     border-radius: 50%;
     border: 2rpx solid #d1d5db;
+
     &.checked {
       background: #8B4513;
       border-color: #8B4513;
       position: relative;
+
       &::after {
         content: '';
         position: absolute;
@@ -175,7 +193,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  box-shadow: 0 -4rpx 20rpx rgba(0,0,0,0.05);
+  box-shadow: 0 -4rpx 20rpx rgba(0, 0, 0, 0.05);
+
   .pay-bottom-price-wrap {
     .pay-bottom-label {
       font-size: 24rpx;
@@ -183,12 +202,14 @@
       display: block;
       margin-bottom: 4rpx;
     }
+
     .pay-bottom-price {
       font-size: 40rpx;
       font-weight: 700;
       color: #8B4513;
     }
   }
+
   .pay-bottom-btn {
     background: #8B4513;
     color: #fff;
@@ -196,6 +217,7 @@
     font-weight: 600;
     padding: 24rpx 60rpx;
     border-radius: 40rpx;
+
     &.disabled {
       opacity: 0.6;
     }

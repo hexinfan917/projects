@@ -1,14 +1,16 @@
 import { PageContainer, ProTable } from '@ant-design/pro-components';
-import { Button, Tag, Space, Popconfirm, message, InputNumber } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, CalendarOutlined } from '@ant-design/icons';
+import { Button, Tag, Space, Popconfirm, message, InputNumber, Tabs } from 'antd';
+import { PlusOutlined, EditOutlined, DeleteOutlined, CalendarOutlined, ToTopOutlined, VerticalAlignBottomOutlined } from '@ant-design/icons';
 import { useRef, useState, useEffect } from 'react';
 import { request, history } from '@umijs/max';
-import dayjs from 'dayjs';
+
+type StatusTab = 'all' | '1' | '0';
 
 export default function RouteList() {
   const tableRef = useRef<any>(null);
   const [editingSortId, setEditingSortId] = useState<number | null>(null);
   const [editingSortValue, setEditingSortValue] = useState<number | null>(null);
+  const [activeStatus, setActiveStatus] = useState<StatusTab>('all');
   const [routeTypeEnum, setRouteTypeEnum] = useState<Record<string, { text: string }>>({
     1: { text: '山野厨房' },
     2: { text: '海边度假' },
@@ -43,6 +45,7 @@ export default function RouteList() {
       dataIndex: 'sort_order',
       search: false,
       width: 80,
+      tooltip: '数字越小越靠前，数字相同时新创建的在前面',
       render: (_: any, record: any) => {
         if (editingSortId === record.id) {
           return (
@@ -128,20 +131,6 @@ export default function RouteList() {
       valueEnum: routeTypeEnum,
     },
     {
-      title: '类型标签',
-      search: false,
-      width: 120,
-      render: (record: any) => (
-        <Space>
-          {record.is_free === 1 && record.is_member_only === 1 && record.is_insurance_required === 0 && <Tag color="gold">会员专享 · 免保险</Tag>}
-          {record.is_free === 1 && record.is_member_only === 1 && record.is_insurance_required === 1 && <Tag color="gold">会员专享 · 需保险</Tag>}
-          {record.is_free === 1 && record.is_member_only !== 1 && <Tag color="green">全员免费</Tag>}
-          {record.is_free !== 1 && record.is_hot === 1 && <Tag color="red">热门</Tag>}
-          {record.is_free !== 1 && record.is_hot !== 1 && <Tag>普通</Tag>}
-        </Space>
-      ),
-    },
-    {
       title: '起价',
       dataIndex: 'schedule_price',
       search: false,
@@ -152,29 +141,9 @@ export default function RouteList() {
       },
     },
     {
-      title: '时长',
-      dataIndex: 'duration',
-      search: false,
-      width: 80,
-    },
-    {
-      title: '人数',
-      search: false,
-      width: 120,
-      render: (record: any) => `${record.min_participants}-${record.max_participants}人`,
-    },
-    {
-      title: '是否免费',
-      dataIndex: 'is_free',
-      width: 100,
-      valueEnum: {
-        0: { text: '付费', status: 'Default' },
-        1: { text: '免费', status: 'Success' },
-      },
-    },
-    {
       title: '状态',
       dataIndex: 'status',
+      search: false,
       width: 80,
       valueEnum: {
         0: { text: '下架', status: 'Error' },
@@ -182,11 +151,18 @@ export default function RouteList() {
       },
     },
     {
+      title: '会员专享',
+      dataIndex: 'is_member_only',
+      search: false,
+      width: 90,
+      render: (v: number) => v === 1 ? <Tag color="gold">是</Tag> : <Tag color="default">否</Tag>,
+    },
+    {
       title: '创建时间',
       dataIndex: 'created_at',
       search: false,
-      width: 180,
-      render: (date: string) => (date ? dayjs(date).format('YYYY-MM-DD HH:mm') : '-'),
+      width: 170,
+      render: (text: string) => text ? text.substring(0, 19).replace('T', ' ') : '-',
     },
     {
       title: '操作',
@@ -194,7 +170,7 @@ export default function RouteList() {
       fixed: 'right',
       width: 200,
       render: (text: any, record: any) => (
-        <Space>
+        <Space size="small">
           <Button
             type="link"
             size="small"
@@ -203,14 +179,36 @@ export default function RouteList() {
           >
             编辑
           </Button>
-          <Button
-            type="link"
-            size="small"
-            icon={<CalendarOutlined />}
-            onClick={() => history.push(`/routes/edit/${record.id}?tab=schedules`)}
+          <Popconfirm
+            title={record.status === 1 ? '确认下架' : '确认上架'}
+            description={record.status === 1 ? '下架后用户将无法查看该路线，是否继续？' : '上架后用户将可以查看并报名该路线，是否继续？'}
+            onConfirm={async () => {
+              try {
+                const res = await request(`/api/v1/admin/routes/${record.id}`, {
+                  method: 'PUT',
+                  data: { status: record.status === 1 ? 0 : 1 },
+                });
+                if (res.code === 200) {
+                  message.success(record.status === 1 ? '下架成功' : '上架成功');
+                  tableRef.current?.reload();
+                } else {
+                  message.error(res.message || '操作失败');
+                }
+              } catch (error: any) {
+                const msg = error?.response?.data?.message || error?.message || '操作失败';
+                message.error(msg);
+              }
+            }}
           >
-            排期
-          </Button>
+            <Button
+              type="link"
+              size="small"
+              icon={record.status === 1 ? <VerticalAlignBottomOutlined /> : <ToTopOutlined />}
+              danger={record.status === 1}
+            >
+              {record.status === 1 ? '下架' : '上架'}
+            </Button>
+          </Popconfirm>
           <Popconfirm
             title="确认删除"
             description="删除后不可恢复，是否继续？"
@@ -221,7 +219,6 @@ export default function RouteList() {
                 });
                 if (res.code === 200) {
                   message.success('删除成功');
-                  // 使用 ProTable 的 reload 方法刷新
                   tableRef.current?.reload();
                 } else {
                   message.error(res.message || '删除失败');
@@ -241,6 +238,17 @@ export default function RouteList() {
     },
   ];
 
+  const handleStatusChange = (key: StatusTab) => {
+    setActiveStatus(key);
+    // 切换 Tab 后通过 params 变化触发 ProTable 重新请求
+    tableRef.current?.reloadAndRest?.();
+  };
+
+  const getStatusParam = () => {
+    if (activeStatus === 'all') return undefined;
+    return activeStatus;
+  };
+
   return (
     <PageContainer
       title="路线管理"
@@ -254,9 +262,20 @@ export default function RouteList() {
         </Button>
       }
     >
+      <Tabs
+        activeKey={activeStatus}
+        onChange={(key) => handleStatusChange(key as StatusTab)}
+        style={{ marginBottom: 16 }}
+        items={[
+          { key: 'all', label: '全部' },
+          { key: '1', label: '上架中' },
+          { key: '0', label: '已下架' },
+        ]}
+      />
       <ProTable
         columns={columns}
         actionRef={tableRef}
+        params={{ activeStatus }}
         request={async (params) => {
           const res = await request('/api/v1/admin/routes', {
             params: {
@@ -265,7 +284,7 @@ export default function RouteList() {
               keyword: params.name,
               route_no: params.route_no,
               route_type: params.route_type,
-              status: params.status,
+              status: getStatusParam(),
             },
           });
           return {
@@ -282,7 +301,7 @@ export default function RouteList() {
           pageSize: 10,
           showSizeChanger: true,
         }}
-        scroll={{ x: 1800 }}
+        scroll={{ x: 1200 }}
       />
     </PageContainer>
   );

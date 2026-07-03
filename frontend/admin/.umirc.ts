@@ -15,7 +15,7 @@ export default defineConfig({
   },
   proxy: {
     '/api': {
-      target: 'http://localhost:8000',
+      target: 'http://localhost:8081',
       changeOrigin: true,
     },
   },
@@ -169,6 +169,22 @@ export default defineConfig({
       component: './Charities',
     },
     {
+      name: '领养管理',
+      path: '/adoption',
+      routes: [
+        {
+          name: '狗狗档案',
+          path: '/adoption/dogs',
+          component: './Adoption/Dogs',
+        },
+        {
+          name: '领养申请',
+          path: '/adoption/applications',
+          component: './Adoption/Applications',
+        },
+      ],
+    },
+    {
       name: '会员管理',
       path: '/member',
       routes: [
@@ -197,7 +213,27 @@ export default defineConfig({
     {
       name: '优惠券管理',
       path: '/coupons',
-      component: './Coupons/List',
+      routes: [
+        {
+          path: '/coupons',
+          redirect: '/coupons/list',
+        },
+        {
+          name: '优惠券模板',
+          path: '/coupons/list',
+          component: './Coupons/List',
+        },
+        {
+          name: '发放记录',
+          path: '/coupons/grant-records',
+          component: './Coupons/GrantRecords',
+        },
+        {
+          name: '核销记录',
+          path: '/coupons/use-records',
+          component: './Coupons/UseRecords',
+        },
+      ],
     },
     {
       name: '协议管理',

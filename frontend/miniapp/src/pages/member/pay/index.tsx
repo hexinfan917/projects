@@ -49,8 +49,15 @@ export default function MemberPay() {
     if (!planId || loading) return
     setLoading(true)
     try {
-      const sysInfo = Taro.getSystemInfoSync()
-      const platform = sysInfo.platform === 'ios' ? 'ios' : (sysInfo.platform === 'android' ? 'android' : sysInfo.platform)
+      let platform = 'unknown'
+      try {
+        if (typeof wx !== 'undefined' && wx.getDeviceInfo) {
+          const deviceInfo = wx.getDeviceInfo()
+          platform = deviceInfo.platform === 'ios' ? 'ios' : (deviceInfo.platform === 'android' ? 'android' : deviceInfo.platform)
+        }
+      } catch (e) {
+        console.log('[MemberPay] getDeviceInfo failed')
+      }
       const orderRes = await createMemberOrder(planId, platform)
       if (orderRes.code !== 200) {
         Taro.showToast({ title: orderRes.message || '创建订单失败', icon: 'none' })
@@ -130,10 +137,9 @@ export default function MemberPay() {
   return (
     <View className='member-pay-page'>
       <View className='custom-navbar'>
-        <View className='navbar-bg' />
         <View className='navbar-content'>
           <View className='page-back' onClick={handleBack}>
-            <Image className='page-back-icon' src='/assets/icons/return.png' mode='aspectFit' />
+            <Image className='page-back-icon' src='/assets/icons/icon-back.svg' mode='aspectFit' />
           </View>
           <Text className='navbar-title'>确认订单</Text>
         </View>

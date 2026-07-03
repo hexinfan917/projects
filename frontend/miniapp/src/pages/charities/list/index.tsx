@@ -75,7 +75,7 @@ export default function CharityList() {
         <View className='charity-list'>
           {list.map(item => (
             <View key={item.id} className='charity-card' onClick={() => goToDetail(item.id)}>
-              <Image className='charity-image' src={item.image} mode='aspectFill' />
+              <Image className='charity-image' src={item.image} mode='widthFix' lazyLoad />
               <View className='charity-info'>
                 <Text className='charity-title'>{item.title}</Text>
                 <Text className='charity-sub'>{item.location} · {item.date}</Text>

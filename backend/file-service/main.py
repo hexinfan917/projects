@@ -16,6 +16,8 @@ from pydantic import BaseModel
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from fastapi import FastAPI, File, UploadFile, HTTPException, Depends, Query
+from PIL import Image
+import io
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
@@ -171,6 +173,39 @@ def validate_file(file: UploadFile, file_type: str = "image"):
             raise HTTPException(status_code=400, detail=f"不支持的文件格式: {content_type}")
     
     return True
+
+
+def crop_image_to_ratio(content: bytes, ratio: float) -> bytes:
+    """按目标宽高比中心裁剪图片，返回处理后的 bytes"""
+    try:
+        img = Image.open(io.BytesIO(content))
+        # 统一转为 RGB，避免 PNG 透明通道问题
+        if img.mode in ("RGBA", "P"):
+            img = img.convert("RGB")
+        width, height = img.size
+        current_ratio = width / height
+
+        # 比例足够接近则不裁剪
+        if abs(current_ratio - ratio) < 0.01:
+            return content
+
+        if current_ratio > ratio:
+            # 图片太宽，裁剪左右两边
+            new_width = int(height * ratio)
+            left = (width - new_width) // 2
+            img = img.crop((left, 0, left + new_width, height))
+        else:
+            # 图片太高，裁剪上下两边
+            new_height = int(width / ratio)
+            top = (height - new_height) // 2
+            img = img.crop((0, top, width, top + new_height))
+
+        output = io.BytesIO()
+        img.save(output, format="JPEG", quality=90)
+        return output.getvalue()
+    except Exception as e:
+        logger.error(f"Image crop failed: {e}")
+        return content
 
 
 async def save_upload_file(upload_file: UploadFile, folder: str = "") -> dict:
@@ -368,42 +403,48 @@ async def health_check():
 
 
 @app.post("/api/v1/files/upload/image")
-async def upload_image(file: UploadFile = File(...)):
+async def upload_image(file: UploadFile = File(...), crop_ratio: float = Query(None, description="目标宽高比，如 1.5625 表示 750:480")):
     """
     上传图片
-    
+
     - 支持格式: jpg, jpeg, png, gif, webp
     - 最大大小: 10MB
+    - 传入 crop_ratio 可按目标比例中心裁剪
     """
     # 验证文件类型
     validate_file(file, "image")
-    
+
     # 读取文件内容检查大小
     content = await file.read()
     if len(content) > MAX_IMAGE_SIZE:
         raise HTTPException(status_code=400, detail=f"图片大小超过限制 (最大 {MAX_IMAGE_SIZE // 1024 // 1024}MB)")
-    
-    # 重置文件指针
-    file.file.seek(0)
-    
+
+    # 按目标比例裁剪
+    if crop_ratio and crop_ratio > 0:
+        content = crop_image_to_ratio(content, crop_ratio)
+
+    # 构造新的 UploadFile 以便复用保存逻辑
+    new_file = UploadFile(filename=file.filename, file=io.BytesIO(content))
+
     # 保存文件
-    result = await save_upload_file(file, folder="images")
-    
-    logger.info(f"Image uploaded: {result['filename']}")
+    result = await save_upload_file(new_file, folder="images")
+
+    logger.info(f"Image uploaded: {result['filename']}, crop_ratio={crop_ratio}")
     return success(result)
 
 
 @app.post("/api/v1/files/upload/images")
-async def upload_images(files: list[UploadFile] = File(...)):
+async def upload_images(files: list[UploadFile] = File(...), crop_ratio: float = Query(None, description="目标宽高比，如 1.5625 表示 750:480")):
     """
     批量上传图片
-    
+
     - 最多支持 9 张图片
     - 支持格式: jpg, jpeg, png, gif, webp
+    - 传入 crop_ratio 可按目标比例中心裁剪
     """
     if len(files) > 9:
         raise HTTPException(status_code=400, detail="最多一次上传 9 张图片")
-    
+
     results = []
     for file in files:
         try:
@@ -411,16 +452,21 @@ async def upload_images(files: list[UploadFile] = File(...)):
             content = await file.read()
             if len(content) > MAX_IMAGE_SIZE:
                 raise HTTPException(status_code=400, detail=f"图片 {file.filename} 大小超过限制")
-            file.file.seek(0)
-            result = await save_upload_file(file, folder="images")
+
+            # 按目标比例裁剪
+            if crop_ratio and crop_ratio > 0:
+                content = crop_image_to_ratio(content, crop_ratio)
+
+            new_file = UploadFile(filename=file.filename, file=io.BytesIO(content))
+            result = await save_upload_file(new_file, folder="images")
             results.append(result)
         except HTTPException as e:
             results.append({"error": e.detail, "original_name": file.filename})
         except Exception as e:
             logger.error(f"Failed to upload file {file.filename}: {e}")
             results.append({"error": "上传失败", "original_name": file.filename})
-    
-    logger.info(f"Batch upload: {len([r for r in results if 'error' not in r])} success, {len([r for r in results if 'error' in r])} failed")
+
+    logger.info(f"Batch upload: {len([r for r in results if 'error' not in r])} success, {len([r for r in results if 'error' in r])} failed, crop_ratio={crop_ratio}")
     return success({"files": results, "total": len(files), "success": len([r for r in results if 'error' not in r])})
 
 

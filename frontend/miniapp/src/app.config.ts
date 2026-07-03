@@ -32,6 +32,10 @@ export default defineAppConfig({
     'pages/charities/list/index',
     'pages/charities/detail/index',
     'pages/charities/enroll/index',
+    'pages/adoption/index/index',
+    'pages/adoption/detail/index',
+    'pages/adoption/apply/index',
+    'pages/adoption/records/index',
     'pages/member/center/index',
     'pages/member/info/index',
     'pages/member/pay/index',
@@ -51,8 +55,9 @@ export default defineAppConfig({
     navigationBarTextStyle: 'black'
   },
   tabBar: {
+    custom: true,
     color: '#9CA3AF',
-    selectedColor: '#22C55E',
+    selectedColor: '#006b1b',
     backgroundColor: '#ffffff',
     borderStyle: 'white',
     list: [
@@ -60,25 +65,25 @@ export default defineAppConfig({
         pagePath: 'pages/index/index',
         text: '首页',
         iconPath: 'assets/icons/tab-home.png',
-        selectedIconPath: 'assets/icons/tab-home-active.png'
+        selectedIconPath: 'assets/icons/tab-home.png'
       },
       {
         pagePath: 'pages/routes/index',
         text: '活动',
         iconPath: 'assets/icons/tab-route.png',
-        selectedIconPath: 'assets/icons/tab-route-active.png'
+        selectedIconPath: 'assets/icons/tab-route.png'
       },
       {
         pagePath: 'pages/profile/pets/index',
         text: '档案',
         iconPath: 'assets/icons/tab-pet.png',
-        selectedIconPath: 'assets/icons/tab-pet-active.png'
+        selectedIconPath: 'assets/icons/tab-pet.png'
       },
       {
         pagePath: 'pages/profile/index',
         text: '我的',
         iconPath: 'assets/icons/tab-profile.png',
-        selectedIconPath: 'assets/icons/tab-profile-active.png'
+        selectedIconPath: 'assets/icons/tab-profile.png'
       }
     ]
   }

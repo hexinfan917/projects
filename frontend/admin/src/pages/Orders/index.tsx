@@ -4,15 +4,18 @@ import { EyeOutlined, ExportOutlined, MoneyCollectOutlined, CheckCircleOutlined,
 import { useRef, useState } from 'react';
 import { request } from '@umijs/max';
 import dayjs from 'dayjs';
+import ExcelJS from 'exceljs';
 
 const statusMap: Record<number, { text: string; color: string }> = {
   10: { text: '待支付', color: 'orange' },
   20: { text: '待出行', color: 'blue' },
   30: { text: '已取消', color: 'default' },
   40: { text: '退款中', color: 'red' },
+  45: { text: '退款驳回', color: 'orange' },
   50: { text: '已退款', color: 'default' },
+  55: { text: '部分退款', color: 'purple' },
   60: { text: '已完成', color: 'green' },
-  70: { text: '已完成', color: 'green' },
+  70: { text: '已评价', color: 'green' },
 };
 
 const statusOptions = [
@@ -20,9 +23,11 @@ const statusOptions = [
   { label: '待出行', value: 20 },
   { label: '已取消', value: 30 },
   { label: '退款中', value: 40 },
+  { label: '退款驳回', value: 45 },
   { label: '已退款', value: 50 },
+  { label: '部分退款', value: 55 },
   { label: '已完成', value: 60 },
-  { label: '已完成', value: 70 },
+  { label: '已评价', value: 70 },
 ];
 
 export default function OrderList() {
@@ -154,9 +159,21 @@ export default function OrderList() {
     });
   };
 
-  const handleRefund = (record: any) => {
-    setCurrentOrder(record);
-    setRefundModalVisible(true);
+  const handleRefund = async (record: any) => {
+    try {
+      setLoading(true);
+      const res = await request('/api/v1/admin/orders/' + record.id);
+      if (res.code === 200 && res.data) {
+        setCurrentOrder(res.data);
+        setRefundModalVisible(true);
+      } else {
+        message.error(res.message || '获取订单详情失败');
+      }
+    } catch (error) {
+      message.error('获取订单详情失败');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleVerify = async (record: any) => {
@@ -185,12 +202,17 @@ export default function OrderList() {
 
   const submitRefund = async (values: any) => {
     try {
-      const res = await request('/api/v1/admin/orders/' + currentOrder.id + '/direct-refund', {
+      // 退款中订单走审核通过接口，其他状态走直接退款接口
+      const isRefundPending = currentOrder?.status === 40;
+      const url = isRefundPending
+        ? '/api/v1/admin/refunds/' + currentOrder.id + '/approve'
+        : '/api/v1/admin/orders/' + currentOrder.id + '/direct-refund';
+      const res = await request(url, {
         method: 'POST',
         data: values,
       });
       if (res.code === 200) {
-        message.success('退款成功');
+        message.success(isRefundPending ? '退款审核通过' : '退款成功');
         setRefundModalVisible(false);
         tableRef.current?.reload();
         return true;
@@ -204,99 +226,443 @@ export default function OrderList() {
     }
   };
 
-  const buildCSV = (rawOrders: any[]) => {
-    // 过滤无效数据
-    const orders = (rawOrders || []).filter(o => o && typeof o === 'object');
-    if (!orders.length) {
-      message.warning('暂无有效数据可导出');
+  // 聚合订单数据，把同一订单的多个人员合并
+  const aggregateInsuranceData = (rows: any[]) => {
+    const orderMap = new Map<string, any[]>();
+    rows.forEach((r: any) => {
+      const list = orderMap.get(r.order_no) || [];
+      list.push(r);
+      orderMap.set(r.order_no, list);
+    });
+
+    return Array.from(orderMap.entries()).map(([orderNo, list]: [string, any[]]) => {
+      const first = list[0];
+      const contactRow = list.find((r: any) => r.role === '联系人') || first;
+
+      const travelers = list
+        .filter((r: any) => r.role !== '联系人')
+        .map((r: any) => {
+          const parts = [r.person_name, r.person_phone, r.person_id_card].filter(Boolean);
+          return parts.join(' / ');
+        })
+        .filter(Boolean)
+        .join('\n');
+
+      const peopleCount = list.length;
+      const petCount = Number(first.pet_count) || 0;
+      const peoplePetSummary = `${peopleCount}人/${petCount}宠`;
+      const pets: string[] = [];
+      const avatars: string[] = [];
+      const vaccineBooks: string[] = [];
+      for (let i = 1; i <= petCount; i++) {
+        const name = first[`pet${i}_name`];
+        if (!name) continue;
+        const breed = first[`pet${i}_breed`] || '';
+        const gender = first[`pet${i}_gender`] || '';
+        const age = first[`pet${i}_age_str`] || '';
+        const weight = first[`pet${i}_weight`];
+        const avatar = first[`pet${i}_avatar`] || '';
+        const vaccineBook = first[`pet${i}_vaccine_book`] || '';
+        const parts = [
+          `宠物${i}`,
+          `昵称:${name}`,
+          breed ? `品种:${breed}` : '',
+          gender ? `性别:${gender}` : '',
+          age ? `年龄:${age}` : '',
+          weight !== undefined && weight !== '' ? `体重:${weight}kg` : '',
+        ].filter(Boolean);
+        pets.push(parts.join('  '));
+        avatars.push(avatar);
+        vaccineBooks.push(vaccineBook);
+      }
+
+      return {
+        orderNo,
+        userId: first.user_id ?? '',
+        routeName: first.route_name || '',
+        travelDate: first.travel_date || '',
+        status: first.status_name || first.status || '',
+        payAmount: first.pay_amount ?? '',
+        createdAt: first.created_at || '',
+        contactName: contactRow.person_name || '',
+        contactPhone: contactRow.person_phone || '',
+        contactIdCard: contactRow.person_id_card || '',
+        travelers,
+        peopleCount,
+        petCount,
+        peoplePetSummary,
+        pets: pets.join('\r\n'),
+        avatars,
+        vaccineBooks,
+      };
+    });
+  };
+
+  // 构建出行人清单数据（每个出行人一行，用于保险购买）
+  const buildTravelerSheetData = (rows: any[]) => {
+    const orderMap = new Map<string, any[]>();
+    rows.forEach((r: any) => {
+      const list = orderMap.get(r.order_no) || [];
+      list.push(r);
+      orderMap.set(r.order_no, list);
+    });
+
+    const result: any[] = [];
+    Array.from(orderMap.entries()).forEach(([orderNo, list]: [string, any[]]) => {
+      const first = list[0];
+      const contactRow = list.find((r: any) => r.role === '联系人') || first;
+
+      // 每个出行人（包括联系人）生成一行
+      list.forEach((r: any) => {
+        const petCount = Number(first.pet_count) || 0;
+        const pets: string[] = [];
+        for (let i = 1; i <= petCount; i++) {
+          const name = first[`pet${i}_name`];
+          if (!name) continue;
+          const breed = first[`pet${i}_breed`] || '';
+          const gender = first[`pet${i}_gender`] || '';
+          const age = first[`pet${i}_age_str`] || '';
+          pets.push(`宠物${i} 昵称:${name} ${breed ? '品种:' + breed : ''} ${gender ? '性别:' + gender : ''} ${age ? '年龄:' + age : ''}`.trim());
+        }
+
+        result.push({
+          orderNo,
+          routeName: first.route_name || '',
+          travelDate: first.travel_date || '',
+          travelerName: r.person_name || '',
+          travelerPhone: r.person_phone || '',
+          travelerIdCard: r.person_id_card || '',
+          travelerRole: r.role || '出行人',
+          contactName: contactRow.person_name || '',
+          contactPhone: contactRow.person_phone || '',
+          pets: pets.join('  '),
+        });
+      });
+    });
+
+    return result;
+  };
+
+  // 统一订单导出 Excel：字段精简、清晰
+  const buildUnifiedExportExcel = async (rows: any[]) => {
+    if (!rows.length) {
+      message.warning('暂无数据可导出');
       return;
     }
 
-    // 按出行日期分组汇总
-    const dateSummary: Record<string, { people: number; pets: number; count: number }> = {};
-    let totalPeople = 0;
-    let totalPets = 0;
-    orders.forEach((o: any) => {
-      const date = o.travel_date || '未指定';
-      if (!dateSummary[date]) dateSummary[date] = { people: 0, pets: 0, count: 0 };
-      dateSummary[date].people += Number(o.participant_count || 0);
-      dateSummary[date].pets += Number(o.pet_count || 0);
-      dateSummary[date].count += 1;
-      totalPeople += Number(o.participant_count || 0);
-      totalPets += Number(o.pet_count || 0);
+    // 判断数据格式：如果是普通订单列表（有 id 字段），转换为保险导出格式
+    const isInsuranceFormat = rows[0].role !== undefined || rows[0].person_name !== undefined;
+    
+    let data: any[];
+    let travelerData: any[];
+    
+    if (isInsuranceFormat) {
+      // 保险导出格式（按人头展开）
+      data = aggregateInsuranceData(rows);
+      travelerData = buildTravelerSheetData(rows);
+    } else {
+      // 普通订单列表格式
+      data = rows.map((order: any) => {
+        const participants = order.participants || [];
+        const pets = order.pets || [];
+        const contact = order.contact || {};
+        
+        const travelers = participants
+          .map((p: any) => {
+            const parts = [p.name, p.phone, p.id_card].filter(Boolean);
+            return parts.join(' / ');
+          })
+          .filter(Boolean)
+          .join('\n');
+        
+        const petInfo = pets.map((p: any, i: number) => {
+          const parts = [
+            `宠物${i + 1}`,
+            `昵称:${p.name || ''}`,
+            p.breed ? `品种:${p.breed}` : '',
+            p.gender !== undefined ? `性别:${p.gender === 1 ? '公' : '母'}` : '',
+            p.age_str ? `年龄:${p.age_str}` : '',
+            p.weight ? `体重:${p.weight}kg` : '',
+          ].filter(Boolean);
+          return parts.join('  ');
+        }).join('\r\n');
+        
+        return {
+          orderNo: order.order_no || '',
+          userId: order.user_id || '',
+          routeName: order.route_name || '',
+          travelDate: order.travel_date || '',
+          status: order.status_name || order.status || '',
+          payAmount: order.pay_amount || '',
+          createdAt: order.created_at || '',
+          peopleCount: order.participant_count || 0,
+          petCount: order.pet_count || 0,
+          peoplePetSummary: `${order.participant_count || 0}人/${order.pet_count || 0}宠`,
+          contactName: contact.name || '',
+          contactPhone: contact.phone || '',
+          contactIdCard: contact.id_card || '',
+          travelers,
+          pets: petInfo,
+          avatars: pets.map((p: any) => p.avatar || '').filter(Boolean),
+          vaccineBooks: pets.map((p: any) => p.vaccine_book || '').filter(Boolean),
+        };
+      });
+      
+      // 构建普通订单格式的出行人清单数据
+      travelerData = [];
+      rows.forEach((order: any) => {
+        const participants = order.participants || [];
+        const contact = order.contact || {};
+        const pets = order.pets || [];
+        
+        // 构建宠物信息文本
+        const petInfo = pets.map((p: any, i: number) => {
+          const parts = [
+            `宠物${i + 1}`,
+            `昵称:${p.name || ''}`,
+            p.breed ? `品种:${p.breed}` : '',
+            p.gender !== undefined ? `性别:${p.gender === 1 ? '公' : '母'}` : '',
+            p.age_str ? `年龄:${p.age_str}` : '',
+          ].filter(Boolean);
+          return parts.join(' ');
+        }).join('  ');
+        
+        // 联系人作为第一行
+        if (contact.name) {
+          travelerData.push({
+            orderNo: order.order_no || '',
+            routeName: order.route_name || '',
+            travelDate: order.travel_date || '',
+            peoplePetSummary: `${order.participant_count || 0}人/${order.pet_count || 0}宠`,
+            travelerName: contact.name || '',
+            travelerPhone: contact.phone || '',
+            travelerIdCard: contact.id_card || '',
+            travelerRole: '联系人',
+            contactName: contact.name || '',
+            contactPhone: contact.phone || '',
+            pets: petInfo,
+          });
+        }
+        
+        // 每个参与者一行
+        participants.forEach((p: any) => {
+          // 跳过重复的联系人
+          if (p.phone === contact.phone && p.name === contact.name) return;
+          
+          travelerData.push({
+            orderNo: order.order_no || '',
+            routeName: order.route_name || '',
+            travelDate: order.travel_date || '',
+            peoplePetSummary: `${order.participant_count || 0}人/${order.pet_count || 0}宠`,
+            travelerName: p.name || '',
+            travelerPhone: p.phone || '',
+            travelerIdCard: p.id_card || '',
+            travelerRole: '出行人',
+            contactName: contact.name || '',
+            contactPhone: contact.phone || '',
+            pets: petInfo,
+          });
+        });
+      });
+    }
+    
+    const maxPets = data.reduce((max, d) => Math.max(max, d.avatars.length, d.vaccineBooks.length), 0);
+
+    const workbook = new ExcelJS.Workbook();
+    
+    // ===== Sheet1: 订单汇总 =====
+    const worksheet = workbook.addWorksheet('订单汇总');
+
+    const columns: any[] = [
+      { header: '报名订单号', key: 'orderNo', width: 22 },
+      { header: '用户ID', key: 'userId', width: 10 },
+      { header: '下单时间', key: 'createdAt', width: 18 },
+      { header: '订单状态', key: 'status', width: 12 },
+      { header: '路线名称', key: 'routeName', width: 20 },
+      { header: '出行日期', key: 'travelDate', width: 12 },
+      { header: '人数/宠物', key: 'peoplePetSummary', width: 12 },
+      { header: '联系人', key: 'contactName', width: 12 },
+      { header: '联系电话', key: 'contactPhone', width: 14 },
+      { header: '身份证号', key: 'contactIdCard', width: 22 },
+      { header: '出行人信息', key: 'travelers', width: 30 },
+      { header: '宠物数量', key: 'petCount', width: 10 },
+      { header: '宠物信息', key: 'pets', width: 50 },
+    ];
+    // 每个宠物添加独立的头像和疫苗本列
+    for (let i = 1; i <= maxPets; i++) {
+      columns.push({ header: `宠物${i}头像`, key: `avatar${i}`, width: 15 });
+      columns.push({ header: `宠物${i}疫苗本`, key: `vaccineBook${i}`, width: 15 });
+    }
+    worksheet.columns = columns;
+
+    data.forEach((d: any) => {
+      const rowData: any = {
+        orderNo: d.orderNo,
+        userId: d.userId,
+        createdAt: d.createdAt,
+        status: d.status,
+        routeName: d.routeName,
+        travelDate: d.travelDate,
+        peoplePetSummary: d.peoplePetSummary,
+        contactName: d.contactName,
+        contactPhone: d.contactPhone,
+        contactIdCard: d.contactIdCard,
+        travelers: d.travelers,
+        petCount: d.petCount,
+        pets: d.pets,
+      };
+      for (let i = 0; i < maxPets; i++) {
+        rowData[`avatar${i + 1}`] = d.avatars[i] || '';
+        rowData[`vaccineBook${i + 1}`] = d.vaccineBooks[i] || '';
+      }
+      const row = worksheet.addRow(rowData);
+
+      // 宠物信息列自动换行
+      const petInfoCell = row.getCell('pets');
+      petInfoCell.alignment = { wrapText: true, vertical: 'top' };
+
+      // 头像、疫苗本列显示为蓝色可点击超链接
+      for (let i = 0; i < maxPets; i++) {
+        const avatarUrl = d.avatars[i];
+        if (avatarUrl) {
+          const cell = row.getCell(`avatar${i + 1}`);
+          cell.value = { text: '查看图片', hyperlink: avatarUrl } as any;
+          cell.font = { color: { argb: 'FF0000FF' }, underline: true };
+        }
+        const bookUrl = d.vaccineBooks[i];
+        if (bookUrl) {
+          const cell = row.getCell(`vaccineBook${i + 1}`);
+          cell.value = { text: '查看图片', hyperlink: bookUrl } as any;
+          cell.font = { color: { argb: 'FF0000FF' }, underline: true };
+        }
+      }
     });
 
-    const headers = ['报名订单号', '用户ID', '路线名称', '出行日期', '联系人', '联系电话', '宠物列表', '出行人数', '宠物数'];
-    const rows = orders.map((o: any) => {
-      const petsArr = Array.isArray(o.pets) ? o.pets : [];
-      const pets = petsArr.map((p: any) => `${p?.name || ''}${p?.breed ? '(' + p.breed + ')' : ''}`).join('；') || '';
-      const contact = o.contact && typeof o.contact === 'object' ? o.contact : {};
-      return [
-        o.order_no || '',
-        o.user_id ?? '',
-        o.route_name || '',
-        o.travel_date || '',
-        contact.name || '',
-        contact.phone || '',
-        pets,
-        o.participant_count ?? 0,
-        o.pet_count ?? 0,
+    // 表头加粗
+    worksheet.getRow(1).font = { bold: true };
+
+    // ===== Sheet2: 出行人清单 =====
+    if (travelerData.length > 0) {
+      const travelerSheet = workbook.addWorksheet('出行人清单');
+      travelerSheet.columns = [
+        { header: '报名订单号', key: 'orderNo', width: 22 },
+        { header: '路线名称', key: 'routeName', width: 20 },
+        { header: '出行日期', key: 'travelDate', width: 12 },
+        { header: '人数/宠物', key: 'peoplePetSummary', width: 12 },
+        { header: '出行人姓名', key: 'travelerName', width: 12 },
+        { header: '出行人手机号', key: 'travelerPhone', width: 14 },
+        { header: '出行人身份证号', key: 'travelerIdCard', width: 22 },
+        { header: '身份', key: 'travelerRole', width: 10 },
+        { header: '联系人姓名', key: 'contactName', width: 12 },
+        { header: '联系人手机号', key: 'contactPhone', width: 14 },
+        { header: '宠物信息', key: 'pets', width: 50 },
       ];
-    });
 
-    // 按日期添加小计行
-    Object.entries(dateSummary).forEach(([date, summary]) => {
-      rows.push(['', '', '', date, '', '', `${date} 小计 (${summary.count}笔)`, summary.people, summary.pets]);
-    });
-    // 总计行
-    rows.push(['', '', '', '', '', '', `总计 (${orders.length}笔)`, totalPeople, totalPets]);
+      // 按订单号分组，记录每个订单的起始行和结束行（用于合并单元格）
+      const orderRowMap = new Map<string, { startRow: number; endRow: number }>();
+      let currentRow = 2; // 从第2行开始（第1行是表头）
 
-    const csvContent = [headers, ...rows].map(r => r.map((c: any) => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
-    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+      travelerData.forEach((d: any, index: number) => {
+        const orderNo = d.orderNo;
+        if (!orderRowMap.has(orderNo)) {
+          orderRowMap.set(orderNo, { startRow: currentRow, endRow: currentRow });
+        } else {
+          const range = orderRowMap.get(orderNo)!;
+          range.endRow = currentRow;
+        }
+        currentRow++;
+      });
+
+      // 重新遍历，添加数据
+      travelerData.forEach((d: any) => {
+        const row = travelerSheet.addRow({
+          orderNo: d.orderNo,
+          routeName: d.routeName,
+          travelDate: d.travelDate,
+          peoplePetSummary: d.peoplePetSummary || '',
+          travelerName: d.travelerName,
+          travelerPhone: d.travelerPhone,
+          travelerIdCard: d.travelerIdCard,
+          travelerRole: d.travelerRole,
+          contactName: d.contactName,
+          contactPhone: d.contactPhone,
+          pets: d.pets,
+        });
+        const petCell = row.getCell('pets');
+        petCell.alignment = { wrapText: true, vertical: 'top' };
+      });
+
+      // 合并同一个订单号的单元格（订单号、路线名称、出行日期、人数/宠物、联系人姓名、联系人手机号、宠物信息列）
+      orderRowMap.forEach((range, orderNo) => {
+        if (range.startRow < range.endRow) {
+          // 需要合并的列：A(订单号), B(路线名称), C(出行日期), D(人数/宠物), I(联系人姓名), J(联系人手机号), K(宠物信息)
+          const columnsToMerge = ['A', 'B', 'C', 'D', 'I', 'J', 'K'];
+          columnsToMerge.forEach((col) => {
+            travelerSheet.mergeCells(`${col}${range.startRow}`, `${col}${range.endRow}`);
+          });
+        }
+      });
+
+      travelerSheet.getRow(1).font = { bold: true };
+    }
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = `订单导出_${dayjs().format('YYYYMMDD_HHmmss')}.csv`;
+    link.download = `订单导出_${dayjs().format('YYYYMMDD_HHmmss')}.xlsx`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
   };
 
-  const handleExport = async () => {
+  const handleExportAll = async () => {
     try {
-      message.loading('正在导出...', 0);
-
-      // 优先导出选中的订单
-      if (selectedRows.length > 0) {
-        buildCSV(selectedRows);
-        message.destroy();
-        message.success(`已导出 ${selectedRows.length} 条选中订单`);
-        return;
-      }
-
+      message.loading('正在生成订单导出...', 0);
       const filterValues = formRef.current?.getFieldsValue?.() || {};
-      const res = await request('/api/v1/admin/orders', {
-        params: {
-          page: 1,
-          page_size: 5000,
-          status: filterValues.status,
-          is_free: filterValues.is_free,
-          keyword: filterValues.route_name,
-          order_no: orderNoFromUrl || undefined,
-        },
-      });
+      const hasSelection = selectedRowKeys.length > 0;
+      
+      let exportData: any[] = [];
+      
+      if (hasSelection) {
+        // 有选择记录时，使用普通订单列表接口，按订单维度导出
+        const res = await request('/api/v1/admin/orders', {
+          params: {
+            ids: selectedRowKeys.join(','),
+            page_size: selectedRowKeys.length,
+          },
+        });
+        if (res.code === 200 && res.data?.orders) {
+          exportData = res.data.orders;
+        }
+      } else {
+        // 没有选择时，使用保险导出接口（按人头展开）
+        const res = await request('/api/v1/admin/orders/insurance-export', {
+          params: {
+            status: filterValues.status,
+            is_free: filterValues.is_free,
+            keyword: filterValues.route_name,
+            order_no: orderNoFromUrl || undefined,
+          },
+        });
+        if (res.code === 200 && res.data) {
+          exportData = res.data;
+        }
+      }
+      
       message.destroy();
 
-      if (res.code !== 200 || !res.data?.orders?.length) {
+      if (!exportData.length) {
         message.warning('暂无数据可导出');
         return;
       }
 
-      buildCSV(res.data.orders);
-      message.success(`已导出 ${res.data.orders.length} 条订单`);
+      await buildUnifiedExportExcel(exportData);
+      message.success(`已导出 ${exportData.length} 条记录`);
     } catch (error: any) {
       message.destroy();
-      console.error('导出失败:', error);
-      message.error('导出失败: ' + (error?.message || '未知错误'));
+      console.error('订单导出失败:', error);
+      message.error('订单导出失败: ' + (error?.message || '未知错误'));
     }
   };
 
@@ -373,9 +739,11 @@ export default function OrderList() {
         20: { text: '待出行' },
         30: { text: '已取消' },
         40: { text: '退款中' },
+        45: { text: '退款驳回' },
         50: { text: '已退款' },
+        55: { text: '部分退款' },
         60: { text: '已完成' },
-        70: { text: '已完成' },
+        70: { text: '已评价' },
       },
       render: (_: any, record: any) => {
         const status = Number(record.status);
@@ -416,9 +784,9 @@ export default function OrderList() {
             确认完成
           </Button>
         ),
-        (!record.is_free && [20, 45].includes(record.status)) && (
+        (!record.is_free && [20, 40, 45, 55].includes(record.status)) && (
           <Button key="refund" type="link" size="small" danger icon={<MoneyCollectOutlined />} onClick={() => handleRefund(record)}>
-            退款
+            {record.status === 40 ? '确认退款' : '退款'}
           </Button>
         ),
       ],
@@ -512,8 +880,8 @@ export default function OrderList() {
           >
             全选本页
           </Button>,
-          <Button key="export" icon={<ExportOutlined />} onClick={handleExport}>
-            {selectedRows.length > 0 ? `导出选中订单 (${selectedRows.length})` : '导出订单'}
+          <Button key="export" icon={<ExportOutlined />} onClick={handleExportAll}>
+            导出订单
           </Button>,
         ]}
       />
@@ -565,6 +933,30 @@ export default function OrderList() {
                   <Descriptions column={1} size="small">
                     <Descriptions.Item label="路线名称">{currentOrder.route_name}</Descriptions.Item>
                     <Descriptions.Item label="出行日期">{currentOrder.travel_date}</Descriptions.Item>
+                    <Descriptions.Item label="套餐类型">
+                      <Tag color={currentOrder.package_type === 'single_person' ? 'green' : currentOrder.package_type === 'single_pet' ? 'blue' : 'orange'}>
+                        {currentOrder.package_type === 'single_person' ? '单人轻旅（无宠）' : currentOrder.package_type === 'single_pet' ? '毛孩专属接送' : '一人一宠'}
+                      </Tag>
+                    </Descriptions.Item>
+                    <Descriptions.Item label="出行方式">
+                      <Tag color="blue">
+                        {currentOrder.travel_type === 'bus' ? '大巴出行' : currentOrder.travel_type === 'self_drive' ? '自驾出行' : currentOrder.travel_type || '-'}
+                      </Tag>
+                    </Descriptions.Item>
+                    {(() => {
+                      const basePerson = currentOrder.package_type === 'single_pet' ? 0 : (currentOrder.package_type === 'single_person' ? 1 : 1)
+                      const basePet = currentOrder.package_type === 'single_person' ? 0 : (currentOrder.package_type === 'single_pet' ? 1 : 1)
+                      const extraPerson = Math.max(0, (currentOrder.participant_count || 0) - basePerson)
+                      const extraPet = Math.max(0, (currentOrder.pet_count || 0) - basePet)
+                      if (extraPerson <= 0 && extraPet <= 0) return null
+                      return (
+                        <Descriptions.Item label="额外增加">
+                          <Tag color="purple">
+                            {extraPerson > 0 ? `成人+${extraPerson} ` : ''}{extraPet > 0 ? `宠物+${extraPet}` : ''}
+                          </Tag>
+                        </Descriptions.Item>
+                      )
+                    })()}
                     <Descriptions.Item label="出行人数">{currentOrder.participant_count}人</Descriptions.Item>
                     <Descriptions.Item label="携带宠物">{currentOrder.pet_count}只</Descriptions.Item>
                   </Descriptions>
@@ -582,34 +974,96 @@ export default function OrderList() {
                 <Descriptions.Item label="订单总额">
                   <span>¥{currentOrder.total_amount?.toFixed(2)}</span>
                 </Descriptions.Item>
-                <Descriptions.Item label="实付金额" span={2}>
+                <Descriptions.Item label="实付金额">
                   <span style={{ color: '#cf1322', fontSize: 16, fontWeight: 'bold' }}>¥{currentOrder.pay_amount?.toFixed(2)}</span>
                 </Descriptions.Item>
+                {currentOrder.refunded_amount > 0 && (
+                  <>
+                    <Descriptions.Item label="已退金额">
+                      <span style={{ color: '#faad14', fontWeight: 'bold' }}>¥{currentOrder.refunded_amount?.toFixed(2)}</span>
+                    </Descriptions.Item>
+                    <Descriptions.Item label="实付净额">
+                      <span style={{ color: '#52c41a', fontWeight: 'bold' }}>¥{(currentOrder.pay_amount - currentOrder.refunded_amount)?.toFixed(2)}</span>
+                    </Descriptions.Item>
+                  </>
+                )}
               </Descriptions>
             </Card>
 
-            {/* 出行人信息（同行人） */}
-            {currentOrder.participants && currentOrder.participants.length > 0 && (
-              <Card title="出行人信息（同行人）" size="small" style={{ marginBottom: 16 }}>
+            {/* 退款记录 */}
+            {currentOrder.refund_records && currentOrder.refund_records.length > 0 && (
+              <Card title="退款记录" size="small" style={{ marginBottom: 16 }}>
                 <Table
                   size="small"
                   pagination={false}
                   bordered
-                  dataSource={currentOrder.participants}
+                  dataSource={currentOrder.refund_records}
                   columns={[
-                    { title: '姓名', dataIndex: 'name', key: 'name' },
-                    { title: '手机号', dataIndex: 'phone', key: 'phone', render: (v: string) => v || '-' },
-                    { title: '身份证号', dataIndex: 'id_card', key: 'id_card', render: (v: string) => v || '-' },
-                    { title: '性别', dataIndex: 'gender', key: 'gender', render: (v: number) => v === 1 ? '男' : v === 2 ? '女' : '未知' },
+                    { title: '退款单号', dataIndex: 'refund_no', key: 'refund_no' },
+                    { title: '退款金额', dataIndex: 'amount', key: 'amount', render: (v: number) => <span style={{ color: '#cf1322' }}>¥{v?.toFixed(2)}</span> },
+                    { title: '类型', dataIndex: 'type', key: 'type', render: (v: string) => v === 'full' ? '全额' : '部分' },
+                    { title: '原因', dataIndex: 'reason', key: 'reason', render: (v: string) => v || '-' },
+                    { title: '状态', dataIndex: 'status', key: 'status', render: (v: number) => v === 20 ? '成功' : v === 30 ? '失败' : '处理中' },
+                    { title: '时间', dataIndex: 'created_at', key: 'created_at', render: (v: string) => v ? dayjs(v).format('YYYY-MM-DD HH:mm:ss') : '-' },
                   ]}
-                  rowKey={(record: any, idx: number) => record.id || idx}
+                  rowKey="id"
                 />
               </Card>
             )}
 
-            {/* 联系人信息（默认出行人） */}
+            {/* 出行人信息（所有出行人，标记账号本人） */}
+            {(() => {
+              // 合并联系人和所有参与者
+              const allTravelers: any[] = [];
+              // 先添加 participants
+              if (currentOrder.participants && currentOrder.participants.length > 0) {
+                currentOrder.participants.forEach((p: any) => {
+                  allTravelers.push({...p});
+                });
+              }
+              // 添加联系人（如果不在 participants 中）
+              if (currentOrder.contact?.name) {
+                const exists = allTravelers.some((t: any) => t.phone === currentOrder.contact.phone);
+                if (!exists) {
+                  allTravelers.push({
+                    name: currentOrder.contact.name,
+                    phone: currentOrder.contact.phone,
+                    id_card: currentOrder.contact.id_card,
+                    gender: currentOrder.contact.gender,
+                  });
+                }
+              }
+              // 通过用户手机号判断哪个是账号本人
+              const userPhone = currentOrder.user_phone;
+              return (
+                <Card title={`出行人信息（共${allTravelers.length}人）`} size="small" style={{ marginBottom: 16 }}>
+                  <Table
+                    size="small"
+                    pagination={false}
+                    bordered
+                    dataSource={allTravelers}
+                    columns={[
+                      { title: '姓名', dataIndex: 'name', key: 'name', render: (v: string, record: any) => (
+                        <span>
+                          {v || '未命名'}
+                          {userPhone && record.phone === userPhone && (
+                            <Tag color="green" style={{ marginLeft: 8 }}>账号本人</Tag>
+                          )}
+                        </span>
+                      )},
+                      { title: '手机号', dataIndex: 'phone', key: 'phone', render: (v: string) => v || '-' },
+                      { title: '身份证号', dataIndex: 'id_card', key: 'id_card', render: (v: string) => v || '-' },
+                      { title: '性别', dataIndex: 'gender', key: 'gender', render: (v: number) => v === 1 ? '男' : v === 2 ? '女' : '未知' },
+                    ]}
+                    rowKey={(record: any, idx: number) => record.phone || idx}
+                  />
+                </Card>
+              );
+            })()}
+
+            {/* 联系人信息（订单联系人 - 下单时填写的联系人） */}
             {currentOrder.contact && (
-              <Card title="联系人信息（默认出行人）" size="small" style={{ marginBottom: 16 }}>
+              <Card title="联系人信息（订单联系人）" size="small" style={{ marginBottom: 16 }}>
                 <Descriptions column={2} size="small">
                   <Descriptions.Item label="姓名">{currentOrder.contact.name || '-'}</Descriptions.Item>
                   <Descriptions.Item label="手机">{currentOrder.contact.phone || '-'}</Descriptions.Item>
@@ -627,10 +1081,36 @@ export default function OrderList() {
                   bordered
                   dataSource={currentOrder.pets}
                   columns={[
+                    {
+                      title: '头像',
+                      dataIndex: 'avatar',
+                      key: 'avatar',
+                      width: 80,
+                      render: (url: string) => url ? <Image src={url} style={{ width: 60, height: 60, objectFit: 'cover', borderRadius: 4 }} /> : '-',
+                    },
+                    { title: '宠物ID', dataIndex: 'id', key: 'id', render: (v: any) => v || '-' },
                     { title: '宠物名', dataIndex: 'name', key: 'name' },
                     { title: '品种', dataIndex: 'breed', key: 'breed', render: (v: string) => v || '-' },
                     { title: '性别', dataIndex: 'gender', key: 'gender', render: (v: number) => v === 1 ? '公' : v === 2 ? '母' : '未知' },
+                    { title: '年龄', dataIndex: 'age_str', key: 'age_str', render: (v: string) => v || '-' },
                     { title: '体重(kg)', dataIndex: 'weight', key: 'weight', render: (v: number) => v ? v.toFixed(1) : '-' },
+                    {
+                      title: '疫苗',
+                      dataIndex: 'vaccine_date',
+                      key: 'vaccine_date',
+                      render: (v: string) => v ? (
+                        <Tag color="green">已接种 {v}</Tag>
+                      ) : (
+                        <Tag color="default">未接种</Tag>
+                      ),
+                    },
+                    {
+                      title: '疫苗本',
+                      dataIndex: 'vaccine_book',
+                      key: 'vaccine_book',
+                      width: 100,
+                      render: (url: string) => url ? <Image src={url} style={{ width: 80, height: 60, objectFit: 'cover', borderRadius: 4 }} /> : '-',
+                    },
                   ]}
                   rowKey={(record: any, idx: number) => record.id || idx}
                 />
@@ -649,6 +1129,12 @@ export default function OrderList() {
       >
         <p>订单号: {currentOrder?.order_no}</p>
         <p>实付金额: <span style={{ color: '#cf1322', fontWeight: 'bold' }}>¥{currentOrder?.pay_amount?.toFixed(2)}</span></p>
+        {currentOrder?.refunded_amount > 0 && (
+          <>
+            <p>已退金额: <span style={{ color: '#cf1322', fontWeight: 'bold' }}>¥{currentOrder?.refunded_amount?.toFixed(2)}</span></p>
+            <p>剩余可退: <span style={{ color: '#52c41a', fontWeight: 'bold' }}>¥{(currentOrder?.pay_amount - currentOrder?.refunded_amount)?.toFixed(2)}</span></p>
+          </>
+        )}
         <ProFormSelect
           name="refund_type"
           label="退款类型"
@@ -661,10 +1147,11 @@ export default function OrderList() {
         <ProFormDependency name={['refund_type']}>
           {({ refund_type }) => {
             if (refund_type !== 'partial') return null;
+            const remaining = (currentOrder?.pay_amount || 0) - (currentOrder?.refunded_amount || 0);
             return (
               <ProFormText
                 name="refund_amount"
-                label="退款金额"
+                label={`退款金额（剩余可退: ¥${remaining.toFixed(2)}）`}
                 placeholder="请输入退款金额"
                 rules={[
                   { required: true, message: '请输入退款金额' },
@@ -674,8 +1161,8 @@ export default function OrderList() {
                       if (isNaN(num) || num <= 0) {
                         return Promise.reject('退款金额必须大于0');
                       }
-                      if (num > currentOrder?.pay_amount) {
-                        return Promise.reject('退款金额不能大于实付金额');
+                      if (num > remaining) {
+                        return Promise.reject(`退款金额不能大于剩余可退金额 ¥${remaining.toFixed(2)}`);
                       }
                       return Promise.resolve();
                     },

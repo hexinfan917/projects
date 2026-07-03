@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Taro, { useDidShow } from '@tarojs/taro'
 import { View, Text , Image } from '@tarojs/components'
 import { getMemberCenter, getMemberCoupons, createMemberOrder, payMemberOrder } from '../../../utils/api'
@@ -11,6 +11,15 @@ export default function MemberCenter() {
   const [coupons, setCoupons] = useState<any[]>([])
   const [selectedPlanId, setSelectedPlanId] = useState<number | null>(null)
   const [loading, setLoading] = useState(false)
+  const [statusBarHeight, setStatusBarHeight] = useState(40)
+  const [navHeight, setNavHeight] = useState(176)
+
+  useEffect(() => {
+    const sysInfo = Taro.getSystemInfoSync()
+    const sbh = sysInfo.statusBarHeight || 40
+    setStatusBarHeight(sbh)
+    setNavHeight((sbh + 44 + 4) * 2)
+  }, [])
 
   useDidShow(() => {
     loadData()
@@ -50,19 +59,51 @@ export default function MemberCenter() {
     Taro.navigateTo({ url: `/pages/member/info/index?planId=${plan.id}` })
   }
 
+  const getBenefitMeta = (b: any, idx: number) => {
+    const title = (b.title || '').toString()
+    if (/DIY|手作|活动|体验/.test(title)) {
+      return { icon: '/assets/icons/icon-brush.svg', color: 'green' }
+    }
+    if (/券|抵用|优惠|立减|满减|折扣/.test(title)) {
+      return { icon: '/assets/icons/icon-gift.svg', color: 'gold' }
+    }
+    if (idx === 0) return { icon: '/assets/icons/icon-gift.svg', color: 'gold' }
+    if (idx === 1) return { icon: '/assets/icons/icon-brush.svg', color: 'green' }
+    return { icon: '/assets/icons/icon-gift.svg', color: 'green' }
+  }
+
+  const handleCouponClick = (item: any) => {
+    if (item.type === 4) {
+      Taro.navigateTo({
+        url: `/pages/coupons/detail/index?data=${encodeURIComponent(JSON.stringify(item))}`
+      })
+    } else {
+      Taro.switchTab({ url: '/pages/routes/index' })
+    }
+  }
+
   const selectedPlan = data?.plans?.find((p: any) => p.id === selectedPlanId)
 
   return (
-    <View className='member-center-page'>
-      <View className='custom-navbar'>
-        <View className='navbar-bg' />
+    <View className='member-center-page' style={{ paddingTop: `${navHeight}rpx` }}>
+      <View
+        className='custom-navbar'
+        style={{ paddingTop: `${statusBarHeight}px`, height: `${navHeight}rpx` }}
+      >
         <View className='navbar-content'>
           <View className='page-back' onClick={() => {
             Taro.switchTab({ url: '/pages/profile/index' })
           }}>
             <Image className='page-back-icon' src='/assets/icons/return.png' mode='aspectFit' />
           </View>
-          <Text className='navbar-title'>会员中心</Text>
+          <View className='navbar-title-wrap'>
+            <Text className='navbar-title'>会员中心</Text>
+          </View>
+          <View className='navbar-capsule'>
+            <Image className='capsule-icon' src='/assets/icons/icon-more.svg' mode='aspectFit' />
+            <View className='capsule-divider' />
+            <Image className='capsule-icon' src='/assets/icons/icon-dot.svg' mode='aspectFit' />
+          </View>
         </View>
       </View>
 
@@ -86,20 +127,28 @@ export default function MemberCenter() {
           <View className='section benefit-section'>
             <Text className='section-title'>会员权益</Text>
             <View className='benefit-grid'>
-              {data.member_info?.benefits?.map((b: any, idx: number) => (
-                <View key={idx} className='benefit-item'>
-                  <Text className='benefit-icon'>🎁</Text>
-                  <Text className='benefit-title'>{b.title}</Text>
-                </View>
-              )) || <Text className='benefit-empty'>暂无权益</Text>}
+              {(data.member_info?.benefits?.length
+                ? data.member_info.benefits
+                : [{ title: '两张20元无门槛抵用券' }, { title: 'DIY手作体验' }]
+              ).map((b: any, idx: number) => {
+                const meta = getBenefitMeta(b, idx)
+                return (
+                  <View key={idx} className='benefit-item'>
+                    <View className={`benefit-icon-wrap benefit-icon-${meta.color}`}>
+                      <Image className='benefit-icon' src={meta.icon} mode='aspectFit' />
+                    </View>
+                    <Text className='benefit-title'>{b.title}</Text>
+                  </View>
+                )
+              })}
             </View>
           </View>
 
-          <View className='section'>
+          <View className='section coupon-section'>
             <View className='section-header-row'>
               <Text className='section-title'>我的消费券</Text>
               <Text className='section-more' onClick={() => Taro.navigateTo({ url: '/pages/member/coupons/index' })}>
-                全部 {'>'}
+                全部 <Text className='section-more-arrow'>{'>'}</Text>
               </Text>
             </View>
             {coupons.length === 0 ? (
@@ -112,43 +161,52 @@ export default function MemberCenter() {
                   <View
                     key={item.id}
                     className='coupon-card'
-                    onClick={() => {
-                      if (item.type === 4) {
-                        Taro.navigateTo({
-                          url: `/pages/coupons/detail/index?data=${encodeURIComponent(JSON.stringify(item))}`
-                        })
-                      }
-                    }}
+                    onClick={() => handleCouponClick(item)}
                   >
                     <View className='coupon-left'>
-                      <Text className='coupon-value'>
-                        {item.type === 4 ? '礼品' : (item.type === 2 ? `${item.value}折` : `¥${item.value}`)}
-                      </Text>
-                      <Text className='coupon-type'>{TYPE_MAP[item.type] || '优惠券'}</Text>
+                      {item.type === 4 ? (
+                        <>
+                          <Image className='coupon-gift-icon' src='/assets/icons/icon-gift.svg' mode='aspectFit' />
+                          <Text className='coupon-type'>{TYPE_MAP[item.type] || '优惠券'}</Text>
+                        </>
+                      ) : (
+                        <>
+                          <View className='coupon-value-row'>
+                            {item.type !== 2 && <Text className='coupon-value-unit'>¥</Text>}
+                            <Text className='coupon-value'>{item.type === 2 ? `${item.value}` : item.value}</Text>
+                            {item.type === 2 && <Text className='coupon-value-unit'>折</Text>}
+                          </View>
+                          <Text className='coupon-type'>{TYPE_MAP[item.type] || '优惠券'}</Text>
+                        </>
+                      )}
                     </View>
                     <View className='coupon-right'>
-                      <Text className='coupon-name'>{item.name}</Text>
-                      <Text className='coupon-desc'>
-                        {item.type === 4
-                          ? (item.description || '点击查看详情')
-                          : (item.min_amount > 0 ? `满${item.min_amount}元可用` : '无门槛')
-                        }
-                      </Text>
-                      <Text className='coupon-valid'>有效期至 {item.valid_end_time ? item.valid_end_time.split('T')[0] : '-'}</Text>
-                      {item.type === 4 && (
-                        <View className='use-btn'>
+                      <View className='coupon-info'>
+                        <Text className='coupon-name'>{item.name}</Text>
+                        <Text className='coupon-desc'>
+                          {item.type === 4
+                            ? (item.description || '点击查看详情')
+                            : (item.min_amount > 0 ? `满${item.min_amount}元可用` : '无门槛')
+                          }
+                        </Text>
+                        <Text className='coupon-valid'>有效期至 {item.valid_end_time ? item.valid_end_time.split('T')[0] : '-'}</Text>
+                      </View>
+                      <View className='coupon-right-bottom'>
+                        {item.type !== 4 && <Text className='coupon-tag'>不可退</Text>}
+                        <View className='use-btn' onClick={() => {
+                          // 跳转到路线列表（活动页面）
+                          Taro.switchTab({ url: '/pages/routes/index' })
+                        }}>
                           <Text className='use-btn-text'>去使用</Text>
                         </View>
-                      )}
-                      {item.type !== 4 && (
-                        <Text className='coupon-tag'>不可退</Text>
-                      )}
+                      </View>
                     </View>
                   </View>
                 ))}
               </View>
             )}
           </View>
+
         </>
       ) : (
         /* ========== 未开通会员 ========== */

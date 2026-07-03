@@ -1,0 +1,210 @@
+.adoption-list-page {
+  height: 100vh;
+  box-sizing: border-box;
+  background: #fcfdfc;
+  display: flex;
+  flex-direction: column;
+
+  .search-header {
+    padding: 156rpx 32rpx 24rpx;
+    background: #fcfdfc;
+  }
+
+  .search-row {
+    display: flex;
+    align-items: center;
+    gap: 16rpx;
+  }
+
+  .page-back {
+    width: 72rpx;
+    height: 72rpx;
+    flex-shrink: 0;
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.08);
+
+    .page-back-icon {
+      width: 36rpx;
+      height: 36rpx;
+    }
+  }
+
+  .search-input-wrap {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    height: 88rpx;
+    background: #fff;
+    border-radius: 44rpx;
+    padding: 0 28rpx;
+    box-shadow: 0 2rpx 16rpx rgba(0, 0, 0, 0.04);
+
+    .search-icon {
+      font-size: 32rpx;
+      margin-right: 16rpx;
+    }
+
+    .search-input {
+      flex: 1;
+      font-size: 28rpx;
+      color: #1b1c19;
+      height: 100%;
+
+      &::placeholder {
+        color: #9ca3af;
+      }
+    }
+  }
+
+  .my-records-btn {
+    flex-shrink: 0;
+    padding: 0 20rpx;
+    height: 64rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #436444;
+    border-radius: 32rpx;
+
+    .my-records-text {
+      font-size: 24rpx;
+      color: #fff;
+      font-weight: 600;
+    }
+  }
+
+  .scroll-container {
+    flex: 1;
+  }
+
+  .adoption-list {
+    padding: 0 32rpx 40rpx;
+  }
+
+  .section-title {
+    display: block;
+    font-size: 34rpx;
+    font-weight: 700;
+    color: #1b1c19;
+    margin-bottom: 24rpx;
+  }
+
+  .dog-card {
+    display: flex;
+    gap: 24rpx;
+    padding: 24rpx;
+    background: #fff;
+    border-radius: 32rpx;
+    margin-bottom: 24rpx;
+    box-shadow: 0 4rpx 20rpx rgba(140, 106, 93, 0.08);
+
+    &:active {
+      opacity: 0.9;
+    }
+
+    .dog-image {
+      width: 124rpx;
+      height: 140rpx;
+      border-radius: 24rpx;
+      flex-shrink: 0;
+    }
+
+    .dog-info {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 12rpx;
+    }
+
+    .dog-name-row {
+      display: flex;
+      align-items: center;
+
+      .dog-name {
+        font-size: 34rpx;
+        font-weight: 700;
+        color: #1b1c19;
+      }
+    }
+
+    .dog-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12rpx;
+
+      .dog-tag {
+        display: inline-block;
+        padding: 6rpx 14rpx;
+        border-radius: 10rpx;
+        font-size: 22rpx;
+        font-weight: 600;
+
+        &.gender {
+          background: #f4dfcb;
+          color: #524436;
+        }
+
+        &.weight {
+          background: #e4e2dd;
+          color: #424841;
+        }
+
+        &.health {
+          background: #c6edc4;
+          color: #2e4e30;
+        }
+      }
+    }
+
+    .dog-desc {
+      font-size: 26rpx;
+      color: #747776;
+      line-height: 1.5;
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+      overflow: hidden;
+    }
+  }
+
+  .loading-text,
+  .empty-text {
+    display: block;
+    text-align: center;
+    padding: 40rpx 0;
+    font-size: 26rpx;
+    color: #9ca3af;
+  }
+
+  .list-end {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 48rpx 0 32rpx;
+    opacity: 0.6;
+
+    .list-end-line {
+      width: 48rpx;
+      height: 2rpx;
+      background: #c2c8be;
+      margin-bottom: 16rpx;
+    }
+
+    .list-end-text {
+      font-size: 24rpx;
+      color: #747776;
+      letter-spacing: 2rpx;
+    }
+
+    .list-end-paw {
+      font-size: 36rpx;
+      margin-top: 12rpx;
+    }
+  }
+}

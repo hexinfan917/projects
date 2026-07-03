@@ -1,5 +1,5 @@
 import { PageContainer } from '@ant-design/pro-components';
-import { Card, Form, Input, Select, InputNumber, Radio, Button, Space, Upload, message, Row, Col, DatePicker, TimePicker, Table, Popconfirm, Tabs, Modal, Spin } from 'antd';
+import { Card, Form, Input, Select, InputNumber, Radio, Button, Space, Upload, message, Row, Col, DatePicker, TimePicker, Table, Popconfirm, Tabs, Modal, Spin, Divider, Image } from 'antd';
 import { UploadOutlined, PlusOutlined, DeleteOutlined, SaveOutlined, EditOutlined } from '@ant-design/icons';
 import { useState, useEffect } from 'react';
 import { request, useParams, history } from '@umijs/max';
@@ -39,11 +39,16 @@ export default function RouteEdit() {
   const [schedules, setSchedules] = useState<any[]>([]);
   const [scheduleAddons, setScheduleAddons] = useState<any[]>([]);
   const [gallery, setGallery] = useState<string[]>([]);
+  const [coverImage, setCoverImage] = useState<string>('');
   const [highlights, setHighlights] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState('basic');
   const [isFree, setIsFree] = useState(false);
   const [isMemberOnly, setIsMemberOnly] = useState(false);
   const [isInsuranceRequired, setIsInsuranceRequired] = useState(true);
+  const [newScheduleDate, setNewScheduleDate] = useState<dayjs.Dayjs | null>(null);
+  const [newStartTime, setNewStartTime] = useState<dayjs.Dayjs | null>(null);
+  const [newEndTime, setNewEndTime] = useState<dayjs.Dayjs | null>(null);
+  const [newStock, setNewStock] = useState<number>(12);
   const [routeTypes, setRouteTypes] = useState<{ id: number; name: string }[]>([
     { id: 1, name: '山野厨房' },
     { id: 2, name: '海边度假' },
@@ -94,6 +99,7 @@ export default function RouteEdit() {
           ...data,
         });
         setGallery(data.gallery || []);
+        setCoverImage(data.cover_image || '');
         setHighlights(data.highlights || []);
         setDescription(data.description || '');
         setHighlightsDetail(data.highlights_detail || '');
@@ -225,6 +231,7 @@ export default function RouteEdit() {
   const uploadProps = {
     name: 'file',
     action: '/api/v1/files/upload/image',
+    data: { crop_ratio: 1.34 },
     headers: {
       Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
     },
@@ -320,34 +327,41 @@ export default function RouteEdit() {
   };
 
   // 添加排期
-  const addSchedule = async (values: any) => {
-    // 检查该日期是否已存在
-    const dateStr = values.schedule_date.format('YYYY-MM-DD');
+  const handleAddSchedule = async () => {
+    if (!newScheduleDate) {
+      message.error('请选择日期');
+      return;
+    }
+    const dateStr = newScheduleDate.format('YYYY-MM-DD');
     const existingSchedule = schedules.find(s => s.schedule_date === dateStr);
     if (existingSchedule) {
       message.error(`该日期(${dateStr})已存在排期，请勿重复添加`);
       return;
     }
-    
+
     try {
       const res = await request(`/api/v1/admin/routes/${id}/schedules`, {
         method: 'POST',
         data: {
           schedule_date: dateStr,
-          start_time: values.start_time?.format('HH:mm') || '09:00',
-          end_time: values.end_time?.format('HH:mm') || '17:00',
-          price: values.price,
-          self_drive_price: values.self_drive_price,
-          stock: values.stock,
+          start_time: newStartTime?.format('HH:mm') || '09:00',
+          end_time: newEndTime?.format('HH:mm') || '17:00',
+          stock: newStock,
           status: 1,
+          price: 0,
         },
       });
       if (res.code === 200) {
         message.success('排期添加成功');
-        // 立即刷新排期列表
+        setNewScheduleDate(null);
+        setNewStartTime(null);
+        setNewEndTime(null);
+        setNewStock(12);
         await fetchSchedules();
       } else if (res.code === 409) {
         message.error(res.message || '该日期已存在排期，请勿重复添加');
+      } else {
+        message.error(res.message || `添加排期失败 (错误码: ${res.code})`);
       }
     } catch (error: any) {
       const msg = error?.response?.data?.message || error?.message || '添加排期失败';
@@ -528,8 +542,13 @@ export default function RouteEdit() {
       title: '状态',
       dataIndex: 'status',
       key: 'status',
-      render: (status: number) => {
+      render: (status: number, record: any) => {
+        const isSoldOut = record.stock !== undefined && record.stock !== null && record.stock <= 0;
         const statusMap: any = { 0: '关闭', 1: '可售', 2: '已满', 3: '已结束' };
+        // 库存为0时显示已售罄，否则显示数据库状态
+        if (isSoldOut) {
+          return <span style={{ color: '#999' }}>已售罄</span>;
+        }
         return statusMap[status] || '未知';
       },
     },
@@ -575,41 +594,47 @@ export default function RouteEdit() {
         </Space>
       }
     >
-      <Tabs activeKey={activeTab} onChange={setActiveTab}>
-        <Tabs.TabPane tab="基本信息" key="basic">
-          <Card>
-            <Spin spinning={loading}>
-            <Form
-              form={form}
-              layout="vertical"
-              initialValues={{
-                status: 1,
-                is_free: 0,
-                is_member_only: 0,
-                is_insurance_required: 1,
-                pet_insurance_price: 15.00,
-                person_insurance_price: 10.00,
-                non_member_price: 0,
-                is_hot: 0,
-                difficulty: 3,
-                min_participants: 4,
-                max_participants: 12,
-                base_price: 0,
-                single_person_price: undefined,
-                two_person_one_pet_price: undefined,
-                one_person_two_pet_price: undefined,
-                single_pet_price: undefined,
-                extra_person_price: 0,
-                extra_pet_price: 0,
-                self_drive_base_price: undefined,
-                self_drive_single_person_price: undefined,
-                self_drive_two_person_one_pet_price: undefined,
-                self_drive_one_person_two_pet_price: undefined,
-                self_drive_single_pet_price: undefined,
-                self_drive_extra_person_price: undefined,
-                self_drive_extra_pet_price: undefined,
-              }}
-            >
+      <Form
+        form={form}
+        layout="vertical"
+        initialValues={{
+          status: 1,
+          is_free: 0,
+          is_member_only: 0,
+          is_insurance_required: 1,
+          pet_insurance_price: 15.00,
+          person_insurance_price: 10.00,
+          pet_insurance_title: '宠物意外险',
+          pet_insurance_unit: '狗',
+          pet_insurance_desc: '保障宠物活动中突发意外医疗费用，最高保额¥5000',
+          person_insurance_title: '人身意外险',
+          person_insurance_unit: '人',
+          person_insurance_desc: '保障出行人意外伤害及医疗，最高保额¥200,000',
+          non_member_price: 0,
+          is_hot: 0,
+          difficulty: 3,
+          min_participants: 4,
+          max_participants: 12,
+          base_price: 0,
+          single_person_price: undefined,
+          two_person_one_pet_price: undefined,
+          one_person_two_pet_price: undefined,
+          single_pet_price: undefined,
+          extra_person_price: 0,
+          extra_pet_price: 0,
+          self_drive_base_price: undefined,
+          self_drive_single_person_price: undefined,
+          self_drive_two_person_one_pet_price: undefined,
+          self_drive_one_person_two_pet_price: undefined,
+          self_drive_single_pet_price: undefined,
+          self_drive_extra_person_price: undefined,
+          self_drive_extra_pet_price: undefined,
+        }}
+      >
+        <Tabs activeKey={activeTab} onChange={setActiveTab}>
+          <Tabs.TabPane tab="基本信息" key="basic">
+            <Card>
+              <Spin spinning={loading}>
               <Form.Item
                 name="is_free"
                 label="是否免费活动"
@@ -654,38 +679,6 @@ export default function RouteEdit() {
                 </>
               )}
 
-              <Form.Item
-                name="is_insurance_required"
-                label="是否需要保险"
-              >
-                <Radio.Group onChange={(e) => setIsInsuranceRequired(e.target.value === 1)}>
-                  <Radio.Button value={0}>不需要保险</Radio.Button>
-                  <Radio.Button value={1}>需要保险</Radio.Button>
-                </Radio.Group>
-              </Form.Item>
-
-              {isInsuranceRequired && (
-                <Row gutter={24}>
-                  <Col span={12}>
-                    <Form.Item
-                      name="pet_insurance_price"
-                      label="宠物保险单价（元/只）"
-                      rules={[{ required: true, message: '请输入宠物保险单价' }]}
-                    >
-                      <InputNumber min={0} precision={2} style={{ width: '100%' }} />
-                    </Form.Item>
-                  </Col>
-                  <Col span={12}>
-                    <Form.Item
-                      name="person_insurance_price"
-                      label="人身保险单价（元/人）"
-                      rules={[{ required: true, message: '请输入人身保险单价' }]}
-                    >
-                      <InputNumber min={0} precision={2} style={{ width: '100%' }} />
-                    </Form.Item>
-                  </Col>
-                </Row>
-              )}
 
               <Row gutter={24}>
                 <Col span={12}>
@@ -821,32 +814,76 @@ export default function RouteEdit() {
 
               <Form.Item
                 label="封面图片"
-                extra="建议尺寸 750×350px（2:1），主体放中间偏左，避免被裁切"
+                extra={
+                  <div style={{ marginTop: 8, padding: 10, background: '#f6ffed', border: '1px solid #b7eb8f', borderRadius: 4, color: '#389e0d', fontSize: 13, lineHeight: 1.6 }}>
+                    <div style={{ fontWeight: 600, marginBottom: 4 }}>封面图片尺寸建议</div>
+                    <div>建议尺寸：宽 750px，高 420px（比例约 16:9）</div>
+                    <div>文件格式：JPG / PNG，建议控制在 500KB 以内</div>
+                    <div>上传后系统将自动按 16:9 比例中心裁剪。该图用于小程序首页路线卡片和路线列表展示。</div>
+                  </div>
+                }
               >
                 <Form.Item name="cover_image" noStyle>
-                  <Input placeholder="图片URL" style={{ marginBottom: 8 }} />
+                  <Input type="hidden" />
                 </Form.Item>
-                <Upload
-                  name="file"
-                  action="/api/v1/files/upload/image"
-                  headers={{ Authorization: `Bearer ${localStorage.getItem('token')}` }}
-                  onChange={(info) => {
-                    if (info.file.status === 'done') {
-                      const url = info.file.response?.data?.url;
-                      if (url) {
-                        const fullUrl = url;
-                        form.setFieldValue('cover_image', fullUrl);
+                {coverImage ? (
+                  <div style={{ position: 'relative', display: 'inline-block', marginBottom: 12 }}>
+                    <Image
+                      src={coverImage}
+                      width={300}
+                      height={180}
+                      style={{ objectFit: 'cover', borderRadius: 8 }}
+                      preview={false}
+                    />
+                    <Button
+                      type="primary"
+                      danger
+                      size="small"
+                      icon={<DeleteOutlined />}
+                      style={{ position: 'absolute', top: 8, right: 8 }}
+                      onClick={() => {
+                        setCoverImage('');
+                        form.setFieldValue('cover_image', '');
+                      }}
+                    >
+                      删除
+                    </Button>
+                  </div>
+                ) : null}
+                <div>
+                  <Upload
+                    name="file"
+                    action="/api/v1/files/upload/image"
+                    headers={{ Authorization: `Bearer ${localStorage.getItem('token')}` }}
+                    data={{ crop_ratio: 1.7857 }}
+                    showUploadList={false}
+                    onChange={(info) => {
+                      if (info.file.status === 'done') {
+                        const url = info.file.response?.data?.url;
+                        if (url) {
+                          setCoverImage(url);
+                          form.setFieldValue('cover_image', url);
+                        }
+                      } else if (info.file.status === 'error') {
+                        message.error(`${info.file.name} 上传失败`);
                       }
-                    }
-                  }}
-                >
-                  <Button icon={<UploadOutlined />}>上传图片</Button>
-                </Upload>
+                    }}
+                  >
+                    <Button icon={<UploadOutlined />}>{coverImage ? '更换图片' : '上传图片'}</Button>
+                  </Upload>
+                </div>
               </Form.Item>
 
               <Form.Item
                 label="路线图集"
-                extra="建议尺寸 750×420px（16:9），可传 2 倍图（1500×840px）"
+                extra={
+                  <div style={{ marginTop: 8, padding: 10, background: '#f6ffed', border: '1px solid #b7eb8f', borderRadius: 4, color: '#389e0d', fontSize: 13, lineHeight: 1.6 }}>
+                    <div style={{ fontWeight: 600, marginBottom: 4 }}>路线图集尺寸建议</div>
+                    <div>建议尺寸：宽 750px，高 560px（比例约 4:3）</div>
+                    <div>文件格式：JPG / PNG，建议控制在 500KB 以内</div>
+                    <div>上传后系统将自动按 4:3 比例中心裁剪。图集用于小程序路线详情页顶部轮播展示。</div>
+                  </div>
+                }
               >
                 <div style={{ marginBottom: 16 }}>
                   <Upload {...uploadProps} showUploadList={false}>
@@ -915,7 +952,6 @@ export default function RouteEdit() {
                   style={{ height: 300, marginBottom: 50 }}
                 />
               </Form.Item>
-            </Form>
             </Spin>
           </Card>
         </Tabs.TabPane>
@@ -937,8 +973,105 @@ export default function RouteEdit() {
           <>
             <Tabs.TabPane tab="费用说明" key="fee">
               <Card title="费用说明">
-                <Form layout="vertical">
-                  <Form.Item label="费用说明概述">
+                <Divider orientation="left">保险配置</Divider>
+                <Form.Item
+                  name="is_insurance_required"
+                  label="是否需要保险"
+                >
+                  <Radio.Group onChange={(e) => setIsInsuranceRequired(e.target.value === 1)}>
+                    <Radio.Button value={0}>不需要保险</Radio.Button>
+                    <Radio.Button value={1}>需要保险</Radio.Button>
+                  </Radio.Group>
+                </Form.Item>
+
+                {isInsuranceRequired && (
+                  <>
+                    <Row gutter={24}>
+                      <Col span={12}>
+                        <Form.Item
+                          name="pet_insurance_price"
+                          label="宠物保险单价（元/只）"
+                          rules={[{ required: true, message: '请输入宠物保险单价' }]}
+                        >
+                          <InputNumber min={0} precision={2} style={{ width: '100%' }} />
+                        </Form.Item>
+                      </Col>
+                      <Col span={12}>
+                        <Form.Item
+                          name="person_insurance_price"
+                          label="人身保险单价（元/人）"
+                          rules={[{ required: true, message: '请输入人身保险单价' }]}
+                        >
+                          <InputNumber min={0} precision={2} style={{ width: '100%' }} />
+                        </Form.Item>
+                      </Col>
+                    </Row>
+                    <Row gutter={24}>
+                      <Col span={12}>
+                        <Form.Item
+                          name="pet_insurance_title"
+                          label="宠物保险标题"
+                          rules={[{ required: true, message: '请输入宠物保险标题' }]}
+                        >
+                          <Input placeholder="宠物意外险" />
+                        </Form.Item>
+                      </Col>
+                      <Col span={12}>
+                        <Form.Item
+                          name="pet_insurance_unit"
+                          label="宠物保险计价单位"
+                          rules={[{ required: true, message: '请输入宠物保险计价单位' }]}
+                        >
+                          <Input placeholder="狗" />
+                        </Form.Item>
+                      </Col>
+                    </Row>
+                    <Row gutter={24}>
+                      <Col span={24}>
+                        <Form.Item
+                          name="pet_insurance_desc"
+                          label="宠物保险描述"
+                          rules={[{ required: true, message: '请输入宠物保险描述' }]}
+                        >
+                          <Input placeholder="保障宠物活动中突发意外医疗费用，最高保额¥5000" />
+                        </Form.Item>
+                      </Col>
+                    </Row>
+                    <Row gutter={24}>
+                      <Col span={12}>
+                        <Form.Item
+                          name="person_insurance_title"
+                          label="人身保险标题"
+                          rules={[{ required: true, message: '请输入人身保险标题' }]}
+                        >
+                          <Input placeholder="人身意外险" />
+                        </Form.Item>
+                      </Col>
+                      <Col span={12}>
+                        <Form.Item
+                          name="person_insurance_unit"
+                          label="人身保险计价单位"
+                          rules={[{ required: true, message: '请输入人身保险计价单位' }]}
+                        >
+                          <Input placeholder="人" />
+                        </Form.Item>
+                      </Col>
+                    </Row>
+                    <Row gutter={24}>
+                      <Col span={24}>
+                        <Form.Item
+                          name="person_insurance_desc"
+                          label="人身保险描述"
+                          rules={[{ required: true, message: '请输入人身保险描述' }]}
+                        >
+                          <Input placeholder="保障出行人意外伤害及医疗，最高保额¥200,000" />
+                        </Form.Item>
+                      </Col>
+                    </Row>
+                    <Divider />
+                  </>
+                )}
+                <Form.Item label="费用说明概述">
                     <ReactQuill
                       theme="snow"
                       value={feeDescription}
@@ -968,7 +1101,6 @@ export default function RouteEdit() {
                       style={{ height: 200, marginBottom: 50 }}
                     />
                   </Form.Item>
-                </Form>
               </Card>
             </Tabs.TabPane>
 
@@ -1045,28 +1177,35 @@ export default function RouteEdit() {
         {isEdit && (
           <Tabs.TabPane tab="营期管理" key="schedules">
             <Card title="排期列表">
-              <Form layout="inline" onFinish={addSchedule} style={{ marginBottom: 16 }}>
-                <Form.Item name="schedule_date" rules={[{ required: true }]}>
-                  <DatePicker 
-                    placeholder="选择日期" 
-                    disabledDate={(current) => current && current < dayjs().startOf('day')}
-                  />
-                </Form.Item>
-                <Form.Item name="start_time">
-                  <TimePicker placeholder="开始时间" format="HH:mm" />
-                </Form.Item>
-                <Form.Item name="end_time">
-                  <TimePicker placeholder="结束时间" format="HH:mm" />
-                </Form.Item>
-                <Form.Item name="stock" initialValue={12}>
-                  <InputNumber placeholder="库存" min={1} />
-                </Form.Item>
-                <Form.Item>
-                  <Button type="primary" htmlType="submit" icon={<PlusOutlined />}>
-                    添加排期
-                  </Button>
-                </Form.Item>
-              </Form>
+              <Space style={{ marginBottom: 16 }}>
+                <DatePicker
+                  placeholder="选择日期"
+                  value={newScheduleDate}
+                  onChange={setNewScheduleDate}
+                  disabledDate={(current) => current && current < dayjs().startOf('day')}
+                />
+                <TimePicker
+                  placeholder="开始时间"
+                  format="HH:mm"
+                  value={newStartTime}
+                  onChange={setNewStartTime}
+                />
+                <TimePicker
+                  placeholder="结束时间"
+                  format="HH:mm"
+                  value={newEndTime}
+                  onChange={setNewEndTime}
+                />
+                <InputNumber
+                  placeholder="库存"
+                  min={1}
+                  value={newStock}
+                  onChange={(val) => setNewStock(val || 1)}
+                />
+                <Button type="primary" icon={<PlusOutlined />} onClick={handleAddSchedule}>
+                  添加排期
+                </Button>
+              </Space>
               <Table
                 dataSource={schedules}
                 columns={scheduleColumns}
@@ -1079,6 +1218,7 @@ export default function RouteEdit() {
 
 
       </Tabs>
+      </Form>
 
       {/* 编辑排期Modal */}
       <Modal
@@ -1167,16 +1307,6 @@ export default function RouteEdit() {
                         <InputNumber placeholder="价格" min={0} style={{ width: '100%' }} />
                       </Form.Item>
                     </Col>
-                    <Col span={8}>
-                      <Form.Item label="一人两宠" name="one_person_two_pet_price">
-                        <InputNumber placeholder="路线默认价" min={0} style={{ width: '100%' }} />
-                      </Form.Item>
-                    </Col>
-                    <Col span={8}>
-                      <Form.Item label="二人一宠" name="two_person_one_pet_price">
-                        <InputNumber placeholder="路线默认价" min={0} style={{ width: '100%' }} />
-                      </Form.Item>
-                    </Col>
                   </Row>
                   <Row gutter={16}>
                     <Col span={8}>
@@ -1212,16 +1342,6 @@ export default function RouteEdit() {
                         <InputNumber placeholder="自驾价格" min={0} style={{ width: '100%' }} />
                       </Form.Item>
                     </Col>
-                    <Col span={8}>
-                      <Form.Item label="一人两宠" name="self_drive_one_person_two_pet_price">
-                        <InputNumber placeholder="路线默认价" min={0} style={{ width: '100%' }} />
-                      </Form.Item>
-                    </Col>
-                    <Col span={8}>
-                      <Form.Item label="二人一宠" name="self_drive_two_person_one_pet_price">
-                        <InputNumber placeholder="路线默认价" min={0} style={{ width: '100%' }} />
-                      </Form.Item>
-                    </Col>
                   </Row>
                   <Row gutter={16}>
                     <Col span={8}>
@@ -1252,16 +1372,6 @@ export default function RouteEdit() {
                     <Row gutter={16}>
                       <Col span={8}>
                         <Form.Item label="会员价(1人1宠)" name="member_price">
-                          <InputNumber placeholder="会员专享价" min={0} style={{ width: '100%' }} />
-                        </Form.Item>
-                      </Col>
-                      <Col span={8}>
-                        <Form.Item label="会员价(一人两宠)" name="member_one_person_two_pet_price">
-                          <InputNumber placeholder="会员专享价" min={0} style={{ width: '100%' }} />
-                        </Form.Item>
-                      </Col>
-                      <Col span={8}>
-                        <Form.Item label="会员价(二人一宠)" name="member_two_person_one_pet_price">
                           <InputNumber placeholder="会员专享价" min={0} style={{ width: '100%' }} />
                         </Form.Item>
                       </Col>
@@ -1298,16 +1408,6 @@ export default function RouteEdit() {
                     <Row gutter={16}>
                       <Col span={8}>
                         <Form.Item label="会员自驾价(1人1宠)" name="member_self_drive_price">
-                          <InputNumber placeholder="会员专享价" min={0} style={{ width: '100%' }} />
-                        </Form.Item>
-                      </Col>
-                      <Col span={8}>
-                        <Form.Item label="会员价(一人两宠)" name="member_self_drive_one_person_two_pet_price">
-                          <InputNumber placeholder="会员专享价" min={0} style={{ width: '100%' }} />
-                        </Form.Item>
-                      </Col>
-                      <Col span={8}>
-                        <Form.Item label="会员价(二人一宠)" name="member_self_drive_two_person_one_pet_price">
                           <InputNumber placeholder="会员专享价" min={0} style={{ width: '100%' }} />
                         </Form.Item>
                       </Col>
@@ -1422,12 +1522,6 @@ export default function RouteEdit() {
           </Form.Item>
           {batchTravelType !== 2 && (
             <Card size="small" title="大巴套餐价格（可选）" style={{ marginBottom: 16 }}>
-              <Form.Item label="一人两宠" name="one_person_two_pet_price">
-                <InputNumber placeholder="路线默认价" min={0} style={{ width: '100%' }} />
-              </Form.Item>
-              <Form.Item label="二人一宠" name="two_person_one_pet_price">
-                <InputNumber placeholder="路线默认价" min={0} style={{ width: '100%' }} />
-              </Form.Item>
               <Form.Item label="单人轻旅（无宠）" name="single_person_price">
                 <InputNumber placeholder="路线默认价" min={0} style={{ width: '100%' }} />
               </Form.Item>
@@ -1444,12 +1538,6 @@ export default function RouteEdit() {
           )}
           {batchTravelType !== 1 && (
             <Card size="small" title="自驾套餐价格（可选）" style={{ marginBottom: 16 }}>
-              <Form.Item label="一人两宠" name="self_drive_one_person_two_pet_price">
-                <InputNumber placeholder="路线默认价" min={0} style={{ width: '100%' }} />
-              </Form.Item>
-              <Form.Item label="二人一宠" name="self_drive_two_person_one_pet_price">
-                <InputNumber placeholder="路线默认价" min={0} style={{ width: '100%' }} />
-              </Form.Item>
               <Form.Item label="单人轻旅（无宠）" name="self_drive_single_person_price">
                 <InputNumber placeholder="路线默认价" min={0} style={{ width: '100%' }} />
               </Form.Item>
@@ -1471,12 +1559,6 @@ export default function RouteEdit() {
                 <Form.Item label="会员价(1人1宠)" name="member_price">
                   <InputNumber placeholder="会员专享价" min={0} style={{ width: '100%' }} />
                 </Form.Item>
-                <Form.Item label="会员价(一人两宠)" name="member_one_person_two_pet_price">
-                  <InputNumber placeholder="会员专享价" min={0} style={{ width: '100%' }} />
-                </Form.Item>
-                <Form.Item label="会员价(二人一宠)" name="member_two_person_one_pet_price">
-                  <InputNumber placeholder="会员专享价" min={0} style={{ width: '100%' }} />
-                </Form.Item>
                 <Form.Item label="会员价(单人)" name="member_single_person_price">
                   <InputNumber placeholder="会员专享价" min={0} style={{ width: '100%' }} />
                 </Form.Item>
@@ -1495,12 +1577,6 @@ export default function RouteEdit() {
               <>
                 <div style={{ fontWeight: 600, marginBottom: 8, marginTop: batchTravelType === 2 ? 0 : 12, color: '#1890ff', fontSize: 13 }}>自驾出行会员价</div>
                 <Form.Item label="会员自驾价(1人1宠)" name="member_self_drive_price">
-                  <InputNumber placeholder="会员专享价" min={0} style={{ width: '100%' }} />
-                </Form.Item>
-                <Form.Item label="会员价(一人两宠)" name="member_self_drive_one_person_two_pet_price">
-                  <InputNumber placeholder="会员专享价" min={0} style={{ width: '100%' }} />
-                </Form.Item>
-                <Form.Item label="会员价(二人一宠)" name="member_self_drive_two_person_one_pet_price">
                   <InputNumber placeholder="会员专享价" min={0} style={{ width: '100%' }} />
                 </Form.Item>
                 <Form.Item label="会员价(单人)" name="member_self_drive_single_person_price">

@@ -2,151 +2,346 @@
 
 .index-page {
   min-height: 100vh;
-  background-color: #f5f7f5;
+  background-color: #fcfdfc;
+  position: relative;
 }
 
-
-// 导航栏占位
-.navbar-placeholder {
-  height: 240rpx;
-}
-
-// 搜索栏
-.search-bar {
+// 顶部导航栏
+.top-app-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  height: 120rpx;
+  padding: 0 32rpx;
   display: flex;
-  align-items: center;
-  padding: 16rpx 24rpx;
-  padding-top: 0;
-  background: #f5f7f5;
-  
-  .search-input {
-    flex: 1;
+  align-items: flex-end;
+  padding-bottom: 20rpx;
+  box-sizing: border-box;
+
+  .top-app-bar-bg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(252, 253, 252, 0.85);
+    backdrop-filter: blur(12px);
+    border-bottom: 1rpx solid rgba(195, 200, 193, 0.2);
+  }
+
+  .top-app-bar-content {
+    position: relative;
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .top-app-bar-left {
     display: flex;
     align-items: center;
-    height: 72rpx;
-    background: #fff;
-    border-radius: 36rpx;
-    padding: 0 24rpx;
-    box-shadow: 0 8rpx 30rpx rgba(0, 0, 0, 0.04);
-    
-    .search-icon {
-      font-size: 28rpx;
-      margin-right: 12rpx;
-    }
-    
-    .search-placeholder {
-      font-size: 26rpx;
-      color: #747776;
-    }
-    
-    .search-text {
-      flex: 1;
-      font-size: 26rpx;
-      color: #2c2f2e;
-    }
-    
-    .search-clear {
-      font-size: 26rpx;
-      color: #999;
-      padding: 0 8rpx;
-      margin-left: 8rpx;
-    }
+    gap: 12rpx;
   }
-  
-  .location-text {
-    margin-left: 24rpx;
-    font-size: 26rpx;
-    color: #2c2f2e;
+
+  .top-app-bar-icon {
+    width: 44rpx;
+    height: 44rpx;
+  }
+
+  .top-app-bar-title {
+    font-size: 36rpx;
+    font-weight: 700;
+    color: #006b1b;
+    letter-spacing: -0.5rpx;
+    font-family: 'Be Vietnam Pro', -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+
+  .top-app-bar-right {
+    width: 80rpx;
+    height: 40rpx;
+    border-radius: 20rpx;
+    background: rgba(224, 229, 222, 0.5);
+    border: 1rpx solid rgba(195, 200, 193, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .top-app-bar-dot {
+    font-size: 20rpx;
+    color: #22C55E;
   }
 }
 
 // 滚动容器
 .scroll-container {
   height: 100vh;
-  padding-bottom: 20rpx;
   box-sizing: border-box;
 }
 
-// 轮播图 - Hero Banner 风格
-.banner-swiper {
-  height: 340rpx;
-  margin: 24rpx;
-  border-radius: 24rpx;
-  overflow: hidden;
+// 1. 沉浸式 Hero 轮播
+.hero-section {
   position: relative;
-  
-  &::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 160rpx;
-    background: linear-gradient(to top, rgba(0, 0, 0, 0.5), transparent);
-    pointer-events: none;
-  }
-  
-  .banner-item {
-    width: 100%;
-    height: 100%;
-  }
-  
-  .banner-image {
-    width: 100%;
-    height: 100%;
-    display: block;
-  }
+  height: 700rpx;
+  width: 100%;
+  overflow: hidden;
 }
 
-// 品牌标语
-.brand-slogan {
+// 向下滚动提示
+.scroll-hint {
+  position: absolute;
+  bottom: 40rpx;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4rpx;
+  z-index: 10;
+  animation: scrollHintBounce 2s ease-in-out infinite;
+}
+
+.scroll-hint-arrow {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 24rpx;
-  margin: 0 24rpx 16rpx;
-  
-  .slogan-text {
-    font-size: 28rpx;
-    font-weight: 600;
-    color: #006b1b;
-    letter-spacing: 1rpx;
+  width: 40rpx;
+  height: 16rpx;
+}
+
+.scroll-hint-line {
+  width: 20rpx;
+  height: 4rpx;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 2rpx;
+}
+
+.scroll-hint-left {
+  transform: rotate(45deg);
+  transform-origin: right center;
+  margin-right: -2rpx;
+}
+
+.scroll-hint-right {
+  transform: rotate(-45deg);
+  transform-origin: left center;
+  margin-left: -2rpx;
+}
+
+@keyframes scrollHintBounce {
+  0%, 100% {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
   }
+  50% {
+    transform: translateX(-50%) translateY(12rpx);
+    opacity: 0.6;
+  }
+}
+
+.hero-swiper {
+  height: 100%;
+  width: 100%;
+}
+
+.hero-slide {
+  position: relative;
+  height: 100%;
+  width: 100%;
+}
+
+.hero-image {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.hero-image-placeholder {
+  background: linear-gradient(135deg, #22C55E 0%, #006b1b 100%);
+}
+
+.hero-gradient {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.6) 0%,
+    rgba(0, 0, 0, 0.2) 30%,
+    transparent 60%
+  );
+  pointer-events: none;
+}
+
+.hero-content {
+  position: absolute;
+  bottom: 120rpx;
+  left: 40rpx;
+  right: 40rpx;
+  color: #fff;
+  pointer-events: none;
+}
+
+.hero-tag {
+  display: inline-block;
+  padding: 8rpx 20rpx;
+  border-radius: 24rpx;
+  background: #006b1b;
+  font-size: 20rpx;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 2rpx;
+  margin-bottom: 20rpx;
+}
+
+.hero-title {
+  display: block;
+  font-size: 52rpx;
+  font-weight: 700;
+  line-height: 1.2;
+  margin-bottom: 16rpx;
+  text-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.3);
+}
+
+.hero-subtitle {
+  display: block;
+  font-size: 26rpx;
+  color: rgba(255, 255, 255, 0.75);
+  line-height: 1.5;
+}
+
+// 2. 快捷入口模块
+.quick-modules-wrap {
+  position: relative;
+  z-index: 10;
+  margin-top: 0;
+  margin-bottom: 0;
+  padding: 24rpx 40rpx;
+  background: #fcfdfc;
+}
+
+.quick-modules-shadow {
+  display: none;
+}
+
+.quick-modules-card {
+  position: relative;
+  background: transparent;
+  border-radius: 0;
+  padding: 0;
+  box-shadow: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 2;
+  overflow: visible;
+}
+
+.quick-modules-card-top-shade {
+  display: none;
+}
+
+.quick-module-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8rpx;
+
+  &:active {
+    transform: scale(0.92);
+  }
+
+  transition: transform 0.2s ease;
+}
+
+.quick-module-icon {
+  width: 96rpx;
+  height: 96rpx;
+  border-radius: 24rpx;
+  background: #f0f0f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.06);
+}
+
+.quick-module-icon-img {
+  width: 44rpx;
+  height: 44rpx;
+  display: block;
+}
+
+.quick-module-label {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #006B1B;
+  text-shadow: none;
 }
 
 // 区块通用
 .section-block {
-  margin-bottom: 48rpx;
+  margin-bottom: 16rpx;
 }
 
 .section-header-row {
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
-  padding: 0 24rpx 20rpx;
+  padding: 0 40rpx;
+  margin-bottom: 16rpx;
 }
 
 .section-title-main {
   display: block;
   font-size: 44rpx;
   font-weight: 700;
-  color: #1f2937;
+  color: #191c19;
+  letter-spacing: -0.5rpx;
+}
+
+.section-title-underline {
+  width: 40rpx;
+  height: 8rpx;
+  background: #006b1b;
+  border-radius: 4rpx;
+  margin-top: 12rpx;
 }
 
 .section-title-sub {
   display: block;
-  font-size: 24rpx;
+  font-size: 26rpx;
   color: #747776;
-  margin-top: 6rpx;
+  margin-top: 10rpx;
+}
+
+.section-header-simple {
+  padding: 0 40rpx;
+  margin-bottom: 24rpx;
 }
 
 .section-more {
   font-size: 24rpx;
   color: #006b1b;
   font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 4rpx;
 }
 
-// 热门路线 - 横向滚动卡片
+.section-more-arrow {
+  font-size: 28rpx;
+}
+
+// 3. 热门活动 - 横向滚动卡片
 .trip-scroll {
   white-space: nowrap;
   padding: 0 24rpx;
@@ -155,29 +350,34 @@
 .trip-card {
   display: inline-block;
   position: relative;
-  width: 560rpx;
-  height: 380rpx;
+  width: 702rpx;
+  height: 420rpx;
   border-radius: 24rpx;
   overflow: hidden;
   margin-right: 20rpx;
   vertical-align: top;
   box-shadow: 0 8rpx 32rpx rgba(44, 47, 46, 0.08);
   background: #fff;
-  
-  &.trip-card-first {
-    width: 702rpx;
-  }
-  
+
   &:last-child {
     margin-right: 24rpx;
   }
-  
+
+  &:active {
+    transform: scale(0.98);
+  }
+
+  transition: transform 0.2s ease;
+
   .trip-image {
+    position: absolute;
+    top: 0;
+    left: 0;
     width: 100%;
-    height: 260rpx;
+    height: 100%;
     display: block;
   }
-  
+
   .trip-tag {
     position: absolute;
     top: 16rpx;
@@ -190,71 +390,33 @@
     border-radius: 24rpx;
     z-index: 2;
   }
-  
+
   .trip-overlay {
-    padding: 20rpx 24rpx;
-    background: #fff;
-    
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 48rpx 24rpx 24rpx;
+    background: linear-gradient(
+      to top,
+      rgba(0, 0, 0, 0.75) 0%,
+      rgba(0, 0, 0, 0.35) 45%,
+      transparent 100%
+    );
+    z-index: 2;
+
     .trip-name {
       display: block;
-      font-size: 30rpx;
+      font-size: 32rpx;
       font-weight: 700;
-      color: #2c2f2e;
+      color: #fff;
       margin-bottom: 8rpx;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
-    
-    .trip-location,
+
     .trip-subtitle {
-      display: block;
-      font-size: 24rpx;
-      color: #747776;
-    }
-  }
-}
-
-// 故事卡片 - 纵向大图
-.story-list {
-  padding: 0 24rpx;
-}
-
-.story-card {
-  position: relative;
-  width: 100%;
-  height: 320rpx;
-  border-radius: 24rpx;
-  overflow: hidden;
-  margin-bottom: 20rpx;
-  box-shadow: 0 8rpx 32rpx rgba(44, 47, 46, 0.08);
-  
-  &:last-child {
-    margin-bottom: 0;
-  }
-  
-  .story-image {
-    width: 100%;
-    height: 100%;
-  }
-  
-  .story-overlay {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    padding: 60rpx 24rpx 24rpx;
-    background: linear-gradient(to top, rgba(0, 0, 0, 0.6), transparent);
-    
-    .story-title {
-      display: block;
-      font-size: 30rpx;
-      font-weight: 700;
-      color: #fff;
-      margin-bottom: 8rpx;
-    }
-    
-    .story-sub {
       display: block;
       font-size: 24rpx;
       color: rgba(255, 255, 255, 0.85);
@@ -262,6 +424,196 @@
   }
 }
 
+// 4. 狗狗领养
+.adoption-section {
+  overflow: hidden;
+}
+
+.adoption-carousel {
+  padding: 0 40rpx;
+}
+
+.adoption-swiper {
+  height: 760rpx;
+  border-radius: 48rpx;
+  overflow: hidden;
+}
+
+.adoption-slide {
+  position: relative;
+  height: 100%;
+  width: 100%;
+}
+
+.adoption-image {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.adoption-gradient {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.85) 0%, rgba(0, 0, 0, 0.2) 50%, transparent 100%);
+  pointer-events: none;
+}
+
+.adoption-content {
+  position: absolute;
+  bottom: 64rpx;
+  left: 48rpx;
+  right: 48rpx;
+  text-align: center;
+  color: #fff;
+  pointer-events: none;
+}
+
+.adotion-quote {
+  display: block;
+  font-size: 52rpx;
+  font-weight: 700;
+  margin-bottom: 16rpx;
+  text-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.3);
+}
+
+.adoption-desc {
+  display: block;
+  font-size: 26rpx;
+  color: rgba(255, 255, 255, 0.8);
+  margin-bottom: 40rpx;
+}
+
+.adoption-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24rpx 64rpx;
+  border-radius: 48rpx;
+  background: #fff;
+  box-shadow: 0 12rpx 32rpx rgba(0, 0, 0, 0.15);
+  pointer-events: auto;
+
+  &:active {
+    transform: scale(0.96);
+  }
+
+  transition: transform 0.2s ease;
+}
+
+.adoption-btn-text {
+  font-size: 28rpx;
+  font-weight: 700;
+  color: #006b1b;
+}
+
+.adoption-slide-empty {
+  background: linear-gradient(135deg, #22C55E 0%, #006b1b 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.adoption-empty-text {
+  font-size: 32rpx;
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 600;
+}
+
+// 5. 过往精彩回顾
+.memories-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 40rpx;
+  margin-bottom: 24rpx;
+}
+
+.memories-title {
+  font-size: 32rpx;
+  font-weight: 700;
+  color: #191c19;
+}
+
+.memories-label {
+  font-size: 20rpx;
+  font-weight: 700;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 2rpx;
+}
+
+.memories-scroll {
+  white-space: nowrap;
+  padding: 0 40rpx;
+}
+
+.memory-card {
+  position: relative;
+  display: inline-block;
+  width: calc(100vw - 80rpx);
+  border-radius: 32rpx;
+  overflow: hidden;
+  margin-right: 24rpx;
+  vertical-align: top;
+  min-height: 200rpx;
+
+  &:last-child {
+    margin-right: 0;
+  }
+
+  &:active {
+    transform: scale(0.98);
+  }
+
+  transition: transform 0.2s ease;
+}
+
+.memory-image {
+  width: 100%;
+  display: block;
+}
+
+.memory-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.55) 0%,
+    rgba(0, 0, 0, 0.15) 55%,
+    transparent 100%
+  );
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24rpx;
+}
+
+.memory-title {
+  color: #fff;
+  font-size: 28rpx;
+  font-weight: 700;
+  text-align: center;
+  padding: 16rpx 32rpx;
+  border: 1rpx solid rgba(255, 255, 255, 0.4);
+  border-radius: 40rpx;
+  white-space: nowrap;
+}
+
+// 安全区占位
+.safe-bottom-placeholder {
+  height: 160rpx;
+}
 
 // 会员活动弹窗
 .member-popup-wrap {

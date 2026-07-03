@@ -214,6 +214,7 @@ export default function PopupConfigList() {
                 <Upload
                   name="file"
                   action="/api/v1/files/upload/image"
+                  data={{ crop_ratio: 0 }}
                   showUploadList={false}
                   headers={{ Authorization: `Bearer ${localStorage.getItem('token') || ''}` }}
                   onChange={(info) => {
@@ -230,6 +231,12 @@ export default function PopupConfigList() {
                 >
                   <Button icon={<UploadOutlined />}>{imageUrl ? '更换图片' : '上传图片'}</Button>
                 </Upload>
+                <div style={{ padding: 10, background: '#f6ffed', border: '1px solid #b7eb8f', borderRadius: 4, color: '#389e0d', fontSize: 13, lineHeight: 1.6 }}>
+                  <div style={{ fontWeight: 600, marginBottom: 4 }}>弹窗主图尺寸建议</div>
+                  <div>建议尺寸：宽 560px，高不限（比例按设计需求）</div>
+                  <div>文件格式：JPG / PNG，建议控制在 500KB 以内</div>
+                  <div>该图用于小程序首页弹窗展示，宽度最大 560rpx，高度根据图片比例自适应。请按实际设计需求的比例上传，系统不会进行裁剪。</div>
+                </div>
               </Space>
             );
           }}

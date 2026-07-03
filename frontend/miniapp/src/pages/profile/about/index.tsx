@@ -1,9 +1,11 @@
+import { useEffect, useState } from 'react'
 import Taro from '@tarojs/taro'
-import { View, Text , Image } from '@tarojs/components'
-import { safeNavigateBack } from '../../../utils/api'
+import { View, Text, Image } from '@tarojs/components'
+import { getPublicSettings, safeNavigateBack } from '../../../utils/api'
 import './index.scss'
 
 const WECHAT_ID = 'Petway_'
+const appLogo = require('../../../assets/see-throughlogo.png')
 
 const copyWechat = () => {
   Taro.setClipboardData({ data: WECHAT_ID }).then(() => {
@@ -19,38 +21,76 @@ const copyWechat = () => {
 }
 
 export default function About() {
-  const appVersion = Taro.getStorageSync('app_version') || '1.0.0'
-  return (
-    <View className='about-page' style={{ paddingTop: '140rpx' }}>
+  const [appVersion, setAppVersion] = useState(Taro.getStorageSync('app_version') || '1.0.0')
 
-        <View className='page-back' onClick={() => safeNavigateBack()}>
-          <Image className='page-back-icon' src='/assets/icons/return.png' mode='aspectFit' />
+  useEffect(() => {
+    const cached = Taro.getStorageSync('app_version')
+    if (cached) {
+      setAppVersion(cached)
+    }
+    getPublicSettings().then((res: any) => {
+      const version = res.data?.mp_version?.value
+      if (version) {
+        Taro.setStorageSync('app_version', version)
+        setAppVersion(version)
+      }
+    }).catch(() => {})
+  }, [])
+
+  return (
+    <View className='about-page' style={{ paddingTop: 'calc(140rpx + env(safe-area-inset-top))' }}>
+      <View className='about-navbar' style={{ paddingTop: 'calc(100rpx + env(safe-area-inset-top))' }}>
+        <View className='about-navbar-back' onClick={() => safeNavigateBack()}>
+          <Image className='about-navbar-back-icon' src='/assets/icons/return.png' mode='aspectFit' />
         </View>
+      </View>
+
       <View className='brand-section'>
-        <View className='logo'>🐾</View>
+        <View className='logo-wrap'>
+          <Image className='logo-image' src={appLogo} mode='aspectFit' />
+        </View>
         <Text className='app-name'>尾巴PetWay</Text>
         <Text className='app-slogan'>与爱宠并肩同行</Text>
-        <Text className='version'>Version {appVersion}</Text>
+        <View className='version-tag'>
+          <Text className='version-text'>Version {appVersion}</Text>
+        </View>
       </View>
 
-      <View className='info-section'>
-        <View className='info-item'>
-          <Text className='info-label'>客服联系方式</Text>
-          <View className='info-value' onClick={copyWechat}>
-            <Text>Petway_（点击复制）</Text>
+      <View className='about-card'>
+        <View className='about-card-header'>
+          <View className='about-card-icon-wrap'>
+            <Image className='about-card-icon' src='/assets/icons/profile/about.png' mode='aspectFit' />
           </View>
+          <Text className='about-card-title'>关于我们</Text>
         </View>
-        <View className='info-item'>
-          <Text className='info-label'>工作时间</Text>
-          <Text className='info-value'>周一至周五 10:00~20:00</Text>
-        </View>
-      </View>
-
-      <View className='desc-section'>
-        <Text className='desc-title'>关于我们</Text>
-        <Text className='desc-text'>
+        <Text className='about-card-desc'>
           尾巴PetWay 是专注于宠物友好型户外活动的服务平台。我们致力于为爱宠家庭提供安全、舒适、有趣的出行体验，让每一次相聚都能留下与毛孩子的美好回忆。
         </Text>
+      </View>
+
+      <View className='about-card'>
+        <View className='about-card-header'>
+          <View className='about-card-icon-wrap'>
+            <Image className='about-card-icon' src='/assets/icons/profile/service.png' mode='aspectFit' />
+          </View>
+          <Text className='about-card-title'>客服联系方式</Text>
+        </View>
+        <View className='contact-item'>
+          <View className='contact-info'>
+            <Text className='contact-label'>WECHAT</Text>
+            <Text className='contact-value'>{WECHAT_ID}</Text>
+          </View>
+          <View className='copy-btn' onClick={copyWechat}>
+            <Image className='copy-icon' src='/assets/icons/profile/copy.svg' mode='aspectFit' />
+            <Text className='copy-text'>复制</Text>
+          </View>
+        </View>
+        <View className='contact-item'>
+          <View className='contact-info'>
+            <Text className='contact-label'>工作时间</Text>
+            <Text className='contact-value'>周一至周五 10:00~20:00</Text>
+          </View>
+        </View>
       </View>
     </View>
   )

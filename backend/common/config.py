@@ -4,7 +4,7 @@
 import os
 from typing import Optional
 from pathlib import Path
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from functools import lru_cache
 
 
@@ -41,7 +41,7 @@ class JWTConfig(BaseSettings):
 
 class WechatConfig(BaseSettings):
     """微信配置"""
-    model_config = {"env_prefix": "WECHAT_"}
+    model_config = SettingsConfigDict(env_prefix="WECHAT_", env_file=".env", extra="ignore")
     appid: str = ""
     appsecret: str = ""
     mchid: Optional[str] = None  # 商户号
@@ -58,7 +58,7 @@ class OSSConfig(BaseSettings):
 
 class COSConfig(BaseSettings):
     """腾讯云COS配置"""
-    model_config = {"env_prefix": "COS_"}
+    model_config = {"env_prefix": "COS_", "extra": "ignore"}
     secret_id: str = ""
     secret_key: str = ""
     bucket: str = ""

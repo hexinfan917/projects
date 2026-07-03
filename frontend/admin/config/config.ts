@@ -111,6 +111,22 @@ const routes = [
       component: './Charities',
     },
     {
+      name: '领养管理',
+      path: '/adoption',
+      routes: [
+        {
+          name: '狗狗档案',
+          path: '/adoption/dogs',
+          component: './Adoption/Dogs',
+        },
+        {
+          name: '领养申请',
+          path: '/adoption/applications',
+          component: './Adoption/Applications',
+        },
+      ],
+    },
+    {
       name: '操作日志',
       path: '/logs',
       component: './Logs',
@@ -153,6 +169,11 @@ const routes = [
           name: '核销记录',
           path: '/coupons/use-records',
           component: './Coupons/UseRecords',
+        },
+        {
+          name: '发放记录',
+          path: '/coupons/grant-records',
+          component: './Coupons/GrantRecords',
         },
       ],
     },

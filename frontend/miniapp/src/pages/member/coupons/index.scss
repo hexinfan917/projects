@@ -76,77 +76,123 @@
 .coupon-card {
   display: flex;
   background: #fff;
-  border-radius: 20rpx;
-  margin-bottom: 20rpx;
+  border-radius: 24rpx;
+  margin-bottom: 24rpx;
   overflow: hidden;
+  box-shadow: 0 4rpx 16rpx rgba(0,0,0,0.06);
+  border: 1rpx solid #f0f0f0;
+  position: relative;
+  &:last-child {
+    margin-bottom: 0;
+  }
   &.disabled {
     opacity: 0.6;
     filter: grayscale(0.5);
   }
   .coupon-left {
-    width: 200rpx;
-    background: linear-gradient(135deg, #22C55E 0%, #4ADE80 100%);
+    width: 210rpx;
+    background: linear-gradient(135deg, #166534 0%, #15803d 100%);
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     padding: 30rpx 0;
-    .coupon-value {
-      font-size: 48rpx;
-      font-weight: 700;
-      color: #fff;
-      &.gift {
-        font-size: 40rpx;
+    position: relative;
+    flex-shrink: 0;
+    .coupon-value-row {
+      display: flex;
+      align-items: baseline;
+      justify-content: center;
+      .coupon-value {
+        font-size: 56rpx;
+        font-weight: 700;
+        color: #fff;
+        line-height: 1;
       }
+      .coupon-value-unit {
+        font-size: 28rpx;
+        color: #fff;
+        font-weight: 500;
+        margin: 0 4rpx;
+      }
+    }
+    .coupon-gift-icon {
+      font-size: 56rpx;
+      margin-bottom: 8rpx;
+      line-height: 1;
     }
     .coupon-type {
       font-size: 24rpx;
-      color: rgba(255,255,255,0.9);
-      margin-top: 8rpx;
+      color: rgba(255,255,255,0.95);
+      margin-top: 10rpx;
+      font-weight: 500;
+    }
+  }
+  .coupon-divider {
+    width: 0;
+    position: relative;
+    flex-shrink: 0;
+    .coupon-notch {
+      position: absolute;
+      left: -18rpx;
+      width: 36rpx;
+      height: 36rpx;
+      border-radius: 50%;
+      background: #f5f7f5;
+      &.top { top: -18rpx; }
+      &.bottom { bottom: -18rpx; }
     }
   }
   .coupon-right {
     flex: 1;
-    padding: 24rpx;
-    position: relative;
-    .coupon-name {
-      font-size: 30rpx;
-      font-weight: 600;
-      color: #1f2937;
-      display: block;
-      margin-bottom: 8rpx;
-    }
-    .coupon-desc {
-      font-size: 24rpx;
-      color: #6b7280;
-      display: block;
-      margin-bottom: 8rpx;
-    }
-    .coupon-valid {
-      font-size: 22rpx;
-      color: #9CA3AF;
-      display: block;
-    }
-    .coupon-tag {
-      font-size: 20rpx;
-      color: #22C55E;
-      background: rgba(34,197,94,0.1);
-      padding: 2rpx 10rpx;
-      border-radius: 6rpx;
-      margin-top: 8rpx;
-      display: inline-block;
-    }
-    .use-btn {
-      position: absolute;
-      right: 24rpx;
-      bottom: 24rpx;
-      background: linear-gradient(135deg, #22C55E 0%, #4ADE80 100%);
-      padding: 8rpx 24rpx;
-      border-radius: 28rpx;
-      .use-btn-text {
+    padding: 28rpx 24rpx 24rpx;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-height: 160rpx;
+    .coupon-info {
+      .coupon-name {
+        font-size: 30rpx;
+        font-weight: 600;
+        color: #1f2937;
+        display: block;
+        margin-bottom: 8rpx;
+      }
+      .coupon-desc {
         font-size: 24rpx;
-        color: #fff;
-        font-weight: 500;
+        color: #6b7280;
+        display: block;
+        margin-bottom: 8rpx;
+      }
+      .coupon-valid {
+        font-size: 22rpx;
+        color: #9CA3AF;
+        display: block;
+      }
+    }
+    .coupon-right-bottom {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 12rpx;
+      .coupon-tag {
+        font-size: 22rpx;
+        color: #6b7280;
+        background: rgba(0,0,0,0.04);
+        padding: 4rpx 14rpx;
+        border-radius: 8rpx;
+      }
+      .use-btn {
+        background: linear-gradient(135deg, #166534 0%, #15803d 100%);
+        padding: 8rpx 28rpx;
+        border-radius: 28rpx;
+        flex-shrink: 0;
+        margin-left: auto;
+        .use-btn-text {
+          font-size: 24rpx;
+          color: #fff;
+          font-weight: 500;
+        }
       }
     }
   }

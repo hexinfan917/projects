@@ -36,8 +36,6 @@ function maskIdCard(idCard?: string) {
 
 const PACKAGE_OPTIONS = [
   { key: 'couple', label: '一人一宠', priceField: 'base_price', basePerson: 1, basePet: 1 },
-  { key: 'one_person_two_pet', label: '一人两宠', priceField: 'one_person_two_pet_price', basePerson: 1, basePet: 2 },
-  { key: 'two_person_one_pet', label: '二人一宠', priceField: 'two_person_one_pet_price', basePerson: 2, basePet: 1 },
   { key: 'single_person', label: '单人轻旅（无宠）', priceField: 'single_person_price', basePerson: 1, basePet: 0 },
   { key: 'single_pet', label: '毛孩专属接送（无主人陪同）', priceField: 'single_pet_price', basePerson: 0, basePet: 1 },
 ]
@@ -45,7 +43,7 @@ const PACKAGE_OPTIONS = [
 /* ---------- 酒店房型详情弹窗 ---------- */
 function HotelRoomModal({ room, visible, onClose }: any) {
   if (!visible || !room) return null
-  const images = room.images?.length > 0 ? room.images.map((url: string) => compressImageUrl(url, 750)) : ['https://via.placeholder.com/750x420']
+  const images = room.images?.length > 0 ? room.images.map((url: string) => compressImageUrl(url, 750)) : ['/assets/images/placeholder-cover.png']
   return (
     <View className='room-modal-confirm' onClick={onClose}>
       <View className='room-modal-mask-confirm' />
@@ -266,24 +264,16 @@ export default function OrderConfirm() {
       const res = await getTravelers()
       const list = res.data || []
       setTravelers(list)
-      // 若之前有选中但已被删除的 ID，自动清理
+      // 若之前有选中但已被删除的 ID，自动清理；无选中时只勾选一位默认出行人
       setSelectedTravelerIds(prev => {
         const cleaned = prev.filter(id => list.some((t: any) => t.id === id))
         if (cleaned.length === 0) {
           const defaults = list.filter((t: any) => t.is_default).map((t: any) => t.id)
-          if (defaults.length > 0) return defaults
+          if (defaults.length > 0) return defaults.slice(0, 1)
         }
         return cleaned
       })
-      // 自动选中新添加的出行人
-      const pendingId = Taro.getStorageSync('order_confirm_select_traveler_id')
-      if (pendingId) {
-        Taro.removeStorageSync('order_confirm_select_traveler_id')
-        const found = list.find((t: any) => String(t.id) === String(pendingId))
-        if (found) {
-          setSelectedTravelerIds(prev => prev.includes(found.id) ? prev : [...prev, found.id])
-        }
-      }
+      // 仅按 is_default 自动勾选默认出行人，新增出行人后不再自动选中
     } catch (err: any) {
       if (err?.statusCode === 401) {
         Taro.showModal({ title: '提示', content: '请先登录', showCancel: false, success: () => Taro.navigateTo({ url: '/pages/login/index' }) })
@@ -297,24 +287,16 @@ export default function OrderConfirm() {
       const res = await getPets()
       const list = res.data || []
       setPets(list)
-      // 若之前有选中但已被删除的 ID，自动清理；无选中时自动勾选默认宠物
+      // 若之前有选中但已被删除的 ID，自动清理；单人轻旅（无宠）不自动勾选宠物
       setSelectedPetIds(prev => {
         const cleaned = prev.filter(id => list.some((p: any) => p.id === id))
-        if (cleaned.length === 0) {
+        if (cleaned.length === 0 && bookingParams?.packageType !== 'single_person') {
           const defaults = list.filter((p: any) => p.is_default).map((p: any) => p.id)
           if (defaults.length > 0) return defaults
         }
         return cleaned
       })
-      // 自动选中新添加的宠物
-      const pendingId = Taro.getStorageSync('order_confirm_select_pet_id')
-      if (pendingId) {
-        Taro.removeStorageSync('order_confirm_select_pet_id')
-        const found = list.find((p: any) => String(p.id) === String(pendingId))
-        if (found) {
-          setSelectedPetIds(prev => prev.includes(found.id) ? prev : [...prev, found.id])
-        }
-      }
+      // 仅按 is_default 自动勾选默认宠物，新增宠物后不再自动选中
     } catch (err: any) {
       if (err?.statusCode === 401) {
         Taro.showModal({ title: '提示', content: '请先登录', showCancel: false, success: () => Taro.navigateTo({ url: '/pages/login/index' }) })
@@ -545,11 +527,11 @@ export default function OrderConfirm() {
         schedule_id: schedule.id,
         route_name: route.name,
         travel_date: schedule.schedule_date,
-        contact: { name: contact.name, phone: contact.phone },
+        contact: { name: contact.name, phone: contact.phone, id_card: contact.id_card },
         participants,
-        pets: selectedPets.map(p => ({ id: p.id, name: p.name, breed: p.breed, weight: p.weight, gender: p.gender })),
+        pets: isSinglePersonPackage ? [] : selectedPets.map(p => ({ id: p.id, name: p.name, breed: p.breed, weight: p.weight, gender: p.gender })),
         participant_count: selectedTravelers.length,
-        pet_count: selectedPetIds.length,
+        pet_count: isSinglePersonPackage ? 0 : selectedPetIds.length,
         route_price: routePrice,
         insurance_price: petInsuranceTotal + personInsuranceTotal,
         equipment_price: 0,
@@ -558,6 +540,7 @@ export default function OrderConfirm() {
         addons: isFreeOrder ? [] : [...(bookingParams?.addons || []), ...selectedAddons],
         addon_amount: isFreeOrder ? 0 : addonTotal,
         travel_type: isFreeOrder ? 'self_drive' : bookingParams?.travelType,
+        package_type: bookingParams?.packageType,
         is_free: isFreeOrder,
         is_member_only: route?.is_member_only ?? 0,
         is_insurance_required: route?.is_insurance_required ?? 1
@@ -570,7 +553,7 @@ export default function OrderConfirm() {
         const payAmount = res.data.pay_amount || 0
         // 实付金额为0，直接跳转订单详情
         if (payAmount === 0) {
-          Taro.redirectTo({ url: `/pages/orders/detail/index?id=${orderId}` })
+          Taro.redirectTo({ url: `/pages/orders/detail/index?id=${orderId}&from=pay` })
           return
         }
         // 实付金额大于0，直接调起微信支付
@@ -588,7 +571,7 @@ export default function OrderConfirm() {
           if (payData.mock) {
             Taro.showToast({ title: '模拟支付成功', icon: 'success' })
             setTimeout(() => {
-              Taro.redirectTo({ url: `/pages/orders/detail/index?id=${orderId}` })
+              Taro.redirectTo({ url: `/pages/orders/detail/index?id=${orderId}&from=pay` })
             }, 1000)
             return
           }
@@ -602,7 +585,7 @@ export default function OrderConfirm() {
             success: () => {
               Taro.showToast({ title: '支付成功', icon: 'success' })
               setTimeout(() => {
-                Taro.redirectTo({ url: `/pages/orders/detail/index?id=${orderId}` })
+                Taro.redirectTo({ url: `/pages/orders/detail/index?id=${orderId}&from=pay` })
               }, 1000)
             },
             fail: (err: any) => {
@@ -610,7 +593,7 @@ export default function OrderConfirm() {
               const isCancel = err.errMsg?.includes('cancel')
               Taro.showToast({ title: isCancel ? '已取消支付' : '支付失败', icon: 'none' })
               setTimeout(() => {
-                Taro.redirectTo({ url: `/pages/orders/detail/index?id=${orderId}` })
+                Taro.redirectTo({ url: `/pages/orders/detail/index?id=${orderId}&from=pay` })
               }, 1000)
             }
           })
@@ -619,7 +602,7 @@ export default function OrderConfirm() {
           console.error('支付请求失败:', err)
           Taro.showToast({ title: err.message || '支付失败', icon: 'none' })
           setTimeout(() => {
-            Taro.navigateTo({ url: `/pages/orders/detail/index?id=${orderId}` })
+            Taro.navigateTo({ url: `/pages/orders/detail/index?id=${orderId}&from=pay` })
           }, 1000)
         }
       } else {
@@ -717,9 +700,9 @@ export default function OrderConfirm() {
   // 免费路线只需1人1宠，付费路线按原逻辑
   // 全员免费路线严格限制1人1宠，会员专享免费/付费路线只需有出行人和宠物
   const canSubmit = selectedTravelers.length > 0
-    && ((route?.is_free && !isMemberOnly)
+    && (isSinglePersonPackage || ((route?.is_free && !isMemberOnly)
       ? (selectedTravelers.length === 1 && selectedPetIds.length === 1)
-      : selectedPetIds.length > 0)
+      : selectedPetIds.length > 0))
     && (agreements.length === 0 || agreed)
 
   // 加载可用优惠券
@@ -728,8 +711,8 @@ export default function OrderConfirm() {
 
   useEffect(() => {
     if (!route?.id) return
-    // 路线价格≤20时不加载优惠券（小额订单不可用券）
-    if (routePrice <= 20) {
+    // 免费路线不加载优惠券
+    if (routePrice <= 0) {
       setAvailableCoupons([])
       setSelectedCouponId(null)
       setCouponDiscount(0)
@@ -737,9 +720,16 @@ export default function OrderConfirm() {
     }
     const loadCoupons = async () => {
       try {
+        console.log('[优惠券查询] route_id:', route.id, 'rawRoutePrice:', rawRoutePrice, 'routePrice:', routePrice)
         const res = await getAvailableCoupons({ route_id: route.id, route_price: rawRoutePrice })
+        console.log('[优惠券查询结果]', res)
         if (res.code === 200) {
           const available = res.data?.available || []
+          const unavailable = res.data?.unavailable || []
+          console.log('[优惠券可用]', available.length, '[优惠券不可用]', unavailable.length)
+          if (unavailable.length > 0) {
+            console.log('[优惠券不可用原因]', unavailable.map((c: any) => ({ id: c.id, reason: c.reason })))
+          }
           setAvailableCoupons(available)
 
           // 检查当前选中的券是否仍然可用，若不可用则取消选中
@@ -781,7 +771,23 @@ export default function OrderConfirm() {
 
   const finalTotal = Math.max(0, Math.round((total - couponDiscount) * 100) / 100)
 
-  const pkgLabelMap: any = { couple: '一人一宠', single_person: '单人轻旅（无宠）', two_person_one_pet: '二人一宠', one_person_two_pet: '一人两宠', single_pet: '毛孩专属接送（无主人陪同）' }
+  const pkgLabelMap: any = { couple: '一人一宠', single_person: '单人轻旅（无宠）', single_pet: '毛孩专属接送（无主人陪同）' }
+
+  // 调试日志
+  console.log('[OrderConfirm] 渲染状态:', {
+    route: route?.id,
+    schedule: schedule?.id,
+    bookingParams,
+    selectedTravelers: selectedTravelers.length,
+    selectedPets: selectedPets.length,
+    travelers: travelers.length,
+    pets: pets.length,
+    isSinglePersonPackage,
+    routePrice,
+    rawRoutePrice,
+    isFreeOrder,
+    isMember,
+  })
 
   return (
     <View className='order-confirm'>
@@ -801,7 +807,7 @@ export default function OrderConfirm() {
       <View className='main-content'>
         {/* Hero 活动摘要 */}
         <View className='hero-section'>
-          <Image className='hero-image' src={compressImageUrl(route?.cover_image, 750) || 'https://via.placeholder.com/750x420'} mode='aspectFill' />
+          <Image className='hero-image' src={compressImageUrl(route?.cover_image, 750) || '/assets/images/placeholder-cover.png'} mode='aspectFill' />
           <View className='hero-overlay'>
             <View className='hero-tags'>
               <Text className='hero-tag'>{route?.duration || '1天'}游</Text>
@@ -879,10 +885,11 @@ export default function OrderConfirm() {
           selectedPets.map(pet => (
             <View key={pet.id} className='info-card'>
               <View className='pet-avatar-wrap'>
-                <Image className='pet-avatar' src={compressImageUrl(pet.avatar, 200) || 'https://via.placeholder.com/120'} mode='aspectFill' />
+                <Image className='pet-avatar' src={compressImageUrl(pet.avatar, 200) || '/assets/images/placeholder-avatar.png'} mode='aspectFill' />
                 <View className='info-left'>
                   <View className='info-name-row'>
                     <Text className='info-name'>{pet.name}</Text>
+                    {pet.is_default ? <Text className='default-badge'>默认</Text> : null}
                     <Text className='pet-gender'>{GENDER_MAP[pet.gender] || '-'}</Text>
                   </View>
                   <Text className='info-detail'>
@@ -908,7 +915,10 @@ export default function OrderConfirm() {
             <View className='info-row'>
               <Text className='info-label'>套餐类型</Text>
               <Text className='info-value'>
-                {{ couple: '一人一宠', single_person: '单人轻旅（无宠）', two_person_one_pet: '二人一宠', one_person_two_pet: '一人两宠', single_pet: '毛孩专属接送（无主人陪同）' }[bookingParams.packageType] || '一人一宠'}
+                {(() => {
+                  const map: Record<string, string> = { couple: '一人一宠', single_person: '单人轻旅（无宠）', single_pet: '毛孩专属接送（无主人陪同）' }
+                  return map[bookingParams.packageType] || '一人一宠'
+                })()}
               </Text>
             </View>
             <View className='info-row'>
@@ -953,10 +963,10 @@ export default function OrderConfirm() {
           {selectedPetIds.length > 0 && <View className='insurance-check'>✓</View>}
           <View className='insurance-left'>
             <View className='insurance-name-row'>
-              <Text className='insurance-name'>宠物意外险</Text>
-              <Text className='insurance-price'>+¥{petInsuranceUnit}/狗</Text>
+              <Text className='insurance-name'>{route?.pet_insurance_title || '宠物意外险'}</Text>
+              <Text className='insurance-price'>+¥{petInsuranceUnit}/{route?.pet_insurance_unit || '狗'}</Text>
             </View>
-            <Text className='insurance-desc'>保障宠物活动中突发意外医疗费用，最高保额¥5000</Text>
+            <Text className='insurance-desc'>{route?.pet_insurance_desc || '保障宠物活动中突发意外医疗费用，最高保额¥5000'}</Text>
           </View>
           <Text className='insurance-total'>¥{petInsuranceTotal}</Text>
         </View>
@@ -965,10 +975,10 @@ export default function OrderConfirm() {
           {selectedTravelers.length > 0 && <View className='insurance-check'>✓</View>}
           <View className='insurance-left'>
             <View className='insurance-name-row'>
-              <Text className='insurance-name'>人身意外险</Text>
-              <Text className='insurance-price'>+¥{personInsuranceUnit}/人</Text>
+              <Text className='insurance-name'>{route?.person_insurance_title || '人身意外险'}</Text>
+              <Text className='insurance-price'>+¥{personInsuranceUnit}/{route?.person_insurance_unit || '人'}</Text>
             </View>
-            <Text className='insurance-desc'>保障出行人意外伤害及医疗，最高保额¥200,000</Text>
+            <Text className='insurance-desc'>{route?.person_insurance_desc || '保障出行人意外伤害及医疗，最高保额¥200,000'}</Text>
           </View>
           <Text className='insurance-total'>¥{personInsuranceTotal}</Text>
         </View>
@@ -978,7 +988,7 @@ export default function OrderConfirm() {
 
       {/* 优惠券 */}
       <View className='section-block'>
-        {routePrice > 20 ? (
+        {routePrice > 0 ? (
           <>
             <View className='coupon-row' onClick={() => setShowCouponModal(true)}>
               <View className='coupon-left'>
