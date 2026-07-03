@@ -75,9 +75,6 @@ export default function OrderList() {
         setTimeout(() => {
           const data = res.data;
           editFormRef.current?.setFieldsValue?.({
-            contact_name: data.contact?.name || '',
-            contact_phone: data.contact?.phone || '',
-            contact_id_card: data.contact?.id_card || '',
             travel_date: data.travel_date || '',
             remark: data.remark || '',
             participants_json: data.participants?.length ? JSON.stringify(data.participants, null, 2) : '',
@@ -97,11 +94,12 @@ export default function OrderList() {
   const submitEdit = async (values: any) => {
     try {
       const payload: any = {};
-      payload.contact = {
-        name: values.contact_name,
-        phone: values.contact_phone,
-        id_card: values.contact_id_card,
-      };
+      // 联系人固定为下单账号本人，不允许编辑
+      // payload.contact = {
+      //   name: values.contact_name,
+      //   phone: values.contact_phone,
+      //   id_card: values.contact_id_card,
+      // };
       if (values.travel_date) payload.travel_date = values.travel_date;
       if (values.remark !== undefined) payload.remark = values.remark;
       if (values.participants_json?.trim()) {
@@ -1030,9 +1028,9 @@ export default function OrderList() {
               </Card>
             )}
 
-            {/* 联系人信息（订单联系人 - 下单时填写的联系人） */}
+            {/* 联系人信息（固定为下单账号本人） */}
             {currentOrder.contact && (
-              <Card title="联系人信息（订单联系人）" size="small" style={{ marginBottom: 16 }}>
+              <Card title="下单账号信息（联系人）" size="small" style={{ marginBottom: 16 }}>
                 <Descriptions column={2} size="small">
                   <Descriptions.Item label="姓名">{currentOrder.contact.name || '-'}</Descriptions.Item>
                   <Descriptions.Item label="手机">{currentOrder.contact.phone || '-'}</Descriptions.Item>
@@ -1159,9 +1157,7 @@ export default function OrderList() {
         width={600}
       >
         <p style={{ color: '#999', marginBottom: 16 }}>订单状态: {statusMap[currentOrder?.status]?.text || '-'}</p>
-        <ProFormText name="contact_name" label="联系人姓名" placeholder="请输入联系人姓名" />
-        <ProFormText name="contact_phone" label="联系人电话" placeholder="请输入联系人电话" />
-        <ProFormText name="contact_id_card" label="联系人身份证" placeholder="请输入联系人身份证" />
+        <p style={{ color: '#999', marginBottom: 16 }}>联系人固定为下单账号本人，不可在此修改。</p>
         <ProFormText name="travel_date" label="出行日期" placeholder="YYYY-MM-DD" />
         <ProFormTextArea
           name="participants_json"

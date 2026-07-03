@@ -2139,8 +2139,9 @@ async def admin_update_order(
             order.travel_date = datetime.strptime(data.travel_date, "%Y-%m-%d").date()
 
         # 更新其他字段
-        if data.contact is not None:
-            order.contact = data.contact
+        # 联系人固定为下单账号本人，不允许通过后台修改
+        # if data.contact is not None:
+        #     order.contact = data.contact
         if data.participants is not None:
             order.participants = data.participants
             order.participant_count = len(data.participants) if len(data.participants) > 0 else (data.participant_count or order.participant_count)

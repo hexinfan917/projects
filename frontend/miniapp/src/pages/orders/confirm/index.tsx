@@ -470,7 +470,7 @@ export default function OrderConfirm() {
     }
     try {
       // 联系人固定为当前登录账号本人，所有选中的出行人都作为实际出行人
-      const contact = userInfo || selectedTravelers[0] || {}
+      const contact = userInfo || {}
       const participants = selectedTravelers
       const selectedAddons = addons
         .filter((a: any) => {
