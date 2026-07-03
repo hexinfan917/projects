@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import Taro from '@tarojs/taro'
 import { View, Text, Image } from '@tarojs/components'
-import { deleteAccount, getAgreements, safeNavigateBack } from '../../../utils/api'
+import { deleteAccount, getAgreements, getPublicSettings, safeNavigateBack } from '../../../utils/api'
 import './index.scss'
 
 const ICONS: Record<string, string> = {
@@ -15,12 +15,31 @@ export default function Settings() {
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [agreements, setAgreements] = useState<any[]>([])
   const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const [appVersion, setAppVersion] = useState(Taro.getStorageSync('app_version') || '1.0.0')
 
   useEffect(() => {
     loadAgreements()
+    loadAppVersion()
     const token = Taro.getStorageSync('access_token')
     setIsLoggedIn(!!token)
   }, [])
+
+  const loadAppVersion = async () => {
+    const cached = Taro.getStorageSync('app_version')
+    if (cached) {
+      setAppVersion(cached)
+    }
+    try {
+      const res: any = await getPublicSettings()
+      const version = res.data?.mp_version?.value
+      if (version) {
+        Taro.setStorageSync('app_version', version)
+        setAppVersion(version)
+      }
+    } catch (e) {
+      console.error('加载版本号失败:', e)
+    }
+  }
 
   const loadAgreements = async () => {
     try {
@@ -118,7 +137,7 @@ export default function Settings() {
       )}
 
       <View className='version-section'>
-        <Text className='version-text'>VERSION {Taro.getStorageSync('app_version') || '1.0.0'}</Text>
+        <Text className='version-text'>VERSION {appVersion}</Text>
       </View>
 
       {showDeleteModal && (

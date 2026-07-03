@@ -1,6 +1,7 @@
+import { useEffect, useState } from 'react'
 import Taro from '@tarojs/taro'
 import { View, Text, Image } from '@tarojs/components'
-import { safeNavigateBack } from '../../../utils/api'
+import { getPublicSettings, safeNavigateBack } from '../../../utils/api'
 import './index.scss'
 
 const WECHAT_ID = 'Petway_'
@@ -20,7 +21,21 @@ const copyWechat = () => {
 }
 
 export default function About() {
-  const appVersion = Taro.getStorageSync('app_version') || '1.0.0'
+  const [appVersion, setAppVersion] = useState(Taro.getStorageSync('app_version') || '1.0.0')
+
+  useEffect(() => {
+    const cached = Taro.getStorageSync('app_version')
+    if (cached) {
+      setAppVersion(cached)
+    }
+    getPublicSettings().then((res: any) => {
+      const version = res.data?.mp_version?.value
+      if (version) {
+        Taro.setStorageSync('app_version', version)
+        setAppVersion(version)
+      }
+    }).catch(() => {})
+  }, [])
 
   return (
     <View className='about-page' style={{ paddingTop: 'calc(140rpx + env(safe-area-inset-top))' }}>

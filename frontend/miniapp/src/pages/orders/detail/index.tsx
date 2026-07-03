@@ -76,6 +76,7 @@ export default function OrderDetail() {
   const [order, setOrder] = useState<any>(null)
   const [qrModalVisible, setQrModalVisible] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
+  const [error, setError] = useState<string>('')
 
   useEffect(() => {
     const instance = Taro.getCurrentInstance()
@@ -94,8 +95,15 @@ export default function OrderDetail() {
   })
 
   const loadOrder = async (id: number) => {
-    const res = await getOrderDetail(id)
-    setOrder(res.data)
+    try {
+      setError('')
+      const res = await getOrderDetail(id)
+      setOrder(res.data)
+    } catch (err: any) {
+      console.error('Load order failed:', err)
+      setError(err?.message || '加载订单失败，请重试')
+      Taro.showToast({ title: '加载订单失败', icon: 'none' })
+    }
   }
 
   const onRefresh = async () => {
@@ -128,6 +136,25 @@ export default function OrderDetail() {
     Taro.navigateTo({ url: `/pages/orders/pay/index?id=${order.id}` })
   }
 
+  if (error) {
+    return (
+      <View className='order-detail'>
+        <View className='error-wrap'>
+          <Text className='error-text'>{error}</Text>
+          <Button
+            className='retry-btn'
+            size='mini'
+            onClick={() => {
+              const instance = Taro.getCurrentInstance()
+              const id = instance.router?.params?.id
+              if (id) loadOrder(Number(id))
+            }}
+          >重新加载</Button>
+        </View>
+      </View>
+    )
+  }
+
   if (!order) return <View className='order-detail'><Text className='loading-text'>加载中...</Text></View>
 
   const actualPay = Number(order.pay_amount || 0)
@@ -139,9 +166,23 @@ export default function OrderDetail() {
       {/* 顶部导航 */}
       <View className='detail-navbar'>
         <View className='page-back' onClick={() => {
+          const instance = Taro.getCurrentInstance()
+          const from = instance.router?.params?.from
+          // 支付完成后进入订单详情，返回时直接回到我的页面
+          if (from === 'pay') {
+            Taro.switchTab({ url: '/pages/profile/index' })
+            return
+          }
           const pages = Taro.getCurrentPages()
           if (pages.length > 1) {
-            safeNavigateBack()
+            const prevPage = pages[pages.length - 2]
+            const prevRoute = prevPage?.route || ''
+            // 如果上一页是订单列表页，直接返回；否则跳转到订单列表页
+            if (prevRoute.includes('orders/list') || prevRoute.includes('orders/index')) {
+              safeNavigateBack()
+            } else {
+              Taro.redirectTo({ url: '/pages/orders/list/index' })
+            }
           } else {
             Taro.switchTab({ url: '/pages/index/index' })
           }
@@ -189,6 +230,12 @@ export default function OrderDetail() {
                   {TRAVEL_TYPE_MAP[order.travel_type] || order.travel_type}
                 </Text>
               )}
+            </View>
+            <View className='detail-row'>
+              <View className='detail-icon-wrap'>
+                <Image className='detail-icon' src='/assets/icons/icon-file.svg' mode='aspectFit' />
+              </View>
+              <Text className='detail-text'>订单号：{order.order_no}</Text>
             </View>
             <View className='detail-row'>
               <View className='detail-icon-wrap'>

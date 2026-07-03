@@ -13,7 +13,7 @@ definePageConfig({
 
 // 快捷入口模块
 const QUICK_MODULES = [
-  { key: 'featured', label: '主题精选', icon: '/assets/icons/featured.svg', path: '/pages/routes/index' },
+  { key: 'featured', label: '精选路线', icon: '/assets/icons/featured.svg', path: '/pages/routes/index' },
   { key: 'personality', label: '犬格检测', icon: '/assets/icons/personality.svg', path: '/pages/routes/index' },
   { key: 'adoption', label: '狗狗领养', icon: '/assets/icons/adoption.svg', path: '/pages/adoption/index/index' },
   { key: 'wiki', label: '狗狗回顾', icon: '/assets/icons/wiki.svg', path: '/pages/reviews/list/index' },
@@ -251,7 +251,12 @@ export default function Index() {
               <SwiperItem key={String(banner.id || idx)}>
                 <View className='hero-slide' onClick={() => {
                   if (banner.link_url) {
-                    Taro.navigateTo({ url: banner.link_url })
+                    // 统一处理跳转链接：补全前导斜杠，确保 ? 参数正确
+                    let url = banner.link_url.trim()
+                    if (!url.startsWith('/')) {
+                      url = '/' + url
+                    }
+                    Taro.navigateTo({ url })
                   } else {
                     // 没有链接时，切换到下一张
                     const nextIndex = (heroCurrent + 1) % displayBanners.length

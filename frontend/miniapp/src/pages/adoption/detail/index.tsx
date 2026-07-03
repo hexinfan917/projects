@@ -79,6 +79,12 @@ export default function AdoptionDetail() {
     setShowServiceModal(true)
   }
 
+  const handleShareClick = () => {
+    if (!isLoggedIn) {
+      Taro.navigateTo({ url: '/pages/login/index' })
+    }
+  }
+
   if (!detail) return null
 
   // 详情页优先展示封面图，再把图集追加到后面
@@ -256,10 +262,17 @@ export default function AdoptionDetail() {
       {/* 底部操作栏 */}
       <View className='bottom-actions'>
         <View className='action-group'>
-          <Button className='action-icon' openType='share'>
-            <Text className='action-icon-text'>⇧</Text>
-            <Text className='action-icon-label'>分享</Text>
-          </Button>
+          {isLoggedIn ? (
+            <Button className='action-icon' openType='share'>
+              <Text className='action-icon-text'>⇧</Text>
+              <Text className='action-icon-label'>分享</Text>
+            </Button>
+          ) : (
+            <View className='action-icon' onClick={handleShareClick}>
+              <Text className='action-icon-text'>⇧</Text>
+              <Text className='action-icon-label'>分享</Text>
+            </View>
+          )}
           <View className='action-icon' onClick={handleConsult}>
             <Text className='action-icon-text'>💬</Text>
             <Text className='action-icon-label'>咨询</Text>

@@ -187,6 +187,14 @@ export default function RouteDetail() {
 
   const hasAnySchedule = useMemo(() => Object.keys(scheduleMap).length > 0, [scheduleMap])
 
+  // 当前选中的排期是否已满
+  const isSelectedFull = useMemo(() => {
+    if (!selectedDate) return true
+    const schedule = scheduleMap[selectedDate]
+    if (!schedule) return true
+    return schedule.status === 2 || schedule.stock <= 0
+  }, [selectedDate, scheduleMap])
+
   // 最近 3 个可用营期，按日期升序
   const upcomingSchedules = useMemo(() => {
     return Object.entries(scheduleMap)
@@ -243,6 +251,28 @@ export default function RouteDetail() {
     const validPrices = prices.filter(p => p != null && p > 0)
     return validPrices.length > 0 ? Math.min(...validPrices) : 0
   }
+
+  // 所有可用排期中的最低价（用于顶部详情区展示）
+  const minPriceAcrossSchedules = useMemo(() => {
+    if (!hasAnySchedule || route?.is_free) return 0
+    let minPrice = Infinity
+    Object.values(scheduleMap).forEach((schedule: any) => {
+      const price = getLowestPrice(schedule)
+      if (price > 0 && price < minPrice) {
+        minPrice = price
+      }
+    })
+    return minPrice === Infinity ? 0 : minPrice
+  }, [scheduleMap, route?.is_free, isMember, hasAnySchedule])
+
+  // 当前选中排期的最低价（用于底部预订栏，未选中时兜底用全线路最低价）
+  const selectedSchedulePrice = useMemo(() => {
+    if (route?.is_free) return 0
+    const schedule = selectedDate ? scheduleMap[selectedDate] : null
+    if (!schedule) return minPriceAcrossSchedules
+    const price = getLowestPrice(schedule)
+    return price > 0 ? price : minPriceAcrossSchedules
+  }, [selectedDate, scheduleMap, route?.is_free, isMember, minPriceAcrossSchedules])
 
   const handleOpenBooking = (dateStr?: string) => {
     const token = Taro.getStorageSync('access_token')
@@ -307,28 +337,24 @@ export default function RouteDetail() {
   const bannerImages = (route.gallery?.length > 0 ? route.gallery : [route.cover_image]).filter(Boolean)
   const images = bannerImages.length > 0 ? bannerImages : ['/assets/images/placeholder-cover.png']
 
-  // 价格展示
+  // 价格展示：使用所有可用排期中的最低价
   const displayPrice = route.display_price || (
-    route.schedule_price !== undefined && route.schedule_price !== null
-      ? (route.schedule_price === 0
+    hasAnySchedule
+      ? (minPriceAcrossSchedules === 0
           ? (route.is_member_only === 1
               ? (isMember ? '会员免费' : `非会员￥${route.non_member_price || 0}起/人`)
               : '免费')
-          : (isMember && route.schedule_member_price != null && route.schedule_member_price > 0
-              ? `￥${route.schedule_member_price}起/人`
-              : `￥${route.schedule_price}起/人`))
+          : `￥${minPriceAcrossSchedules}起/人`)
       : '暂无营期'
   )
 
   const footerPrice = route.display_price || (
     hasAnySchedule
-      ? (route.schedule_price !== undefined && route.schedule_price !== null
-          ? (route.schedule_price === 0
-              ? (route.is_member_only === 1
-                  ? (isMember ? '会员免费' : `￥${route.non_member_price || 0}起`)
-                  : '免费')
-              : `￥${route.schedule_price}起`)
-          : '暂无营期')
+      ? (selectedSchedulePrice === 0
+          ? (route.is_member_only === 1
+              ? (isMember ? '会员免费' : `￥${route.non_member_price || 0}起`)
+              : '免费')
+          : `￥${selectedSchedulePrice}起`)
       : '暂无营期'
   )
 
@@ -517,12 +543,12 @@ export default function RouteDetail() {
             <Text className='booking-price-original'>原价 ¥{route.original_price}</Text>
           )}
         </View>
-        {hasAnySchedule ? (
+        {hasAnySchedule && !isSelectedFull ? (
           <View className='booking-btn' onClick={() => handleOpenBooking(selectedDate)}>
             {route?.is_free ? '免费报名' : '立即预订'}
           </View>
         ) : (
-          <View className='booking-btn disabled'>暂无营期</View>
+          <View className='booking-btn disabled'>{hasAnySchedule ? '已满' : '暂无营期'}</View>
         )}
       </View>
 

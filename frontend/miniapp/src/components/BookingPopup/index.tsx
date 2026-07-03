@@ -35,6 +35,30 @@ export default function BookingPopup({ visible, route, schedules, initialDate, o
   const [addons, setAddons] = useState<any[]>([])
   const [isMember, setIsMember] = useState(false)
 
+  // 排期数据
+  const scheduleMap = useMemo(() => {
+    const map: Record<string, any> = {}
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    schedules.forEach(s => {
+      if (s.schedule_date) {
+        const d = new Date(s.schedule_date + 'T00:00:00')
+        if (d >= today) {
+          map[s.schedule_date] = s
+        }
+      }
+    })
+    return map
+  }, [schedules])
+
+  // 当前选中排期是否已满
+  const isScheduleFull = useMemo(() => {
+    if (!selectedDate) return true
+    const schedule = scheduleMap[selectedDate]
+    if (!schedule) return true
+    return schedule.status === 2 || schedule.stock <= 0
+  }, [selectedDate, scheduleMap])
+
   // 获取会员状态
   useEffect(() => {
     if (visible) {
@@ -130,22 +154,6 @@ export default function BookingPopup({ visible, route, schedules, initialDate, o
       console.error('加载选配失败', err)
     }
   }
-
-  // 排期数据
-  const scheduleMap = useMemo(() => {
-    const map: Record<string, any> = {}
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    schedules.forEach(s => {
-      if (s.schedule_date) {
-        const d = new Date(s.schedule_date + 'T00:00:00')
-        if (d >= today) {
-          map[s.schedule_date] = s
-        }
-      }
-    })
-    return map
-  }, [schedules])
 
   // 当前选中排期的出行方式限制 0两者都支持 1仅大巴 2仅自驾
   const scheduleTravelType = useMemo(() => {
@@ -624,10 +632,10 @@ export default function BookingPopup({ visible, route, schedules, initialDate, o
               </View>
             </View>
             <View
-              className={`next-btn ${!selectedDate ? 'disabled' : ''}`}
-              onClick={handleNext}
+              className={`next-btn ${!selectedDate || isScheduleFull ? 'disabled' : ''}`}
+              onClick={!isScheduleFull ? handleNext : undefined}
             >
-              <Text>{isFree ? '确认报名' : '下一步'}</Text>
+              <Text>{isScheduleFull ? '已满' : (isFree ? '确认报名' : '下一步')}</Text>
               <Text className='next-btn-arrow'>→</Text>
             </View>
           </View>

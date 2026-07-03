@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import Taro from '@tarojs/taro'
 import { Provider } from './store'
+import { getPublicSettings } from './utils/api'
 import './styles/global.scss'
 
 function App({ children }) {
@@ -16,6 +17,23 @@ function App({ children }) {
     if (!token) {
       console.log('User not logged in')
     }
+
+    // 加载公开系统设置（如小程序版本号）
+    const loadPublicSettings = async () => {
+      try {
+        const res: any = await getPublicSettings()
+        if (res.code === 200 && res.data) {
+          const versionSetting = res.data.mp_version
+          if (versionSetting?.value) {
+            Taro.setStorageSync('app_version', versionSetting.value)
+            console.log('[App] 小程序版本号:', versionSetting.value)
+          }
+        }
+      } catch (e) {
+        console.error('[App] 加载公开设置失败:', e)
+      }
+    }
+    loadPublicSettings()
 
     // 检查小程序更新
     const updateManager = Taro.getUpdateManager()
