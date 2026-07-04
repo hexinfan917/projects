@@ -114,7 +114,7 @@ export default function Index() {
           link_url: b.link_url || '',
           title: b.title || '',
           subtitle: b.subtitle || '',
-          tag: b.tag || '精选路线',
+          tag: b.tag || '',
         })))
       } else {
         setBanners([])
@@ -270,9 +270,9 @@ export default function Index() {
                   )}
                   <View className='hero-gradient' />
                   <View className='hero-content'>
-                    <Text className='hero-tag'>{banner.tag || '精品路线'}</Text>
-                    <Text className='hero-title'>{banner.title || '尾巴PetWay'}</Text>
-                    <Text className='hero-subtitle'>{banner.subtitle || '陪伴的意义，是认识新朋友——对它们也是'}</Text>
+                    {banner.tag && <Text className='hero-tag'>{banner.tag}</Text>}
+                    {banner.title && <Text className='hero-title'>{banner.title}</Text>}
+                    {banner.subtitle && <Text className='hero-subtitle'>{banner.subtitle}</Text>}
                   </View>
                 </View>
               </SwiperItem>
