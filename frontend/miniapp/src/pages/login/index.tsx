@@ -53,6 +53,14 @@ export default function Login() {
     Taro.navigateTo({ url: `/pages/agreements/detail/index?id=${id}` })
   }
 
+  const goStaticTerms = () => {
+    Taro.navigateTo({ url: '/pages/profile/terms/index' })
+  }
+
+  const goStaticPrivacy = () => {
+    Taro.navigateTo({ url: '/pages/profile/privacy/index' })
+  }
+
   const getAgreementIdByKeyword = (keyword: string) => {
     const found = agreements.find((a: any) => a.title?.includes(keyword))
     return found?.id
@@ -61,6 +69,18 @@ export default function Login() {
   const getAgreementIdByKeywords = (...keywords: string[]) => {
     const found = agreements.find((a: any) => keywords.some(k => a.title?.includes(k)))
     return found?.id
+  }
+
+  const handleUserAgreementClick = () => {
+    const id = getAgreementIdByKeyword('用户协议')
+    if (id) goAgreementDetail(id)
+    else goStaticTerms()
+  }
+
+  const handlePrivacyClick = () => {
+    const id = getAgreementIdByKeywords('隐私政策', '隐私协议')
+    if (id) goAgreementDetail(id)
+    else goStaticPrivacy()
   }
 
   const doLoginSuccess = (data: any) => {
@@ -274,17 +294,9 @@ export default function Login() {
         <Checkbox className='agreement-checkbox' checked={agreed} onClick={() => setAgreed(!agreed)} />
         <Text className='agreement-text'>
           我已阅读并同意
-          <Text className='link' onClick={() => {
-            const id = getAgreementIdByKeyword('用户协议')
-            if (id) goAgreementDetail(id)
-            else Taro.showToast({ title: '暂无用户协议', icon: 'none' })
-          }}>《用户协议》</Text>
+          <Text className='link' onClick={handleUserAgreementClick}>《用户协议》</Text>
           和
-          <Text className='link' onClick={() => {
-            const id = getAgreementIdByKeywords('隐私政策', '隐私协议')
-            if (id) goAgreementDetail(id)
-            else Taro.showToast({ title: '暂无隐私政策', icon: 'none' })
-          }}>《隐私政策》</Text>
+          <Text className='link' onClick={handlePrivacyClick}>《隐私政策》</Text>
           ，未注册手机号登录后将自动创建账号
         </Text>
       </View>

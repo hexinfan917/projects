@@ -312,28 +312,30 @@ export default function Index() {
         </View>
 
         {/* 3. 热门活动 - 横向滚动卡片 */}
-        <View className='section-block activity-section'>
-          <View className='section-header-row'>
-            <View>
-              <Text className='section-title-main'>热门活动</Text>
-              <Text className='section-title-sub'>精选最受欢迎的宠物友好目的地</Text>
-            </View>
-            <Text className='section-more' onClick={() => Taro.switchTab({ url: '/pages/routes/index' })}>更多 {'>'}</Text>
-          </View>
-
-          <ScrollView className='trip-scroll' scrollX showScrollbar={false}>
-            {routes.map((route) => (
-              <View key={route.id} className='trip-card' onClick={() => goToRouteDetail(route)}>
-                <Image className='trip-image' src={route.cover_image} mode='aspectFill' lazyLoad />
-                <View className='trip-tag'>{route.type}</View>
-                <View className='trip-overlay'>
-                  <Text className='trip-name'>{route.name}</Text>
-                  <Text className='trip-subtitle'>{route.subtitle || route.location}</Text>
-                </View>
+        {routes.length > 0 && (
+          <View className='section-block activity-section'>
+            <View className='section-header-row'>
+              <View>
+                <Text className='section-title-main'>热门活动</Text>
+                <Text className='section-title-sub'>精选最受欢迎的宠物友好目的地</Text>
               </View>
-            ))}
-          </ScrollView>
-        </View>
+              <Text className='section-more' onClick={() => Taro.switchTab({ url: '/pages/routes/index' })}>更多 {'>'}</Text>
+            </View>
+
+            <ScrollView className='trip-scroll' scrollX showScrollbar={false}>
+              {routes.map((route) => (
+                <View key={route.id} className='trip-card' onClick={() => goToRouteDetail(route)}>
+                  <Image className='trip-image' src={route.cover_image} mode='aspectFill' lazyLoad />
+                  <View className='trip-tag'>{route.type}</View>
+                  <View className='trip-overlay'>
+                    <Text className='trip-name'>{route.name}</Text>
+                    <Text className='trip-subtitle'>{route.subtitle || route.location}</Text>
+                  </View>
+                </View>
+              ))}
+            </ScrollView>
+          </View>
+        )}
 
         {/* 4. 狗狗领养 - 轮播图 */}
         {adoptionDogs.length > 0 && (

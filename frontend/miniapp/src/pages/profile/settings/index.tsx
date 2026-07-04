@@ -57,8 +57,21 @@ export default function Settings() {
     return found?.id
   }
 
+  const getAgreementIdByKeywords = (...keywords: string[]) => {
+    const found = agreements.find((a: any) => keywords.some(k => a.title?.includes(k)))
+    return found?.id
+  }
+
   const goAgreementDetail = (id: number) => {
     Taro.navigateTo({ url: `/pages/agreements/detail/index?id=${id}` })
+  }
+
+  const goStaticTerms = () => {
+    Taro.navigateTo({ url: '/pages/profile/terms/index' })
+  }
+
+  const goStaticPrivacy = () => {
+    Taro.navigateTo({ url: '/pages/profile/privacy/index' })
   }
 
   const handleClearCache = () => {
@@ -104,9 +117,9 @@ export default function Settings() {
         <Text className='group-title'>其他设置</Text>
         <View className='settings-list'>
           <View className='settings-item' onClick={() => {
-            const id = getAgreementIdByKeyword('隐私协议')
+            const id = getAgreementIdByKeywords('隐私政策', '隐私协议')
             if (id) goAgreementDetail(id)
-            else Taro.showToast({ title: '暂无隐私协议', icon: 'none' })
+            else goStaticPrivacy()
           }}>
             <Image className='settings-item-icon' src={ICONS.privacy} mode='aspectFit' />
             <Text className='settings-label'>隐私政策</Text>
@@ -115,7 +128,7 @@ export default function Settings() {
           <View className='settings-item' onClick={() => {
             const id = getAgreementIdByKeyword('用户协议')
             if (id) goAgreementDetail(id)
-            else Taro.showToast({ title: '暂无用户协议', icon: 'none' })
+            else goStaticTerms()
           }}>
             <Image className='settings-item-icon' src={ICONS.agreement} mode='aspectFit' />
             <Text className='settings-label'>用户协议</Text>
