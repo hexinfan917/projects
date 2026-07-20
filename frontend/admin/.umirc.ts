@@ -229,6 +229,11 @@ export default defineConfig({
           component: './Coupons/GrantRecords',
         },
         {
+          name: '用户优惠券统计',
+          path: '/coupons/user-coupon-stats',
+          component: './Coupons/UserCouponStats',
+        },
+        {
           name: '核销记录',
           path: '/coupons/use-records',
           component: './Coupons/UseRecords',
@@ -239,6 +244,46 @@ export default defineConfig({
       name: '协议管理',
       path: '/agreements',
       component: './Agreements',
+    },
+    {
+      name: '犬格检测',
+      path: '/dog-personality',
+      routes: [
+        {
+          path: '/dog-personality',
+          redirect: '/dog-personality/modules',
+        },
+        {
+          name: '模块管理',
+          path: '/dog-personality/modules',
+          component: './DogPersonality/Modules',
+        },
+        {
+          name: '题目管理',
+          path: '/dog-personality/questions',
+          component: './DogPersonality/Questions',
+        },
+        {
+          name: '分型管理',
+          path: '/dog-personality/levels',
+          component: './DogPersonality/Levels',
+        },
+        {
+          name: '测评记录',
+          path: '/dog-personality/results',
+          component: './DogPersonality/Results',
+        },
+        {
+          name: '行为画像配置',
+          path: '/dog-personality/behavior-configs',
+          component: './DogPersonality/BehaviorConfigs',
+        },
+        {
+          name: 'PK 记录',
+          path: '/dog-personality/pk-records',
+          component: './DogPersonality/PkRecords',
+        },
+      ],
     },
     {
       name: '登录',

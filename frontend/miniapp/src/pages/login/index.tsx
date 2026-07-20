@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Taro from '@tarojs/taro'
 import { View, Text, Button, Checkbox, Image, Input } from '@tarojs/components'
 import { login, getAgreements, updateUserProfile, uploadFile, safeNavigateBack } from '../../utils/api'
@@ -21,11 +21,16 @@ export default function Login() {
   const [avatarFilePath, setAvatarFilePath] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [statusBarHeight, setStatusBarHeight] = useState(40)
+  const agreementsLoadedRef = useRef(false)
 
   useEffect(() => {
     const sys = Taro.getSystemInfoSync()
     setStatusBarHeight((sys.statusBarHeight || 20) * 2)
-    loadAgreements()
+    if (!agreementsLoadedRef.current) {
+      agreementsLoadedRef.current = true
+      loadAgreements()
+    }
+    console.log('[Login] onLoad / useEffect triggered')
     
     // 监听隐私授权需求（基础库 2.32.3+）
     if ((Taro as any).onNeedPrivacyAuthorization) {
@@ -104,11 +109,21 @@ export default function Login() {
             return
           }
 
-          // 检查是否有 redirect 参数
+          // 检查是否有 redirect 参数或特殊来源
           const router = Taro.getCurrentInstance().router
-          const redirect = router?.params?.redirect as string
+          const from = router?.params?.from as string
+          const rawRedirect = router?.params?.redirect as string
+          const redirect = rawRedirect ? decodeURIComponent(rawRedirect) : ''
           if (redirect) {
-            Taro.navigateTo({ url: redirect })
+            // 优先使用 redirect 参数（如 PK 分享链接），补上前导 /
+            const redirectUrl = redirect.startsWith('/') ? redirect : `/${redirect}`
+            console.log('[Login] redirect to:', redirectUrl)
+            Taro.redirectTo({ url: redirectUrl })
+            return
+          }
+          if (from === 'dp_test') {
+            // 犬格测评流程：登录后直接前往宠物选择页
+            Taro.redirectTo({ url: '/subpackage/dog-personality/pet-select/index' })
             return
           }
           const pages = Taro.getCurrentPages()
@@ -194,6 +209,22 @@ export default function Login() {
 
   const goHome = () => {
     setShowProfileModal(false)
+    const router = Taro.getCurrentInstance().router
+    const from = router?.params?.from as string
+    const rawRedirect = router?.params?.redirect as string
+    const redirect = rawRedirect ? decodeURIComponent(rawRedirect) : ''
+    // 优先使用 redirect 参数（如 PK 分享链接），补上前导 /
+    if (redirect) {
+      const redirectUrl = redirect.startsWith('/') ? redirect : `/${redirect}`
+      console.log('[Login] redirect to:', redirectUrl)
+      Taro.redirectTo({ url: redirectUrl })
+      return
+    }
+    // 来自犬格测评流程：完善资料后跳转到宠物选择页
+    if (from === 'dp_test') {
+      Taro.redirectTo({ url: '/subpackage/dog-personality/pet-select/index' })
+      return
+    }
     Taro.setStorageSync('active_tab_index', 0)
     Taro.switchTab({ url: '/pages/index/index' })
   }
@@ -291,7 +322,7 @@ export default function Login() {
 
       {/* 隐私协议 */}
       <View className='agreement-row'>
-        <Checkbox className='agreement-checkbox' checked={agreed} onClick={() => setAgreed(!agreed)} />
+        <Checkbox className='agreement-checkbox' value='agreed' checked={agreed} onClick={() => setAgreed(!agreed)} />
         <Text className='agreement-text'>
           我已阅读并同意
           <Text className='link' onClick={handleUserAgreementClick}>《用户协议》</Text>

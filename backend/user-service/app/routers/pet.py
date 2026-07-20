@@ -144,3 +144,41 @@ async def delete_pet(
     """删除宠物档案"""
     await pet_service.delete_pet(pet_id, current_user["user_id"], db)
     return success(message="删除成功")
+
+
+@router.get("/simple/list")
+async def get_simple_pet_list(
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """获取当前用户宠物列表（犬格检测选择页用，精简字段）"""
+    pets = await pet_service.get_user_pets(current_user["user_id"], db)
+    
+    from sqlalchemy import select, desc
+    from app.models.dog_personality import DogPersonalityResult
+    
+    pet_list = []
+    for pet in pets:
+        # 查询该宠物最近一次测评
+        result = await db.execute(
+            select(DogPersonalityResult.id, DogPersonalityResult.type_code)
+            .where(DogPersonalityResult.pet_id == pet.id)
+            .order_by(desc(DogPersonalityResult.created_at))
+            .limit(1)
+        )
+        last_result = result.first()
+        
+        pet_list.append({
+            "id": pet.id,
+            "name": pet.name,
+            "breed": pet.breed,
+            "breed_type": pet.breed_type,
+            "age_str": pet.age_str,
+            "gender": pet.gender,
+            "avatar": pet.avatar,
+            "profile_status": pet.profile_status,
+            "last_result_id": last_result[0] if last_result else None,
+            "last_type_code": last_result[1] if last_result else None
+        })
+    
+    return success(pet_list)

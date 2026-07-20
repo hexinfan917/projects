@@ -19,7 +19,8 @@ const config = {
       { from: 'src/assets/icons', to: 'dist/assets/icons' },
       { from: 'src/assets/images', to: 'dist/assets/images' },
       { from: 'src/assets/toplogo.png', to: 'dist/assets/toplogo.png' },
-      { from: 'src/assets/see-throughlogo.png', to: 'dist/assets/see-throughlogo.png' }
+      { from: 'src/assets/see-throughlogo.png', to: 'dist/assets/see-throughlogo.png' },
+      { from: 'src/common.wxss', to: 'dist/common.wxss' }
     ],
     options: {}
   },

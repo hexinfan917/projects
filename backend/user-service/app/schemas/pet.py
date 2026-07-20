@@ -14,10 +14,10 @@ class PetBase(BaseModel):
     age_str: Optional[str] = Field(None, max_length=20, description="年龄文本（支持小数和描述，如1.5、1岁半）")
     gender: Optional[int] = Field(None, ge=0, le=1, description="0母 1公")
     weight: Optional[float] = Field(None, ge=0, le=200, description="体重kg")
-    avatar: str = Field(..., max_length=500, description="头像URL")
+    avatar: Optional[str] = Field(None, max_length=500, description="头像URL")
     tags: Optional[List[str]] = Field(None, description="性格标签")
     health_notes: Optional[str] = Field(None, description="健康备注")
-    vaccine_date: date = Field(..., description="疫苗注射时间")
+    vaccine_date: Optional[date] = Field(None, description="疫苗注射时间")
     vaccine_book: Optional[str] = Field(None, max_length=500, description="疫苗本照片URL")
     is_default: int = Field(default=0, description="是否默认宠物")
 
@@ -48,6 +48,8 @@ class PetResponse(PetBase):
     id: int = Field(..., description="宠物ID")
     user_id: int = Field(..., description="主人ID")
     status: int = Field(default=1, description="状态")
+    profile_status: str = Field(default="complete", description="档案完整状态")
+    source: str = Field(default="manual", description="来源")
     created_at: datetime = Field(..., description="创建时间")
     updated_at: datetime = Field(..., description="更新时间")
     

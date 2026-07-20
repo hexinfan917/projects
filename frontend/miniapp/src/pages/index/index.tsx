@@ -14,7 +14,7 @@ definePageConfig({
 // 快捷入口模块
 const QUICK_MODULES = [
   { key: 'featured', label: '精选路线', icon: '/assets/icons/featured.svg', path: '/pages/routes/index' },
-  { key: 'personality', label: '犬格检测', icon: '/assets/icons/personality.svg', path: '/pages/routes/index' },
+  { key: 'personality', label: '犬格检测', icon: '/assets/icons/personality.svg', path: '/subpackage/dog-personality/index/index' },
   { key: 'adoption', label: '狗狗领养', icon: '/assets/icons/adoption.svg', path: '/pages/adoption/index/index' },
   { key: 'wiki', label: '狗狗回顾', icon: '/assets/icons/wiki.svg', path: '/pages/reviews/list/index' },
 ]
@@ -190,10 +190,6 @@ export default function Index() {
   }
 
   const handleQuickModule = (module: typeof QUICK_MODULES[0]) => {
-    if (module.key === 'personality') {
-      Taro.showToast({ title: '功能正在开发中，敬请期待', icon: 'none' })
-      return
-    }
     if (module.path === '/pages/adoption/index/index') {
       goToAdoptionList()
       return
@@ -204,6 +200,8 @@ export default function Index() {
       } else {
         Taro.navigateTo({ url: module.path })
       }
+    } else if (module.path.startsWith('/subpackage/')) {
+      Taro.navigateTo({ url: module.path })
     }
   }
 

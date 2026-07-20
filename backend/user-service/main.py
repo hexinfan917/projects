@@ -24,7 +24,8 @@ from common.logger import setup_logger
 from common.dependencies import get_current_user, get_optional_user
 from common.response import success
 
-from app.routers import user, pet, auth, traveler
+from app.routers import user, pet, auth, traveler, dog_personality
+from app.routers.dog_personality import admin_router as dog_personality_admin_router
 
 # 设置服务特定配置
 settings.app_name = "user-service"
@@ -74,6 +75,8 @@ app.include_router(auth.router, prefix="/api/v1/auth", tags=["认证"])
 app.include_router(user.router, prefix="/api/v1/user", tags=["用户"])
 app.include_router(pet.router, prefix="/api/v1/pets", tags=["宠物档案"])
 app.include_router(traveler.router, prefix="/api/v1/travelers", tags=["出行人管理"])
+app.include_router(dog_personality.router, prefix="/api/v1/dog-personality", tags=["犬格检测"])
+app.include_router(dog_personality_admin_router, prefix="/api/v1/admin/dog-personality", tags=["犬格检测管理"])
 
 
 @app.get("/health")
@@ -1444,20 +1447,35 @@ async def admin_get_memberships(
         for row in order_result.mappings().all():
             order_data[row["id"]] = {"order_no": row["order_no"], "pay_channel": row["pay_channel"]}
 
-    # 批量查询每个用户已使用的会员优惠券数量
-    used_coupon_counts = {}
+    # 批量查询每个用户实际拥有的会员相关优惠券总数（source_type=2购买赠送, 3月发, 4管理后台发放）
+    total_coupon_counts = {}
+    # 批量查询每个用户剩余可用的会员相关优惠券数量
+    remaining_coupon_counts = {}
     if user_ids:
-        used_result = await db.execute(
+        user_ids_param = tuple(user_ids) if len(user_ids) > 1 else (user_ids[0], user_ids[0])
+        total_result = await db.execute(
             text("""
                 SELECT user_id, COUNT(*) as cnt 
                 FROM user_coupons 
-                WHERE user_id IN :user_ids AND source_type = 2 AND used_order_id IS NOT NULL
+                WHERE user_id IN :user_ids AND source_type IN (2, 3, 4)
                 GROUP BY user_id
             """),
-            {"user_ids": tuple(user_ids) if len(user_ids) > 1 else (user_ids[0], user_ids[0])}
+            {"user_ids": user_ids_param}
         )
-        for row in used_result.mappings().all():
-            used_coupon_counts[row["user_id"]] = row["cnt"]
+        for row in total_result.mappings().all():
+            total_coupon_counts[row["user_id"]] = row["cnt"]
+
+        remaining_result = await db.execute(
+            text("""
+                SELECT user_id, COUNT(*) as cnt 
+                FROM user_coupons 
+                WHERE user_id IN :user_ids AND source_type IN (2, 3, 4) AND status = 1
+                GROUP BY user_id
+            """),
+            {"user_ids": user_ids_param}
+        )
+        for row in remaining_result.mappings().all():
+            remaining_coupon_counts[row["user_id"]] = row["cnt"]
 
     # 批量查询每个用户使用优惠券的订单
     order_coupon_data = {}
@@ -1512,24 +1530,10 @@ async def admin_get_memberships(
             if benefit.get("free_pet_insurance"):
                 benefits_list.append("宠物保险")
 
-        # 从套餐的券包配置计算优惠券数量
-        coupon_package = row[5] or {}
-        if isinstance(coupon_package, str):
-            try:
-                coupon_package = json.loads(coupon_package)
-            except:
-                coupon_package = {}
-        coupon_count = 0
-        if isinstance(coupon_package, dict) and coupon_package.get("templates"):
-            for t in coupon_package["templates"]:
-                coupon_count += t.get("count", 0)
-        elif isinstance(coupon_package, list):
-            coupon_count = len(coupon_package)
-
         order_info = order_data.get(m.order_id, {})
-        coupon_total = coupon_count
-        coupon_used = used_coupon_counts.get(m.user_id, 0)
-        coupon_remaining = max(0, coupon_total - coupon_used)
+        # 从用户实际券表统计会员相关优惠券数量（包含购买赠送、每月发放、管理后台发放）
+        coupon_total = total_coupon_counts.get(m.user_id, 0)
+        coupon_remaining = remaining_coupon_counts.get(m.user_id, 0)
         data.append({
             "id": m.id,
             "user_id": m.user_id,
@@ -1549,7 +1553,7 @@ async def admin_get_memberships(
             "order_no": order_info.get("order_no", "-"),
             "pay_channel": order_info.get("pay_channel", "-"),
             "coupon_total": coupon_total,
-            "coupon_used": coupon_used,
+            "coupon_used": coupon_total - coupon_remaining,
             "coupon_remaining": coupon_remaining,
             "order_coupons": order_coupon_data.get(m.user_id, []),
         })

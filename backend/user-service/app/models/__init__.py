@@ -8,9 +8,11 @@ from .popup import PopupConfig, UserPopupLog
 from .admin_user import AdminUser
 from .admin_role import AdminRole, admin_role_menus
 from .admin_menu import AdminMenu
+from .dog_personality import DogPersonalityPKRecord
 
 __all__ = [
     "User", "PetProfile", "Traveler", "SystemSetting", "OperationLog",
     "MemberPlan", "UserMembership", "MemberOrder", "PopupConfig", "UserPopupLog",
     "AdminUser", "AdminRole", "admin_role_menus", "AdminMenu",
+    "DogPersonalityPKRecord",
 ]

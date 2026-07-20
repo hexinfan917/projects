@@ -1,0 +1,44 @@
+.dp-custom-navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: content-box;
+}
+
+.dp-navbar-back {
+  position: absolute;
+  left: 16rpx;
+  bottom: 50%;
+  transform: translateY(50%);
+  width: 72rpx;
+  height: 72rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+.dp-navbar-back-arrow {
+  width: 24rpx;
+  height: 24rpx;
+  border-left: 5rpx solid #1f2937;
+  border-bottom: 5rpx solid #1f2937;
+  transform: rotate(45deg);
+  margin-left: 8rpx;
+}
+
+.dp-navbar-title {
+  font-size: 34rpx;
+  font-weight: 600;
+  max-width: 60%;
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: center;
+}

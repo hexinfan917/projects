@@ -56,12 +56,28 @@ async def get_current_user(
         return {
             "user_id": user_id,
             "openid": payload.get("openid"),
+            "role": payload.get("role"),
             "token": token,
         }
     except jwt.ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="Token已过期")
     except jwt.InvalidTokenError:
         raise HTTPException(status_code=401, detail="无效的Token")
+
+
+async def require_admin(
+    request: Request,
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+) -> dict:
+    """校验当前用户为管理员
+    
+    管理后台接口使用，要求 token 中 role 为 admin / super_admin
+    """
+    user = await get_current_user(request, credentials)
+    role = (user.get("role") or "").lower()
+    if role not in ("admin", "super_admin"):
+        raise HTTPException(status_code=403, detail="无管理员权限")
+    return user
 
 
 async def get_optional_user(

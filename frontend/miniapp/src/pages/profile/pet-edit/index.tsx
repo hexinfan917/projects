@@ -167,6 +167,10 @@ export default function PetEdit() {
       Taro.showToast({ title: '品种不可为空', icon: 'none' })
       return
     }
+    if (!pet.weight || pet.weight.trim() === '') {
+      Taro.showToast({ title: '体重不可为空', icon: 'none' })
+      return
+    }
 
     const ageStr = pet.age.trim()
     let birthDate: string | undefined
@@ -219,7 +223,7 @@ export default function PetEdit() {
     }
   }
 
-  const canSubmit = !!pet.avatar && !!pet.name && !!pet.age && pet.age.trim() !== '' && pet.gender !== undefined && pet.gender !== null && !!pet.vaccine_date && !!pet.breed && pet.breed.trim() !== ''
+  const canSubmit = !!pet.avatar && !!pet.name && !!pet.age && pet.age.trim() !== '' && pet.gender !== undefined && pet.gender !== null && !!pet.vaccine_date && !!pet.breed && pet.breed.trim() !== '' && !!pet.weight && pet.weight.trim() !== ''
 
   return (
     <View className='pet-edit-page'>
@@ -297,17 +301,6 @@ export default function PetEdit() {
             </View>
           </View>
 
-          {/* 疫苗时间 */}
-          <View className='form-item'>
-            <Text className='form-label'>最近接种时间 <Text className='required'>*</Text></Text>
-            <Picker mode='date' value={pet.vaccine_date || ''} onChange={onVaccineChange}>
-              <View className={`picker-box ${pet.vaccine_date ? '' : 'placeholder'}`}>
-                <Text className='picker-text'>{pet.vaccine_date || '年/月/日'}</Text>
-                <View className='calendar-icon' />
-              </View>
-            </Picker>
-          </View>
-
           {/* 品种 */}
           <View className='form-item'>
             <Text className='form-label'>品种 <Text className='required'>*</Text></Text>
@@ -322,7 +315,7 @@ export default function PetEdit() {
 
           {/* 体重 */}
           <View className='form-item'>
-            <Text className='form-label'>体重 (kg)</Text>
+            <Text className='form-label'>体重 (kg) <Text className='required'>*</Text></Text>
             <View className='input-with-suffix'>
               <Input
                 className='form-input'
@@ -334,6 +327,17 @@ export default function PetEdit() {
               />
               <Text className='input-suffix'>kg</Text>
             </View>
+          </View>
+
+          {/* 疫苗时间 */}
+          <View className='form-item'>
+            <Text className='form-label'>最近接种时间 <Text className='required'>*</Text></Text>
+            <Picker mode='date' value={pet.vaccine_date || ''} onChange={onVaccineChange}>
+              <View className={`picker-box ${pet.vaccine_date ? '' : 'placeholder'}`}>
+                <Text className='picker-text'>{pet.vaccine_date || '年/月/日'}</Text>
+                <View className='calendar-icon' />
+              </View>
+            </Picker>
           </View>
 
           {/* 疫苗本 */}

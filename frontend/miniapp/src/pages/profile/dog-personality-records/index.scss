@@ -1,0 +1,254 @@
+.dp-records-page {
+  min-height: 100vh;
+  background: #FAF9F6;
+  padding: 180rpx 32rpx 40rpx;
+  box-sizing: border-box;
+}
+
+.dp-records-header {
+  margin-bottom: 32rpx;
+}
+
+.dp-records-title {
+  display: block;
+  font-size: 44rpx;
+  font-weight: 600;
+  color: #1a4d2e;
+  margin-bottom: 12rpx;
+}
+
+.dp-records-subtitle {
+  display: block;
+  font-size: 28rpx;
+  color: #717971;
+}
+
+.dp-records-tabs {
+  display: flex;
+  background: #ffffff;
+  border-radius: 16rpx;
+  padding: 8rpx;
+  margin-bottom: 32rpx;
+  box-shadow: 0 2rpx 12rpx rgba(26, 77, 46, 0.04);
+}
+
+.dp-records-tab {
+  flex: 1;
+  height: 72rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12rpx;
+}
+
+.dp-records-tab.active {
+  background: #1a4d2e;
+}
+
+.dp-records-tab-text {
+  font-size: 28rpx;
+  color: #4b5563;
+  font-weight: 500;
+}
+
+.dp-records-tab.active .dp-records-tab-text {
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.dp-records-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding-top: 200rpx;
+}
+
+.dp-records-empty-text {
+  font-size: 32rpx;
+  color: #1a4d2e;
+  font-weight: 500;
+  margin-bottom: 16rpx;
+}
+
+.dp-records-empty-subtext {
+  font-size: 26rpx;
+  color: #717971;
+  text-align: center;
+  padding: 0 60rpx;
+}
+
+.dp-records-list {
+  display: flex;
+  flex-direction: column;
+  gap: 24rpx;
+}
+
+.dp-record-card,
+.dp-pk-record-card {
+  display: flex;
+  align-items: center;
+  background: #ffffff;
+  border-radius: 32rpx;
+  padding: 28rpx;
+  box-shadow: 0 4rpx 24rpx rgba(26, 77, 46, 0.06);
+  transition: all 0.2s ease;
+}
+
+.dp-record-card:active,
+.dp-pk-record-card:active {
+  transform: scale(0.99);
+  box-shadow: 0 6rpx 28rpx rgba(26, 77, 46, 0.1);
+}
+
+.dp-record-avatar {
+  width: 88rpx;
+  height: 88rpx;
+  border-radius: 50%;
+  margin-right: 24rpx;
+  background: #f3f4f6;
+  flex-shrink: 0;
+}
+
+.dp-record-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+}
+
+.dp-record-name {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #1a4d2e;
+  margin-bottom: 8rpx;
+}
+
+.dp-record-time,
+.dp-pk-record-time {
+  font-size: 24rpx;
+  color: #717971;
+}
+
+.dp-record-score-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  flex-shrink: 0;
+  margin-left: 16rpx;
+}
+
+.dp-record-type-code {
+  font-size: 36rpx;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.dp-record-type-title {
+  font-size: 22rpx;
+  font-weight: 600;
+  margin-top: 6rpx;
+  max-width: 220rpx;
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dp-pk-record-avatars {
+  position: relative;
+  width: 120rpx;
+  height: 88rpx;
+  margin-right: 24rpx;
+  flex-shrink: 0;
+}
+
+.dp-pk-record-avatar {
+  position: absolute;
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: 50%;
+  border: 4rpx solid #ffffff;
+  background: #f3f4f6;
+}
+
+.dp-pk-record-avatar-a {
+  left: 0;
+  top: 0;
+  z-index: 1;
+}
+
+.dp-pk-record-avatar-b {
+  left: 40rpx;
+  top: 16rpx;
+  z-index: 2;
+}
+
+.dp-pk-record-vs {
+  position: absolute;
+  left: 34rpx;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 44rpx;
+  height: 44rpx;
+  line-height: 44rpx;
+  text-align: center;
+  background: #1a4d2e;
+  color: #ffffff;
+  border-radius: 50%;
+  font-size: 20rpx;
+  font-weight: 700;
+  z-index: 3;
+  border: 2rpx solid #ffffff;
+}
+
+.dp-pk-record-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+}
+
+.dp-pk-record-names {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #1a4d2e;
+  margin-bottom: 4rpx;
+}
+
+.dp-pk-record-types {
+  font-size: 24rpx;
+  color: #6b7280;
+  margin-bottom: 8rpx;
+}
+
+.dp-pk-record-result {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  flex-shrink: 0;
+  margin-left: 16rpx;
+}
+
+.dp-pk-record-scores {
+  font-size: 36rpx;
+  font-weight: 700;
+  color: #1a4d2e;
+  line-height: 1.2;
+}
+
+.dp-pk-record-status {
+  font-size: 24rpx;
+  font-weight: 500;
+  margin-top: 6rpx;
+}
+
+.dp-records-loading,
+.dp-records-no-more {
+  text-align: center;
+  font-size: 24rpx;
+  color: #717971;
+  padding: 24rpx 0;
+}

@@ -19,6 +19,7 @@ export default defineAppConfig({
     'pages/profile/security/index',
     'pages/profile/privacy/index',
     'pages/profile/terms/index',
+    'pages/profile/dog-personality-records/index',
     'pages/orders/confirm/index',
     'pages/orders/pay/index',
     'pages/orders/detail/index',
@@ -54,6 +55,20 @@ export default defineAppConfig({
     navigationBarTitleText: '尾巴PetWay',
     navigationBarTextStyle: 'black'
   },
+  subPackages: [
+    {
+      root: 'subpackage/dog-personality',
+      pages: [
+        'index/index',
+        'pet-select/index',
+        'pet-form/index',
+        'test/index',
+        'result/index',
+        'pk/index/index',
+        'pk/result/index',
+      ],
+    },
+  ],
   tabBar: {
     custom: true,
     color: '#9CA3AF',

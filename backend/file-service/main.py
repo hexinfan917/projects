@@ -515,9 +515,11 @@ async def serve_file(
     date: str,
     filename: str,
     w: int = Query(None, ge=1, le=1920, description="最大宽度(px)"),
-    q: int = Query(None, ge=1, le=100, description="JPEG质量(1-100)")
+    h: int = Query(None, ge=1, le=1920, description="目标高度(px)，配合 fit=pad 使用"),
+    q: int = Query(None, ge=1, le=100, description="JPEG质量(1-100)"),
+    fit: str = Query(None, description="pad=完整图居中放入 w×h 画布，原图模糊背景填充")
 ):
-    """提供文件访问，支持图片动态压缩 (w=宽度, q=质量)"""
+    """提供文件访问，支持图片动态压缩 (w=宽度, q=质量) 及分享图留白适配 (w+h+fit=pad)"""
     file_path = UPLOAD_DIR / folder / date / filename
     
     if not file_path.exists():
@@ -527,13 +529,13 @@ async def serve_file(
     content_type = _get_content_type(ext)
     
     # 无压缩参数或非图片文件，直接返回原文件
-    if (w is None and q is None) or ext not in {".jpg", ".jpeg", ".png", ".webp"}:
+    if (w is None and h is None and q is None) or ext not in {".jpg", ".jpeg", ".png", ".webp"}:
         return FileResponse(str(file_path), media_type=content_type)
     
     # 构建缩略图缓存路径
     cache_dir = UPLOAD_DIR / ".thumb" / folder / date
     cache_dir.mkdir(parents=True, exist_ok=True)
-    cache_name = f"{Path(filename).stem}_w{w or 0}_q{q or 85}.jpg"
+    cache_name = f"{Path(filename).stem}_w{w or 0}_h{h or 0}_{fit or 'orig'}_q{q or 85}.jpg"
     cache_path = cache_dir / cache_name
     
     # 缓存命中直接返回
@@ -544,8 +546,24 @@ async def serve_file(
         from PIL import Image
         
         with Image.open(file_path) as img:
+            # 留白适配：完整图居中放入 w×h 画布，背景用原图放大+高斯模糊填充
+            # （用于微信分享卡片等固定比例场景，竖图不会被裁切）
+            if fit == "pad" and w and h:
+                from PIL import ImageFilter
+                src = img.convert("RGB")
+                # 背景：cover 裁满画布后高斯模糊
+                scale = max(w / src.width, h / src.height)
+                bg = src.resize((int(src.width * scale) + 1, int(src.height * scale) + 1), Image.LANCZOS)
+                left = (bg.width - w) // 2
+                top = (bg.height - h) // 2
+                bg = bg.crop((left, top, left + w, top + h)).filter(ImageFilter.GaussianBlur(30))
+                # 前景：完整等比缩放居中
+                fg = src.copy()
+                fg.thumbnail((w, h), Image.LANCZOS)
+                bg.paste(fg, ((w - fg.width) // 2, (h - fg.height) // 2))
+                img = bg
             # 按宽度等比缩放
-            if w and img.width > w:
+            elif w and img.width > w:
                 ratio = w / img.width
                 new_height = int(img.height * ratio)
                 img = img.resize((w, new_height), Image.LANCZOS)

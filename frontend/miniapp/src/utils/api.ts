@@ -17,7 +17,7 @@ const systemInfo = Taro.getSystemInfoSync()
 const isDevtools = systemInfo.platform === 'devtools'
 // develop 走本地（开发者工具 / 真机预览），trial/release 走线上
 export const BASE_URL = (env === 'develop')
-  ? (isDevtools ? 'http://localhost:8081' : 'http://192.168.31.44:8081')
+  ? (isDevtools ? 'http://localhost:8081' : 'http://192.168.5.14:8081')
   : 'https://tailtravel.cn'
 // 图片基础 URL：开发环境使用 BASE_URL（本地），生产环境使用线上域名
 export const IMAGE_BASE_URL = (env === 'develop') ? BASE_URL : 'https://tailtravel.cn'
@@ -234,6 +234,62 @@ export function getPet(id: number) {
 
 export function deletePet(id: number) {
   return request(`/api/v1/pets/${id}`, { method: 'DELETE' })
+}
+
+export function getSimplePetList() {
+  return request('/api/v1/pets/simple/list')
+}
+
+// 犬格检测
+export function getDogPersonalityStats() {
+  return request('/api/v1/dog-personality/stats')
+}
+
+export function getDogPersonalityQuestions() {
+  return request('/api/v1/dog-personality/questions')
+}
+
+export function getDogPersonalityLevels() {
+  return request('/api/v1/dog-personality/levels')
+}
+
+export function submitDogPersonalityResult(data: any) {
+  return request('/api/v1/dog-personality/results', { method: 'POST', data })
+}
+
+export function getDogPersonalityResult(id: number) {
+  return request(`/api/v1/dog-personality/results/${id}`)
+}
+
+export function getDogPersonalityResultPublic(id: number) {
+  return request(`/api/v1/dog-personality/results/${id}/public`)
+}
+
+export function getRecentDogPersonalityResults(limit?: number) {
+  return request('/api/v1/dog-personality/results/recent/list', { data: { limit } })
+}
+
+export function getDogPersonalityResultList(page?: number, pageSize?: number) {
+  const queryParts: string[] = []
+  if (page !== undefined && page !== null) queryParts.push(`page=${page}`)
+  if (pageSize !== undefined && pageSize !== null) queryParts.push(`page_size=${pageSize}`)
+  const query = queryParts.join('&')
+  return request(`/api/v1/dog-personality/results/list${query ? '?' + query : ''}`)
+}
+
+export function createDogPersonalityPkRecord(aResultId: number, bResultId: number) {
+  return request('/api/v1/dog-personality/pk/records', {
+    method: 'POST',
+    data: { a_result_id: aResultId, b_result_id: bResultId },
+  })
+}
+
+export function getDogPersonalityPkRecordList(page?: number, pageSize?: number) {
+  const queryParts: string[] = []
+  if (page !== undefined && page !== null) queryParts.push(`page=${page}`)
+  if (pageSize !== undefined && pageSize !== null) queryParts.push(`page_size=${pageSize}`)
+  const query = queryParts.join('&')
+  return request(`/api/v1/dog-personality/pk/records/list${query ? '?' + query : ''}`)
 }
 
 // 出行人

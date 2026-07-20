@@ -7,48 +7,53 @@ INSERT INTO admin_roles (id, name, code, description, status) VALUES
 ON DUPLICATE KEY UPDATE status = 1;
 
 -- 插入菜单数据
--- 先清空旧数据，避免重复
 DELETE FROM admin_role_menus;
 DELETE FROM admin_menus;
 
 INSERT INTO admin_menus (id, parent_id, name, path, icon, sort_order, type, permission, status) VALUES
--- 仪表盘
-(1, 0, '仪表盘', '/dashboard', 'DashboardOutlined', 1, 2, 'dashboard', 1),
--- 用户管理
-(10, 0, '用户管理', '/users', 'UserOutlined', 10, 1, NULL, 1),
-(11, 10, '用户列表', '/users/list', NULL, 1, 2, 'users:list', 1),
-(12, 10, '宠物档案', '/users/pets', NULL, 2, 2, 'users:pets', 1),
-(13, 10, '出行人管理', '/users/travelers', NULL, 3, 2, 'users:travelers', 1),
--- 路线管理
-(20, 0, '路线管理', '/routes', 'RouteOutlined', 20, 1, NULL, 1),
-(21, 20, '路线列表', '/routes/list', NULL, 1, 2, 'routes:list', 1),
-(22, 20, '路线分类', '/routes/categories', NULL, 2, 2, 'routes:categories', 1),
--- 订单管理
-(30, 0, '订单管理', '/orders', 'ShoppingOutlined', 30, 1, NULL, 1),
-(31, 30, '订单列表', '/orders/list', NULL, 1, 2, 'orders:list', 1),
-(32, 30, '退款管理', '/orders/refunds', NULL, 2, 2, 'orders:refunds', 1),
--- 内容管理
-(40, 0, '内容管理', '/content', 'FileTextOutlined', 40, 1, NULL, 1),
-(41, 40, '文章管理', '/content/articles', NULL, 1, 2, 'content:articles', 1),
-(42, 40, 'Banner管理', '/content/banners', NULL, 2, 2, 'content:banners', 1),
--- 会员管理
-(50, 0, '会员管理', '/members', 'CrownOutlined', 50, 1, NULL, 1),
-(51, 50, '会员套餐', '/members/plans', NULL, 1, 2, 'members:plans', 1),
-(52, 50, '会员订单', '/members/orders', NULL, 2, 2, 'members:orders', 1),
--- 营销管理
-(60, 0, '营销管理', '/marketing', 'GiftOutlined', 60, 1, NULL, 1),
-(61, 60, '优惠券', '/marketing/coupons', NULL, 1, 2, 'marketing:coupons', 1),
--- 公益管理
-(70, 0, '公益管理', '/charity', 'HeartOutlined', 70, 1, NULL, 1),
-(71, 70, '公益活动', '/charity/activities', NULL, 1, 2, 'charity:activities', 1),
-(72, 70, '捐款记录', '/charity/donations', NULL, 2, 2, 'charity:donations', 1),
--- 系统设置
-(80, 0, '系统设置', '/system', 'SettingOutlined', 80, 1, NULL, 1),
-(81, 80, '管理员账号', '/system/admins', NULL, 1, 2, 'system:admins', 1),
-(82, 80, '角色权限', '/system/roles', NULL, 2, 2, 'system:roles', 1),
-(83, 80, '菜单管理', '/system/menus', NULL, 3, 2, 'system:menus', 1),
-(84, 80, '系统参数', '/system/settings', NULL, 4, 2, 'system:settings', 1),
-(85, 80, '操作日志', '/system/logs', NULL, 5, 2, 'system:logs', 1);
+(2, 0, '首页', '/home', NULL, 1, 2, NULL, 1),
+(4, 3, '用户列表', '/users/list', NULL, 1, 2, NULL, 1),
+(3, 0, '用户管理', '/users', NULL, 2, 1, NULL, 1),
+(6, 5, '路线列表', '/routes/list', NULL, 1, 2, NULL, 1),
+(7, 5, '路线类型', '/routes/types', NULL, 2, 2, NULL, 1),
+(5, 0, '路线管理', '/routes', NULL, 3, 1, NULL, 1),
+(10, 0, '订单管理', '/orders', NULL, 4, 2, NULL, 1),
+(11, 0, '排期管理', '/schedules', NULL, 5, 2, NULL, 1),
+(13, 0, '出行人管理', '/travelers', NULL, 6, 2, NULL, 1),
+(14, 0, '财务管理', '/finance', NULL, 7, 2, NULL, 1),
+(16, 15, '管理员管理', '/system/admins', NULL, 1, 2, NULL, 1),
+(17, 15, '角色管理', '/system/roles', NULL, 2, 2, NULL, 1),
+(18, 15, '菜单管理', '/system/menus', NULL, 3, 2, NULL, 1),
+(15, 0, '系统管理', '/system', NULL, 8, 1, NULL, 1),
+(20, 0, '系统设置', '/settings', NULL, 9, 2, NULL, 1),
+(21, 0, '操作日志', '/logs', NULL, 10, 2, NULL, 1),
+(22, 0, '内容管理', '/articles', NULL, 11, 2, NULL, 1),
+(23, 0, '狗狗回顾', '/reviews', NULL, 12, 2, NULL, 1),
+(24, 0, '首页轮播', '/banners', NULL, 13, 2, NULL, 1),
+(25, 0, '行程选配', '/addons', NULL, 14, 2, NULL, 1),
+(26, 0, '选配分类', '/addon-categories', NULL, 15, 2, NULL, 1),
+(27, 0, '公益管理', '/charities', NULL, 16, 2, NULL, 1),
+(29, 28, '狗狗档案', '/adoption/dogs', NULL, 1, 2, NULL, 1),
+(30, 28, '领养申请', '/adoption/applications', NULL, 2, 2, NULL, 1),
+(28, 0, '领养管理', '/adoption', NULL, 17, 1, NULL, 1),
+(32, 31, '会员订单', '/member/orders', NULL, 1, 2, NULL, 1),
+(33, 31, '会员列表', '/member/list', NULL, 2, 2, NULL, 1),
+(34, 31, '会员套餐', '/member/plans', NULL, 3, 2, NULL, 1),
+(35, 31, '弹窗配置', '/member/popups', NULL, 4, 2, NULL, 1),
+(31, 0, '会员管理', '/member', NULL, 18, 1, NULL, 1),
+(38, 36, '优惠券模板', '/coupons/list', NULL, 1, 2, NULL, 1),
+(39, 36, '发放记录', '/coupons/grant-records', NULL, 2, 2, NULL, 1),
+(40, 36, '用户优惠券统计', '/coupons/user-coupon-stats', NULL, 3, 2, NULL, 1),
+(41, 36, '核销记录', '/coupons/use-records', NULL, 4, 2, NULL, 1),
+(36, 0, '优惠券管理', '/coupons', NULL, 19, 1, NULL, 1),
+(42, 0, '协议管理', '/agreements', NULL, 20, 2, NULL, 1),
+(45, 43, '模块管理', '/dog-personality/modules', NULL, 1, 2, NULL, 1),
+(46, 43, '题目管理', '/dog-personality/questions', NULL, 2, 2, NULL, 1),
+(47, 43, '分型管理', '/dog-personality/levels', NULL, 3, 2, NULL, 1),
+(48, 43, '测评记录', '/dog-personality/results', NULL, 4, 2, NULL, 1),
+(49, 43, '行为画像配置', '/dog-personality/behavior-configs', NULL, 5, 2, NULL, 1),
+(50, 43, 'PK 记录', '/dog-personality/pk-records', NULL, 6, 2, NULL, 1),
+(43, 0, '犬格检测', '/dog-personality', NULL, 21, 1, NULL, 1);
 
 -- 超级管理员关联所有菜单
 INSERT INTO admin_role_menus (role_id, menu_id)

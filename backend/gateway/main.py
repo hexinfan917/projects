@@ -22,7 +22,7 @@ from common.logger import setup_logger
 import httpx
 
 settings.app_name = "api-gateway"
-settings.app_port = 8080
+settings.app_port = 8081
 logger = setup_logger("gateway")
 
 # JWT 配置
@@ -33,6 +33,10 @@ JWT_ALGORITHM = settings.jwt.algorithm
 PUBLIC_PATHS = [
     r"^/health$",
     r"^/api/v1/auth/.*",
+    r"^/api/v1/dog-personality/questions$",
+    r"^/api/v1/dog-personality/levels$",
+    r"^/api/v1/dog-personality/stats$",
+    r"^/api/v1/dog-personality/results/\d+/public$",
     r"^/api/v1/routes$",
     r"^/api/v1/routes/\d+$",
     r"^/api/v1/routes/types$",
@@ -111,6 +115,8 @@ LOCAL_SERVICE_ROUTES = {
     "/api/v1/admin/menus": "http://localhost:8001",
     "/api/v1/admin/roles": "http://localhost:8001",
     "/api/v1/admin/admins": "http://localhost:8001",
+    "/api/v1/admin/dog-personality": "http://localhost:8001",
+    "/api/v1/dog-personality": "http://localhost:8001",
     "/api/v1/admin/route-types": "http://localhost:8033",
     "/api/v1/admin/routes": "http://localhost:8033",
     "/api/v1/admin/addons": "http://localhost:8033",
@@ -145,6 +151,7 @@ LOCAL_SERVICE_ROUTES = {
     "/api/v1/admin/coupons": "http://localhost:8003",
     "/api/v1/admin/coupon-templates": "http://localhost:8003",
     "/api/v1/admin/user-coupons": "http://localhost:8003",
+    "/api/v1/admin/user-coupon-stats": "http://localhost:8003",
     "/api/v1/member/orders": "http://localhost:8003",
     "/api/v1/member/plans": "http://localhost:8001",
     "/api/v1/member/center": "http://localhost:8001",

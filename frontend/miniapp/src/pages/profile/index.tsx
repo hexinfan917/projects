@@ -19,6 +19,7 @@ const ICON_MAP: Record<string, string> = {
   '联系客服': '/assets/icons/profile/service.png',
   '关于我们': '/assets/icons/profile/about.png',
   '设置': '/assets/icons/profile/settings.png',
+  '犬格测评': '/assets/icons/personality.svg',
 }
 
 const ORDER_ENTRIES = [
@@ -33,6 +34,7 @@ const MENU = [
   { label: '优惠券', path: '/pages/coupons/list/index', needLogin: true },
   { label: '出行人管理', path: '/pages/profile/travelers/index', needLogin: true },
   { label: '领养记录', path: '/pages/adoption/records/index', needLogin: true },
+  { label: '犬格测评', path: '/pages/profile/dog-personality-records/index', needLogin: true },
   { label: '我的足迹', path: '/pages/profile/footprint/index', needLogin: true },
   { label: '联系客服', action: 'service' },
   { label: '关于我们', path: '/pages/profile/about/index' },
@@ -158,14 +160,14 @@ export default function Profile() {
                 </View>
               </>
             ) : (
-              <View className='login-wrap' onClick={goLogin}>
+              <View className='login-wrap'>
                 <Text className='login-text'>点击登录/注册</Text>
                 <Text className='login-subtext'>解锁更多宠友精彩内容</Text>
               </View>
             )}
           </View>
           {!user && (
-            <View className='login-arrow' onClick={goLogin}>
+            <View className='login-arrow'>
               <Text className='login-arrow-text'>›</Text>
             </View>
           )}
