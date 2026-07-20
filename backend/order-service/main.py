@@ -3656,7 +3656,7 @@ async def admin_get_user_coupons(
         params["keyword"] = f"%{keyword}%"
     
     where_sql = " AND ".join(where_clauses)
-    
+
     # 查询总数
     count_sql = f"""
         SELECT COUNT(*) 
@@ -3674,10 +3674,12 @@ async def admin_get_user_coupons(
             uc.status, uc.valid_start_time, uc.valid_end_time, uc.used_at,
             uc.used_order_id, uc.source_type, uc.user_id, uc.created_at, uc.template_id,
             u.nickname, u.phone,
-            o.order_no
+            o.order_no,
+            CASE WHEN um.id IS NOT NULL THEN 1 ELSE 0 END AS is_member
         FROM user_coupons uc
         LEFT JOIN users u ON uc.user_id = u.id
         LEFT JOIN orders o ON uc.used_order_id = o.id
+        LEFT JOIN user_memberships um ON um.user_id = uc.user_id AND um.status = 1
         WHERE {where_sql}
         ORDER BY uc.created_at DESC
         LIMIT :limit OFFSET :offset
@@ -3709,9 +3711,120 @@ async def admin_get_user_coupons(
             "user_id": row["user_id"],
             "nickname": row["nickname"],
             "phone": row["phone"],
+            "is_member": bool(row["is_member"]),
             "created_at": row["created_at"].isoformat() if row["created_at"] else None,
         })
     
+    return success({"list": data, "total": total, "page": page, "page_size": page_size})
+
+
+@app.get("/api/v1/admin/user-coupon-stats")
+async def admin_get_user_coupon_stats(
+    keyword: Optional[str] = None,
+    is_member: Optional[int] = None,
+    page: int = 1,
+    page_size: int = 10,
+    db: AsyncSession = Depends(get_db)
+):
+    """管理后台按用户统计优惠券"""
+
+    where_clauses = ["1=1"]
+    params: dict = {}
+
+    if keyword:
+        where_clauses.append("(u.nickname LIKE :keyword OR u.phone LIKE :keyword)")
+        params["keyword"] = f"%{keyword}%"
+
+    if is_member is not None:
+        if is_member == 1:
+            where_clauses.append("um.id IS NOT NULL")
+        else:
+            where_clauses.append("um.id IS NULL")
+
+    where_sql = " AND ".join(where_clauses)
+
+    # 查询总数
+    count_sql = f"""
+        SELECT COUNT(DISTINCT uc.user_id)
+        FROM user_coupons uc
+        LEFT JOIN users u ON uc.user_id = u.id
+        LEFT JOIN user_memberships um ON um.user_id = uc.user_id AND um.status = 1
+        WHERE {where_sql}
+    """
+    total_result = await db.execute(text(count_sql), params)
+    total = total_result.scalar() or 0
+
+    # 查询统计 + 明细
+    list_sql = f"""
+        SELECT
+            uc.user_id,
+            u.nickname,
+            u.phone,
+            CASE WHEN um.id IS NOT NULL THEN 1 ELSE 0 END AS is_member,
+            COUNT(*) AS total,
+            SUM(CASE WHEN uc.status = 1 THEN 1 ELSE 0 END) AS unused,
+            SUM(CASE WHEN uc.status = 2 THEN 1 ELSE 0 END) AS used,
+            SUM(CASE WHEN uc.status = 3 THEN 1 ELSE 0 END) AS expired,
+            SUM(CASE WHEN uc.status = 4 THEN 1 ELSE 0 END) AS invalid,
+            JSON_ARRAYAGG(
+                JSON_OBJECT(
+                    'id', uc.id,
+                    'coupon_no', uc.coupon_no,
+                    'name', uc.name,
+                    'type', uc.type,
+                    'value', uc.value,
+                    'min_amount', uc.min_amount,
+                    'status', uc.status,
+                    'source_type', uc.source_type,
+                    'valid_end_time', uc.valid_end_time,
+                    'created_at', uc.created_at
+                )
+            ) AS coupons
+        FROM user_coupons uc
+        LEFT JOIN users u ON uc.user_id = u.id
+        LEFT JOIN user_memberships um ON um.user_id = uc.user_id AND um.status = 1
+        WHERE {where_sql}
+        GROUP BY uc.user_id, u.nickname, u.phone, um.id
+        ORDER BY unused DESC, total DESC, MAX(uc.created_at) DESC
+        LIMIT :limit OFFSET :offset
+    """
+    query_params = {**params, "limit": page_size, "offset": (page - 1) * page_size}
+    result = await db.execute(text(list_sql), query_params)
+    rows = result.mappings().all()
+
+    status_text = {1: "未使用", 2: "已使用", 3: "已过期", 4: "已作废"}
+    type_text = {1: "满减券", 2: "折扣券", 3: "立减券", 4: "礼品券"}
+    source_type_text = {1: "通用", 2: "会员购买赠送", 3: "会员每月发放", 4: "管理后台发放"}
+
+    data = []
+    for row in rows:
+        coupons = row["coupons"] or []
+        if isinstance(coupons, str):
+            import json
+            coupons = json.loads(coupons)
+        for c in coupons:
+            c["status"] = int(c.get("status")) if c.get("status") is not None else None
+            c["type"] = int(c.get("type")) if c.get("type") is not None else None
+            c["source_type"] = int(c.get("source_type")) if c.get("source_type") is not None else None
+            c["status_text"] = status_text.get(c["status"], "未知")
+            c["type_text"] = type_text.get(c["type"], "未知")
+            c["source_type_text"] = source_type_text.get(c["source_type"], "未知")
+            c["value"] = float(c.get("value") or 0)
+            c["min_amount"] = float(c.get("min_amount") or 0)
+
+        data.append({
+            "user_id": row["user_id"],
+            "nickname": row["nickname"],
+            "phone": row["phone"],
+            "is_member": bool(row["is_member"]),
+            "total": int(row["total"] or 0),
+            "unused": int(row["unused"] or 0),
+            "used": int(row["used"] or 0),
+            "expired": int(row["expired"] or 0),
+            "invalid": int(row["invalid"] or 0),
+            "coupons": coupons,
+        })
+
     return success({"list": data, "total": total, "page": page, "page_size": page_size})
 
 

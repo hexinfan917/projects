@@ -88,7 +88,7 @@ services:
       - REDIS_HOST=redis
       - REDIS_PASSWORD=${REDIS_PASSWORD}
       - JWT_SECRET=${JWT_SECRET}
-      - FILE_SERVICE_URL=http://petway-file-service:8000
+      - FILE_SERVICE_URL=${FILE_SERVICE_URL:-http://petway-file-service:8000}
       - APP_ENV=production
       - TZ=Asia/Shanghai
     volumes:
@@ -218,6 +218,11 @@ services:
       - REDIS_PASSWORD=${REDIS_PASSWORD}
       - JWT_SECRET=${JWT_SECRET}
       - UPLOAD_DIR=/app/uploads
+      - COS_SECRET_ID=${COS_SECRET_ID}
+      - COS_SECRET_KEY=${COS_SECRET_KEY}
+      - COS_BUCKET=${COS_BUCKET}
+      - COS_REGION=${COS_REGION}
+      - COS_DOMAIN=${COS_DOMAIN}
       - APP_ENV=production
       - TZ=Asia/Shanghai
     volumes:

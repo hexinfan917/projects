@@ -50,6 +50,7 @@ class WechatConfig(BaseSettings):
 
 class OSSConfig(BaseSettings):
     """阿里云OSS配置"""
+    model_config = {"env_prefix": "OSS_", "extra": "ignore"}
     endpoint: str = ""
     access_key_id: str = ""
     access_key_secret: str = ""

@@ -187,6 +187,7 @@ export default function ReviewManage() {
   // 图集上传配置
   const galleryUploadProps = {
     name: 'file',
+    multiple: true,
     action: '/api/v1/files/upload/image',
     data: { crop_ratio: 1.0 },
     headers: {
@@ -449,10 +450,13 @@ export default function ReviewManage() {
           </div>
         }>
           <div style={{ marginBottom: 16 }}>
-            <Upload {...galleryUploadProps} showUploadList={false}>
+            <Upload {...galleryUploadProps} showUploadList={false} multiple accept="image/*">
               <Button icon={<UploadOutlined />}>上传图片</Button>
             </Upload>
-            <span style={{ marginLeft: 8, color: '#999' }}>或直接输入图片URL：</span>
+            <div style={{ marginTop: 6, marginBottom: 8, color: '#666', fontSize: 13 }}>
+              提示：可按住 Ctrl 键点选多张图片，或鼠标框选批量上传
+            </div>
+            <span style={{ marginLeft: 0, color: '#999' }}>或直接输入图片URL：</span>
             <Input
               style={{ width: 300, marginLeft: 8 }}
               placeholder="输入图片URL"

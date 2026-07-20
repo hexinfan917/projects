@@ -83,6 +83,21 @@ export default function CouponGrantRecords() {
       ),
     },
     {
+      title: '是否会员',
+      dataIndex: 'is_member',
+      width: 100,
+      search: false,
+      valueEnum: {
+        1: { text: '是' },
+        0: { text: '否' },
+      },
+      render: (_: any, record: any) => (
+        <Tag color={record.is_member ? 'success' : 'default'}>
+          {record.is_member ? '是' : '否'}
+        </Tag>
+      ),
+    },
+    {
       title: '来源类型',
       dataIndex: 'source_type',
       width: 120,
