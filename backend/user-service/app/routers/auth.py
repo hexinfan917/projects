@@ -71,7 +71,7 @@ async def admin_login(login_data: dict, db: AsyncSession = Depends(get_db)):
             "user_id": admin.id,
             "username": admin.username,
             "openid": admin.username,
-            "role": admin.role.name if admin.role else "admin",
+            "role": admin.role.code if admin.role else "admin",
             "type": "access",
             "iat": now,
             "exp": now + timedelta(hours=8),
@@ -84,7 +84,7 @@ async def admin_login(login_data: dict, db: AsyncSession = Depends(get_db)):
         
         return success({
             "token": token,
-            "role": admin.role.name if admin.role else "admin",
+            "role": admin.role.code if admin.role else "admin",
             "username": admin.username
         })
     except Exception as e:
