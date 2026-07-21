@@ -1032,8 +1032,7 @@ PK 结果页：展示 A vs B 的对比结果
 #### 总分胜负
 
 - 对双方四维得分（`dimension_scores` 各维度 `score`）分别求和，总分高者获胜；
-- 总分相同则比较可信度评分 `reliability_score`，高者获胜；
-- 仍相同判为平局；
+- 总分相同判为平局（不比较可信度评分）；
 - 页面上展示四维逐项对比及每维度胜者标签。
 
 #### 趣味结论
@@ -1059,7 +1058,7 @@ GET /api/v1/dog-personality/results/{result_id}/public
 - `type_code`（犬格编码）
 - `title`（性格标题）
 - `dimension_scores`（四维得分）
-- `reliability_score`（可信度评分，PK 平局时用于判定）
+- `reliability_score`（可信度评分，仅报告页展示用，不参与 PK 胜负判定）
 - `report_data`（公开摘要：不含详细解读全文，仅保留 PK 展示所需信息）
 - `is_owner`（当前访问者是否为报告主人，未登录为 false；用于 PK 记录归属判断）
 - `created_at`

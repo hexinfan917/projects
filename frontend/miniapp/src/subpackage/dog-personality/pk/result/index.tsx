@@ -33,8 +33,6 @@ function computeWinner(a: any, b: any) {
   const bTotal = sumDimensionScores(b.dimension_scores)
   if (aTotal > bTotal) return 'a'
   if (aTotal < bTotal) return 'b'
-  if (a.reliability_score > b.reliability_score) return 'a'
-  if (a.reliability_score < b.reliability_score) return 'b'
   return 'tie'
 }
 

@@ -849,15 +849,11 @@ class DogPersonalityService:
         b_total = self._sum_dimension_scores(b_record.dimension_scores)
         logger.info(f"记录 PK: user={user_id}, a={a_result_id}, b={b_result_id}, a_total={a_total}, b_total={b_total}")
 
-        # 判定胜负：总分高者胜；总分相同则可信度高的获胜
+        # 判定胜负：总分高者胜；总分相同判平局（不区分可信度）
         winner_result_id = None
         if a_total > b_total:
             winner_result_id = a_record.id
         elif b_total > a_total:
-            winner_result_id = b_record.id
-        elif a_record.reliability_score > b_record.reliability_score:
-            winner_result_id = a_record.id
-        elif b_record.reliability_score > a_record.reliability_score:
             winner_result_id = b_record.id
 
         # 双方各写入一条记录（已通过归属校验，当前用户必为其中一方）
