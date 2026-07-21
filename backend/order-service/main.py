@@ -2326,13 +2326,16 @@ async def admin_get_refunds(
         
         refunds = []
         for o in orders_db:
+            # 退款中订单显示申请金额；已退款/部分退款订单 refund_amount 已清零，显示累计实退金额
+            refunded = float(o.refunded_amount) if o.refunded_amount else 0
+            applying = float(o.refund_amount) if o.refund_amount else 0
             refunds.append({
                 "id": o.id,
                 "order_no": o.order_no,
                 "user_id": o.user_id,
                 "route_name": o.route_name,
                 "pay_amount": float(o.pay_amount) if o.pay_amount else 0,
-                "refund_amount": float(o.refund_amount) if o.refund_amount else 0,
+                "refund_amount": refunded if refunded > 0 else applying,
                 "refund_reason": o.refund_reason,
                 "refund_time": o.refund_time.isoformat() if o.refund_time else None,
                 "status": o.status,

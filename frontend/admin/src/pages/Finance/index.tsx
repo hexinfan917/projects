@@ -9,6 +9,7 @@ const statusMap: Record<number, { text: string; color: string }> = {
   40: { text: '退款中', color: 'orange' },
   45: { text: '退款驳回', color: 'red' },
   50: { text: '已退款', color: 'default' },
+  55: { text: '部分退款', color: 'purple' },
 };
 
 export default function FinanceManage() {
@@ -101,6 +102,7 @@ export default function FinanceManage() {
         40: { text: '退款中' },
         45: { text: '退款驳回' },
         50: { text: '已退款' },
+        55: { text: '部分退款' },
       },
       render: (_: any, record: any) => (
         <Tag color={statusMap[record.status]?.color || 'default'}>
